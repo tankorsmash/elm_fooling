@@ -12,6 +12,7 @@ import Html exposing (Html, button, div, text, input)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
 
+import Debug --for prints
 
 
 -- MAIN
@@ -33,7 +34,7 @@ type alias Model = {
 
 init : Model
 init =
-    { count = 0, content= "ASD" }
+    Model 0 "ASD"
 
 
 
@@ -66,17 +67,32 @@ update2 msg model =
 my_func : Int -> Int
 my_func age = age * 100
 
+
+custom_input : String -> String -> String -> (String -> msg) -> Html msg
+custom_input type__ placeholder_ value_ toMsg =
+    input [ type_ type__, placeholder placeholder_, value value_, onInput toMsg ] []
+
+
+display_validation : String -> Html msg
+display_validation to_validate =
+    if to_validate == "valid" then
+        div [] [text "MFer is valid" ]
+    else
+        div [] [text ("try again" ++ (Debug.log ("to_validate: "++to_validate) ""))]
 -- VIEW
 
 
 view : Model -> Html Msg
 view model =
     div []
-    [ button [ onClick Decrement ] [ text "-" ]
-    , div [] [ text (String.fromInt model.count) ]
-    , button [ onClick Increment ] [ text "+" ]
-    , div [] [ text model.content]
-    , div [] [ text (String.fromInt (my_func model.count))]
-    , input [ placeholder "placeholder", value model.content, onInput Change] []
+    [
+        custom_input "text" "ppplllace" model.content Change
+        , display_validation model.content
+    -- button [ onClick Decrement ] [ text "-" ]
+    -- , div [] [ text (String.fromInt model.count) ]
+    -- , button [ onClick Increment ] [ text "+" ]
+    -- , div [] [ text (model.content ++ ", the length is: "++ String.fromInt (String.length model.content))]
+    -- , div [] [ text (String.fromInt (my_func model.count))]
+    -- , input [ placeholder "placeholder", value model.content, onInput Change] []
     ]
 

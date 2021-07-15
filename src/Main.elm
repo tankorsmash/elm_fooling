@@ -70,11 +70,13 @@ type alias Model =
 type Page
     = NotFoundPage
     | HomePage
+    | ProfilePage
     | UnsetPage
 
 type Route
     = Home
     | NotFound
+    | Profile
     -- | Topic String
     -- | Blog Int
     -- | User String
@@ -93,7 +95,8 @@ parseUrl url =
 matchRoute : Parser (Route -> a) a
 matchRoute =
     oneOf
-        [ map Home    (s "home")
+        [ map Home       (s "home")
+        , map Profile    (s "profile")
         -- , map Topic   (s "topic" </> string)
         -- , map Blog    (s "blog" </> int)
         -- , map User    (s "user" </> string)
@@ -120,6 +123,9 @@ initCurrentPage (model, existingCmds) =
             case model.page_info.route of
                 Home ->
                     ( HomePage, Cmd.none )
+
+                Profile ->
+                    ( ProfilePage, Cmd.none )
 
                 NotFound ->
                     ( NotFoundPage, Cmd.none )
@@ -218,7 +224,30 @@ humanize time zone =
 homeView : Model -> Html Msg
 homeView model =
     div []
-        [ text "HOME PAGE IS HERE!!!" ]
+        [ text "HOME PAGE IS HERE!!!"
+        , div []
+            [ text "This is a link: "
+            , a [href "/home" ] [ text "HOME" ]
+            ]
+        , div []
+            [ text "This is my profile: "
+            , a [href "/profile" ] [ text "PROFILE" ]
+            ]
+        ]
+
+profileView : Model -> Html Msg
+profileView model =
+    div []
+        [ text "Welcome to my Profile!!"
+        , div []
+            [ text "This is a link: "
+            , a [href "/home" ] [ text "HOME" ]
+            ]
+        , div []
+            [ text "This is my profile: "
+            , a [href "/profile" ] [ text "PROFILE" ]
+            ]
+        ]
 
 
 -- view : Model -> Html Msg
@@ -233,6 +262,9 @@ view model =
 
             HomePage ->
                 homeView model
+
+            ProfilePage ->
+                profileView model
 
             UnsetPage ->
                 div [] [ text "UNSET PAGE"]

@@ -76,9 +76,12 @@ custom_input type__ placeholder_ value_ toMsg =
 display_validation : String -> Html msg
 display_validation to_validate =
     if to_validate == "valid" then
-        div [] [text "MFer is valid" ]
+        div [style "color" "green"] [text "MFer is valid" ]
+    else if True then
+        div [] [text "true"]
     else
         div [] [text ("try again" ++ (Debug.log ("to_validate: "++to_validate) ""))]
+
 -- VIEW
 
 

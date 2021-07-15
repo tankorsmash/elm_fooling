@@ -121,12 +121,7 @@ do_download_json =
 decode_json : Decoder (List String)
 -- decode_json : Decoder String
 decode_json =
-    -- Json.Decode.list ( "title" Json.Decode.string)
-    let
-        all_posts = list (field "title" Json.Decode.string)
-    in
-        -- \_ -> List.take 1 all_posts
-        all_posts
+    list (field "title" Json.Decode.string)
 
 init : () -> Url.Url -> Nav.Key -> (Model, Cmd Msg)
 init _ url navKey =
@@ -227,9 +222,8 @@ update2 msg model =
             case result of
                 Ok titles ->
                     let
-                        post_data = Debug.log "ASDSD" model.post_data
+                        post_data = Debug.log "Successfully received files!" model.post_data
                         title = List.head titles
-
                     in
                         case title of
                             Just title_ ->

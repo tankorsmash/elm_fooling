@@ -184,11 +184,13 @@ update2 msg model =
                     (model, Nav.load href)
 
         UrlChanged url ->
-            let page_info = model.page_info
+            let
+                page_info = model.page_info
+                newRoute = parseUrl url
             in
-            ( {model | page_info = {page_info | url = url} }
-            , Cmd.none
-            )
+                ( { model | page_info = { page_info | url = url, route=newRoute } }
+                , Cmd.none
+                ) |> initCurrentPage
 
 
 my_func : Int -> Int

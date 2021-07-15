@@ -14,27 +14,41 @@ import Html.Events exposing (onClick, onInput)
 
 import Debug --for prints
 
+import Task
+import Time
+
 
 -- MAIN
 
 
 main =
-    Browser.sandbox { init = init, update = update2, view = view }
+    Browser.element {
+        init = init, view = view, update = update2,
+        subscriptions = subscriptions
+    }
 
 
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Time.every 1000 Tick
 
 -- MODEL
 
 
 type alias Model = {
     count : Int,
-    content : String
+    content : String,
+    time : Time.Posix,
+    zone : Time.Zone
     }
 
 
-init : Model
-init =
-    Model 0 "ASD"
+init : () -> (Model, Cmd Msg)
+init _ =
+    ( Model 0 "ASD" (Time.millisToPosix 0) Time.utc
+    , Task.perform AdjustTimeZone Time.here
+    )
 
 
 
@@ -47,22 +61,31 @@ type Msg
     | Decrement
     | Poop
     | Change String
+    | Tick Time.Posix
+    | AdjustTimeZone Time.Zone
 
 
-update2 : Msg -> Model -> Model
+update2 : Msg -> Model -> (Model, Cmd Msg)
 update2 msg model =
     case msg of
         Increment ->
-            { model | count = model.count + 10}
+            ({ model | count = model.count + 10}, Cmd.none)
 
         Decrement ->
-            { model | count = model.count - 1}
+            ({ model | count = model.count - 1}, Cmd.none)
 
         Poop ->
-            { model | count = model.count + 2}
+            ({ model | count = model.count + 2}, Cmd.none)
 
         Change newContent ->
-            { model | content = newContent }
+            ({ model | content = newContent }, Cmd.none)
+
+        Tick newTime ->
+            Debug.log "TICKING" ({ model | time = newTime }, Cmd.none)
+
+        AdjustTimeZone newZone ->
+            ({ model | zone = newZone }, Cmd.none)
+
 
 my_func : Int -> Int
 my_func age = age * 100
@@ -82,6 +105,16 @@ display_validation to_validate =
     else
         div [] [text ("try again" ++ (Debug.log ("to_validate: "++to_validate) ""))]
 
+
+humanize : Time.Posix -> Time.Zone -> String
+humanize time zone =
+    let
+        hour = String.fromInt (Time.toHour zone time)
+        minute = String.fromInt (Time.toMinute zone time)
+        second = String.fromInt (Time.toSecond zone time)
+    in
+    hour ++ ":" ++ minute ++ ":" ++ second
+
 -- VIEW
 
 
@@ -89,7 +122,8 @@ view : Model -> Html Msg
 view model =
     div []
     [
-        custom_input "text" "ppplllace" model.content Change
+        -- custom_input "text" "ppplllace" model.content Change
+        custom_input "text" "ppplllace" (humanize model.time model.zone) Change
         , display_validation model.content
     -- button [ onClick Decrement ] [ text "-" ]
     -- , div [] [ text (String.fromInt model.count) ]

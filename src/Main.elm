@@ -8,8 +8,9 @@ module Main exposing (..)
 
 
 import Browser
-import Html exposing (Html, button, div, text)
-import Html.Events exposing (onClick)
+import Html exposing (Html, button, div, text, input)
+import Html.Attributes exposing (..)
+import Html.Events exposing (onClick, onInput)
 
 
 
@@ -44,6 +45,7 @@ type Msg
     = Increment
     | Decrement
     | Poop
+    | Change String
 
 
 update2 : Msg -> Model -> Model
@@ -58,6 +60,9 @@ update2 msg model =
         Poop ->
             { model | count = model.count + 2}
 
+        Change newContent ->
+            { model | content = newContent }
+
 my_func : Int -> Int
 my_func age = age * 100
 
@@ -70,7 +75,8 @@ view model =
     [ button [ onClick Decrement ] [ text "-" ]
     , div [] [ text (String.fromInt model.count) ]
     , button [ onClick Increment ] [ text "+" ]
-    , div [] [ text "adsd"]
+    , div [] [ text model.content]
     , div [] [ text (String.fromInt (my_func model.count))]
+    , input [ placeholder "placeholder", value model.content, onInput Change] []
     ]
 

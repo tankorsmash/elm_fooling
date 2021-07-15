@@ -9,11 +9,14 @@ module Main exposing (..)
 
 import Browser
 import Browser.Navigation as Nav
--- import Html exposing (Html, button, div, text, input)
-import Html exposing (..)
-import Html.Attributes exposing (..)
+import Html exposing (Html, button, div, text, input, b, a)
+-- import Html exposing (..)
+import Html.Attributes exposing (href)
+-- import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
 import Url
+import Url.Parser exposing (Parser, (</>), int, map, oneOf, s, string, parse)
+
 
 import Debug --for prints
 
@@ -52,14 +55,75 @@ type alias Model =
     , zone : Time.Zone
     , key : Nav.Key
     , url : Url.Url
+    , route : Route
+    , page : Page
     }
+
+type Page
+    = NotFoundPage
+    | HomePage
+    | UnsetPage
+
+type Route
+    = Home
+    | NotFound
+    -- | Topic String
+    -- | Blog Int
+    -- | User String
+    -- | Comment String Int
+    | UnsetRoute
+
+
+parseUrl : Url.Url -> Route
+parseUrl url =
+    case parse matchRoute url of
+        Just route ->
+            route
+        Nothing ->
+            NotFound
+
+matchRoute : Parser (Route -> a) a
+matchRoute =
+    oneOf
+        [ map Home    (s "home")
+        -- , map Topic   (s "topic" </> string)
+        -- , map Blog    (s "blog" </> int)
+        -- , map User    (s "user" </> string)
+        -- , map Comment (s "user" </> string </> s "comment" </> int)
+        ]
 
 
 init : () -> Url.Url -> Nav.Key -> (Model, Cmd Msg)
-init _ url key =
-    ( Model 0 "ASD" (Time.millisToPosix 0) Time.utc key url
-    , Task.perform AdjustTimeZone Time.here
+init _ url navKey =
+    let
+        parsedRoute = parseUrl url
+        model = Model 0
+            "ASD" (Time.millisToPosix 0) Time.utc navKey url
+            (parseUrl url)
+            UnsetPage
+        existingCmds = Task.perform AdjustTimeZone Time.here
+    in
+        initCurrentPage (model, existingCmds)
+
+
+initCurrentPage : (Model, Cmd Msg) -> (Model, Cmd Msg)
+initCurrentPage (model, existingCmds) =
+    let
+        ( currentPage ,mappedPageCmds ) =
+            case model.route of
+                Home ->
+                    ( HomePage, Cmd.none )
+
+                NotFound ->
+                    ( NotFoundPage, Cmd.none )
+
+                UnsetRoute ->
+                    ( NotFoundPage, Cmd.none )
+    in
+    ( { model | page = currentPage }
+    , Cmd.batch [ existingCmds, mappedPageCmds ]
     )
+
 
 
 
@@ -141,6 +205,11 @@ humanize time zone =
 
 -- VIEW
 
+homeView : Model -> Html Msg
+homeView model =
+    div []
+        [ text "HOME PAGE IS HERE!!!" ]
+
 
 -- view : Model -> Html Msg
 view : Model -> Browser.Document Msg
@@ -148,21 +217,15 @@ view model =
     { title = "URL Interceptor"
     , body =
         [
-            text "ASDASD"
-            , div [] [
-                b [] [text "THIS IS BOLD"]
-                , div [] [ text "This goes ", a [href "/home"] [text "home"] ]
-                , div [] [ text "Check out your ", a [href "/profile"] [text "profile"] ]
-            ]
-            -- custom_input "text" "ppplllace" model.content Change
-            -- custom_input "text" "ppplllace" (humanize model.time model.zone) Change
-            -- , display_validation model.content
-            -- button [ onClick Decrement ] [ text "-" ]
-            -- , div [] [ text (String.fromInt model.count) ]
-            -- , button [ onClick Increment ] [ text "+" ]
-            -- , div [] [ text (model.content ++ ", the length is: "++ String.fromInt (String.length model.content))]
-            -- , div [] [ text (String.fromInt (my_func model.count))]
-            -- , input [ placeholder "placeholder", value model.content, onInput Change] []
-            ]
+        case model.page of
+            NotFoundPage ->
+                div [] [ text "Not found page"]
+
+            HomePage ->
+                homeView model
+
+            UnsetPage ->
+                div [] [ text "UNSET PAGE"]
+        ]
     }
 

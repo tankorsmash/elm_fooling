@@ -47,16 +47,24 @@ subscriptions model =
 
 -- MODEL
 
+type alias Person =
+    { name : String
+    , age : Int
+    }
+
+type alias PageInfo =
+    { key : Nav.Key
+    , url : Url.Url
+    , route : Route
+    , page : Page
+    }
 
 type alias Model =
     { count : Int
     , content : String
     , time : Time.Posix
     , zone : Time.Zone
-    , key : Nav.Key
-    , url : Url.Url
-    , route : Route
-    , page : Page
+    , page_info : PageInfo
     }
 
 type Page
@@ -97,10 +105,9 @@ init : () -> Url.Url -> Nav.Key -> (Model, Cmd Msg)
 init _ url navKey =
     let
         parsedRoute = parseUrl url
-        model = Model 0
-            "ASD" (Time.millisToPosix 0) Time.utc navKey url
-            (parseUrl url)
-            UnsetPage
+        page_info = PageInfo navKey url (parseUrl url) UnsetPage
+        model = Model 0 "ASD" (Time.millisToPosix 0) Time.utc page_info
+
         existingCmds = Task.perform AdjustTimeZone Time.here
     in
         initCurrentPage (model, existingCmds)
@@ -110,7 +117,7 @@ initCurrentPage : (Model, Cmd Msg) -> (Model, Cmd Msg)
 initCurrentPage (model, existingCmds) =
     let
         ( currentPage ,mappedPageCmds ) =
-            case model.route of
+            case model.page_info.route of
                 Home ->
                     ( HomePage, Cmd.none )
 
@@ -119,8 +126,9 @@ initCurrentPage (model, existingCmds) =
 
                 UnsetRoute ->
                     ( NotFoundPage, Cmd.none )
+        page_info = model.page_info
     in
-    ( { model | page = currentPage }
+    ({model | page_info = {page_info | page = currentPage}}
     , Cmd.batch [ existingCmds, mappedPageCmds ]
     )
 
@@ -165,12 +173,14 @@ update2 msg model =
         LinkClicked urlRequest ->
             case urlRequest of
                 Browser.Internal url ->
-                    (model, Nav.pushUrl model.key (Url.toString url))
+                    (model, Nav.pushUrl model.page_info.key (Url.toString url))
                 Browser.External href ->
                     (model, Nav.load href)
 
         UrlChanged url ->
-            ( {model | url = url }
+            let page_info = model.page_info
+            in
+            ( {model | page_info = {page_info | url = url} }
             , Cmd.none
             )
 
@@ -217,7 +227,7 @@ view model =
     { title = "URL Interceptor"
     , body =
         [
-        case model.page of
+        case model.page_info.page of
             NotFoundPage ->
                 div [] [ text "Not found page"]
 

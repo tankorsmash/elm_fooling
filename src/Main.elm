@@ -9,7 +9,8 @@ module Main exposing (..)
 
 import Browser
 import Browser.Navigation as Nav
-import Html exposing (Html, button, div, text, input)
+-- import Html exposing (Html, button, div, text, input)
+import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
 import Url
@@ -148,6 +149,11 @@ view model =
     , body =
         [
             text "ASDASD"
+            , div [] [
+                b [] [text "THIS IS BOLD"]
+                , div [] [ text "This goes ", a [href "/home"] [text "home"] ]
+                , div [] [ text "Check out your ", a [href "/profile"] [text "profile"] ]
+            ]
             -- custom_input "text" "ppplllace" model.content Change
             -- custom_input "text" "ppplllace" (humanize model.time model.zone) Change
             -- , display_validation model.content

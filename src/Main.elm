@@ -9,9 +9,9 @@ module Main exposing (..)
 
 import Browser
 import Browser.Navigation as Nav
-import Html exposing (Html, button, div, text, input, b, a)
+import Html exposing (Html, button, span, div, text, input, b, a)
 -- import Html exposing (..)
-import Html.Attributes exposing (href)
+import Html.Attributes exposing (href, style)
 -- import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
 import Url
@@ -65,6 +65,7 @@ type alias Model =
     , time : Time.Posix
     , zone : Time.Zone
     , page_info : PageInfo
+    , person : Person
     }
 
 type Page
@@ -109,7 +110,8 @@ init _ url navKey =
     let
         parsedRoute = parseUrl url
         page_info = PageInfo navKey url (parseUrl url) UnsetPage
-        model = Model 0 "ASD" (Time.millisToPosix 0) Time.utc page_info
+        person = Person "Josh" 21
+        model = Model 0 "ASD" (Time.millisToPosix 0) Time.utc page_info person
 
         existingCmds = Task.perform AdjustTimeZone Time.here
     in
@@ -223,32 +225,31 @@ humanize time zone =
 
 -- VIEW
 
+navigation : Model -> Html Msg
+navigation model =
+    div [ style "margin-bottom" "15px"]
+    [ div []
+        [ text "This is a link: "
+        , a [href "/home" ] [ text "HOME" ]
+        ]
+    , div []
+        [ text "This is my profile: "
+        , a [href "/profile" ] [ text "PROFILE" ]
+        ]
+    ]
+
 homeView : Model -> Html Msg
 homeView model =
     div []
-        [ text "HOME PAGE IS HERE!!!"
-        , div []
-            [ text "This is a link: "
-            , a [href "/home" ] [ text "HOME" ]
-            ]
-        , div []
-            [ text "This is my profile: "
-            , a [href "/profile" ] [ text "PROFILE" ]
-            ]
+        [ navigation  model
+        , text "HOME PAGE IS HERE!!!"
         ]
 
 profileView : Model -> Html Msg
 profileView model =
     div []
-        [ text "Welcome to my Profile!!"
-        , div []
-            [ text "This is a link: "
-            , a [href "/home" ] [ text "HOME" ]
-            ]
-        , div []
-            [ text "This is my profile: "
-            , a [href "/profile" ] [ text "PROFILE" ]
-            ]
+        [ navigation model
+        , text "Welcome to my Profile!!"
         ]
 
 

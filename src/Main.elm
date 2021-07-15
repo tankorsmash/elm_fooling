@@ -17,6 +17,11 @@ import Html.Events exposing (onClick, onInput)
 import Url
 import Url.Parser exposing (Parser, (</>), int, map, oneOf, s, string, parse)
 
+import Http
+import Json.Decode exposing (Decoder, field, string, list)
+
+
+import List
 
 import Debug --for prints
 
@@ -41,15 +46,16 @@ main =
 
 
 
-subscriptions :  Model -> Sub Msg
+subscriptions : Model -> Sub Msg
 subscriptions model =
     Time.every 1000 Tick
 
 -- MODEL
 
-type alias Person =
-    { name : String
-    , age : Int
+type alias PostData =
+    { id : Int
+    , title : String
+    , author : String
     }
 
 type alias PageInfo =
@@ -65,7 +71,7 @@ type alias Model =
     , time : Time.Posix
     , zone : Time.Zone
     , page_info : PageInfo
-    , person : Person
+    , post_data : PostData
     }
 
 type Page
@@ -105,13 +111,30 @@ matchRoute =
         ]
 
 
+do_download_json : Cmd Msg
+do_download_json =
+    Http.get
+        { url = "http://localhost:5021/posts"
+        , expect = Http.expectJson GotJSON decode_json
+        }
+
+decode_json : Decoder (List String)
+-- decode_json : Decoder String
+decode_json =
+    -- Json.Decode.list ( "title" Json.Decode.string)
+    let
+        all_posts = list (field "title" Json.Decode.string)
+    in
+        -- \_ -> List.take 1 all_posts
+        all_posts
+
 init : () -> Url.Url -> Nav.Key -> (Model, Cmd Msg)
 init _ url navKey =
     let
         parsedRoute = parseUrl url
         page_info = PageInfo navKey url (parseUrl url) UnsetPage
-        person = Person "Josh" 21
-        model = Model 0 "ASD" (Time.millisToPosix 0) Time.utc page_info person
+        post_data = PostData -1 "No Name" "No Title"
+        model = Model 0 "ASD" (Time.millisToPosix 0) Time.utc page_info post_data
 
         existingCmds = Task.perform AdjustTimeZone Time.here
     in
@@ -156,6 +179,9 @@ type Msg
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
 
+    | DownloadJSON
+    | GotJSON (Result Http.Error (List String))
+
 
 update2 : Msg ->  Model -> (Model, Cmd Msg)
 update2 msg model =
@@ -173,7 +199,7 @@ update2 msg model =
             ({ model | content = newContent }, Cmd.none)
 
         Tick newTime ->
-            Debug.log "TICKING" ({ model | time = newTime }, Cmd.none)
+            ({ model | time = newTime }, Cmd.none)
 
         AdjustTimeZone newZone ->
             ({ model | zone = newZone }, Cmd.none)
@@ -193,6 +219,31 @@ update2 msg model =
                 ( { model | page_info = { page_info | url = url, route=newRoute } }
                 , Cmd.none
                 ) |> initCurrentPage
+
+        DownloadJSON ->
+            (model, do_download_json)
+
+        GotJSON result ->
+            case result of
+                Ok titles ->
+                    let
+                        post_data = Debug.log "ASDSD" model.post_data
+                        title = List.head titles
+
+                    in
+                        case title of
+                            Just title_ ->
+                                ({model | post_data = { post_data | title=title_ }}, Cmd.none)
+                            Nothing ->
+                                ({model | post_data = { post_data | title="Error" }}, Cmd.none)
+
+                Err error ->
+                    case error of
+                        Http.BadBody err_msg ->
+                            (Debug.log err_msg model, Cmd.none)
+                        _ ->
+                            (Debug.log ("Unknown error downloading") model, Cmd.none)
+
 
 
 my_func : Int -> Int
@@ -243,6 +294,10 @@ homeView model =
     div []
         [ navigation  model
         , text "HOME PAGE IS HERE!!!"
+        , div [] [
+            text <| "Post data -- Title: " ++ model.post_data.title ++ ", and Author: " ++ model.post_data.author
+            ]
+        , button [onClick DownloadJSON] [ text "Download JSON" ]
         ]
 
 profileView : Model -> Html Msg

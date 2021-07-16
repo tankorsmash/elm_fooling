@@ -19,7 +19,7 @@ import Url.Parser exposing (Parser, (</>), int, map, oneOf, s, string, parse)
 
 import Http
 import Json.Encode exposing (string)
-import Json.Decode exposing (Decoder, field, string, list)
+import Json.Decode exposing (Decoder, field, string, list, at)
 
 
 import List
@@ -51,8 +51,10 @@ type Msg
 
     | DownloadAllPosts
     | GotJSON (Result Http.Error (List String))
+    | GotPostById (Result Http.Error (PostData))
 
     | PostIDToDownloadChanged String
+    | DownloadPostById Int
 
 
 
@@ -154,6 +156,22 @@ matchRoute =
         -- , map User    (s "user" </> string)
         -- , map Comment (s "user" </> string </> s "comment" </> int)
         ]
+
+
+download_post_by_id : Int -> Cmd Msg
+download_post_by_id post_id =
+    Http.get
+        { url = root_json_server_url ++ "posts/" ++ String.fromInt post_id
+        , expect = Http.expectJson GotPostById decode_single_post
+        }
+
+decode_single_post : Decoder (PostData)
+decode_single_post =
+    Json.Decode.map3 PostData
+        (at ["id"] Json.Decode.int)
+        (at ["title"] Json.Decode.string)
+        (at ["author"] Json.Decode.string)
+
 
 
 download_all_posts : Cmd Msg
@@ -267,6 +285,24 @@ update2 msg model =
                             (Debug.log err_msg model, Cmd.none)
                         _ ->
                             (Debug.log ("Unknown error downloading") model, Cmd.none)
+        GotPostById result ->
+            case result of
+                Ok new_post_data ->
+                    let
+                        existing_post_data = Debug.log "Successfully received files!" model.post_data
+                    in
+                        ({model | post_data = new_post_data }, Cmd.none)
+
+                Err error ->
+                    case error of
+                        Http.BadBody err_msg ->
+                            (Debug.log err_msg model, Cmd.none)
+                        Http.BadStatus status ->
+                            (Debug.log ("Received a bad status: " ++ (String.fromInt status))
+                                 model
+                             , Cmd.none)
+                        _ ->
+                            (Debug.log ("Unknown error downloading") model, Cmd.none)
 
         PostIDToDownloadChanged strPostId ->
             let
@@ -277,6 +313,9 @@ update2 msg model =
                         ({ model | post_id_to_download = intPostId}, Cmd.none)
                     Nothing ->
                         Debug.log "couldnt convert to int" ( model, Cmd.none)
+
+        DownloadPostById post_id_to_download_ ->
+            (model, download_post_by_id post_id_to_download_)
 
 
 
@@ -354,7 +393,7 @@ homeView model =
                         |> InputGroup.view
                     ]
                 , Grid.col [Col.lg6]
-                    [ button_secondary DownloadAllPosts "Download Entire PostData" ]
+                    [ button_secondary (DownloadPostById model.post_id_to_download) "Download Entire PostData" ]
                 ]
             ]
         ]

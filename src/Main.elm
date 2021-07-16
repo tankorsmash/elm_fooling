@@ -115,12 +115,11 @@ download_all_posts : Cmd Msg
 download_all_posts =
     Http.get
         { url = "http://localhost:5021/posts"
-        , expect = Http.expectJson GotJSON decode_json
+        , expect = Http.expectJson GotJSON decode_post_titles
         }
 
-decode_json : Decoder (List String)
--- decode_json : Decoder String
-decode_json =
+decode_post_titles : Decoder (List String)
+decode_post_titles =
     list (field "title" Json.Decode.string)
 
 init : () -> Url.Url -> Nav.Key -> (Model, Cmd Msg)

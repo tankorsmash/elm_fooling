@@ -357,16 +357,16 @@ homeView model =
             text <| "Post data -- Title: " ++ model.post_data.title ++ ", and Author: " ++ model.post_data.author
             ]
         , div [] [
-            Button.button [
-                    Button.primary,
-                    Button.attrs [ onClick DownloadAllPosts ]
+            Button.button
+                [ Button.primary
+                , Button.attrs [ onClick DownloadAllPosts ]
                 ]
                 [ text "Download single title" ]
             ]
         , br [] []
         , div []
-            [ Grid.row [] [
-                Grid.col [Col.lg3]
+            [ Grid.row []
+                [ Grid.col [Col.lg3]
                     [ InputGroup.config
                         ( InputGroup.number
                             [ Input.placeholder "post_id"
@@ -380,7 +380,7 @@ homeView model =
                 , Grid.col [Col.lg6]
                     [ button_secondary (DownloadPostById model.post_id_to_download) "Download Entire PostData" ]
                 ]
-                ,case model.post_id_to_download_err_status of
+                , case model.post_id_to_download_err_status of
                     0 ->
                         empty_div
                     _ ->

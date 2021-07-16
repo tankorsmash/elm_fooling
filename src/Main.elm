@@ -48,12 +48,11 @@ import Json.Decode exposing (Decoder, at, field, list, string)
 import Json.Encode exposing (string)
 import List
 import PostData exposing (PostData)
+import Table exposing (view)
 import Task
 import Time
 import Url
 import Url.Parser exposing ((</>), Parser, int, map, oneOf, parse, s, string)
-
-import Table exposing (view)
 
 
 type Msg
@@ -387,8 +386,6 @@ humanize time zone =
 
 
 
-
-
 -- VIEW
 
 
@@ -453,7 +450,7 @@ homeView model =
                     [ text "right" ]
                 ]
             ]
-        , Table.view
+        , Table.view [ "header_1", "header_2" ] [ [ "value 1", "value 2" ] ]
         ]
 
 

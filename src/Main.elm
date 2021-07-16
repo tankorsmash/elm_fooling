@@ -323,26 +323,6 @@ update2 msg model =
             (model, download_post_by_id post_id_to_download_)
 
 
-
-my_func : Int -> Int
-my_func age = age * 100
-
-
--- custom_input : String -> String -> String -> (String -> msg) -> Html msg
--- custom_input type__ placeholder_ value_ toMsg =
---     input [ type_ type__, placeholder placeholder_, value value_, onInput toMsg ] []
-
-
--- display_validation : String -> Html msg
--- display_validation to_validate =
---     if to_validate == "valid" then
---         div [style "color" "green"] [text "MFer is valid" ]
---     else if True then
---         div [] [text "true"]
---     else
---         div [] [text ("try again" ++ (Debug.log ("to_validate: "++to_validate) ""))]
---
-
 humanize : Time.Posix -> Time.Zone -> String
 humanize time zone =
     let

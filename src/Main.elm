@@ -9,7 +9,7 @@ module Main exposing (..)
 
 import Browser
 import Browser.Navigation as Nav
-import Html exposing (Html, button, span, div, text, input, b, a, h1, h2, h3, h4)
+import Html exposing (Html, button, span, div, text, input, b, a, h1, h2, h3, h4, br)
 -- import Html exposing (..)
 import Html.Attributes exposing (href, style, property, attribute)
 -- import Html.Attributes exposing (..)
@@ -31,7 +31,12 @@ import Time
 
 import Bootstrap.CDN as CDN
 import Bootstrap.Grid as Grid
+import Bootstrap.Grid.Row as Row
+import Bootstrap.Grid.Col as Col
 import Bootstrap.Button as Button
+import Bootstrap.Card as Card
+import Bootstrap.Form.Input as Input
+import Bootstrap.Form.InputGroup as InputGroup
 
 
 -- MAIN
@@ -42,12 +47,16 @@ root_json_server_url = "http://localhost:5021/"
 add_class cls =
     property "className" (Json.Encode.string cls)
 
-button_primary on_click text_ =
+bootstrap_button type_ on_click text_ =
     Button.button [
-                Button.primary,
-                Button.attrs [ onClick on_click ]
-                ]
-                [ text text_ ]
+        type_,
+        Button.attrs [ onClick on_click]
+    ] [ text text_]
+
+button_primary on_click text_ =
+    bootstrap_button Button.primary on_click text_
+button_secondary on_click text_ =
+    bootstrap_button Button.secondary on_click text_
 
 
 main =
@@ -90,6 +99,7 @@ type alias Model =
     , zone : Time.Zone
     , page_info : PageInfo
     , post_data : PostData
+    , post_id_to_download : Int
     }
 
 type Page
@@ -146,7 +156,7 @@ init _ url navKey =
         parsedRoute = parseUrl url
         page_info = PageInfo navKey url (parseUrl url) UnsetPage
         post_data = PostData -1 "No Name" "No Title"
-        model = Model 0 "ASD" (Time.millisToPosix 0) Time.utc page_info post_data
+        model = Model 0 "ASD" (Time.millisToPosix 0) Time.utc page_info post_data -1
 
         existingCmds = Task.perform AdjustTimeZone Time.here
     in
@@ -310,17 +320,25 @@ homeView model =
             text <| "Post data -- Title: " ++ model.post_data.title ++ ", and Author: " ++ model.post_data.author
             ]
         , div [] [
-            button [onClick DownloadAllPosts] [ text "Download single title" ]
-            ]
-        , div [] [
             Button.button [
-                Button.primary,
-                Button.attrs [ onClick DownloadAllPosts ]
+                    Button.primary,
+                    Button.attrs [ onClick DownloadAllPosts ]
                 ]
                 [ text "Download single title" ]
             ]
-        , div [] [
-            button_primary DownloadAllPosts "Download single title"
+        , br [] []
+        , div []
+            [ Grid.row [] [
+                Grid.col [Col.lg6]
+                    [ InputGroup.config
+                        ( InputGroup.text [Input.placeholder "post_id"])
+                        |> InputGroup.predecessors
+                            [ InputGroup.span [] [ text "ID" ] ]
+                        |> InputGroup.view
+                    ]
+                , Grid.col [Col.lg6]
+                    [ button_secondary DownloadAllPosts "Download Entire PostData" ]
+                ]
             ]
         ]
 

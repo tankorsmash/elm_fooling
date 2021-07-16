@@ -111,8 +111,8 @@ matchRoute =
         ]
 
 
-do_download_json : Cmd Msg
-do_download_json =
+download_all_posts : Cmd Msg
+download_all_posts =
     Http.get
         { url = "http://localhost:5021/posts"
         , expect = Http.expectJson GotJSON decode_json
@@ -174,7 +174,7 @@ type Msg
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
 
-    | DownloadJSON
+    | DownloadAllPosts
     | GotJSON (Result Http.Error (List String))
 
 
@@ -215,8 +215,8 @@ update2 msg model =
                 , Cmd.none
                 ) |> initCurrentPage
 
-        DownloadJSON ->
-            (model, do_download_json)
+        DownloadAllPosts ->
+            (model, download_all_posts)
 
         GotJSON result ->
             case result of
@@ -291,7 +291,7 @@ homeView model =
         , div [] [
             text <| "Post data -- Title: " ++ model.post_data.title ++ ", and Author: " ++ model.post_data.author
             ]
-        , button [onClick DownloadJSON] [ text "Download JSON" ]
+        , button [onClick DownloadAllPosts] [ text "Download JSON" ]
         ]
 
 profileView : Model -> Html Msg

@@ -77,6 +77,8 @@ button_primary on_click text_ =
 button_secondary on_click text_ =
     bootstrap_button Button.secondary on_click text_
 
+empty_div : Html msg
+empty_div = div [] []
 
 main =
     -- Browser.element {
@@ -119,6 +121,8 @@ type alias Model =
     , page_info : PageInfo
     , post_data : PostData
     , post_id_to_download : Int
+    , post_id_to_download_err_status : Int
+
     }
 
 type Page
@@ -191,7 +195,7 @@ init _ url navKey =
         parsedRoute = parseUrl url
         page_info = PageInfo navKey url (parseUrl url) UnsetPage
         post_data = PostData -1 "No Name" "No Title"
-        model = Model 0 "ASD" (Time.millisToPosix 0) Time.utc page_info post_data -1
+        model = Model 0 "ASD" (Time.millisToPosix 0) Time.utc page_info post_data -1 0
 
         existingCmds = Task.perform AdjustTimeZone Time.here
     in
@@ -291,15 +295,16 @@ update2 msg model =
                     let
                         existing_post_data = Debug.log "Successfully received files!" model.post_data
                     in
-                        ({model | post_data = new_post_data }, Cmd.none)
+                        ({model | post_data = new_post_data, post_id_to_download_err_status = 0 }, Cmd.none)
 
                 Err error ->
                     case error of
                         Http.BadBody err_msg ->
                             (Debug.log err_msg model, Cmd.none)
                         Http.BadStatus status ->
-                            (Debug.log ("Received a bad status: " ++ (String.fromInt status))
-                                 model
+                            (Debug.log
+                                ("Received a bad status: " ++ (String.fromInt status))
+                                { model | post_id_to_download_err_status = status }
                              , Cmd.none)
                         _ ->
                             (Debug.log ("Unknown error downloading") model, Cmd.none)
@@ -395,6 +400,11 @@ homeView model =
                 , Grid.col [Col.lg6]
                     [ button_secondary (DownloadPostById model.post_id_to_download) "Download Entire PostData" ]
                 ]
+                ,case model.post_id_to_download_err_status of
+                    0 ->
+                        empty_div
+                    _ ->
+                        div [style "color" "red" ] [ text <| "ERROR STATUS: " ++ (String.fromInt model.post_id_to_download_err_status)]
             ]
         ]
 

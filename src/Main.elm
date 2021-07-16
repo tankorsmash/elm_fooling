@@ -9,15 +9,16 @@ module Main exposing (..)
 
 import Browser
 import Browser.Navigation as Nav
-import Html exposing (Html, button, span, div, text, input, b, a)
+import Html exposing (Html, button, span, div, text, input, b, a, h1, h2, h3, h4)
 -- import Html exposing (..)
-import Html.Attributes exposing (href, style)
+import Html.Attributes exposing (href, style, property, attribute)
 -- import Html.Attributes exposing (..)
 import Html.Events exposing (onClick, onInput)
 import Url
 import Url.Parser exposing (Parser, (</>), int, map, oneOf, s, string, parse)
 
 import Http
+import Json.Encode exposing (string)
 import Json.Decode exposing (Decoder, field, string, list)
 
 
@@ -28,8 +29,25 @@ import Debug --for prints
 import Task
 import Time
 
+import Bootstrap.CDN as CDN
+import Bootstrap.Grid as Grid
+import Bootstrap.Button as Button
+
 
 -- MAIN
+
+root_json_server_url = "http://localhost:5021/"
+
+
+add_class cls =
+    property "className" (Json.Encode.string cls)
+
+button_primary on_click text_ =
+    Button.button [
+                Button.primary,
+                Button.attrs [ onClick on_click ]
+                ]
+                [ text text_ ]
 
 
 main =
@@ -114,7 +132,7 @@ matchRoute =
 download_all_posts : Cmd Msg
 download_all_posts =
     Http.get
-        { url = "http://localhost:5021/posts"
+        { url = root_json_server_url ++ "posts"
         , expect = Http.expectJson GotJSON decode_post_titles
         }
 
@@ -284,13 +302,26 @@ navigation model =
 
 homeView : Model -> Html Msg
 homeView model =
-    div []
+    div [ add_class "container" ]
         [ navigation  model
-        , text "HOME PAGE IS HERE!!!"
+        , CDN.stylesheet
+        , h3 [] [text "HOME PAGE IS HERE!!!"]
         , div [] [
             text <| "Post data -- Title: " ++ model.post_data.title ++ ", and Author: " ++ model.post_data.author
             ]
-        , button [onClick DownloadAllPosts] [ text "Download JSON" ]
+        , div [] [
+            button [onClick DownloadAllPosts] [ text "Download single title" ]
+            ]
+        , div [] [
+            Button.button [
+                Button.primary,
+                Button.attrs [ onClick DownloadAllPosts ]
+                ]
+                [ text "Download single title" ]
+            ]
+        , div [] [
+            button_primary DownloadAllPosts "Download single title"
+            ]
         ]
 
 profileView : Model -> Html Msg

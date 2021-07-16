@@ -20,7 +20,27 @@ import Bootstrap.Grid.Row as Row
 import Browser
 import Browser.Navigation as Nav
 import Debug
-import Html exposing (Html, a, b, br, button, div, h1, h2, h3, h4, input, span, text)
+import Html
+    exposing
+        ( Html
+        , a
+        , b
+        , br
+        , button
+        , div
+        , h1
+        , h2
+        , h3
+        , h4
+        , input
+        , span
+        , table
+        , td
+        , text
+        , th
+        , thead
+        , tr
+        )
 import Html.Attributes exposing (attribute, href, property, style)
 import Html.Events exposing (onClick, onInput)
 import Http
@@ -32,6 +52,8 @@ import Task
 import Time
 import Url
 import Url.Parser exposing ((</>), Parser, int, map, oneOf, parse, s, string)
+
+import Table exposing (view)
 
 
 type Msg
@@ -365,6 +387,8 @@ humanize time zone =
 
 
 
+
+
 -- VIEW
 
 
@@ -422,7 +446,14 @@ homeView model =
 
                 _ ->
                     div [ style "color" "red" ] [ text <| "ERROR STATUS: " ++ String.fromInt model.post_id_to_download_err_status ]
+            , Grid.row []
+                [ Grid.col [ Col.sm3 ]
+                    [ text "left" ]
+                , Grid.col [ Col.sm9 ]
+                    [ text "right" ]
+                ]
             ]
+        , Table.view
         ]
 
 

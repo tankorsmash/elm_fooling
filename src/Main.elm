@@ -27,6 +27,7 @@ import Http
 import Json.Decode exposing (Decoder, at, field, list, string)
 import Json.Encode exposing (string)
 import List
+import PostData exposing (PostData)
 import Task
 import Time
 import Url
@@ -106,13 +107,6 @@ subscriptions model =
 -- MODEL
 
 
-type alias PostData =
-    { id : Int
-    , title : String
-    , author : String
-    }
-
-
 type alias PageInfo =
     { key : Nav.Key
     , url : Url.Url
@@ -178,16 +172,8 @@ download_post_by_id : Int -> Cmd Msg
 download_post_by_id post_id =
     Http.get
         { url = root_json_server_url ++ "posts/" ++ String.fromInt post_id
-        , expect = Http.expectJson GotPostById decode_single_post
+        , expect = Http.expectJson GotPostById PostData.decode_single
         }
-
-
-decode_single_post : Decoder PostData
-decode_single_post =
-    Json.Decode.map3 PostData
-        (at [ "id" ] Json.Decode.int)
-        (at [ "title" ] Json.Decode.string)
-        (at [ "author" ] Json.Decode.string)
 
 
 download_all_posts : Cmd Msg

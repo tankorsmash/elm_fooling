@@ -39,6 +39,23 @@ import Bootstrap.Form.Input as Input
 import Bootstrap.Form.InputGroup as InputGroup
 
 
+type Msg
+    = Increment
+    | Decrement
+    | Poop
+    | Change String
+    | Tick Time.Posix
+    | AdjustTimeZone Time.Zone
+    | LinkClicked Browser.UrlRequest
+    | UrlChanged Url.Url
+
+    | DownloadAllPosts
+    | GotJSON (Result Http.Error (List String))
+
+    | PostIDToDownloadChanged String
+
+
+
 -- MAIN
 
 root_json_server_url = "http://localhost:5021/"
@@ -191,20 +208,6 @@ initCurrentPage (model, existingCmds) =
 -- UPDATE
 
 
-type Msg
-    = Increment
-    | Decrement
-    | Poop
-    | Change String
-    | Tick Time.Posix
-    | AdjustTimeZone Time.Zone
-    | LinkClicked Browser.UrlRequest
-    | UrlChanged Url.Url
-
-    | DownloadAllPosts
-    | GotJSON (Result Http.Error (List String))
-
-
 update2 : Msg ->  Model -> (Model, Cmd Msg)
 update2 msg model =
     case msg of
@@ -264,6 +267,16 @@ update2 msg model =
                             (Debug.log err_msg model, Cmd.none)
                         _ ->
                             (Debug.log ("Unknown error downloading") model, Cmd.none)
+
+        PostIDToDownloadChanged strPostId ->
+            let
+                maybePostId = String.toInt strPostId
+            in
+                case maybePostId of
+                    Just intPostId ->
+                        ({ model | post_id_to_download = intPostId}, Cmd.none)
+                    Nothing ->
+                        Debug.log "couldnt convert to int" ( model, Cmd.none)
 
 
 
@@ -329,11 +342,15 @@ homeView model =
         , br [] []
         , div []
             [ Grid.row [] [
-                Grid.col [Col.lg6]
+                Grid.col [Col.lg3]
                     [ InputGroup.config
-                        ( InputGroup.text [Input.placeholder "post_id"])
+                        ( InputGroup.number
+                            [ Input.placeholder "post_id"
+                            , Input.value (String.fromInt model.post_id_to_download)
+                            , Input.onInput PostIDToDownloadChanged
+                            ])
                         |> InputGroup.predecessors
-                            [ InputGroup.span [] [ text "ID" ] ]
+                            [ InputGroup.span [] [ text "Post ID" ] ]
                         |> InputGroup.view
                     ]
                 , Grid.col [Col.lg6]

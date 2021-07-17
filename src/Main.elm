@@ -48,7 +48,7 @@ import Json.Decode exposing (Decoder, at, field, list, string)
 import Json.Encode exposing (string)
 import List
 import PostData exposing (PostData)
-import Table exposing (view)
+import Table exposing (ColumnDef, ColumnType, TableDefinition, view)
 import Task
 import Time
 import Url
@@ -403,6 +403,28 @@ navigation model =
         ]
 
 
+my_column_defs : List (ColumnDef obj)
+my_column_defs =
+    [ { column_id = "title"
+      , column_lookup = \row -> row.title
+      , idx = 0
+      , pretty_title = "The Title"
+
+      -- , column_lookup = .title
+      }
+    ]
+
+my_row_datas : List (PostData)
+my_row_datas = [
+    PostData 0 "AAAA" "SSSS"
+    ]
+
+
+my_table_definition : TableDefinition obj
+my_table_definition =
+    { columns = my_column_defs }
+
+
 homeView : Model -> Html Msg
 homeView model =
     div [ add_class "container" ]
@@ -450,8 +472,17 @@ homeView model =
                     [ text "right" ]
                 ]
             ]
-        , Table.view [ "header_1", "header_2" ] [ [ "value 1", "value 2" ] ]
+        , Table.view my_table_definition my_row_datas
         ]
+
+
+
+-- turns ['a', 'b', 'c'] -> [(0, 'a'), (1, 'b'), (2, 'c')]
+
+
+join_with_numbers : List a -> List ( Int, a )
+join_with_numbers to_join =
+    List.map2 Tuple.pair (List.range 0 (List.length to_join)) to_join
 
 
 profileView : Model -> Html Msg

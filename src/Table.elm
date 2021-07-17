@@ -57,7 +57,7 @@ build_table_headers : List (ColumnDef obj) -> Html msg
 build_table_headers column_datas =
     let
         col_names =
-            List.map .column_id column_datas
+            List.map .pretty_title column_datas
 
         table_headers =
             List.map build_single_table_header col_names
@@ -82,34 +82,14 @@ build_table_row row_data =
 --     obj_ col_def.column_id
 
 
-do_lookups : List (a -> String) -> a -> List String
-do_lookups lookups row =
-    []
 
-
-view : TableDefinition obj -> List obj -> Html msg
+view : TableDefinition obj -> List (List String) -> Html msg
 view table_def rows =
     let
-        columns =
-            table_def.columns
+        columns = table_def.columns
 
-        -- single_col = case (List.head columns) of
-        --     Nothing -> { column_loop = "" }
-        --     Just col -> col
-        lookups =
-            List.map .column_lookup columns
-
-        -- row_strings =
-        -- List.map (List.take 1 columns).column_lookup rows
-        -- List.map single_col.column_lookup rows
-        --HACK to just get a first version working
         children =
             [ build_table_headers columns ]
-                -- for each row of data, turn it into a <tr/>
-                ++ List.map build_table_row
-                    -- this returns a list of strings for each passed-in row
-                    --  for each column in the row
-                    -- (List.map (\row -> List.map lookups row) rows )
-                    (List.map (do_lookups lookups) rows)
+                ++ List.map build_table_row rows
     in
     table [] children

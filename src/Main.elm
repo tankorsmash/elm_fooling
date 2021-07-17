@@ -414,9 +414,12 @@ my_column_defs =
       }
     ]
 
-my_row_datas : List (PostData)
-my_row_datas = [
-    PostData 0 "AAAA" "SSSS"
+
+my_row_datas : List PostData
+my_row_datas =
+    [ PostData 123 "The End Times" "Matthew"
+    , PostData 51 "Everything Ends" "Joshua"
+    , PostData 3 "The Pale Horse" "Olivia"
     ]
 
 
@@ -425,8 +428,27 @@ my_table_definition =
     { columns = my_column_defs }
 
 
+do_lookups : List (a -> String) -> a -> List String
+do_lookups lookups row =
+    []
+
+
 homeView : Model -> Html Msg
 homeView model =
+    let
+        columns =
+            my_table_definition.columns
+
+        -- single_col = case (List.head columns) of
+        --     Nothing -> { column_loop = "" }
+        --     Just col -> col
+        lookups =
+            List.map .column_lookup columns
+
+        table_rows : List (List String)
+        table_rows =
+            List.map (do_lookups lookups) my_row_datas
+    in
     div [ add_class "container" ]
         [ navigation model
         , CDN.stylesheet
@@ -472,7 +494,7 @@ homeView model =
                     [ text "right" ]
                 ]
             ]
-        , Table.view my_table_definition my_row_datas
+        , Table.view my_table_definition table_rows
         ]
 
 

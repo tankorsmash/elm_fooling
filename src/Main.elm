@@ -429,6 +429,10 @@ my_column_defs =
       , idx = 1
       , pretty_title = "Author"
       }
+    , { column_id = "post_id"
+      , idx = 2
+      , pretty_title = "ID"
+      }
     ]
 
 
@@ -436,14 +440,13 @@ my_column_lookups : List (ColumnLookup PostData)
 my_column_lookups =
     let
         title =
-            { column_id = "title"
-            , lookup_func = .title
-            }
-
+            ColumnLookup "title" .title
+        id_ =
+            ColumnLookup "post_id" (\o -> String.fromInt o.id)
         author =
             ColumnLookup "author" .author
     in
-    [ title, author ]
+    [ title, author, id_ ]
 
 
 my_row_datas : List PostData

@@ -22,6 +22,8 @@ import Html
         , tr
         )
 
+import Html.Attributes exposing (style)
+
 
 type ColumnType
     = ColString
@@ -95,4 +97,8 @@ view table_def rows =
             [ build_table_headers columns ]
                 ++ List.map build_table_row rows
     in
-    table [] children
+    div []
+    [
+        h4 [style "color" "gray" ]  [ text "The Table Follows"]
+        ,table [] children
+        ]

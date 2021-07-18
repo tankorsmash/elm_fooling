@@ -424,7 +424,7 @@ my_column_lookups =
             column_id = "title"
           , lookup_func = .title
           }
-        author = ColumnLookup "author" .title
+        author = ColumnLookup "author" .author
     in
     [ title, author ]
 
@@ -511,6 +511,7 @@ homeView model =
                     [ text "right" ]
                 ]
             ]
+        , br [] []
         , Table.view my_table_definition table_rows
         ]
 

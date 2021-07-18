@@ -34,12 +34,12 @@ import Html
         , h3
         , h4
         , input
+        , p
         , span
         , table
         , td
         , text
         , th
-        , p
         , thead
         , tr
         )
@@ -149,7 +149,6 @@ type alias Model =
     , post_data : PostData
     , post_id_to_download : Int
     , post_id_to_download_err_status : Int
-
     , alert_modal_open : Modal.Visibility
     }
 
@@ -376,10 +375,10 @@ update2 msg model =
             ( model, download_post_by_id post_id_to_download_ )
 
         AlertModalShow ->
-            ( {model | alert_modal_open = Modal.shown}, Cmd.none)
+            ( { model | alert_modal_open = Modal.shown }, Cmd.none )
 
         AlertModalHide ->
-            ( {model | alert_modal_open = Modal.hidden}, Cmd.none)
+            ( { model | alert_modal_open = Modal.hidden }, Cmd.none )
 
 
 humanize : Time.Posix -> Time.Zone -> String
@@ -421,7 +420,6 @@ my_column_defs =
       , idx = 0
       , pretty_title = "The Title"
       }
-
     , { column_id = "author"
       , idx = 1
       , pretty_title = "Author"
@@ -432,11 +430,13 @@ my_column_defs =
 my_column_lookups : List (ColumnLookup PostData)
 my_column_lookups =
     let
-        title = {
-            column_id = "title"
-          , lookup_func = .title
-          }
-        author = ColumnLookup "author" .author
+        title =
+            { column_id = "title"
+            , lookup_func = .title
+            }
+
+        author =
+            ColumnLookup "author" .author
     in
     [ title, author ]
 
@@ -454,7 +454,10 @@ my_table_definition =
     { columns = my_column_defs }
 
 
+
 --call a list of functions on an row
+
+
 do_lookups : List (obj -> String) -> obj -> List String
 do_lookups lookups row =
     List.foldl (\func acc -> acc ++ [ func row ]) [] lookups

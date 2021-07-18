@@ -147,6 +147,7 @@ type alias Model =
     , zone : Time.Zone
     , page_info : PageInfo
     , post_data : PostData
+    , post_datas : List PostData
     , post_id_to_download : Int
     , post_id_to_download_err_status : Int
     , alert_modal_open : Modal.Visibility
@@ -229,7 +230,18 @@ init _ url navKey =
             PostData -1 "No Name" "No Title"
 
         model =
-            Model 0 "ASD" (Time.millisToPosix 0) Time.utc page_info post_data -1 0 Modal.hidden ""
+            { count = 0
+            , content = "ASD"
+            , time = Time.millisToPosix 0
+            , zone = Time.utc
+            , page_info = page_info
+            , post_data = post_data
+            , post_datas = []
+            , post_id_to_download = -1
+            , post_id_to_download_err_status = 0
+            , alert_modal_open = Modal.hidden
+            , alert_modal_text = ""
+            }
 
         existingCmds =
             Task.perform AdjustTimeZone Time.here

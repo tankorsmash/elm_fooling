@@ -71,7 +71,7 @@ type Msg
     | GotPostById (Result Http.Error PostData)
     | PostIDToDownloadChanged String
     | DownloadPostById Int
-    | AlertModalShow
+    | AlertModalShow String
     | AlertModalHide
 
 
@@ -150,6 +150,7 @@ type alias Model =
     , post_id_to_download : Int
     , post_id_to_download_err_status : Int
     , alert_modal_open : Modal.Visibility
+    , alert_modal_text : String
     }
 
 
@@ -228,7 +229,7 @@ init _ url navKey =
             PostData -1 "No Name" "No Title"
 
         model =
-            Model 0 "ASD" (Time.millisToPosix 0) Time.utc page_info post_data -1 0 Modal.hidden
+            Model 0 "ASD" (Time.millisToPosix 0) Time.utc page_info post_data -1 0 Modal.hidden ""
 
         existingCmds =
             Task.perform AdjustTimeZone Time.here
@@ -374,8 +375,8 @@ update2 msg model =
         DownloadPostById post_id_to_download_ ->
             ( model, download_post_by_id post_id_to_download_ )
 
-        AlertModalShow ->
-            ( { model | alert_modal_open = Modal.shown }, Cmd.none )
+        AlertModalShow alert_text ->
+            ( { model | alert_modal_open = Modal.shown, alert_modal_text = alert_text }, Cmd.none )
 
         AlertModalHide ->
             ( { model | alert_modal_open = Modal.hidden }, Cmd.none )
@@ -532,14 +533,14 @@ homeView model =
         , div []
             [ Button.button
                 [ Button.primary
-                , Button.attrs [ onClick AlertModalShow ]
+                , Button.attrs [ onClick <| AlertModalShow "This is text" ]
                 ]
                 [ text "Show Modal" ]
             , Modal.config AlertModalHide
                 |> Modal.small
                 |> Modal.hideOnBackdropClick True
                 |> Modal.h3 [] [ text "Modal Header" ]
-                |> Modal.body [] [ p [] [ text "This is a modal" ] ]
+                |> Modal.body [] [ p [] [ text model.alert_modal_text ] ]
                 |> Modal.footer []
                     [ Button.button
                         [ Button.outlinePrimary

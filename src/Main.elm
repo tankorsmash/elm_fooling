@@ -406,12 +406,15 @@ navigation model =
 my_column_defs : List (ColumnDef obj)
 my_column_defs =
     [ { column_id = "title"
-      , column_lookup = \row -> row.title
+      , column_lookup = .title
       , idx = 0
       , pretty_title = "The Title"
-
-      -- , column_lookup = .title
       }
+    -- , { column_id = "author"
+    --   , column_lookup = .author
+    --   , idx = 1
+    --   , pretty_title = "Author"
+    --   }
     ]
 
 
@@ -428,9 +431,9 @@ my_table_definition =
     { columns = my_column_defs }
 
 
-do_lookups : List (a -> String) -> a -> List String
+do_lookups : List (PostData -> String) -> PostData -> List String
 do_lookups lookups row =
-    []
+    List.foldl (\func acc -> acc ++ [ func row ]) [] lookups
 
 
 homeView : Model -> Html Msg

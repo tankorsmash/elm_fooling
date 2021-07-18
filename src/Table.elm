@@ -1,4 +1,4 @@
-module Table exposing (ColumnDef, ColumnType, TableDefinition, view)
+module Table exposing (ColumnLookup, ColumnDef, ColumnType, TableDefinition, view)
 
 import Html
     exposing
@@ -28,12 +28,15 @@ type ColumnType
     | ColInt
 
 
-type alias ColumnDef a =
+type alias ColumnDef =
     { column_id : String
-    -- , column_lookup : obj -> String
-    , column_lookup : { a | title : String } -> String
     , idx : Int
     , pretty_title : String
+    }
+
+type alias ColumnLookup obj =
+    { column_id : String
+    , lookup_func : obj -> String
     }
 
 
@@ -41,8 +44,8 @@ type alias ColumnDef a =
 --obj is the type of things in the rows we're holding in the table
 
 
-type alias TableDefinition obj =
-    { columns : List (ColumnDef obj) }
+type alias TableDefinition =
+    { columns : List (ColumnDef) }
 
 
 build_single_table_header : String -> Html msg
@@ -53,7 +56,7 @@ build_single_table_header col_name =
         ]
 
 
-build_table_headers : List (ColumnDef obj) -> Html msg
+build_table_headers : List (ColumnDef) -> Html msg
 build_table_headers column_datas =
     let
         col_names =
@@ -76,14 +79,14 @@ build_table_row row_data =
 
 
 
--- column_getter : ColumnDef obj -> obj -> String
+-- column_getter : ColumnDef -> obj -> String
 -- column_getter col_def obj_ =
 --     -- TODO: look up the col_def.column_id in object
 --     obj_ col_def.column_id
 
 
 
-view : TableDefinition obj -> List (List String) -> Html msg
+view : TableDefinition -> List (List String) -> Html msg
 view table_def rows =
     let
         columns = table_def.columns

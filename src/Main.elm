@@ -48,7 +48,7 @@ import Json.Decode exposing (Decoder, at, field, list, string)
 import Json.Encode exposing (string)
 import List
 import PostData exposing (PostData)
-import Table exposing (ColumnDef, ColumnType, TableDefinition, view)
+import Table exposing (ColumnDef, ColumnLookup, ColumnType, TableDefinition, view)
 import Task
 import Time
 import Url
@@ -403,19 +403,30 @@ navigation model =
         ]
 
 
-my_column_defs : List (ColumnDef obj)
+my_column_defs : List ColumnDef
 my_column_defs =
     [ { column_id = "title"
-      , column_lookup = .title
       , idx = 0
       , pretty_title = "The Title"
       }
-    -- , { column_id = "author"
-    --   , column_lookup = .author
-    --   , idx = 1
-    --   , pretty_title = "Author"
-    --   }
+
+    , { column_id = "author"
+      , idx = 1
+      , pretty_title = "Author"
+      }
     ]
+
+
+my_column_lookups : List (ColumnLookup PostData)
+my_column_lookups =
+    let
+        title = {
+            column_id = "title"
+          , lookup_func = .title
+          }
+        author = ColumnLookup "author" .title
+    in
+    [ title, author ]
 
 
 my_row_datas : List PostData
@@ -426,7 +437,7 @@ my_row_datas =
     ]
 
 
-my_table_definition : TableDefinition obj
+my_table_definition : TableDefinition
 my_table_definition =
     { columns = my_column_defs }
 
@@ -434,6 +445,11 @@ my_table_definition =
 do_lookups : List (PostData -> String) -> PostData -> List String
 do_lookups lookups row =
     List.foldl (\func acc -> acc ++ [ func row ]) [] lookups
+
+
+custom_lookup : ColumnLookup obj -> (obj -> String)
+custom_lookup cl =
+    cl.lookup_func
 
 
 homeView : Model -> Html Msg
@@ -446,7 +462,9 @@ homeView model =
         --     Nothing -> { column_loop = "" }
         --     Just col -> col
         lookups =
-            List.map .column_lookup columns
+            -- List.map .column_lookup columns
+            -- List.map .column_lookup my_column_lookups
+            List.map custom_lookup my_column_lookups
 
         table_rows : List (List String)
         table_rows =

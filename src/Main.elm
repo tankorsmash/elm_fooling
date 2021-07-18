@@ -17,6 +17,7 @@ import Bootstrap.Form.InputGroup as InputGroup
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
+import Bootstrap.Modal as Modal
 import Browser
 import Browser.Navigation as Nav
 import Debug
@@ -38,6 +39,7 @@ import Html
         , td
         , text
         , th
+        , p
         , thead
         , tr
         )
@@ -69,6 +71,8 @@ type Msg
     | GotPostById (Result Http.Error PostData)
     | PostIDToDownloadChanged String
     | DownloadPostById Int
+    | AlertModalShow
+    | AlertModalHide
 
 
 
@@ -145,6 +149,8 @@ type alias Model =
     , post_data : PostData
     , post_id_to_download : Int
     , post_id_to_download_err_status : Int
+
+    , alert_modal_open : Modal.Visibility
     }
 
 
@@ -223,7 +229,7 @@ init _ url navKey =
             PostData -1 "No Name" "No Title"
 
         model =
-            Model 0 "ASD" (Time.millisToPosix 0) Time.utc page_info post_data -1 0
+            Model 0 "ASD" (Time.millisToPosix 0) Time.utc page_info post_data -1 0 Modal.hidden
 
         existingCmds =
             Task.perform AdjustTimeZone Time.here
@@ -369,6 +375,12 @@ update2 msg model =
         DownloadPostById post_id_to_download_ ->
             ( model, download_post_by_id post_id_to_download_ )
 
+        AlertModalShow ->
+            ( {model | alert_modal_open = Modal.shown}, Cmd.none)
+
+        AlertModalHide ->
+            ( {model | alert_modal_open = Modal.hidden}, Cmd.none)
+
 
 humanize : Time.Posix -> Time.Zone -> String
 humanize time zone =
@@ -513,6 +525,27 @@ homeView model =
             ]
         , br [] []
         , Table.view my_table_definition table_rows
+        , br [] []
+        , div []
+            [ Button.button
+                [ Button.primary
+                , Button.attrs [ onClick AlertModalShow ]
+                ]
+                [ text "Show Modal" ]
+            , Modal.config AlertModalHide
+                |> Modal.small
+                |> Modal.hideOnBackdropClick True
+                |> Modal.h3 [] [ text "Modal Header" ]
+                |> Modal.body [] [ p [] [ text "This is a modal" ] ]
+                |> Modal.footer []
+                    [ Button.button
+                        [ Button.outlinePrimary
+                        , Button.attrs [ onClick AlertModalHide ]
+                        ]
+                        [ text "Close" ]
+                    ]
+                |> Modal.view model.alert_modal_open
+            ]
         ]
 
 

@@ -1,4 +1,4 @@
-module Table exposing (ColumnLookup, ColumnDef, ColumnType, TableDefinition, view)
+module Table exposing (ColumnDef, ColumnLookup, ColumnType, TableDefinition, view)
 
 import Html
     exposing
@@ -21,7 +21,6 @@ import Html
         , thead
         , tr
         )
-
 import Html.Attributes exposing (style)
 
 
@@ -36,6 +35,7 @@ type alias ColumnDef =
     , pretty_title : String
     }
 
+
 type alias ColumnLookup obj =
     { column_id : String
     , lookup_func : obj -> String
@@ -47,7 +47,7 @@ type alias ColumnLookup obj =
 
 
 type alias TableDefinition =
-    { columns : List (ColumnDef) }
+    { columns : List ColumnDef }
 
 
 build_single_table_header : String -> Html msg
@@ -58,7 +58,7 @@ build_single_table_header col_name =
         ]
 
 
-build_table_headers : List (ColumnDef) -> Html msg
+build_table_headers : List ColumnDef -> Html msg
 build_table_headers column_datas =
     let
         col_names =
@@ -80,25 +80,17 @@ build_table_row row_data =
     tr [] <| List.map build_cell row_data
 
 
-
--- column_getter : ColumnDef -> obj -> String
--- column_getter col_def obj_ =
---     -- TODO: look up the col_def.column_id in object
---     obj_ col_def.column_id
-
-
-
 view : TableDefinition -> List (List String) -> Html msg
 view table_def rows =
     let
-        columns = table_def.columns
+        columns =
+            table_def.columns
 
         children =
             [ build_table_headers columns ]
                 ++ List.map build_table_row rows
     in
     div []
-    [
-        h4 [style "color" "gray" ]  [ text "The Table Follows"]
-        ,table [] children
+        [ h4 [ style "color" "gray" ] [ text "The Table Follows" ]
+        , table [] children
         ]

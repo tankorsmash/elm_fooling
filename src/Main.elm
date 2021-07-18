@@ -422,7 +422,7 @@ navigation model =
 my_column_defs : List ColumnDef
 my_column_defs =
     [ { column_id = "title"
-      , idx = 0
+      , idx = 2
       , pretty_title = "The Title"
       }
     , { column_id = "author"
@@ -430,7 +430,7 @@ my_column_defs =
       , pretty_title = "Author"
       }
     , { column_id = "post_id"
-      , idx = 2
+      , idx = 0
       , pretty_title = "ID"
       }
     ]

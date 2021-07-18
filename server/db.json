@@ -1,6 +1,8 @@
 {
   "posts": [
-    { "id": 1, "title": "json-server", "author": "typicode" }
+    { "id": 1, "title": "The End Times", "author": "Matthew" },
+    { "id": 2, "title": "Everything Ends", "author": "Joshua" },
+    { "id": 3, "title": "The Pale Horse Rides", "author": "Olivia" }
   ],
   "comments": [
     { "id": 1, "body": "some comment", "postId": 1 }

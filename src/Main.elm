@@ -67,7 +67,7 @@ type Msg
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | DownloadAllPosts
-    | GotJSON (Result Http.Error (List String))
+    | DownloadedAllPosts (Result Http.Error (List PostData))
     | GotPostById (Result Http.Error PostData)
     | PostIDToDownloadChanged String
     | DownloadPostById Int
@@ -208,7 +208,7 @@ download_all_posts : Cmd Msg
 download_all_posts =
     Http.get
         { url = root_json_server_url ++ "posts"
-        , expect = Http.expectJson GotJSON decode_post_titles
+        , expect = Http.expectJson DownloadedAllPosts (list PostData.decode_single)
         }
 
 
@@ -323,22 +323,14 @@ update2 msg model =
         DownloadAllPosts ->
             ( model, download_all_posts )
 
-        GotJSON result ->
+        DownloadedAllPosts result ->
             case result of
-                Ok titles ->
+                Ok new_post_datas ->
                     let
-                        post_data =
-                            Debug.log "Successfully received files!" model.post_data
-
-                        title =
-                            List.head titles
+                        post_datas =
+                            Debug.log "Successfully received files!" new_post_datas
                     in
-                    case title of
-                        Just title_ ->
-                            ( { model | post_data = { post_data | title = title_ } }, Cmd.none )
-
-                        Nothing ->
-                            ( { model | post_data = { post_data | title = "Error" } }, Cmd.none )
+                    ( { model | post_datas = post_datas }, Cmd.none )
 
                 Err error ->
                     case error of
@@ -492,7 +484,7 @@ homeView model =
 
         table_rows : List (List String)
         table_rows =
-            List.map (do_lookups lookups) my_row_datas
+            List.map (do_lookups lookups) model.post_datas
     in
     div [ add_class "container" ]
         [ navigation model
@@ -506,7 +498,7 @@ homeView model =
                 [ Button.primary
                 , Button.attrs [ onClick DownloadAllPosts ]
                 ]
-                [ text "Download single title" ]
+                [ text "Download All Posts" ]
             ]
         , br [] []
         , div []

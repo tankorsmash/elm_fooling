@@ -442,14 +442,10 @@ my_table_definition =
     { columns = my_column_defs }
 
 
-do_lookups : List (PostData -> String) -> PostData -> List String
+--call a list of functions on an row
+do_lookups : List (obj -> String) -> obj -> List String
 do_lookups lookups row =
     List.foldl (\func acc -> acc ++ [ func row ]) [] lookups
-
-
-custom_lookup : ColumnLookup obj -> (obj -> String)
-custom_lookup cl =
-    cl.lookup_func
 
 
 homeView : Model -> Html Msg
@@ -464,7 +460,7 @@ homeView model =
         lookups =
             -- List.map .column_lookup columns
             -- List.map .column_lookup my_column_lookups
-            List.map custom_lookup my_column_lookups
+            List.map .lookup_func my_column_lookups
 
         table_rows : List (List String)
         table_rows =

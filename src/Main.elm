@@ -1,6 +1,5 @@
 module Main exposing (..)
 
-import String 
 import Bootstrap.Button as Button
 import Bootstrap.CDN as CDN
 import Bootstrap.Card as Card
@@ -42,13 +41,13 @@ import Json.Decode exposing (Decoder, at, field, list, string)
 import Json.Encode exposing (string)
 import List
 import PostData exposing (PostData)
+import Reddit
+import String
 import Table exposing (ColumnDef, ColumnLookup, ColumnType, TableDefinition, view)
 import Task
 import Time
 import Url
 import Url.Parser exposing ((</>), Parser, int, map, oneOf, parse, s, string)
-
-import Reddit
 
 
 type Msg
@@ -67,7 +66,6 @@ type Msg
     | DownloadPostById Int
     | AlertModalShow String
     | AlertModalHide
-
     | DownloadRedditPosts
     | DownloadedRedditPosts (Result Http.Error Reddit.ListingWrapper)
 
@@ -124,6 +122,7 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ Time.every 1000 Tick
+
         -- , DownloadedRedditPosts
         ]
 
@@ -138,6 +137,8 @@ type alias PageInfo =
     , route : Route
     , page : Page
     }
+
+
 
 -- type alias RedditSubmission
 
@@ -229,8 +230,11 @@ init _ url navKey =
         post_data =
             PostData -1 "No Name" "No Title"
 
-        reddit_listing = Reddit.Listing "" "" []
-        reddit_listing_wrapper = Reddit.ListingWrapper "" reddit_listing
+        reddit_listing =
+            Reddit.Listing "" "" []
+
+        reddit_listing_wrapper =
+            Reddit.ListingWrapper "" reddit_listing
 
         model =
             { count = 0
@@ -392,16 +396,18 @@ update2 msg model =
             ( { model | alert_modal_open = Modal.hidden }, Cmd.none )
 
         DownloadRedditPosts ->
-            ( model, (Reddit.custom_download_reddit_posts DownloadedRedditPosts) )
-            -- ( model, Reddit.download_reddit_posts )
+            ( model, Reddit.custom_download_reddit_posts DownloadedRedditPosts )
 
+        -- ( model, Reddit.download_reddit_posts )
         DownloadedRedditPosts result ->
             case result of
                 Ok new_listing ->
                     let
-                        lg = Debug.log "Successfully received listing!" "DDDD"
+                        lg =
+                            Debug.log "Successfully received listing!" "DDDD"
+
                         listing =
-                             new_listing
+                            new_listing
                     in
                     ( { model | reddit_listing_wrapper = listing }, Cmd.none )
 
@@ -409,11 +415,16 @@ update2 msg model =
                     case error of
                         Http.BadBody err_msg ->
                             let
-                                lg = Debug.log "PARSE ERROR: Error message handling the reddit post" "."
-                                trimmed = (String.slice 0 250 (err_msg)) ++ "... trimmed"
-                                lg2 = Debug.log trimmed "."
+                                lg =
+                                    Debug.log "PARSE ERROR: Error message handling the reddit post" "."
+
+                                trimmed =
+                                    String.slice 0 250 err_msg ++ "... trimmed"
+
+                                lg2 =
+                                    Debug.log trimmed "."
                             in
-                            (  model, Cmd.none )
+                            ( model, Cmd.none )
 
                         _ ->
                             ( Debug.log "Unknown error downloading" model, Cmd.none )
@@ -474,8 +485,10 @@ my_column_lookups =
     let
         title =
             ColumnLookup "title" .title
+
         id_ =
             ColumnLookup "post_id" (\o -> String.fromInt o.id)
+
         author =
             ColumnLookup "author" .author
     in
@@ -492,7 +505,7 @@ my_row_datas =
 
 my_table_definition : TableDefinition
 my_table_definition =
-    { columns = my_column_defs }
+    { title = Just "Post Datas", columns = my_column_defs }
 
 
 
@@ -502,6 +515,32 @@ my_table_definition =
 do_lookups : List (obj -> String) -> obj -> List String
 do_lookups lookups row =
     List.foldl (\func acc -> acc ++ [ func row ]) [] lookups
+
+
+listing_view : Model -> Html Msg
+listing_view model =
+    let
+        column_defs =
+            [ { column_id = "title", idx = 0, pretty_title = "Title" }
+            , { column_id = "url", idx = 1, pretty_title = "URL" }
+            ]
+
+        table_def =
+            { title = Just "Submissions", columns = column_defs }
+
+        column_lookups =
+            [ \w -> w.data.title, \w -> w.data.url]
+
+        -- lookups =
+        --     List.map .lookup_func column_lookups
+
+        table_rows =
+            List.map (do_lookups column_lookups) model.reddit_listing_wrapper.listing.children
+    in
+    div []
+        [ br [] []
+        , Table.view table_def table_rows
+        ]
 
 
 homeView : Model -> Html Msg
@@ -586,6 +625,8 @@ homeView model =
                     ]
                 |> Modal.view model.alert_modal_open
             ]
+        , br [] []
+        , listing_view model
         ]
 
 
@@ -608,6 +649,7 @@ profileView model =
 
 
 -- view : Model -> Html Msg
+
 
 view : Model -> Browser.Document Msg
 view model =

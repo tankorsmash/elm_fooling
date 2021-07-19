@@ -47,7 +47,7 @@ type alias ColumnLookup obj =
 
 
 type alias TableDefinition =
-    { columns : List ColumnDef }
+    { title : Maybe String, columns : List ColumnDef }
 
 
 build_single_table_header : String -> Html msg
@@ -99,8 +99,12 @@ view table_def rows =
 
         children =
             table_headers ++ row_content
+
+        table_title = case table_def.title of
+            Just title -> title
+            Nothing -> "TABLE"
     in
     div []
-        [ h4 [ style "color" "gray" ] [ text "The Table Follows" ]
+        [ h4 [ style "color" "gray" ] [ text table_title ]
         , table [] children
         ]

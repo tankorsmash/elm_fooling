@@ -32,6 +32,7 @@ type alias Submission =
     , id : String
     , title : String
     , author : String
+    , url : String
     }
 
 
@@ -69,6 +70,7 @@ decode_submission =
         |> required "id" string
         |> required "title" string
         |> required "author" string
+        |> required "url" string
 
 
 decode_listing_wrapper : Decoder ListingWrapper

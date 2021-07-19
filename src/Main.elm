@@ -56,6 +56,8 @@ import Time
 import Url
 import Url.Parser exposing ((</>), Parser, int, map, oneOf, parse, s, string)
 
+import Reddit
+
 
 type Msg
     = Increment
@@ -139,6 +141,8 @@ type alias PageInfo =
     , page : Page
     }
 
+-- type alias RedditSubmission
+
 
 type alias Model =
     { count : Int
@@ -210,6 +214,7 @@ download_all_posts =
         { url = root_json_server_url ++ "posts"
         , expect = Http.expectJson DownloadedAllPosts (list PostData.decode_single)
         }
+
 
 
 decode_post_titles : Decoder (List String)
@@ -579,7 +584,6 @@ profileView model =
 
 
 -- view : Model -> Html Msg
-
 
 view : Model -> Browser.Document Msg
 view model =

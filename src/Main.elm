@@ -69,7 +69,7 @@ type Msg
     | AlertModalHide
 
     | DownloadRedditPosts
-    | DownloadedRedditPosts (Result Http.Error Reddit.Listing)
+    | DownloadedRedditPosts (Result Http.Error Reddit.ListingWrapper)
 
 
 
@@ -154,6 +154,7 @@ type alias Model =
     , post_id_to_download_err_status : Int
     , alert_modal_open : Modal.Visibility
     , alert_modal_text : String
+    , reddit_listing_wrapper : Reddit.ListingWrapper
     , reddit_listing : Reddit.Listing
     , reddit_is_downloaded : Bool
     }
@@ -235,6 +236,7 @@ init _ url navKey =
             PostData -1 "No Name" "No Title"
 
         reddit_listing = Reddit.Listing "" "" []
+        reddit_listing_wrapper = Reddit.ListingWrapper "" reddit_listing
 
         model =
             { count = 0
@@ -249,6 +251,7 @@ init _ url navKey =
             , alert_modal_open = Modal.hidden
             , alert_modal_text = ""
             , reddit_listing = reddit_listing
+            , reddit_listing_wrapper = reddit_listing_wrapper
             , reddit_is_downloaded = False
             }
 
@@ -406,13 +409,13 @@ update2 msg model =
                         listing =
                              new_listing
                     in
-                    ( { model | reddit_listing = listing }, Cmd.none )
+                    ( { model | reddit_listing_wrapper = listing }, Cmd.none )
 
                 Err error ->
                     case error of
                         Http.BadBody err_msg ->
                             let
-                                lg = Debug.log "Error message handling the reddit post" "."
+                                lg = Debug.log "PARSE ERROR: Error message handling the reddit post" "."
                                 trimmed = (String.slice 0 250 (err_msg)) ++ "... trimmed"
                                 lg2 = Debug.log trimmed "."
                             in

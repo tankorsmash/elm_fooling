@@ -217,12 +217,6 @@ download_all_posts =
         }
 
 
-
-decode_post_titles : Decoder (List String)
-decode_post_titles =
-    list (field "title" Json.Decode.string)
-
-
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init _ url navKey =
     let

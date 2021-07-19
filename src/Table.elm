@@ -33,6 +33,7 @@ type alias ColumnDef =
     { column_id : String
     , idx : Int
     , pretty_title : String
+    , styles : List ( String, String )
     }
 
 
@@ -50,10 +51,14 @@ type alias TableDefinition =
     { title : Maybe String, columns : List ColumnDef }
 
 
-build_single_table_header : String -> Html msg
-build_single_table_header col_name =
+build_single_table_header : ( String, List ( String, String ) ) -> Html msg
+build_single_table_header ( col_name, col_styles ) =
+    let
+        styles =
+            List.map (\( s, n ) -> style s n) col_styles
+    in
     th []
-        [ td []
+        [ td styles
             [ text col_name ]
         ]
 
@@ -64,22 +69,39 @@ build_table_headers column_datas =
         col_names =
             List.map .pretty_title column_datas
 
+        col_styles =
+            List.map .styles column_datas
+
         table_headers =
-            List.map build_single_table_header col_names
+            List.map build_single_table_header <| List.map2 Tuple.pair col_names col_styles
     in
     tr [] table_headers
 
 
-build_cell : String -> Html msg
-build_cell value =
-    td [] [ text value ]
+build_col : String -> StylePairList -> Html msg
+build_col value col_styles =
+    let
+        styles =
+            List.map (\( s, n ) -> style s n) col_styles
+    in
+    td styles [ text value ]
 
 
-build_table_row : List String -> Html msg
-build_table_row row_data =
-    tr [] <| List.map build_cell row_data
+build_table_row : List String -> List (StylePairList) -> Html msg
+build_table_row row_data col_styles =
+    tr [] <| List.map2 build_col row_data col_styles
 
 
+type alias StylePair =
+    ( String, String )
+
+
+type alias StylePairList =
+    List StylePair
+
+
+{-| Assumes `rows` comes in column-idx order already
+-}
 view : TableDefinition -> List (List String) -> Html msg
 view table_def rows =
     let
@@ -89,20 +111,35 @@ view table_def rows =
         table_headers =
             [ build_table_headers columns ]
 
+        col_styles : List (StylePairList)
+        col_styles =
+            List.map .styles columns
+
+        rows_ : List (List String)
+        rows_ =
+            rows
+
+        row_builder row =
+            build_table_row row col_styles
+
         row_content =
-            case rows of
+            case rows_ of
                 [] ->
                     [ div [] [ text "no content" ] ]
 
                 _ ->
-                    List.map build_table_row rows
+                    List.map row_builder rows_
 
         children =
             table_headers ++ row_content
 
-        table_title = case table_def.title of
-            Just title -> title
-            Nothing -> "TABLE"
+        table_title =
+            case table_def.title of
+                Just title ->
+                    title
+
+                Nothing ->
+                    "TABLE"
     in
     div []
         [ h4 [ style "color" "gray" ] [ text table_title ]

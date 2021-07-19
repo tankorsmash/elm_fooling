@@ -468,14 +468,17 @@ my_column_defs =
     [ { column_id = "title"
       , idx = 2
       , pretty_title = "The Title"
+      , styles = []
       }
     , { column_id = "author"
       , idx = 1
       , pretty_title = "Author"
+      , styles = []
       }
     , { column_id = "post_id"
       , idx = 0
       , pretty_title = "ID"
+      , styles = []
       }
     ]
 
@@ -520,9 +523,15 @@ do_lookups lookups row =
 listing_view : Model -> Html Msg
 listing_view model =
     let
+        ellipses_style =
+            [ ("max-width", "300px")
+            , ("text-overflow", "ellipsis")
+            , ("white-space", "nowrap")
+            , ("overflow", "hidden")
+            ]
         column_defs =
-            [ { column_id = "title", idx = 0, pretty_title = "Title" }
-            , { column_id = "url", idx = 1, pretty_title = "URL" }
+            [ { column_id = "title", idx = 0, pretty_title = "Title", styles = ellipses_style }
+            , { column_id = "url", idx = 1, pretty_title = "URL", styles = [] }
             ]
 
         table_def =

@@ -86,12 +86,16 @@ view table_def rows =
         columns =
             table_def.columns
 
-        table_headers = [ build_table_headers columns ]
+        table_headers =
+            [ build_table_headers columns ]
 
-        row_content = case rows of
-            [] -> [ div [] [text "no content"] ]
-            _ -> List.map build_table_row rows
+        row_content =
+            case rows of
+                [] ->
+                    [ div [] [ text "no content" ] ]
 
+                _ ->
+                    List.map build_table_row rows
 
         children =
             table_headers ++ row_content

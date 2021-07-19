@@ -15,6 +15,7 @@ import Html
         , input
         , span
         , table
+        , tbody
         , td
         , text
         , th
@@ -22,6 +23,12 @@ import Html
         , tr
         )
 import Html.Attributes exposing (style)
+import Utils exposing (add_class)
+
+
+
+-- import Bootstrap
+--
 
 
 type ColumnType
@@ -57,10 +64,7 @@ build_single_table_header ( col_name, col_styles ) =
         styles =
             List.map (\( s, n ) -> style s n) col_styles
     in
-    th []
-        [ td styles
-            [ text col_name ]
-        ]
+    th styles [ text col_name ]
 
 
 build_table_headers : List ColumnDef -> Html msg
@@ -75,7 +79,7 @@ build_table_headers column_datas =
         table_headers =
             List.map build_single_table_header <| List.map2 Tuple.pair col_names col_styles
     in
-    tr [] table_headers
+    thead [] [ tr [] table_headers ]
 
 
 build_col : String -> StylePairList -> Html msg
@@ -87,7 +91,7 @@ build_col value col_styles =
     td styles [ text value ]
 
 
-build_table_row : List String -> List (StylePairList) -> Html msg
+build_table_row : List String -> List StylePairList -> Html msg
 build_table_row row_data col_styles =
     tr [] <| List.map2 build_col row_data col_styles
 
@@ -111,7 +115,7 @@ view table_def rows =
         table_headers =
             [ build_table_headers columns ]
 
-        col_styles : List (StylePairList)
+        col_styles : List StylePairList
         col_styles =
             List.map .styles columns
 
@@ -131,7 +135,7 @@ view table_def rows =
                     List.map row_builder rows_
 
         children =
-            table_headers ++ row_content
+            table_headers ++ [tbody [] row_content]
 
         table_title =
             case table_def.title of
@@ -143,5 +147,7 @@ view table_def rows =
     in
     div []
         [ h4 [ style "color" "gray" ] [ text table_title ]
-        , table [] children
+        , table
+            [ add_class "table", add_class "table-striped", add_class "table-bordered" ]
+            children
         ]

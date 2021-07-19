@@ -49,6 +49,7 @@ import Time
 import Url
 import Url.Parser exposing ((</>), Parser, int, map, oneOf, parse, s, string)
 
+import Utils exposing (add_class)
 
 type Msg
     = Increment
@@ -532,6 +533,7 @@ listing_view model =
         column_defs =
             [ { column_id = "title", idx = 0, pretty_title = "Title", styles = ellipses_style }
             , { column_id = "url", idx = 1, pretty_title = "URL", styles = [] }
+            , { column_id = "author", idx = 2, pretty_title = "Author", styles = [] }
             ]
 
         table_def =

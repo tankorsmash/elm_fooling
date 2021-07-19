@@ -86,9 +86,15 @@ view table_def rows =
         columns =
             table_def.columns
 
+        table_headers = [ build_table_headers columns ]
+
+        row_content = case rows of
+            [] -> [ div [] [text "no content"] ]
+            _ -> List.map build_table_row rows
+
+
         children =
-            [ build_table_headers columns ]
-                ++ List.map build_table_row rows
+            table_headers ++ row_content
     in
     div []
         [ h4 [ style "color" "gray" ] [ text "The Table Follows" ]

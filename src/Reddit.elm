@@ -74,12 +74,13 @@ decode_submission =
 decode_listing_wrapper : Decoder ListingWrapper
 decode_listing_wrapper =
     Decode.succeed ListingWrapper
-        |> required "type" string
+        |> required "kind" string
         |> required "data" (decode_listing)
+
 
 decode_listing : Decoder Listing
 decode_listing =
     Decode.succeed Listing
-        |> required "before" string
+        |> optional "before" string ""
         |> required "after" string
         |> required "children" (list decode_submission_wrapper)

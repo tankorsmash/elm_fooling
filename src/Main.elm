@@ -1,14 +1,6 @@
 module Main exposing (..)
 
--- Press buttons to increment and decrement a counter.
---
--- Read how it works:
---   https://guide.elm-lang.org/architecture/buttons.html
---
--- import Html exposing (..)
--- import Html.Attributes exposing (..)
---for prints
-
+import String 
 import Bootstrap.Button as Button
 import Bootstrap.CDN as CDN
 import Bootstrap.Card as Card
@@ -76,6 +68,9 @@ type Msg
     | AlertModalShow String
     | AlertModalHide
 
+    | DownloadRedditPosts
+    | DownloadedRedditPosts (Result Http.Error Reddit.Listing)
+
 
 
 -- MAIN
@@ -127,7 +122,10 @@ main =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Time.every 1000 Tick
+    Sub.batch
+        [ Time.every 1000 Tick
+        -- , DownloadedRedditPosts
+        ]
 
 
 
@@ -156,6 +154,8 @@ type alias Model =
     , post_id_to_download_err_status : Int
     , alert_modal_open : Modal.Visibility
     , alert_modal_text : String
+    , reddit_listing : Reddit.Listing
+    , reddit_is_downloaded : Bool
     }
 
 
@@ -234,6 +234,8 @@ init _ url navKey =
         post_data =
             PostData -1 "No Name" "No Title"
 
+        reddit_listing = Reddit.Listing "" "" []
+
         model =
             { count = 0
             , content = "ASD"
@@ -246,6 +248,8 @@ init _ url navKey =
             , post_id_to_download_err_status = 0
             , alert_modal_open = Modal.hidden
             , alert_modal_text = ""
+            , reddit_listing = reddit_listing
+            , reddit_is_downloaded = False
             }
 
         existingCmds =
@@ -390,6 +394,33 @@ update2 msg model =
         AlertModalHide ->
             ( { model | alert_modal_open = Modal.hidden }, Cmd.none )
 
+        DownloadRedditPosts ->
+            ( model, (Reddit.custom_download_reddit_posts DownloadedRedditPosts) )
+            -- ( model, Reddit.download_reddit_posts )
+
+        DownloadedRedditPosts result ->
+            case result of
+                Ok new_listing ->
+                    let
+                        lg = Debug.log "Successfully received listing!" "DDDD"
+                        listing =
+                             new_listing
+                    in
+                    ( { model | reddit_listing = listing }, Cmd.none )
+
+                Err error ->
+                    case error of
+                        Http.BadBody err_msg ->
+                            let
+                                lg = Debug.log "Error message handling the reddit post" "."
+                                trimmed = (String.slice 0 250 (err_msg)) ++ "... trimmed"
+                                lg2 = Debug.log trimmed "."
+                            in
+                            (  model, Cmd.none )
+
+                        _ ->
+                            ( Debug.log "Unknown error downloading" model, Cmd.none )
+
 
 humanize : Time.Posix -> Time.Zone -> String
 humanize time zone =
@@ -501,13 +532,9 @@ homeView model =
         , div []
             [ text <| "Post data -- Title: " ++ model.post_data.title ++ ", and Author: " ++ model.post_data.author
             ]
-        , div []
-            [ Button.button
-                [ Button.primary
-                , Button.attrs [ onClick DownloadAllPosts ]
-                ]
-                [ text "Download All Posts" ]
-            ]
+        , button_primary DownloadAllPosts "Download All Posts"
+        , br [] []
+        , button_primary DownloadRedditPosts "Download Reddit Data"
         , br [] []
         , div []
             [ Grid.row []

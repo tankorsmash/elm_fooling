@@ -69,6 +69,7 @@ type Msg
     | AlertModalHide
     | DownloadRedditPosts
     | DownloadedRedditPosts (Result Http.Error Reddit.ListingWrapper)
+    | ChangeTab TabType
 
 
 
@@ -140,6 +141,13 @@ type alias PageInfo =
     }
 
 
+type TabType
+    = HomeTab
+    | SinglePostDataTab
+    | PostDataTableTab
+    | RedditListingTab
+
+
 
 -- type alias RedditSubmission
 
@@ -159,6 +167,7 @@ type alias Model =
     , reddit_listing_wrapper : Reddit.ListingWrapper
     , reddit_listing : Reddit.Listing
     , reddit_is_downloaded : Bool
+    , current_tab : TabType
     }
 
 
@@ -252,6 +261,7 @@ init _ url navKey =
             , reddit_listing = reddit_listing
             , reddit_listing_wrapper = reddit_listing_wrapper
             , reddit_is_downloaded = False
+            , current_tab = HomeTab
             }
 
         existingCmds =
@@ -430,6 +440,9 @@ update2 msg model =
                         _ ->
                             ( Debug.log "Unknown error downloading" model, Cmd.none )
 
+        ChangeTab new_tab ->
+            ( { model | current_tab = new_tab }, Cmd.none )
+
 
 humanize : Time.Posix -> Time.Zone -> String
 humanize time zone =
@@ -571,6 +584,55 @@ homeView model =
         table_rows : List (List String)
         table_rows =
             List.map (do_lookups lookups) model.post_datas
+
+        tab_content =
+            case model.current_tab of
+                HomeTab ->
+                    div [] []
+
+                SinglePostDataTab ->
+                    div []
+                        [ div []
+                            [ text <| "Post data -- Title: " ++ model.post_data.title ++ ", and Author: " ++ model.post_data.author
+                            ]
+                        , br [] []
+                        , div []
+                            [ Grid.row []
+                                [ Grid.col [ Col.lg3 ]
+                                    [ InputGroup.config
+                                        (InputGroup.number
+                                            [ Input.placeholder "post_id"
+                                            , Input.value (String.fromInt model.post_id_to_download)
+                                            , Input.onInput PostIDToDownloadChanged
+                                            ]
+                                        )
+                                        |> InputGroup.predecessors
+                                            [ InputGroup.span [] [ text "Post ID" ] ]
+                                        |> InputGroup.view
+                                    ]
+                                , Grid.col [ Col.lg6 ]
+                                    [ button_secondary (DownloadPostById model.post_id_to_download) "Download Entire PostData" ]
+                                ]
+                            , case model.post_id_to_download_err_status of
+                                0 ->
+                                    empty_div
+
+                                _ ->
+                                    div [ style "color" "red" ] [ text <| "ERROR STATUS: " ++ String.fromInt model.post_id_to_download_err_status ]
+                            ]
+                        ]
+
+                PostDataTableTab ->
+                    div []
+                        [ button_primary DownloadAllPosts "Download All Posts"
+                        , Table.view my_table_definition table_rows
+                        ]
+
+                RedditListingTab ->
+                    div []
+                        [ button_primary DownloadRedditPosts "Download Reddit Data"
+                        , listing_view model
+                        ]
     in
     div [ add_class "container" ]
         [ div [ add_class "row" ]
@@ -578,68 +640,49 @@ homeView model =
                 [ navigation model
                 , CDN.stylesheet
                 , h3 [] [ text "HOME PAGE IS HERE!!!" ]
-                , div []
-                    [ text <| "Post data -- Title: " ++ model.post_data.title ++ ", and Author: " ++ model.post_data.author
+                , Grid.row []
+                    [ Grid.col [ Col.sm3 ]
+                        [ text "left" ]
+                    , Grid.col [ Col.sm9 ]
+                        [ text "right" ]
                     ]
-                , button_primary DownloadAllPosts "Download All Posts"
-                , br [] []
-                , button_primary DownloadRedditPosts "Download Reddit Data"
-                , br [] []
-                , div []
-                    [ Grid.row []
-                        [ Grid.col [ Col.lg3 ]
-                            [ InputGroup.config
-                                (InputGroup.number
-                                    [ Input.placeholder "post_id"
-                                    , Input.value (String.fromInt model.post_id_to_download)
-                                    , Input.onInput PostIDToDownloadChanged
-                                    ]
-                                )
-                                |> InputGroup.predecessors
-                                    [ InputGroup.span [] [ text "Post ID" ] ]
-                                |> InputGroup.view
+                ]
+            , br [] []
+            ]
+        , div [ add_class "row" ]
+            [ div [ add_class "col-md-12" ]
+                [ div []
+                    [ button_primary (ChangeTab PostDataTableTab) "PostData Table"
+                    , button_primary (ChangeTab RedditListingTab) "Reddit Submissions Table"
+                    , button_primary (ChangeTab SinglePostDataTab) "Single PostData"
+                    ]
+                ]
+            ]
+        , br [] []
+        , div [ add_class "row" ]
+            [ div [ add_class "col-md-12" ] [ tab_content ]
+            ]
+        , br [] []
+        , div [ add_class "row" ]
+            [ div [ add_class "col-md-12" ]
+                [ Button.button
+                    [ Button.primary
+                    , Button.attrs [ onClick <| AlertModalShow "This is text" ]
+                    ]
+                    [ text "Show Modal" ]
+                , Modal.config AlertModalHide
+                    |> Modal.small
+                    |> Modal.hideOnBackdropClick True
+                    |> Modal.h3 [] [ text "Modal Header" ]
+                    |> Modal.body [] [ p [] [ text model.alert_modal_text ] ]
+                    |> Modal.footer []
+                        [ Button.button
+                            [ Button.outlinePrimary
+                            , Button.attrs [ onClick AlertModalHide ]
                             ]
-                        , Grid.col [ Col.lg6 ]
-                            [ button_secondary (DownloadPostById model.post_id_to_download) "Download Entire PostData" ]
+                            [ text "Close" ]
                         ]
-                    , case model.post_id_to_download_err_status of
-                        0 ->
-                            empty_div
-
-                        _ ->
-                            div [ style "color" "red" ] [ text <| "ERROR STATUS: " ++ String.fromInt model.post_id_to_download_err_status ]
-                    , Grid.row []
-                        [ Grid.col [ Col.sm3 ]
-                            [ text "left" ]
-                        , Grid.col [ Col.sm9 ]
-                            [ text "right" ]
-                        ]
-                    ]
-                , br [] []
-                , Table.view my_table_definition table_rows
-                , br [] []
-                , div []
-                    [ Button.button
-                        [ Button.primary
-                        , Button.attrs [ onClick <| AlertModalShow "This is text" ]
-                        ]
-                        [ text "Show Modal" ]
-                    , Modal.config AlertModalHide
-                        |> Modal.small
-                        |> Modal.hideOnBackdropClick True
-                        |> Modal.h3 [] [ text "Modal Header" ]
-                        |> Modal.body [] [ p [] [ text model.alert_modal_text ] ]
-                        |> Modal.footer []
-                            [ Button.button
-                                [ Button.outlinePrimary
-                                , Button.attrs [ onClick AlertModalHide ]
-                                ]
-                                [ text "Close" ]
-                            ]
-                        |> Modal.view model.alert_modal_open
-                    ]
-                , br [] []
-                , listing_view model
+                    |> Modal.view model.alert_modal_open
                 ]
             ]
         ]

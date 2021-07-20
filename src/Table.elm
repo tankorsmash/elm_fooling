@@ -26,9 +26,12 @@ import Html.Attributes exposing (style)
 import Utils exposing (add_class)
 
 
-
--- import Bootstrap
---
+ellipses_style =
+    [ style "max-width" "300px"
+    , style "text-overflow" "ellipsis"
+    , style "white-space" "nowrap"
+    , style "overflow" "hidden"
+    ]
 
 
 type ColumnType
@@ -135,7 +138,7 @@ view table_def rows =
                     List.map row_builder rows_
 
         children =
-            table_headers ++ [tbody [] row_content]
+            table_headers ++ [ tbody [] row_content ]
 
         table_title =
             case table_def.title of

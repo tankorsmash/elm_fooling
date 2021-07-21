@@ -1,4 +1,4 @@
-module Table exposing (ColumnDef, ColumnLookup, ColumnType, TableDefinition, view)
+module Table exposing (ColumnDef, ColumnLookup, ColumnType, TableDefinition, view, PageInfo)
 
 import Bootstrap.Button as Button
 import Bootstrap.ButtonGroup as ButtonGroup
@@ -111,11 +111,13 @@ type alias StylePair =
 type alias StylePairList =
     List StylePair
 
+type alias PageInfo =
+    { page_count: Int, current_page_idx: Int}
 
 {-| Assumes `rows` comes in column-idx order already
 -}
-view : TableDefinition -> List (List String) -> Html msg
-view table_def rows =
+view : TableDefinition -> List (List String) -> PageInfo -> Html msg
+view table_def rows page_info =
     let
         columns =
             table_def.columns

@@ -165,6 +165,7 @@ type alias Model =
     , page_info : PageInfo
     , post_data : PostData
     , post_datas : List PostData
+    , post_datas_page_info : Table.PageInfo
     , post_id_to_download : Int
     , post_id_to_download_err_status : Int
     , alert_modal_open : Modal.Visibility
@@ -172,6 +173,7 @@ type alias Model =
     , reddit_listing_wrapper : Reddit.ListingWrapper
     , reddit_listing : Reddit.Listing
     , reddit_is_downloaded : Bool
+    , reddit_listing_page_info : Table.PageInfo
     , current_tab : TabType
     , current_navbar_state : Navbar.State
     , current_weather_response : Weather.CurrentWeatherResponse
@@ -285,12 +287,14 @@ init _ url navKey =
             , page_info = page_info
             , post_data = post_data
             , post_datas = []
+            , post_datas_page_info = Table.PageInfo 0 0
             , post_id_to_download = -1
             , post_id_to_download_err_status = 0
             , alert_modal_open = Modal.hidden
             , alert_modal_text = ""
             , reddit_listing = reddit_listing
             , reddit_listing_wrapper = reddit_listing_wrapper
+            , reddit_listing_page_info = Table.PageInfo 0 0
             , reddit_is_downloaded = False
             , current_tab = RedditListingTab
             , current_navbar_state = navbarState
@@ -678,7 +682,7 @@ listing_view model =
     in
     div []
         [ br [] []
-        , Table.view table_def table_rows
+        , Table.view table_def table_rows model.reddit_listing_page_info
         ]
 
 
@@ -783,7 +787,7 @@ homeView model =
                 PostDataTableTab ->
                     div []
                         [ button_primary DownloadAllPosts "Download All Posts"
-                        , Table.view my_table_definition table_rows
+                        , Table.view my_table_definition table_rows model.post_datas_page_info
                         ]
 
                 RedditListingTab ->

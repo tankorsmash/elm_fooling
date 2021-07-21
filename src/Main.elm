@@ -762,9 +762,11 @@ homeView model =
         , div [ add_class "row" ]
             [ div [ add_class "col-md-12" ]
                 [ div []
-                    [ button_primary (ChangeTab PostDataTableTab) "PostData Table"
+                    [ button_primary (ChangeTab HomeTab) "Home"
+                    , button_primary (ChangeTab PostDataTableTab) "PostData Table"
                     , button_primary (ChangeTab RedditListingTab) "Reddit Submissions Table"
                     , button_primary (ChangeTab SinglePostDataTab) "Single PostData"
+                    , button_primary (ChangeTab WeatherTab) "Weather"
                     ]
                 ]
             ]

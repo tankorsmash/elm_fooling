@@ -470,11 +470,11 @@ update2 msg model =
         DownloadedCurrentWeather result ->
             case result of
                 Ok new_weather ->
-                    let lg = Debug.log "." new_weather
+                    let lg = Debug.log "Current Weather Downloaded Succesfully" new_weather
                     in
                     ( {model | current_weather_response = new_weather}, Cmd.none )
                 Err err_msg ->
-                    let lg = Debug.log "." err_msg
+                    let lg = Debug.log "Current Weather Download Error:" err_msg
                     in
                     ( model, Cmd.none )
 

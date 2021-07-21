@@ -804,13 +804,6 @@ homeView model =
             [ div [ add_class "col-md-12" ]
                 [ site_navigation model
                 , CDN.stylesheet
-                , h3 [] [ text "HOME PAGE IS HERE!!!" ]
-                , Grid.row []
-                    [ Grid.col [ Col.sm3 ]
-                        [ text "left" ]
-                    , Grid.col [ Col.sm9 ]
-                        [ text "right" ]
-                    ]
                 ]
             , br [] []
             ]

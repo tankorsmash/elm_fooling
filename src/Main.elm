@@ -292,7 +292,7 @@ init _ url navKey =
             , reddit_listing = reddit_listing
             , reddit_listing_wrapper = reddit_listing_wrapper
             , reddit_is_downloaded = False
-            , current_tab = WeatherTab
+            , current_tab = RedditListingTab
             , current_navbar_state = navbarState
             , current_weather_response = current_weather_response
             }

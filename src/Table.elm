@@ -1,5 +1,10 @@
 module Table exposing (ColumnDef, ColumnLookup, ColumnType, TableDefinition, view)
 
+import Bootstrap.Button as Button
+import Bootstrap.ButtonGroup as ButtonGroup
+import Bootstrap.Grid as Grid
+import Bootstrap.Grid.Col as Col
+import Bootstrap.Grid.Row as Row
 import Html
     exposing
         ( Html
@@ -137,6 +142,19 @@ view table_def rows =
                 _ ->
                     List.map row_builder rows_
 
+        page_buttons =
+            Grid.row [ Row.centerMd ]
+                [ Grid.col [ Col.xs1 ]
+                    [ ButtonGroup.buttonGroup []
+                        [ ButtonGroup.button [ Button.outlineDark ] [ text "<" ]
+                        , ButtonGroup.button [ Button.outlineDark ] [ text "page 1" ]
+                        , ButtonGroup.button [ Button.outlineDark ] [ text "page 2" ]
+                        , ButtonGroup.button [ Button.outlineDark ] [ text "page 3" ]
+                        , ButtonGroup.button [ Button.outlineDark ] [ text ">" ]
+                        ]
+                    ]
+                ]
+
         children =
             table_headers ++ [ tbody [] row_content ]
 
@@ -153,4 +171,5 @@ view table_def rows =
         , table
             [ add_class "table", add_class "table-striped", add_class "table-bordered" ]
             children
+        , page_buttons
         ]

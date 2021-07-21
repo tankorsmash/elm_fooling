@@ -113,7 +113,24 @@ type alias StylePairList =
 
 
 type alias PageInfo =
-    { page_count : Int, current_page_idx : Int , per_page: Int}
+    { page_count : Int, current_page_idx : Int, per_page : Int }
+
+
+paginate : Int -> Int -> List a -> List a
+paginate per_page page_idx rows =
+    let
+        row_idx =
+            per_page * page_idx
+
+        -- given drop 2 [0, 1, 2, 3, 4], we'd have [ 2, 3, 4]
+        first_bit =
+            List.drop row_idx rows
+
+        -- given [2, 3, 4], we want [2, 3], and leave off anything after
+        paginated =
+            List.take per_page first_bit
+    in
+    paginated
 
 
 {-| Assumes `rows` comes in column-idx order already
@@ -133,7 +150,7 @@ view table_def rows page_info =
 
         rows_ : List (List String)
         rows_ =
-            rows
+            paginate page_info.per_page page_info.current_page_idx rows
 
         row_builder row =
             build_table_row row col_styles

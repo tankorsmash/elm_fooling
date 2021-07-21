@@ -24,6 +24,7 @@ current_weather_url =
     String.concat
         [ "http://api.openweathermap.org/data/2.5/weather?q="
         , open_weather_city_code
+        -- , "Houston,TX,US"
         , "&appid="
         , open_weather_map_api_key
         , "&units="

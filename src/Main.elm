@@ -298,7 +298,10 @@ init _ url navKey =
             }
 
         existingCmds =
-            Task.perform AdjustTimeZone Time.here
+            Cmd.batch
+                [ Task.perform AdjustTimeZone Time.here
+                , navbarCmd
+                ]
     in
     initCurrentPage ( model, existingCmds )
 
@@ -681,13 +684,28 @@ listing_view model =
 
 navbar : Model -> Html Msg
 navbar model =
+    let
+        nav_items : List ( Msg, String )
+        nav_items =
+            [ ( ChangeTab HomeTab, "Home" )
+            , ( ChangeTab PostDataTableTab, "PostData Table" )
+            , ( ChangeTab RedditListingTab, "Reddit Submissions Table" )
+            , ( ChangeTab SinglePostDataTab, "Single PostData" )
+            , ( ChangeTab WeatherTab, "Weather" )
+            ]
+    in
     Navbar.config NavbarMsg
         |> Navbar.withAnimation
-        |> Navbar.brand [ href "#" ] [ text "Brand" ]
-        |> Navbar.items
-            [ Navbar.itemLink [ href "#" ] [ text "item 1" ]
-            , Navbar.itemLink [ href "#" ] [ text "item 2" ]
-            ]
+        |> Navbar.brand [ href "#" ] [ text "Home Page" ]
+        |> Navbar.customItems
+            (List.map
+                (\( msg, txt ) -> Navbar.textItem [ onClick msg ] [ text txt ])
+                nav_items
+            )
+        -- [ Navbar.itemLink [ onClick (ChangeTab RedditListingTab) ] [ text "Home" ]
+        -- , Navbar.itemLink [ onClick (ChangeTab RedditListingTab) ] [ text "item 2" ]
+        -- , Navbar.itemLink [ onClick (ChangeTab RedditListingTab) ] [ text "item 2" ]
+        -- ]
         |> Navbar.view model.current_navbar_state
 
 
@@ -782,14 +800,7 @@ homeView model =
             ]
         , div [ add_class "row" ]
             [ div [ add_class "col-md-12" ]
-                [ div []
-                    [ button_primary (ChangeTab HomeTab) "Home"
-                    , button_primary (ChangeTab PostDataTableTab) "PostData Table"
-                    , button_primary (ChangeTab RedditListingTab) "Reddit Submissions Table"
-                    , button_primary (ChangeTab SinglePostDataTab) "Single PostData"
-                    , button_primary (ChangeTab WeatherTab) "Weather"
-                    ]
-                ]
+                [ navbar model ]
             ]
         , br [] []
         , div [ add_class "row" ]

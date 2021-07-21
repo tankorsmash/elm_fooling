@@ -579,12 +579,15 @@ do_lookups : List (obj -> String) -> obj -> List String
 do_lookups lookups row =
     List.foldl (\func acc -> acc ++ [ func row ]) [] lookups
 
+
 nbsp : String
-nbsp = "\u{00A0}"
+nbsp =
+    "\u{00A0}"
+
 
 temperature_val : Float -> Html Msg
 temperature_val flt =
-    span [] [ text <| nbsp ++ String.fromFloat flt ++ "°" ]
+    span [] [ text <| String.fromFloat flt ++ "°" ]
 
 
 weather_view : Model -> Html Msg
@@ -616,14 +619,20 @@ weather_view model =
 
                 True ->
                     div []
-                        [ span [] [ text model.current_weather_response.name ]
+                        [ b [] [ text model.current_weather_response.name ]
+                        , text " is currently: "
                         , temperature_val weather_main.temp
+                        , text " But it feels more like: "
+                        , temperature_val weather_main.feels_like
+                        , br [] []
+                        , text " You can expect temperatures as high as: "
+                        , temperature_val weather_main.temp_max
+                        , text " and as low as: "
+                        , temperature_val weather_main.temp_min
                         ]
     in
     div []
-        [ text "Downloaded Weather:"
-        , div [] [ text "Location name:" ]
-        , span [] [ text <| "Weather is downloaded? " ++ weather_downloaded_str ]
+        [ span [] [ text <| "Weather is downloaded? " ++ weather_downloaded_str ]
         , weather_content
         ]
 

@@ -470,11 +470,16 @@ update2 msg model =
         DownloadedCurrentWeather result ->
             case result of
                 Ok new_weather ->
-                    let lg = Debug.log "Current Weather Downloaded Succesfully" new_weather
+                    let
+                        lg =
+                            Debug.log "Current Weather Downloaded Succesfully" new_weather
                     in
-                    ( {model | current_weather_response = new_weather}, Cmd.none )
+                    ( { model | current_weather_response = new_weather }, Cmd.none )
+
                 Err err_msg ->
-                    let lg = Debug.log "Current Weather Download Error:" err_msg
+                    let
+                        lg =
+                            Debug.log "Current Weather Download Error:" err_msg
                     in
                     ( model, Cmd.none )
 
@@ -567,6 +572,21 @@ my_table_definition =
 do_lookups : List (obj -> String) -> obj -> List String
 do_lookups lookups row =
     List.foldl (\func acc -> acc ++ [ func row ]) [] lookups
+
+
+weather_view : Model -> Html Msg
+weather_view model =
+    let
+        weather_downloaded = case model.current_weather_response.name of
+            "" -> "No"
+            _ -> "Yes"
+    in
+    div []
+        [ text "Downloaded Weather:"
+        , div [] [ text "Location name:" ]
+        , span [] [ text <| "Weather is downloaded? "++weather_downloaded ]
+        , div [] [span [] [ text model.current_weather_response.name ] ]
+        ]
 
 
 listing_view : Model -> Html Msg
@@ -670,9 +690,10 @@ homeView model =
                         ]
 
                 WeatherTab ->
-                    div [] [
-                         h4 [] [ text "Weather!" ]
+                    div []
+                        [ h4 [] [ text "Weather!" ]
                         , button_primary DownloadCurrentWeather "Download Current Weather"
+                        , weather_view model
                         ]
     in
     div [ add_class "container" ]

@@ -146,6 +146,7 @@ type TabType
     | SinglePostDataTab
     | PostDataTableTab
     | RedditListingTab
+    | WeatherTab
 
 
 
@@ -220,12 +221,25 @@ download_post_by_id post_id =
         }
 
 
-download_all_posts : Cmd Msg
-download_all_posts =
+downloader : (Result Http.Error a -> msg) -> Decoder a -> Cmd msg
+downloader the_msg decoder =
     Http.get
         { url = root_json_server_url ++ "posts"
-        , expect = Http.expectJson DownloadedAllPosts (list PostData.decode_single)
+        , expect = Http.expectJson the_msg decoder
         }
+
+download_all_posts : Cmd Msg
+download_all_posts =
+        downloader DownloadedAllPosts (list PostData.decode_single)
+       
+    -- Http.get
+    --     { url = root_json_server_url ++ "posts"
+    --     , expect = Http.expectJson DownloadedAllPosts (list PostData.decode_single)
+    --     }
+
+-- download_current_weather : Cmd Msg
+-- download_current_weather =
+--     Http.get
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
@@ -261,7 +275,7 @@ init _ url navKey =
             , reddit_listing = reddit_listing
             , reddit_listing_wrapper = reddit_listing_wrapper
             , reddit_is_downloaded = False
-            , current_tab = HomeTab
+            , current_tab = WeatherTab
             }
 
         existingCmds =
@@ -633,6 +647,10 @@ homeView model =
                         [ button_primary DownloadRedditPosts "Download Reddit Data"
                         , listing_view model
                         ]
+
+                WeatherTab ->
+                    div [] [ text "Weather!" ]
+
     in
     div [ add_class "container" ]
         [ div [ add_class "row" ]

@@ -685,13 +685,13 @@ listing_view model =
 navbar : Model -> Html Msg
 navbar model =
     let
-        nav_items : List ( Msg, String )
+        nav_items : List ( TabType, String )
         nav_items =
-            [ ( ChangeTab HomeTab, "Home" )
-            , ( ChangeTab PostDataTableTab, "PostData Table" )
-            , ( ChangeTab RedditListingTab, "Reddit Submissions Table" )
-            , ( ChangeTab SinglePostDataTab, "Single PostData" )
-            , ( ChangeTab WeatherTab, "Weather" )
+            [ ( HomeTab, "Home" )
+            , ( PostDataTableTab, "PostData Table" )
+            , ( RedditListingTab, "Reddit Submissions Table" )
+            , ( SinglePostDataTab, "Single PostData" )
+            , ( WeatherTab, "Weather" )
             ]
     in
     Navbar.config NavbarMsg
@@ -699,7 +699,21 @@ navbar model =
         |> Navbar.brand [ href "#" ] [ text "Home Page" ]
         |> Navbar.customItems
             (List.map
-                (\( msg, txt ) -> Navbar.textItem [ onClick msg ] [ text txt ])
+                (\( tab_type, txt ) ->
+                    Navbar.textItem
+                        [ onClick (ChangeTab tab_type)
+                        , let
+                            (rule, val) =
+                                if model.current_tab == tab_type then
+                                    ("color", "blue")
+
+                                else
+                                    ("", "")
+                          in
+                          style rule val
+                        ]
+                        [ text txt ]
+                )
                 nav_items
             )
         -- [ Navbar.itemLink [ onClick (ChangeTab RedditListingTab) ] [ text "Home" ]

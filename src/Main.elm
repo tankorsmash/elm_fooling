@@ -703,14 +703,16 @@ navbar model =
                     Navbar.textItem
                         [ onClick (ChangeTab tab_type)
                         , let
-                            (rule, val) =
+                            ( rule, val ) =
                                 if model.current_tab == tab_type then
-                                    ("color", "blue")
+                                    ( "color", "blue" )
 
                                 else
-                                    ("", "")
+                                    ( "", "" )
                           in
                           style rule val
+                        , style "margin-left" "10px"
+                        , style "cursor" "pointer"
                         ]
                         [ text txt ]
                 )

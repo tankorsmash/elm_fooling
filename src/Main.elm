@@ -266,6 +266,12 @@ init _ url navKey =
         reddit_listing_wrapper =
             Reddit.ListingWrapper "" reddit_listing
 
+        current_weather_main =
+            Weather.CurrentWeatherMain 0 0 0 0 0 0
+
+        current_weather_response =
+            Weather.CurrentWeatherResponse "" current_weather_main
+
         model =
             { count = 0
             , content = "ASD"
@@ -282,7 +288,7 @@ init _ url navKey =
             , reddit_listing_wrapper = reddit_listing_wrapper
             , reddit_is_downloaded = False
             , current_tab = WeatherTab
-            , current_weather_response = Weather.CurrentWeatherResponse ""
+            , current_weather_response = current_weather_response
             }
 
         existingCmds =
@@ -573,19 +579,52 @@ do_lookups : List (obj -> String) -> obj -> List String
 do_lookups lookups row =
     List.foldl (\func acc -> acc ++ [ func row ]) [] lookups
 
+nbsp : String
+nbsp = "\u{00A0}"
+
+temperature_val : Float -> Html Msg
+temperature_val flt =
+    span [] [ text <| nbsp ++ String.fromFloat flt ++ "°" ]
+
 
 weather_view : Model -> Html Msg
 weather_view model =
     let
-        weather_downloaded = case model.current_weather_response.name of
-            "" -> "No"
-            _ -> "Yes"
+        is_weather_downloaded =
+            case model.current_weather_response.name of
+                "" ->
+                    False
+
+                _ ->
+                    True
+
+        weather_downloaded_str =
+            case is_weather_downloaded of
+                False ->
+                    "No"
+
+                True ->
+                    "Yes"
+
+        weather_main =
+            model.current_weather_response.main
+
+        weather_content =
+            case is_weather_downloaded of
+                False ->
+                    div [] []
+
+                True ->
+                    div []
+                        [ span [] [ text model.current_weather_response.name ]
+                        , temperature_val weather_main.temp
+                        ]
     in
     div []
         [ text "Downloaded Weather:"
         , div [] [ text "Location name:" ]
-        , span [] [ text <| "Weather is downloaded? "++weather_downloaded ]
-        , div [] [span [] [ text model.current_weather_response.name ] ]
+        , span [] [ text <| "Weather is downloaded? " ++ weather_downloaded_str ]
+        , weather_content
         ]
 
 

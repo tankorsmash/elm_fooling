@@ -9,6 +9,7 @@ import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
 import Bootstrap.Modal as Modal
+import Bootstrap.Navbar as Navbar
 import Browser
 import Browser.Navigation as Nav
 import Debug
@@ -71,6 +72,7 @@ type Msg
     | DownloadRedditPosts
     | DownloadedRedditPosts (Result Http.Error Reddit.ListingWrapper)
     | ChangeTab TabType
+    | NavbarMsg Navbar.State
     | DownloadCurrentWeather
     | DownloadedCurrentWeather (Result Http.Error Weather.CurrentWeatherResponse)
 
@@ -127,8 +129,7 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ Time.every 1000 Tick
-
-        -- , DownloadedRedditPosts
+        , Navbar.subscriptions model.current_navbar_state NavbarMsg
         ]
 
 
@@ -172,6 +173,7 @@ type alias Model =
     , reddit_listing : Reddit.Listing
     , reddit_is_downloaded : Bool
     , current_tab : TabType
+    , current_navbar_state : Navbar.State
     , current_weather_response : Weather.CurrentWeatherResponse
     }
 
@@ -266,6 +268,9 @@ init _ url navKey =
         reddit_listing_wrapper =
             Reddit.ListingWrapper "" reddit_listing
 
+        ( navbarState, navbarCmd ) =
+            Navbar.initialState NavbarMsg
+
         current_weather_main =
             Weather.CurrentWeatherMain 0 0 0 0 0 0
 
@@ -288,6 +293,7 @@ init _ url navKey =
             , reddit_listing_wrapper = reddit_listing_wrapper
             , reddit_is_downloaded = False
             , current_tab = WeatherTab
+            , current_navbar_state = navbarState
             , current_weather_response = current_weather_response
             }
 
@@ -470,6 +476,9 @@ update2 msg model =
         ChangeTab new_tab ->
             ( { model | current_tab = new_tab }, Cmd.none )
 
+        NavbarMsg state ->
+            ( { model | current_navbar_state = state }, Cmd.none )
+
         DownloadCurrentWeather ->
             ( model, Weather.download_current_weather DownloadedCurrentWeather )
 
@@ -509,8 +518,8 @@ humanize time zone =
 -- VIEW
 
 
-navigation : Model -> Html Msg
-navigation model =
+site_navigation : Model -> Html Msg
+site_navigation model =
     div [ style "margin-bottom" "15px" ]
         [ div []
             [ text "This is a link: "
@@ -670,6 +679,18 @@ listing_view model =
         ]
 
 
+navbar : Model -> Html Msg
+navbar model =
+    Navbar.config NavbarMsg
+        |> Navbar.withAnimation
+        |> Navbar.brand [ href "#" ] [ text "Brand" ]
+        |> Navbar.items
+            [ Navbar.itemLink [ href "#" ] [ text "item 1" ]
+            , Navbar.itemLink [ href "#" ] [ text "item 2" ]
+            ]
+        |> Navbar.view model.current_navbar_state
+
+
 homeView : Model -> Html Msg
 homeView model =
     let
@@ -747,7 +768,7 @@ homeView model =
     div [ add_class "container" ]
         [ div [ add_class "row" ]
             [ div [ add_class "col-md-12" ]
-                [ navigation model
+                [ site_navigation model
                 , CDN.stylesheet
                 , h3 [] [ text "HOME PAGE IS HERE!!!" ]
                 , Grid.row []
@@ -812,7 +833,7 @@ join_with_numbers to_join =
 profileView : Model -> Html Msg
 profileView model =
     div []
-        [ navigation model
+        [ site_navigation model
         , text "Welcome to my Profile!!"
         ]
 

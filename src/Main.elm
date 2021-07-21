@@ -49,6 +49,7 @@ import Time
 import Url
 import Url.Parser exposing ((</>), Parser, int, map, oneOf, parse, s, string)
 import Utils exposing (add_class)
+import Weather
 
 
 type Msg
@@ -70,6 +71,8 @@ type Msg
     | DownloadRedditPosts
     | DownloadedRedditPosts (Result Http.Error Reddit.ListingWrapper)
     | ChangeTab TabType
+    | DownloadCurrentWeather
+    | DownloadedCurrentWeather (Result Http.Error Weather.CurrentWeatherResponse)
 
 
 
@@ -169,6 +172,7 @@ type alias Model =
     , reddit_listing : Reddit.Listing
     , reddit_is_downloaded : Bool
     , current_tab : TabType
+    , current_weather_response : Weather.CurrentWeatherResponse
     }
 
 
@@ -228,15 +232,17 @@ downloader the_msg decoder =
         , expect = Http.expectJson the_msg decoder
         }
 
+
 download_all_posts : Cmd Msg
 download_all_posts =
-        downloader DownloadedAllPosts (list PostData.decode_single)
-       
-    -- Http.get
-    --     { url = root_json_server_url ++ "posts"
-    --     , expect = Http.expectJson DownloadedAllPosts (list PostData.decode_single)
-    --     }
+    downloader DownloadedAllPosts (list PostData.decode_single)
 
+
+
+-- Http.get
+--     { url = root_json_server_url ++ "posts"
+--     , expect = Http.expectJson DownloadedAllPosts (list PostData.decode_single)
+--     }
 -- download_current_weather : Cmd Msg
 -- download_current_weather =
 --     Http.get
@@ -276,6 +282,7 @@ init _ url navKey =
             , reddit_listing_wrapper = reddit_listing_wrapper
             , reddit_is_downloaded = False
             , current_tab = WeatherTab
+            , current_weather_response = Weather.CurrentWeatherResponse ""
             }
 
         existingCmds =
@@ -456,6 +463,20 @@ update2 msg model =
 
         ChangeTab new_tab ->
             ( { model | current_tab = new_tab }, Cmd.none )
+
+        DownloadCurrentWeather ->
+            ( model, Weather.download_current_weather DownloadedCurrentWeather )
+
+        DownloadedCurrentWeather result ->
+            case result of
+                Ok new_weather ->
+                    let lg = Debug.log "." new_weather
+                    in
+                    ( {model | current_weather_response = new_weather}, Cmd.none )
+                Err err_msg ->
+                    let lg = Debug.log "." err_msg
+                    in
+                    ( model, Cmd.none )
 
 
 humanize : Time.Posix -> Time.Zone -> String
@@ -649,8 +670,10 @@ homeView model =
                         ]
 
                 WeatherTab ->
-                    div [] [ text "Weather!" ]
-
+                    div [] [
+                         h4 [] [ text "Weather!" ]
+                        , button_primary DownloadCurrentWeather "Download Current Weather"
+                        ]
     in
     div [ add_class "container" ]
         [ div [ add_class "row" ]

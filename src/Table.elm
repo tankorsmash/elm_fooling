@@ -262,13 +262,34 @@ view table_def rows page_info =
                 ]
                 [ text <| "Page " ++ String.fromInt (page_idx + 1) ]
 
+        prev_btn =
+            if page_info.current_page_idx /= 0 then
+                [ ButtonGroup.button [ Button.outlineSecondary, Button.onClick page_info.prev_page_msg ] [ text "<" ] ]
+
+            else
+                []
+
+        inner_page_btns =
+            if page_info.page_count /= 0 then
+                List.map create_page_btn (List.range 0 page_info.page_count)
+
+            else
+                []
+
+        next_btn =
+            if page_info.current_page_idx /= page_info.page_count then
+                [ ButtonGroup.button [ Button.outlineSecondary, Button.onClick page_info.next_page_msg ] [ text ">" ] ]
+
+            else
+                []
+
         page_buttons =
             Grid.row [ Row.centerMd ]
                 [ Grid.col [ Col.mdAuto ]
                     [ ButtonGroup.buttonGroup [] <|
-                        [ ButtonGroup.button [ Button.outlineSecondary, Button.onClick page_info.prev_page_msg ] [ text "<" ] ]
-                            ++ List.map create_page_btn (List.range 0 page_info.page_count)
-                            ++ [ ButtonGroup.button [ Button.outlineSecondary, Button.onClick page_info.next_page_msg ] [ text ">" ] ]
+                        prev_btn
+                            ++ inner_page_btns
+                            ++ next_btn
                     ]
                 ]
 

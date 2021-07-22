@@ -288,10 +288,10 @@ init _ url navKey =
             Weather.CurrentWeatherResponse "" current_weather_main
 
         post_datas_page_info =
-            Table.PageInfo 1 0 10 (PrevPageMsg PostDatasTable) (NextPageMsg PostDatasTable) (ChangePageMsg PostDatasTable)
+            Table.PageInfo 0 0 10 (PrevPageMsg PostDatasTable) (NextPageMsg PostDatasTable) (ChangePageMsg PostDatasTable)
 
         reddit_listing_page_info =
-            Table.PageInfo 1 0 10 (PrevPageMsg RedditListingTable) (NextPageMsg RedditListingTable) (ChangePageMsg RedditListingTable )
+            Table.PageInfo 0 0 10 (PrevPageMsg RedditListingTable) (NextPageMsg RedditListingTable) (ChangePageMsg RedditListingTable )
 
         model =
             { count = 0

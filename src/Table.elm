@@ -176,9 +176,9 @@ view table_def rows page_info =
             Grid.row [ Row.centerMd ]
                 [ Grid.col [ Col.xs1 ]
                     [ ButtonGroup.buttonGroup [] <|
-                        [ ButtonGroup.button [ Button.outlineDark ] [ text "<" ] ]
+                        [ ButtonGroup.button [ Button.outlineDark, Button.onClick page_info.prev_page_msg ] [ text "<" ] ]
                             ++ List.map create_page_btn (List.range 1 page_info.page_count)
-                            ++ [ ButtonGroup.button [ Button.outlineDark ] [ text ">" ] ]
+                            ++ [ ButtonGroup.button [ Button.outlineDark, Button.onClick page_info.next_page_msg ] [ text ">" ] ]
                     ]
                 ]
 

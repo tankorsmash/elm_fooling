@@ -232,7 +232,7 @@ view table_def rows page_info =
 
         page_buttons =
             Grid.row [ Row.centerMd ]
-                [ Grid.col [ Col.xs1 ]
+                [ Grid.col [ Col.mdAuto ]
                     [ ButtonGroup.buttonGroup [] <|
                         [ ButtonGroup.button [ Button.outlineDark, Button.onClick page_info.prev_page_msg ] [ text "<" ] ]
                             ++ List.map create_page_btn (List.range 1 page_info.page_count)

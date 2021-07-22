@@ -263,11 +263,21 @@ view table_def rows page_info =
                 [ text <| "Page " ++ String.fromInt (page_idx + 1) ]
 
         prev_btn =
-            if page_info.current_page_idx /= 0 then
-                [ ButtonGroup.button [ Button.outlineSecondary, Button.onClick page_info.prev_page_msg ] [ text "<" ] ]
+            let
+                btn_attrs =
+                    if page_info.current_page_idx /= 0 then
+                        Button.attrs []
 
-            else
-                []
+                    else
+                        Button.attrs [ style "visibility" "hidden" ]
+            in
+            [ ButtonGroup.button
+                [ Button.outlineSecondary
+                , Button.onClick page_info.prev_page_msg
+                , btn_attrs
+                ]
+                [ text "<" ]
+            ]
 
         inner_page_btns =
             if page_info.page_count /= 0 then
@@ -277,11 +287,21 @@ view table_def rows page_info =
                 []
 
         next_btn =
-            if page_info.current_page_idx /= page_info.page_count then
-                [ ButtonGroup.button [ Button.outlineSecondary, Button.onClick page_info.next_page_msg ] [ text ">" ] ]
+            let
+                btn_attrs =
+                    if page_info.current_page_idx /= 0 then
+                        Button.attrs []
 
-            else
-                []
+                    else
+                        Button.attrs [ style "visibility" "hidden" ]
+            in
+            [ ButtonGroup.button
+                [ Button.outlineSecondary
+                , Button.onClick page_info.next_page_msg
+                , btn_attrs
+                ]
+                [ text ">" ]
+            ]
 
         page_buttons =
             Grid.row [ Row.centerMd ]

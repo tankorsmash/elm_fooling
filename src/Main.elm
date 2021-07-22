@@ -404,6 +404,8 @@ update2 msg model =
                     let
                         post_datas =
                             Debug.log "Successfully received files!" new_post_datas
+
+                        page_info = Table.initialize_page_info model.post_datas_page_info post_datas
                     in
                     ( { model | post_datas = post_datas }, Cmd.none )
 
@@ -469,12 +471,15 @@ update2 msg model =
                 Ok new_listing ->
                     let
                         lg =
-                            Debug.log "Successfully received listing!" "DDDD"
+                            Debug.log "Successfully received listing!"
 
                         listing =
                             new_listing
+
+                        reddit_page_info =
+                            Table.initialize_page_info model.reddit_listing_page_info listing.listing.children
                     in
-                    ( { model | reddit_listing_wrapper = listing }, Cmd.none )
+                    ( { model | reddit_listing_wrapper = listing, reddit_listing_page_info = reddit_page_info }, Cmd.none )
 
                 Err error ->
                     case error of

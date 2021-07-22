@@ -1,6 +1,6 @@
 module Table exposing (
     ColumnDef, ColumnLookup, ColumnType, PageInfo, TableDefinition, view,
-    decrement_page_idx, increment_page_idx)
+    decrement_page_idx, increment_page_idx, initialize_page_info)
 
 import Bootstrap.Button as Button
 import Bootstrap.ButtonGroup as ButtonGroup
@@ -122,6 +122,18 @@ type alias PageInfo msg =
     , next_page_msg : msg
     , change_page_msg : msg
     }
+
+
+{- Sets the page count based on per_page and the rows passed in -}
+initialize_page_info : PageInfo msg -> List a -> PageInfo msg
+initialize_page_info page_info rows =
+    let
+        num_rows = List.length rows
+        new_page_count = floor <| (toFloat <| num_rows) / (toFloat page_info.per_page)
+        lg = Debug.log "Page count" new_page_count
+        lg2 = Debug.log "Num rows" num_rows
+    in
+        {page_info | page_count = new_page_count}
 
 
 increment_page_idx : PageInfo msg -> PageInfo msg

@@ -1,6 +1,14 @@
-module Table exposing (
-    ColumnDef, ColumnLookup, ColumnType, PageInfo, TableDefinition, view,
-    decrement_page_idx, increment_page_idx, initialize_page_info)
+module Table exposing
+    ( ColumnDef
+    , ColumnLookup
+    , ColumnType
+    , PageInfo
+    , TableDefinition
+    , decrement_page_idx
+    , increment_page_idx
+    , initialize_page_info
+    , view
+    )
 
 import Bootstrap.Button as Button
 import Bootstrap.ButtonGroup as ButtonGroup
@@ -120,20 +128,32 @@ type alias PageInfo msg =
     , per_page : Int
     , prev_page_msg : msg
     , next_page_msg : msg
-    , change_page_msg : msg
+
+    {- Takes an page_idx and returns a msg type -}
+    , change_page_msg : Int -> msg
     }
 
 
+
 {- Sets the page count based on per_page and the rows passed in -}
+
+
 initialize_page_info : PageInfo msg -> List a -> PageInfo msg
 initialize_page_info page_info rows =
     let
-        num_rows = List.length rows
-        new_page_count = floor <| (toFloat <| num_rows) / (toFloat page_info.per_page)
-        lg = Debug.log "Page count" new_page_count
-        lg2 = Debug.log "Num rows" num_rows
+        num_rows =
+            List.length rows
+
+        new_page_count =
+            floor <| (toFloat <| num_rows) / toFloat page_info.per_page
+
+        lg =
+            Debug.log "Page count" new_page_count
+
+        lg2 =
+            Debug.log "Num rows" num_rows
     in
-        {page_info | page_count = new_page_count}
+    { page_info | page_count = new_page_count }
 
 
 increment_page_idx : PageInfo msg -> PageInfo msg
@@ -228,7 +248,11 @@ view table_def rows page_info =
                     List.map row_builder rows_
 
         create_page_btn page_idx =
-            ButtonGroup.button [ Button.outlineDark ] [ text <| "Page " ++ String.fromInt page_idx ]
+            ButtonGroup.button
+                [ Button.outlineDark
+                , Button.onClick <| page_info.change_page_msg page_idx
+                ]
+                [ text <| "Page " ++ String.fromInt page_idx ]
 
         page_buttons =
             Grid.row [ Row.centerMd ]

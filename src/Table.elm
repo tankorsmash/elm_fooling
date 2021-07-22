@@ -1,4 +1,6 @@
-module Table exposing (ColumnDef, ColumnLookup, ColumnType, PageInfo, TableDefinition, view)
+module Table exposing (
+    ColumnDef, ColumnLookup, ColumnType, PageInfo, TableDefinition, view,
+    decrement_page_idx, increment_page_idx)
 
 import Bootstrap.Button as Button
 import Bootstrap.ButtonGroup as ButtonGroup
@@ -120,6 +122,50 @@ type alias PageInfo msg =
     , next_page_msg : msg
     , change_page_msg : msg
     }
+
+
+increment_page_idx : PageInfo msg -> PageInfo msg
+increment_page_idx page_info =
+    let
+        per_page =
+            page_info.per_page
+
+        page_idx =
+            page_info.current_page_idx
+
+        page_count =
+            page_info.page_count
+
+        new_page_idx =
+            page_idx + 1
+    in
+    if new_page_idx > page_count then
+        page_info
+
+    else
+        { page_info | current_page_idx = new_page_idx }
+
+
+decrement_page_idx : PageInfo msg -> PageInfo msg
+decrement_page_idx page_info =
+    let
+        per_page =
+            page_info.per_page
+
+        page_idx =
+            page_info.current_page_idx
+
+        page_count =
+            page_info.page_count
+
+        new_page_idx =
+            page_idx - 1
+    in
+    if new_page_idx < 0 then
+        page_info
+
+    else
+        { page_info | current_page_idx = new_page_idx }
 
 
 paginate : Int -> Int -> List a -> List a

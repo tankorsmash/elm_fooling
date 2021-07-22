@@ -524,20 +524,20 @@ update2 msg model =
                 page_info =
                     model.post_datas_page_info
 
-                new_page_idx =
-                    page_info.current_page_idx - 1
+                new_page_info =
+                    Table.decrement_page_idx page_info
             in
-            ( { model | post_datas_page_info = { page_info | current_page_idx = new_page_idx } }, Cmd.none )
+            ( { model | post_datas_page_info = new_page_info }, Cmd.none )
 
         PrevPageMsg RedditListingTable ->
             let
                 page_info =
                     model.reddit_listing_page_info
 
-                new_page_idx =
-                    page_info.current_page_idx - 1
+                new_page_info =
+                    Table.decrement_page_idx page_info
             in
-            ( { model | reddit_listing_page_info = { page_info | current_page_idx = new_page_idx } }, Cmd.none )
+            ( { model | reddit_listing_page_info = new_page_info }, Cmd.none )
 
         NextPageMsg PostDatasTable ->
             let
@@ -545,19 +545,19 @@ update2 msg model =
                     model.post_datas_page_info
 
                 new_page_idx =
-                    page_info.current_page_idx + 1
+                    Table.increment_page_idx page_info
             in
-            ( { model | post_datas_page_info = { page_info | current_page_idx = new_page_idx } }, Cmd.none )
+            ( { model | post_datas_page_info = page_info }, Cmd.none )
 
         NextPageMsg RedditListingTable ->
             let
                 page_info =
                     model.reddit_listing_page_info
 
-                new_page_idx =
-                    page_info.current_page_idx + 1
+                new_page_info =
+                    Table.increment_page_idx page_info
             in
-            ( { model | reddit_listing_page_info = { page_info | current_page_idx = new_page_idx } }, Cmd.none )
+            ( { model | reddit_listing_page_info = new_page_info }, Cmd.none )
 
         ChangePageMsg PostDatasTable new_page_idx ->
             let

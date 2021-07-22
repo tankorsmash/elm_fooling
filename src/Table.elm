@@ -112,8 +112,14 @@ type alias StylePairList =
     List StylePair
 
 
-type alias PageInfo =
-    { page_count : Int, current_page_idx : Int, per_page : Int }
+type alias PageInfo msg =
+    { page_count : Int
+    , current_page_idx : Int
+    , per_page : Int
+    , prev_page_msg : msg
+    , next_page_msg : msg
+    , change_page_msg : msg
+    }
 
 
 paginate : Int -> Int -> List a -> List a
@@ -135,7 +141,7 @@ paginate per_page page_idx rows =
 
 {-| Assumes `rows` comes in column-idx order already
 -}
-view : TableDefinition -> List (List String) -> PageInfo -> Html msg
+view : TableDefinition -> List (List String) -> PageInfo msg -> Html msg
 view table_def rows page_info =
     let
         columns =

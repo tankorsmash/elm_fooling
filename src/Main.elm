@@ -53,6 +53,11 @@ import Utils exposing (add_class)
 import Weather
 
 
+type TableType
+    = RedditListingTable
+    | PostDatasTable
+
+
 type Msg
     = Increment
     | Decrement
@@ -75,6 +80,9 @@ type Msg
     | NavbarMsg Navbar.State
     | DownloadCurrentWeather
     | DownloadedCurrentWeather (Result Http.Error Weather.CurrentWeatherResponse)
+    | PrevPageMsg TableType
+    | NextPageMsg TableType
+    | ChangePageMsg TableType Int
 
 
 
@@ -165,7 +173,7 @@ type alias Model =
     , page_info : PageInfo
     , post_data : PostData
     , post_datas : List PostData
-    , post_datas_page_info : Table.PageInfo
+    , post_datas_page_info : Table.PageInfo Msg
     , post_id_to_download : Int
     , post_id_to_download_err_status : Int
     , alert_modal_open : Modal.Visibility
@@ -173,7 +181,7 @@ type alias Model =
     , reddit_listing_wrapper : Reddit.ListingWrapper
     , reddit_listing : Reddit.Listing
     , reddit_is_downloaded : Bool
-    , reddit_listing_page_info : Table.PageInfo
+    , reddit_listing_page_info : Table.PageInfo Msg
     , current_tab : TabType
     , current_navbar_state : Navbar.State
     , current_weather_response : Weather.CurrentWeatherResponse
@@ -279,6 +287,12 @@ init _ url navKey =
         current_weather_response =
             Weather.CurrentWeatherResponse "" current_weather_main
 
+        post_datas_page_info =
+            Table.PageInfo 1 0 10 (PrevPageMsg PostDatasTable) (NextPageMsg PostDatasTable) (ChangePageMsg PostDatasTable 0)
+
+        reddit_listing_page_info =
+            Table.PageInfo 1 0 10 (PrevPageMsg RedditListingTable) (NextPageMsg RedditListingTable) (ChangePageMsg RedditListingTable 0)
+
         model =
             { count = 0
             , content = "ASD"
@@ -287,14 +301,14 @@ init _ url navKey =
             , page_info = page_info
             , post_data = post_data
             , post_datas = []
-            , post_datas_page_info = Table.PageInfo 1 0 10
+            , post_datas_page_info = post_datas_page_info
             , post_id_to_download = -1
             , post_id_to_download_err_status = 0
             , alert_modal_open = Modal.hidden
             , alert_modal_text = ""
             , reddit_listing = reddit_listing
             , reddit_listing_wrapper = reddit_listing_wrapper
-            , reddit_listing_page_info = Table.PageInfo 1 0 10
+            , reddit_listing_page_info = reddit_listing_page_info
             , reddit_is_downloaded = False
             , current_tab = RedditListingTab
             , current_navbar_state = navbarState
@@ -504,6 +518,60 @@ update2 msg model =
                             Debug.log "Current Weather Download Error:" err_msg
                     in
                     ( model, Cmd.none )
+
+        PrevPageMsg PostDatasTable ->
+            let
+                page_info =
+                    model.post_datas_page_info
+
+                new_page_idx =
+                    page_info.current_page_idx - 1
+            in
+            ( { model | post_datas_page_info = { page_info | current_page_idx = new_page_idx } }, Cmd.none )
+
+        PrevPageMsg RedditListingTable ->
+            let
+                page_info =
+                    model.reddit_listing_page_info
+
+                new_page_idx =
+                    page_info.current_page_idx - 1
+            in
+            ( { model | reddit_listing_page_info = { page_info | current_page_idx = new_page_idx } }, Cmd.none )
+
+        NextPageMsg PostDatasTable ->
+            let
+                page_info =
+                    model.post_datas_page_info
+
+                new_page_idx =
+                    page_info.current_page_idx + 1
+            in
+            ( { model | post_datas_page_info = { page_info | current_page_idx = new_page_idx } }, Cmd.none )
+
+        NextPageMsg RedditListingTable ->
+            let
+                page_info =
+                    model.reddit_listing_page_info
+
+                new_page_idx =
+                    page_info.current_page_idx + 1
+            in
+            ( { model | reddit_listing_page_info = { page_info | current_page_idx = new_page_idx } }, Cmd.none )
+
+        ChangePageMsg PostDatasTable new_page_idx ->
+            let
+                page_info =
+                    model.post_datas_page_info
+            in
+            ( { model | post_datas_page_info = { page_info | current_page_idx = new_page_idx } }, Cmd.none )
+
+        ChangePageMsg RedditListingTable new_page_idx ->
+            let
+                page_info =
+                    model.reddit_listing_page_info
+            in
+            ( { model | reddit_listing_page_info = { page_info | current_page_idx = new_page_idx } }, Cmd.none )
 
 
 humanize : Time.Posix -> Time.Zone -> String

@@ -35,7 +35,7 @@ import Html
         , thead
         , tr
         )
-import Html.Attributes exposing (attribute, href, property, style)
+import Html.Attributes exposing (attribute, href, property, style, value)
 import Html.Events exposing (onClick, onInput)
 import Http
 import Json.Decode exposing (Decoder, at, field, list, string)
@@ -83,6 +83,7 @@ type Msg
     | PrevPageMsg TableType
     | NextPageMsg TableType
     | ChangePageMsg TableType Int
+    | ChangeSubredditToDownload String
 
 
 
@@ -180,6 +181,7 @@ type alias Model =
     , alert_modal_text : String
     , reddit_listing_wrapper : Reddit.ListingWrapper
     , reddit_listing : Reddit.Listing
+    , reddit_subreddit_to_download : String
     , reddit_is_downloaded : Bool
     , reddit_listing_page_info : Table.PageInfo Msg
     , current_tab : TabType
@@ -309,6 +311,7 @@ init _ url navKey =
             , reddit_listing = reddit_listing
             , reddit_listing_wrapper = reddit_listing_wrapper
             , reddit_listing_page_info = reddit_listing_page_info
+            , reddit_subreddit_to_download = ""
             , reddit_is_downloaded = False
             , current_tab = RedditListingTab
             , current_navbar_state = navbarState
@@ -463,7 +466,10 @@ update2 msg model =
             ( { model | alert_modal_open = Modal.hidden }, Cmd.none )
 
         DownloadRedditPosts ->
-            ( model, Reddit.download_reddit_posts DownloadedRedditPosts )
+            case model.reddit_subreddit_to_download of
+                "" ->
+                    ( model, Reddit.download_reddit_posts DownloadedRedditPosts )
+                _ ->( model, Reddit.download_subreddit_posts model.reddit_subreddit_to_download DownloadedRedditPosts )
 
         -- ( model, Reddit.download_reddit_posts )
         DownloadedRedditPosts result ->
@@ -577,6 +583,9 @@ update2 msg model =
                     model.reddit_listing_page_info
             in
             ( { model | reddit_listing_page_info = { page_info | current_page_idx = new_page_idx } }, Cmd.none )
+
+        ChangeSubredditToDownload new_subreddit ->
+            ( {model | reddit_subreddit_to_download = new_subreddit }, Cmd.none)
 
 
 humanize : Time.Posix -> Time.Zone -> String
@@ -866,6 +875,7 @@ homeView model =
                 RedditListingTab ->
                     div []
                         [ button_primary DownloadRedditPosts "Download Reddit Data"
+                        , input [value model.reddit_subreddit_to_download, onInput ChangeSubredditToDownload] []
                         , listing_view model
                         ]
 

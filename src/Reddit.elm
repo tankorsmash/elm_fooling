@@ -1,4 +1,4 @@
-module Reddit exposing (..)
+port module Reddit exposing (..)
 
 import Http
 import Json.Decode as Decode exposing (Decoder, field, int, list, string)
@@ -37,6 +37,9 @@ type alias Submission =
     , author : String
     , url : String
     }
+
+port reddit_send : String -> Cmd msg
+port reddit_receive : (String -> msg) -> Sub msg
 
 
 download_subreddit_posts : String -> (Result Http.Error ListingWrapper -> msg) -> Cmd msg

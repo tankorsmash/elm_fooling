@@ -36,21 +36,8 @@ type alias Submission =
     }
 
 
-type Msg
-    = DownloadedRedditPosts (Result Http.Error ListingWrapper)
-
--- download_reddit_posts : c Result a b -> Cmd msg
--- download_reddit_posts param_msg =
-
-download_reddit_posts : Cmd Msg
-download_reddit_posts =
-    Http.get
-        { url = root_json_server_url ++ "reddit_devblogs"
-        , expect = Http.expectJson DownloadedRedditPosts decode_listing_wrapper
-        }
-
--- custom_download_reddit_posts : msg -> Cmd msg
-custom_download_reddit_posts the_msg =
+download_reddit_posts : (Result Http.Error ListingWrapper -> msg) -> Cmd msg
+download_reddit_posts the_msg =
     Http.get
         { url = root_json_server_url ++ "reddit_devblogs"
         , expect = Http.expectJson the_msg decode_listing_wrapper

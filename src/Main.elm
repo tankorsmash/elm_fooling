@@ -463,7 +463,7 @@ update2 msg model =
             ( { model | alert_modal_open = Modal.hidden }, Cmd.none )
 
         DownloadRedditPosts ->
-            ( model, Reddit.custom_download_reddit_posts DownloadedRedditPosts )
+            ( model, Reddit.download_reddit_posts DownloadedRedditPosts )
 
         -- ( model, Reddit.download_reddit_posts )
         DownloadedRedditPosts result ->

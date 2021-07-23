@@ -64,7 +64,7 @@ type Msg
     | Poop
     | Change String
     | Tick Time.Posix
-    | AdjustTimeZone Time.Zone
+    -- | AdjustTimeZone Time.Zone
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | DownloadAllPosts
@@ -137,8 +137,8 @@ main =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ Time.every 1000 Tick
-        , Navbar.subscriptions model.current_navbar_state NavbarMsg
+        [ --Time.every 1000 Tick,
+         Navbar.subscriptions model.current_navbar_state NavbarMsg
         ]
 
 
@@ -320,8 +320,8 @@ init _ url navKey =
 
         existingCmds =
             Cmd.batch
-                [ Task.perform AdjustTimeZone Time.here
-                , navbarCmd
+                [ --Task.perform AdjustTimeZone Time.here,
+                 navbarCmd
                 ]
     in
     initCurrentPage ( model, existingCmds )
@@ -374,8 +374,8 @@ update2 msg model =
         Tick newTime ->
             ( { model | time = newTime }, Cmd.none )
 
-        AdjustTimeZone newZone ->
-            ( { model | zone = newZone }, Cmd.none )
+        -- AdjustTimeZone newZone ->
+        --     ( { model | zone = newZone }, Cmd.none )
 
         LinkClicked urlRequest ->
             case urlRequest of

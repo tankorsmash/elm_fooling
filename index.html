@@ -1,16 +1,30 @@
 <html>
-<head>
-  <meta charset="UTF-8">
-  <title>Main</title>
-  <script src="main.js"></script>
-</head>
+    <head>
+        <meta charset="UTF-8">
+        <title>Main</title>
+        <script src="main.js"></script>
+    </head>
 
-<body>
-  <div id="myapp"></div>
-  <script>
-  var app = Elm.Main.init({
-    node: document.getElementById('myapp')
-  });
-  </script>
-</body>
+    <body>
+        <h1>HEADER </h1>
+        <button onClick=send_to_elm >  CLICK ME </button>
+        <!-- <div id="myapp"></div> -->
+        <script>
+            var app = Elm.Main.init({
+                node: document.getElementById('myapp')
+            });
+            console.log("app: "+send_to_elm);
+
+
+            app.ports && app.ports.test_port_sending && app.ports.test_port_sending.subscribe(function(message) {
+                console.log("received message: "+message);
+                send_to_elm()
+            });
+
+            function send_to_elm() {
+                app.ports && app.ports.test_port_receiving && app.ports.test_port_receiving.send("sent from js");
+            };
+            console.log("ports exist? "+(app.ports && app.ports.test_port_receiving));
+        </script>
+    </body>
 </html>

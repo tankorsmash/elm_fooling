@@ -1,4 +1,4 @@
-module Main exposing (..)
+port module Main exposing (..)
 
 import Bootstrap.Button as Button
 import Bootstrap.CDN as CDN
@@ -64,7 +64,7 @@ type Msg
     | Poop
     | Change String
     | Tick Time.Posix
-    -- | AdjustTimeZone Time.Zone
+      -- | AdjustTimeZone Time.Zone
     | LinkClicked Browser.UrlRequest
     | UrlChanged Url.Url
     | DownloadAllPosts
@@ -84,6 +84,8 @@ type Msg
     | NextPageMsg TableType
     | ChangePageMsg TableType Int
     | ChangeSubredditToDownload String
+    | SendToPort String
+    | RecvFromPort String
 
 
 
@@ -138,7 +140,8 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
         [ --Time.every 1000 Tick,
-         Navbar.subscriptions model.current_navbar_state NavbarMsg
+          Navbar.subscriptions model.current_navbar_state NavbarMsg
+          , test_port_receiving RecvFromPort
         ]
 
 
@@ -293,7 +296,7 @@ init _ url navKey =
             Table.PageInfo 0 0 10 (PrevPageMsg PostDatasTable) (NextPageMsg PostDatasTable) (ChangePageMsg PostDatasTable)
 
         reddit_listing_page_info =
-            Table.PageInfo 0 0 10 (PrevPageMsg RedditListingTable) (NextPageMsg RedditListingTable) (ChangePageMsg RedditListingTable )
+            Table.PageInfo 0 0 10 (PrevPageMsg RedditListingTable) (NextPageMsg RedditListingTable) (ChangePageMsg RedditListingTable)
 
         model =
             { count = 0
@@ -321,7 +324,7 @@ init _ url navKey =
         existingCmds =
             Cmd.batch
                 [ --Task.perform AdjustTimeZone Time.here,
-                 navbarCmd
+                  navbarCmd
                 ]
     in
     initCurrentPage ( model, existingCmds )
@@ -376,7 +379,6 @@ update2 msg model =
 
         -- AdjustTimeZone newZone ->
         --     ( { model | zone = newZone }, Cmd.none )
-
         LinkClicked urlRequest ->
             case urlRequest of
                 Browser.Internal url ->
@@ -408,7 +410,8 @@ update2 msg model =
                         post_datas =
                             Debug.log "Successfully received files!" new_post_datas
 
-                        page_info = Table.initialize_page_info model.post_datas_page_info post_datas
+                        page_info =
+                            Table.initialize_page_info model.post_datas_page_info post_datas
                     in
                     ( { model | post_datas = post_datas }, Cmd.none )
 
@@ -469,7 +472,9 @@ update2 msg model =
             case model.reddit_subreddit_to_download of
                 "" ->
                     ( model, Reddit.download_reddit_posts DownloadedRedditPosts )
-                _ ->( model, Reddit.download_subreddit_posts model.reddit_subreddit_to_download DownloadedRedditPosts )
+
+                _ ->
+                    ( model, Reddit.download_subreddit_posts model.reddit_subreddit_to_download DownloadedRedditPosts )
 
         -- ( model, Reddit.download_reddit_posts )
         DownloadedRedditPosts result ->
@@ -585,7 +590,12 @@ update2 msg model =
             ( { model | reddit_listing_page_info = { page_info | current_page_idx = new_page_idx } }, Cmd.none )
 
         ChangeSubredditToDownload new_subreddit ->
-            ( {model | reddit_subreddit_to_download = new_subreddit }, Cmd.none)
+            ( { model | reddit_subreddit_to_download = new_subreddit }, Cmd.none )
+
+        SendToPort str ->
+            (model, test_port_sending "This is from elm")
+        RecvFromPort str ->
+            ((Debug.log ("Received from port: "++str)) model, Cmd.none)
 
 
 humanize : Time.Posix -> Time.Zone -> String
@@ -875,7 +885,7 @@ homeView model =
                 RedditListingTab ->
                     div []
                         [ button_primary DownloadRedditPosts "Download Reddit Data"
-                        , input [value model.reddit_subreddit_to_download, onInput ChangeSubredditToDownload] []
+                        , input [ value model.reddit_subreddit_to_download, onInput ChangeSubredditToDownload ] []
                         , listing_view model
                         ]
 
@@ -894,6 +904,7 @@ homeView model =
                 ]
             , br [] []
             ]
+        , button_primary (SendToPort ("ASDS")) "Port Send"
         , div [ add_class "row" ]
             [ div [ add_class "col-md-12" ]
                 [ navbar model ]
@@ -943,6 +954,10 @@ profileView model =
         [ site_navigation model
         , text "Welcome to my Profile!!"
         ]
+
+
+port test_port_receiving : (String -> msg) -> Sub msg
+port test_port_sending : (String) -> Cmd msg
 
 
 

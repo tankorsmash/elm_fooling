@@ -85,6 +85,7 @@ type Msg
     | ChangePageMsg TableType Int
     | ChangeSubredditToDownload String
     | SendToPort String
+    | RequestJSONP String
     | RecvFromPort String
 
 
@@ -142,6 +143,7 @@ subscriptions model =
         [ --Time.every 1000 Tick,
           Navbar.subscriptions model.current_navbar_state NavbarMsg
           , test_port_receiving RecvFromPort
+          , recv_jsonp RecvFromPort
         ]
 
 
@@ -594,6 +596,8 @@ update2 msg model =
 
         SendToPort str ->
             (model, test_port_sending "This is from elm")
+        RequestJSONP str ->
+            (model, exec_jsonp <| "http://reddit.com/" ++ "r/" ++ "Games" ++ "/.json&jsonp=?")
         RecvFromPort str ->
             ((Debug.log ("Received from port: "++str)) model, Cmd.none)
 
@@ -904,7 +908,7 @@ homeView model =
                 ]
             , br [] []
             ]
-        , button_primary (SendToPort ("ASDS")) "Port Send"
+        , button_primary (RequestJSONP ("ASDS")) "Port Send"
         , div [ add_class "row" ]
             [ div [ add_class "col-md-12" ]
                 [ navbar model ]
@@ -958,6 +962,9 @@ profileView model =
 
 port test_port_receiving : (String -> msg) -> Sub msg
 port test_port_sending : (String) -> Cmd msg
+
+port recv_jsonp : (String -> msg) -> Sub msg
+port exec_jsonp : String -> Cmd msg
 
 
 

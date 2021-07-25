@@ -25,6 +25,33 @@
                 app.ports && app.ports.test_port_receiving && app.ports.test_port_receiving.send("sent from js");
             };
             console.log("ports exist? "+(app.ports && app.ports.test_port_receiving));
+
+            app.ports.exec_jsonp.subscribe(function(url) {
+                execJsonp(url);
+            });
+
+            var execJsonp = function(url) {
+                console.log("executing jsonp");
+
+                // Execute the URL by creating the script DOM element
+                var script = document.createElement('script');
+                script.type = 'text/javascript';
+                script.async = true;
+                script.src = url;
+
+                // Insert the element, which executes the script
+                var tag = document.getElementsByTagName('script')[0];
+                tag.parentNode.insertBefore(script, tag);
+                // Remove the temp element from the DOM, to avoid DOM bloat
+                // You should be able to do this right away, without affecting JSONP execution
+                script.parentNode.removeChild(script);
+            };
+
+            // JSONP callback; name must match what is defined in the execJsonp URL
+            function jsonpCallback(data) {
+                app.ports.jsonpCallback.send(data);
+            };
+
         </script>
     </body>
 </html>

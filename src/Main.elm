@@ -76,6 +76,7 @@ type Msg
     | AlertModalHide
     | DownloadRedditPosts
     | DownloadedRedditPosts (Result Http.Error Reddit.ListingWrapper)
+    | DownloadedRedditPostsJSONP Reddit.ListingWrapper
     | ChangeTab TabType
     | NavbarMsg Navbar.State
     | DownloadCurrentWeather
@@ -142,8 +143,8 @@ subscriptions model =
     Sub.batch
         [ --Time.every 1000 Tick,
           Navbar.subscriptions model.current_navbar_state NavbarMsg
-          , test_port_receiving RecvFromPort
-          , recv_jsonp RecvFromPort
+        , test_port_receiving RecvFromPort
+        , recv_reddit_listing DownloadedRedditPostsJSONP
         ]
 
 
@@ -478,6 +479,10 @@ update2 msg model =
                 _ ->
                     ( model, Reddit.download_subreddit_posts model.reddit_subreddit_to_download DownloadedRedditPosts )
 
+        DownloadedRedditPostsJSONP listing ->
+            --TODO: update page info as well
+            ( { model | reddit_listing_wrapper = listing }, Cmd.none )
+
         -- ( model, Reddit.download_reddit_posts )
         DownloadedRedditPosts result ->
             case result of
@@ -490,7 +495,7 @@ update2 msg model =
                             new_listing
 
                         reddit_page_info =
-                            Table.initialize_page_info model.reddit_listing_page_info listing.listing.children
+                            Table.initialize_page_info model.reddit_listing_page_info listing.data.children
                     in
                     ( { model | reddit_listing_wrapper = listing, reddit_listing_page_info = reddit_page_info }, Cmd.none )
 
@@ -595,12 +600,13 @@ update2 msg model =
             ( { model | reddit_subreddit_to_download = new_subreddit }, Cmd.none )
 
         SendToPort str ->
-            (model, test_port_sending "This is from elm")
+            ( model, test_port_sending "This is from elm" )
+
         RequestJSONP str ->
-            (model, exec_jsonp <| "http://reddit.com/" ++ "r/" ++ "Games" ++ "/.json?jsonp=execJsonp")
+            ( model, exec_jsonp <| "http://reddit.com/" ++ "r/" ++ "Games" ++ "/.json?jsonp=jsonpCallback" )
 
         RecvFromPort str ->
-            ((Debug.log ("Received from port: "++str)) model, Cmd.none)
+            ( Debug.log ("Received from port: " ++ str) model, Cmd.none )
 
 
 humanize : Time.Posix -> Time.Zone -> String
@@ -775,7 +781,7 @@ listing_view model =
         -- lookups =
         --     List.map .lookup_func column_lookups
         table_rows =
-            List.map (do_lookups column_lookups) model.reddit_listing_wrapper.listing.children
+            List.map (do_lookups column_lookups) model.reddit_listing_wrapper.data.children
     in
     div []
         [ br [] []
@@ -909,7 +915,7 @@ homeView model =
                 ]
             , br [] []
             ]
-        , button_primary (RequestJSONP ("ASDS")) "Port Send"
+        , button_primary (RequestJSONP "ASDS") "Port Send"
         , div [ add_class "row" ]
             [ div [ add_class "col-md-12" ]
                 [ navbar model ]
@@ -962,9 +968,14 @@ profileView model =
 
 
 port test_port_receiving : (String -> msg) -> Sub msg
-port test_port_sending : (String) -> Cmd msg
 
-port recv_jsonp : (String -> msg) -> Sub msg
+
+port test_port_sending : String -> Cmd msg
+
+
+port recv_reddit_listing : (Reddit.ListingWrapper -> msg) -> Sub msg
+
+
 port exec_jsonp : String -> Cmd msg
 
 

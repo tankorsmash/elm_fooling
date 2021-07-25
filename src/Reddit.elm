@@ -22,7 +22,7 @@ type alias Thing a =
 
 
 type alias ListingWrapper =
-    { kind : String, listing : Listing }
+    { kind : String, data : Listing }
 
 type alias Listing =
     { before : String, after : String, children : List SubmissionWrapper }
@@ -45,7 +45,7 @@ port reddit_receive : (String -> msg) -> Sub msg
 download_subreddit_posts : String -> (Result Http.Error ListingWrapper -> msg) -> Cmd msg
 download_subreddit_posts subreddit the_msg =
     Http.get
-        { url = root_reddit_url ++ "r/" ++ subreddit ++ "/.json?jsonp=execJsonp"
+        { url = root_reddit_url ++ "r/" ++ subreddit ++ "/.json?jsonp=jsonpCallback"
         , expect = Http.expectJson the_msg decode_listing_wrapper
         }
 

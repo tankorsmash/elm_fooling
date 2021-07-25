@@ -40,7 +40,7 @@
                 script.src = url;
 
                 // Insert the element, which executes the script
-                var tag = document.getElementsByTagName('script')[0];
+                var tag = document.getElementsByTagName('div')[0];
                 tag.parentNode.insertBefore(script, tag);
                 // Remove the temp element from the DOM, to avoid DOM bloat
                 // You should be able to do this right away, without affecting JSONP execution

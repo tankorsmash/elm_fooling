@@ -597,7 +597,8 @@ update2 msg model =
         SendToPort str ->
             (model, test_port_sending "This is from elm")
         RequestJSONP str ->
-            (model, exec_jsonp <| "http://reddit.com/" ++ "r/" ++ "Games" ++ "/.json&jsonp=?")
+            (model, exec_jsonp <| "http://reddit.com/" ++ "r/" ++ "Games" ++ "/.json?jsonp=execJsonp")
+
         RecvFromPort str ->
             ((Debug.log ("Received from port: "++str)) model, Cmd.none)
 

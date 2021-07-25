@@ -14,7 +14,7 @@ root_json_server_url =
     "http://localhost:5021/"
 
 root_reddit_url =
-    "http://reddit.com/"
+    "http://old.reddit.com/"
 
 
 type alias Thing a =
@@ -45,7 +45,7 @@ port reddit_receive : (String -> msg) -> Sub msg
 download_subreddit_posts : String -> (Result Http.Error ListingWrapper -> msg) -> Cmd msg
 download_subreddit_posts subreddit the_msg =
     Http.get
-        { url = root_reddit_url ++ "r/" ++ subreddit ++ "/.json&jsonp=?"
+        { url = root_reddit_url ++ "r/" ++ subreddit ++ "/.json?jsonp=execJsonp"
         , expect = Http.expectJson the_msg decode_listing_wrapper
         }
 

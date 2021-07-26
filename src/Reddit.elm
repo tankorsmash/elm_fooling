@@ -57,6 +57,10 @@ download_reddit_posts the_msg =
         }
 
 
+subreddit_root_url : String -> String
+subreddit_root_url subreddit =
+    root_reddit_url ++ "r/" ++ subreddit
+
 decode_submission_wrapper : Decoder SubmissionWrapper
 decode_submission_wrapper =
     Decode.succeed SubmissionWrapper

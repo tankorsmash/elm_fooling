@@ -88,6 +88,7 @@ type Msg
     | ChangeSubredditToDownload String
     | SendToPort String
     | RequestJSONP String
+    | RequestJSONPFromSubreddit String
     | RecvFromPort String
 
 
@@ -478,7 +479,8 @@ update2 msg model =
                     ( model, Reddit.download_reddit_posts DownloadedRedditPosts )
 
                 _ ->
-                    ( model, Reddit.download_subreddit_posts model.reddit_subreddit_to_download DownloadedRedditPosts )
+                    -- ( model, Reddit.download_subreddit_posts model.reddit_subreddit_to_download DownloadedRedditPosts )
+                    update2 (RequestJSONPFromSubreddit model.reddit_subreddit_to_download) model
 
         DownloadedRedditPostsJSONP listing_json_value ->
             --TODO: update page info as well
@@ -611,6 +613,9 @@ update2 msg model =
 
         RequestJSONP str ->
             ( model, exec_jsonp <| "http://reddit.com/" ++ "r/" ++ "Games" ++ "/.json?jsonp=jsonpCallback" )
+
+        RequestJSONPFromSubreddit subreddit ->
+            ( model, exec_jsonp <| Reddit.subreddit_root_url subreddit ++ "/.json?jsonp=jsonpCallback" )
 
         RecvFromPort str ->
             ( Debug.log ("Received from port: " ++ str) model, Cmd.none )

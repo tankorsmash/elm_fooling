@@ -45,7 +45,7 @@
 
             // JSONP callback; name must match what is defined in the execJsonp URL
             function jsonpCallback(data) {
-                console.log("in jsonpCallback: "+data);
+                console.log("in jsonpCallback: ",{...data});
                 window.app.ports.recv_reddit_listing.send(data);
             };
 

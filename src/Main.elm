@@ -76,7 +76,8 @@ type Msg
     | AlertModalHide
     | DownloadRedditPosts
     | DownloadedRedditPosts (Result Http.Error Reddit.ListingWrapper)
-    | DownloadedRedditPostsJSONP Reddit.ListingWrapper
+    -- | DownloadedRedditPostsJSONP Reddit.ListingWrapper
+    | DownloadedRedditPostsJSONP Json.Decode.Value
     | ChangeTab TabType
     | NavbarMsg Navbar.State
     | DownloadCurrentWeather
@@ -479,9 +480,15 @@ update2 msg model =
                 _ ->
                     ( model, Reddit.download_subreddit_posts model.reddit_subreddit_to_download DownloadedRedditPosts )
 
-        DownloadedRedditPostsJSONP listing ->
+        DownloadedRedditPostsJSONP listing_json_value ->
             --TODO: update page info as well
-            ( { model | reddit_listing_wrapper = listing }, Cmd.none )
+            let
+                decoded_value = case Json.Decode.decodeValue Reddit.decode_listing_wrapper listing_json_value of
+                    Ok listing -> listing
+                    Err _ -> model.reddit_listing_wrapper
+            in
+            ( { model | reddit_listing_wrapper = decoded_value }, Cmd.none )
+            -- ( { model | reddit_listing_wrapper = listing }, Cmd.none )
 
         -- ( model, Reddit.download_reddit_posts )
         DownloadedRedditPosts result ->
@@ -973,7 +980,8 @@ port test_port_receiving : (String -> msg) -> Sub msg
 port test_port_sending : String -> Cmd msg
 
 
-port recv_reddit_listing : (Reddit.ListingWrapper -> msg) -> Sub msg
+-- port recv_reddit_listing : (Reddit.ListingWrapper -> msg) -> Sub msg
+port recv_reddit_listing : (Json.Decode.Value -> msg) -> Sub msg
 
 
 port exec_jsonp : String -> Cmd msg

@@ -51,9 +51,9 @@ type DataType
 type alias FormField a =
     { field_name : String
     , data_type : DataType
-    , string_getter : a -> String
-    , int_getter : a -> Int
-    , float_getter : a -> Float
+    , string_getter : Maybe (a -> String)
+    , int_getter : Maybe (a -> Int)
+    , float_getter : Maybe (a -> Float)
 
     -- , data_str : String
     -- , data_int : Int

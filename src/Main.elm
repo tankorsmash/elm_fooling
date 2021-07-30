@@ -334,27 +334,27 @@ init _ url navKey =
                 name_field =
                     { field_name = "weapon_name"
                     , data_type = FormData.StringType
-                    , string_getter = .weapon_name
-                    , int_getter = FormData.unset_int_getter
-                    , float_getter = FormData.unset_float_getter
+                    , string_getter = Just .weapon_name
+                    , int_getter = Nothing
+                    , float_getter = Nothing
                     }
 
                 frame_id_field : FormData.FormField WeaponFrame
                 frame_id_field =
                     { field_name = "frame_id"
                     , data_type = FormData.IntType
-                    , string_getter = FormData.unset_string_getter
-                    , int_getter = .frame_id
-                    , float_getter = FormData.unset_float_getter
+                    , string_getter = Nothing
+                    , int_getter = Just .frame_id
+                    , float_getter = Nothing
                     }
 
                 choice_id_field : FormData.FormField WeaponFrame
                 choice_id_field =
                     { field_name = "choice_id"
                     , data_type = FormData.IntType
-                    , string_getter = FormData.unset_string_getter
-                    , int_getter = .choice_id
-                    , float_getter = FormData.unset_float_getter
+                    , string_getter = Nothing
+                    , int_getter = Just .choice_id
+                    , float_getter = Nothing
                     }
             in
             { fields =

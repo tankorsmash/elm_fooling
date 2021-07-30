@@ -89,6 +89,26 @@ type alias FormField fd msg =
     }
 
 
+render_field_input_string : fd -> FormField fd msg -> Html msg
+render_field_input_string obj field =
+    InputGroup.config
+        (InputGroup.text
+            [ Input.placeholder "placeholder"
+            , Input.value <|
+                case field.string_getter of
+                    Just getter ->
+                        getter obj
+
+                    Nothing ->
+                        "unset in field"
+            , Input.onInput field.on_input_msg
+            ]
+        )
+        |> InputGroup.predecessors
+            [ InputGroup.span [] [ text field.field_name ] ]
+        |> InputGroup.view
+
+
 render_field_input_number : fd -> FormField fd msg -> Html msg
 render_field_input_number obj field =
     InputGroup.config
@@ -149,6 +169,9 @@ render_field obj field =
     case field.data_type of
         IntType ->
             div [] [ render_field_input_number obj field ]
+
+        StringType ->
+            div [] [ render_field_input_string obj field ]
 
         unknown_type ->
             div [] [ text <| "unknown field type: " ++ to_string unknown_type ]

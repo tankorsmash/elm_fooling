@@ -354,7 +354,7 @@ init _ url navKey =
 
         form_data : WeaponFrame
         form_data =
-            { weapon_name = "unset form name", frame_id = 123, choice_id = -1 }
+            { weapon_name = "unset in init wapn_ame", frame_id = 123, choice_id = -1 }
 
         form_definition : FormData.FormDefinition WeaponFrame Msg
         form_definition =
@@ -379,7 +379,7 @@ init _ url navKey =
                     , string_getter = Nothing
                     , int_getter = Just .frame_id
                     , float_getter = Nothing
-                    , on_input_msg = (\str -> UpdateFormData (FrameId str))
+                    , on_input_msg = \str -> UpdateFormData (FrameId str)
                     }
 
                 choice_id_field : FormData.FormField WeaponFrame Msg
@@ -389,7 +389,7 @@ init _ url navKey =
                     , string_getter = Nothing
                     , int_getter = Just .choice_id
                     , float_getter = Nothing
-                    , on_input_msg = (\str -> UpdateFormData (ChoiceId str))
+                    , on_input_msg = \str -> UpdateFormData (ChoiceId str)
                     }
             in
             { fields =

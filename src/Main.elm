@@ -13,7 +13,6 @@ import Bootstrap.Navbar as Navbar
 import Browser
 import Browser.Navigation as Nav
 import Debug
-import FormData
 import FormData exposing (DataType(..))
 import Html
     exposing
@@ -56,7 +55,7 @@ import Weather
 
 
 type alias WeaponFrame =
-    { name : String, frame_id : Int, choice_id : Int }
+    { weapon_name : String, frame_id : Int, choice_id : Int }
 
 
 type TableType
@@ -181,9 +180,10 @@ type TabType
     | WeatherTab
     | FormDataTab
 
-qwe : DataType
-qwe = String
 
+qwe : DataType
+qwe =
+    StringType
 
 
 type FormUpdateType
@@ -213,7 +213,7 @@ type alias Model =
     , current_tab : TabType
     , current_navbar_state : Navbar.State
     , current_weather_response : Weather.CurrentWeatherResponse
-    , form_definition : FormData.FormDefinition
+    , form_definition : FormData.FormDefinition WeaponFrame
     , form_data : WeaponFrame
     }
 
@@ -325,14 +325,42 @@ init _ url navKey =
 
         form_data : WeaponFrame
         form_data =
-            { name = "unset form name", frame_id = 123, choice_id = -1 }
+            { weapon_name = "unset form name", frame_id = 123, choice_id = -1 }
 
-        form_definition : FormData.FormDefinition
+        form_definition : FormData.FormDefinition WeaponFrame
         form_definition =
+            let
+                name_field : FormData.FormField WeaponFrame
+                name_field =
+                    { field_name = "weapon_name"
+                    , data_type = FormData.StringType
+                    , string_getter = .weapon_name
+                    , int_getter = FormData.unset_int_getter
+                    , float_getter = FormData.unset_float_getter
+                    }
+
+                frame_id_field : FormData.FormField WeaponFrame
+                frame_id_field =
+                    { field_name = "frame_id"
+                    , data_type = FormData.IntType
+                    , string_getter = FormData.unset_string_getter
+                    , int_getter = .frame_id
+                    , float_getter = FormData.unset_float_getter
+                    }
+
+                choice_id_field : FormData.FormField WeaponFrame
+                choice_id_field =
+                    { field_name = "choice_id"
+                    , data_type = FormData.IntType
+                    , string_getter = FormData.unset_string_getter
+                    , int_getter = .choice_id
+                    , float_getter = FormData.unset_float_getter
+                    }
+            in
             { fields =
-                [ { field_name = "name", data_type = String}
-                , { field_name = "frame_id", data_type = Int }
-                , { field_name = "choice_id", data_type = Int }
+                [ name_field
+                , frame_id_field
+                , choice_id_field
                 ]
             }
 
@@ -774,7 +802,7 @@ form_data_view model =
     in
     div []
         [ span [] [ text <| "Some FormData Text" ]
-        , div [] [ FormData.render_fields form_definition.fields form_data]
+        , div [] [ FormData.render_fields form_definition.fields form_data ]
         ]
 
 

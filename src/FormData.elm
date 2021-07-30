@@ -1,4 +1,5 @@
-module FormData exposing (DataType(..), FormField, FormDefinition, render_fields)
+module FormData exposing (DataType(..), FormDefinition, FormField, render_fields, unset_string_getter, unset_int_getter,
+    unset_float_getter)
 
 import Html
     exposing
@@ -24,30 +25,47 @@ import Html
         )
 
 
+
 {- the type of data in the form field -}
 
-type alias FormDefinition =
-    { fields : List FormField }
+unset_string_getter : a -> String
+unset_string_getter _ = ""
+
+unset_int_getter : a -> Int
+unset_int_getter _ = 0
+
+unset_float_getter : a -> Float
+unset_float_getter _ = 0
+
+
+type alias FormDefinition a =
+    { fields : List (FormField a) }
 
 
 type DataType
-    = String
-    | Int
-    | Float
+    = StringType
+    | IntType
+    | FloatType
 
 
-type alias FormField =
+type alias FormField a =
     { field_name : String
     , data_type : DataType
+    , string_getter : a -> String
+    , int_getter : a -> Int
+    , float_getter : a -> Float
+
     -- , data_str : String
     -- , data_int : Int
     -- , data_float : Float
     }
 
-render_field : FormField -> Html msg
-render_field field =
-    div [] [text <| "Field name is: " ++ field.field_name]
 
-render_fields : List FormField -> fd -> Html msg
+render_field : FormField a -> Html msg
+render_field field =
+    div [] [ text <| "Field name is: " ++ field.field_name ]
+
+
+render_fields : List (FormField a) -> fd -> Html msg
 render_fields fields form_data =
     div [] <| List.map render_field fields

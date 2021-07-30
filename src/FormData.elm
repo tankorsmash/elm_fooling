@@ -56,8 +56,8 @@ unset_float_getter _ =
     0
 
 
-type alias FormDefinition fd =
-    { fields : List (FormField fd) }
+type alias FormDefinition fd msg =
+    { fields : List (FormField fd msg) }
 
 
 type DataType
@@ -65,39 +65,51 @@ type DataType
     | IntType
     | FloatType
 
+
 to_string : DataType -> String
-to_string dtype = case dtype of
-    StringType -> "StringType"
-    IntType -> "IntType"
-    FloatType -> "FloatType"
+to_string dtype =
+    case dtype of
+        StringType ->
+            "StringType"
+
+        IntType ->
+            "IntType"
+
+        FloatType ->
+            "FloatType"
 
 
-type alias FormField fd =
+type alias FormField fd msg =
     { field_name : String
     , data_type : DataType
     , string_getter : Maybe (fd -> String)
     , int_getter : Maybe (fd -> Int)
     , float_getter : Maybe (fd -> Float)
+    , on_input_msg : String -> msg
     }
 
 
-
-render_field_input_number : fd -> FormField fd -> Html msg
+render_field_input_number : fd -> FormField fd msg -> Html msg
 render_field_input_number obj field =
     InputGroup.config
         (InputGroup.number
             [ Input.placeholder "placeholder"
-            , Input.value "some value"
+            , Input.value <|
+                case field.int_getter of
+                    Just getter ->
+                        String.fromInt <| getter obj
 
-            -- , Input.onInput some_msg
+                    Nothing ->
+                        "-1233333"
+            , Input.onInput field.on_input_msg
             ]
         )
         |> InputGroup.predecessors
-            [ InputGroup.span [] [ text field.field_name] ]
+            [ InputGroup.span [] [ text field.field_name ] ]
         |> InputGroup.view
 
 
-lookup_field : fd -> FormField fd -> String
+lookup_field : fd -> FormField fd msg -> String
 lookup_field obj field =
     case field.data_type of
         StringType ->
@@ -127,23 +139,29 @@ lookup_field obj field =
                         0.0
 
 
-render_field_to_plaintext : fd -> FormField fd -> Html msg
+render_field_to_plaintext : fd -> FormField fd msg -> Html msg
 render_field_to_plaintext obj field =
     div [] [ text <| "Field name is: " ++ field.field_name ++ ", " ++ lookup_field obj field ]
 
 
-render_field : fd -> FormField fd -> Html msg
+render_field : fd -> FormField fd msg -> Html msg
 render_field obj field =
     case field.data_type of
-        IntType -> div [] [ render_field_input_number obj field ]
-        unknown_type -> div [] [ text <| "unknown field type: "++to_string unknown_type ]
+        IntType ->
+            div [] [ render_field_input_number obj field ]
+
+        unknown_type ->
+            div [] [ text <| "unknown field type: " ++ to_string unknown_type ]
 
 
-render_fields : List (FormField fd) -> fd -> Html msg
+render_fields : List (FormField fd msg) -> fd -> Html msg
 render_fields fields form_data =
     div [] <|
         List.map
             -- (render_field_to_plaintext form_data)
             (render_field form_data)
             fields
-            -- ++ [ render_field_input_number ]
+
+
+
+-- ++ [ render_field_input_number ]

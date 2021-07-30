@@ -102,8 +102,37 @@ type Msg
 -- MAIN
 
 
+update_form_data : WeaponFrame -> FormUpdateType -> WeaponFrame
 update_form_data form_data form_update_type =
-    form_data
+    case form_update_type of
+        Name new_name ->
+            { form_data | weapon_name = new_name }
+
+        ChoiceId new_choice_id ->
+            { form_data
+                | choice_id =
+                    case String.toInt new_choice_id of
+                        Just new_int ->
+                            new_int
+
+                        Nothing ->
+                            form_data.choice_id
+            }
+
+        FrameId new_frame_id ->
+            { form_data
+                | frame_id =
+                    case String.toInt new_frame_id of
+                        Just new_int ->
+                            new_int
+
+                        Nothing ->
+                            form_data.frame_id
+            }
+
+
+
+-- form_data
 
 
 root_json_server_url =
@@ -188,8 +217,8 @@ qwe =
 
 type FormUpdateType
     = Name String
-    | FrameId Int
-    | ChoiceId Int
+    | FrameId String
+    | ChoiceId String
 
 
 type alias Model =
@@ -213,7 +242,7 @@ type alias Model =
     , current_tab : TabType
     , current_navbar_state : Navbar.State
     , current_weather_response : Weather.CurrentWeatherResponse
-    , form_definition : FormData.FormDefinition WeaponFrame
+    , form_definition : FormData.FormDefinition WeaponFrame Msg
     , form_data : WeaponFrame
     }
 
@@ -327,34 +356,40 @@ init _ url navKey =
         form_data =
             { weapon_name = "unset form name", frame_id = 123, choice_id = -1 }
 
-        form_definition : FormData.FormDefinition WeaponFrame
+        form_definition : FormData.FormDefinition WeaponFrame Msg
         form_definition =
             let
-                name_field : FormData.FormField WeaponFrame
+                name_field : FormData.FormField WeaponFrame Msg
                 name_field =
                     { field_name = "weapon_name"
                     , data_type = FormData.StringType
                     , string_getter = Just .weapon_name
                     , int_getter = Nothing
                     , float_getter = Nothing
+
+                    -- , on_input_msg = Name
+                    -- , on_input_msg = (\str -> Name str)
+                    , on_input_msg = \str -> UpdateFormData (Name str)
                     }
 
-                frame_id_field : FormData.FormField WeaponFrame
+                frame_id_field : FormData.FormField WeaponFrame Msg
                 frame_id_field =
                     { field_name = "frame_id"
                     , data_type = FormData.IntType
                     , string_getter = Nothing
                     , int_getter = Just .frame_id
                     , float_getter = Nothing
+                    , on_input_msg = (\str -> UpdateFormData (FrameId str))
                     }
 
-                choice_id_field : FormData.FormField WeaponFrame
+                choice_id_field : FormData.FormField WeaponFrame Msg
                 choice_id_field =
                     { field_name = "choice_id"
                     , data_type = FormData.IntType
                     , string_getter = Nothing
                     , int_getter = Just .choice_id
                     , float_getter = Nothing
+                    , on_input_msg = (\str -> UpdateFormData (ChoiceId str))
                     }
             in
             { fields =

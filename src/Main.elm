@@ -931,7 +931,7 @@ navbar model =
             , ( RedditListingTab, "Reddit Submissions Table" )
             , ( SinglePostDataTab, "Single PostData" )
             , ( WeatherTab, "Weather" )
-            , ( FormDataTab, "Weather" )
+            , ( FormDataTab, "Form Example" )
             ]
     in
     Navbar.config NavbarMsg

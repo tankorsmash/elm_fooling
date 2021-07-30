@@ -13,6 +13,8 @@ import Bootstrap.Navbar as Navbar
 import Browser
 import Browser.Navigation as Nav
 import Debug
+import FormData
+import FormData exposing (DataType(..))
 import Html
     exposing
         ( Html
@@ -51,6 +53,10 @@ import Url
 import Url.Parser exposing ((</>), Parser, int, map, oneOf, parse, s, string)
 import Utils exposing (add_class)
 import Weather
+
+
+type alias WeaponFrame =
+    { name : String, frame_id : Int, choice_id : Int }
 
 
 type TableType
@@ -175,16 +181,9 @@ type TabType
     | WeatherTab
     | FormDataTab
 
+qwe : DataType
+qwe = String
 
-
--- type alias RedditSubmission
-
-
-type alias FormData =
-    { name : String
-    , frame_id : Int
-    , choice_id : Int
-    }
 
 
 type FormUpdateType
@@ -214,7 +213,8 @@ type alias Model =
     , current_tab : TabType
     , current_navbar_state : Navbar.State
     , current_weather_response : Weather.CurrentWeatherResponse
-    , form_data : FormData
+    , form_definition : FormData.FormDefinition
+    , form_data : WeaponFrame
     }
 
 
@@ -323,9 +323,18 @@ init _ url navKey =
         reddit_listing_page_info =
             Table.PageInfo 0 0 10 (PrevPageMsg RedditListingTable) (NextPageMsg RedditListingTable) (ChangePageMsg RedditListingTable)
 
-        form_data : FormData
+        form_data : WeaponFrame
         form_data =
             { name = "unset form name", frame_id = 123, choice_id = -1 }
+
+        form_definition : FormData.FormDefinition
+        form_definition =
+            { fields =
+                [ { field_name = "name", data_type = String}
+                , { field_name = "frame_id", data_type = Int }
+                , { field_name = "choice_id", data_type = Int }
+                ]
+            }
 
         model =
             { count = 0
@@ -349,6 +358,7 @@ init _ url navKey =
             , current_navbar_state = navbarState
             , current_weather_response = current_weather_response
             , form_data = form_data
+            , form_definition = form_definition
             }
 
         existingCmds =
@@ -758,10 +768,13 @@ form_data_view model =
     let
         form_data =
             model.form_data
+
+        form_definition =
+            model.form_definition
     in
     div []
         [ span [] [ text <| "Some FormData Text" ]
-        , div [] [ text form_data.name ]
+        , div [] [ FormData.render_fields form_definition.fields form_data]
         ]
 
 

@@ -73,11 +73,11 @@ lookup_field obj field =
                 Just getter -> getter obj
                 Nothing -> 0.0
 
-render_field : fd -> FormField fd ->  Html msg
-render_field obj field =
+render_field_to_plaintext : fd -> FormField fd ->  Html msg
+render_field_to_plaintext obj field =
     div [] [ text <| "Field name is: " ++ field.field_name ++ ", " ++ (lookup_field obj field)]
 
 
 render_fields : List (FormField fd) -> fd -> Html msg
 render_fields fields form_data =
-    div [] <| List.map (render_field form_data) fields
+    div [] <| List.map (render_field_to_plaintext form_data) fields

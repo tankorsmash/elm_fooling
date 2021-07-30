@@ -1008,7 +1008,6 @@ homeView model =
                 FormDataTab ->
                     div []
                         [ h4 [] [ text "FormData!" ]
-                        , button_primary DownloadCurrentWeather "Download Current Weather"
                         , form_data_view model
                         ]
     in

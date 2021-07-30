@@ -38,8 +38,8 @@ unset_float_getter : a -> Float
 unset_float_getter _ = 0
 
 
-type alias FormDefinition a =
-    { fields : List (FormField a) }
+type alias FormDefinition fd =
+    { fields : List (FormField fd) }
 
 
 type DataType
@@ -48,24 +48,36 @@ type DataType
     | FloatType
 
 
-type alias FormField a =
+type alias FormField fd =
     { field_name : String
     , data_type : DataType
-    , string_getter : Maybe (a -> String)
-    , int_getter : Maybe (a -> Int)
-    , float_getter : Maybe (a -> Float)
-
-    -- , data_str : String
-    -- , data_int : Int
-    -- , data_float : Float
+    , string_getter : Maybe (fd -> String)
+    , int_getter : Maybe (fd -> Int)
+    , float_getter : Maybe (fd -> Float)
     }
 
 
-render_field : FormField a -> Html msg
-render_field field =
-    div [] [ text <| "Field name is: " ++ field.field_name ]
+lookup_field : fd -> FormField fd -> String
+lookup_field obj field =
+    case field.data_type of
+        StringType ->
+            case field.string_getter of
+                Just getter -> getter obj
+                Nothing -> "unset in lookup"
+        IntType ->
+            String.fromInt <| case field.int_getter of
+                Just getter -> getter obj
+                Nothing -> 0
+        FloatType ->
+            String.fromFloat <| case field.float_getter of
+                Just getter -> getter obj
+                Nothing -> 0.0
+
+render_field : fd -> FormField fd ->  Html msg
+render_field obj field =
+    div [] [ text <| "Field name is: " ++ field.field_name ++ ", " ++ (lookup_field obj field)]
 
 
-render_fields : List (FormField a) -> fd -> Html msg
+render_fields : List (FormField fd) -> fd -> Html msg
 render_fields fields form_data =
-    div [] <| List.map render_field fields
+    div [] <| List.map (render_field form_data) fields

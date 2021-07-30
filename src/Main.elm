@@ -76,7 +76,7 @@ type Msg
     | AlertModalHide
     | DownloadRedditPosts
     | DownloadedRedditPosts (Result Http.Error Reddit.ListingWrapper)
-    -- | DownloadedRedditPostsJSONP Reddit.ListingWrapper
+      -- | DownloadedRedditPostsJSONP Reddit.ListingWrapper
     | DownloadedRedditPostsJSONP Json.Decode.Value
     | ChangeTab TabType
     | NavbarMsg Navbar.State
@@ -90,10 +90,15 @@ type Msg
     | RequestJSONP String
     | RequestJSONPFromSubreddit String
     | RecvFromPort String
+    | UpdateFormData FormUpdateType
 
 
 
 -- MAIN
+
+
+update_form_data form_data form_update_type =
+    form_data
 
 
 root_json_server_url =
@@ -168,10 +173,24 @@ type TabType
     | PostDataTableTab
     | RedditListingTab
     | WeatherTab
+    | FormDataTab
 
 
 
 -- type alias RedditSubmission
+
+
+type alias FormData =
+    { name : String
+    , frame_id : Int
+    , choice_id : Int
+    }
+
+
+type FormUpdateType
+    = Name String
+    | FrameId Int
+    | ChoiceId Int
 
 
 type alias Model =
@@ -195,6 +214,7 @@ type alias Model =
     , current_tab : TabType
     , current_navbar_state : Navbar.State
     , current_weather_response : Weather.CurrentWeatherResponse
+    , form_data : FormData
     }
 
 
@@ -303,6 +323,10 @@ init _ url navKey =
         reddit_listing_page_info =
             Table.PageInfo 0 0 10 (PrevPageMsg RedditListingTable) (NextPageMsg RedditListingTable) (ChangePageMsg RedditListingTable)
 
+        form_data : FormData
+        form_data =
+            { name = "unset form name", frame_id = 123, choice_id = -1 }
+
         model =
             { count = 0
             , content = "ASD"
@@ -321,9 +345,10 @@ init _ url navKey =
             , reddit_listing_page_info = reddit_listing_page_info
             , reddit_subreddit_to_download = ""
             , reddit_is_downloaded = False
-            , current_tab = RedditListingTab
+            , current_tab = FormDataTab
             , current_navbar_state = navbarState
             , current_weather_response = current_weather_response
+            , form_data = form_data
             }
 
         existingCmds =
@@ -485,13 +510,17 @@ update2 msg model =
         DownloadedRedditPostsJSONP listing_json_value ->
             --TODO: update page info as well
             let
-                decoded_value = case Json.Decode.decodeValue Reddit.decode_listing_wrapper listing_json_value of
-                    Ok listing -> listing
-                    Err _ -> model.reddit_listing_wrapper
+                decoded_value =
+                    case Json.Decode.decodeValue Reddit.decode_listing_wrapper listing_json_value of
+                        Ok listing ->
+                            listing
+
+                        Err _ ->
+                            model.reddit_listing_wrapper
             in
             ( { model | reddit_listing_wrapper = decoded_value }, Cmd.none )
-            -- ( { model | reddit_listing_wrapper = listing }, Cmd.none )
 
+        -- ( { model | reddit_listing_wrapper = listing }, Cmd.none )
         -- ( model, Reddit.download_reddit_posts )
         DownloadedRedditPosts result ->
             case result of
@@ -620,6 +649,9 @@ update2 msg model =
         RecvFromPort str ->
             ( Debug.log ("Received from port: " ++ str) model, Cmd.none )
 
+        UpdateFormData form_update_type ->
+            ( { model | form_data = update_form_data model.form_data form_update_type }, Cmd.none )
+
 
 humanize : Time.Posix -> Time.Zone -> String
 humanize time zone =
@@ -721,6 +753,18 @@ temperature_val flt =
     span [] [ text <| String.fromFloat flt ++ "°" ]
 
 
+form_data_view : Model -> Html Msg
+form_data_view model =
+    let
+        form_data =
+            model.form_data
+    in
+    div []
+        [ span [] [ text <| "Some FormData Text" ]
+        , div [] [ text form_data.name ]
+        ]
+
+
 weather_view : Model -> Html Msg
 weather_view model =
     let
@@ -811,6 +855,7 @@ navbar model =
             , ( RedditListingTab, "Reddit Submissions Table" )
             , ( SinglePostDataTab, "Single PostData" )
             , ( WeatherTab, "Weather" )
+            , ( FormDataTab, "Weather" )
             ]
     in
     Navbar.config NavbarMsg
@@ -918,6 +963,13 @@ homeView model =
                         , button_primary DownloadCurrentWeather "Download Current Weather"
                         , weather_view model
                         ]
+
+                FormDataTab ->
+                    div []
+                        [ h4 [] [ text "FormData!" ]
+                        , button_primary DownloadCurrentWeather "Download Current Weather"
+                        , form_data_view model
+                        ]
     in
     div [ add_class "container" ]
         [ div [ add_class "row" ]
@@ -985,7 +1037,10 @@ port test_port_receiving : (String -> msg) -> Sub msg
 port test_port_sending : String -> Cmd msg
 
 
+
 -- port recv_reddit_listing : (Reddit.ListingWrapper -> msg) -> Sub msg
+
+
 port recv_reddit_listing : (Json.Decode.Value -> msg) -> Sub msg
 
 

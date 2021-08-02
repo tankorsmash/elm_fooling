@@ -13,7 +13,13 @@ import Bootstrap.Navbar as Navbar
 import Browser
 import Browser.Navigation as Nav
 import Debug
-import FormData exposing (DataType(..))
+import FormData
+    exposing
+        ( DataType(..)
+        , new_form_field_float
+        , new_form_field_int
+        , new_form_field_string
+        )
 import Html
     exposing
         ( Html
@@ -361,36 +367,15 @@ init _ url navKey =
             let
                 name_field : FormData.FormField WeaponFrame Msg
                 name_field =
-                    { field_name = "weapon_name"
-                    , data_type = FormData.StringType
-                    , string_getter = Just .weapon_name
-                    , int_getter = Nothing
-                    , float_getter = Nothing
-
-                    -- , on_input_msg = Name
-                    -- , on_input_msg = (\str -> Name str)
-                    , on_input_msg = \str -> UpdateFormData (Name str)
-                    }
+                    new_form_field_string "weapon_name" .weapon_name (\str -> UpdateFormData (Name str))
 
                 frame_id_field : FormData.FormField WeaponFrame Msg
                 frame_id_field =
-                    { field_name = "frame_id"
-                    , data_type = FormData.IntType
-                    , string_getter = Nothing
-                    , int_getter = Just .frame_id
-                    , float_getter = Nothing
-                    , on_input_msg = \str -> UpdateFormData (FrameId str)
-                    }
+                    new_form_field_int "frame_id" .frame_id (\str -> UpdateFormData (FrameId str))
 
                 choice_id_field : FormData.FormField WeaponFrame Msg
                 choice_id_field =
-                    { field_name = "choice_id"
-                    , data_type = FormData.IntType
-                    , string_getter = Nothing
-                    , int_getter = Just .choice_id
-                    , float_getter = Nothing
-                    , on_input_msg = \str -> UpdateFormData (ChoiceId str)
-                    }
+                    new_form_field_int "choice_id" .choice_id (\str -> UpdateFormData (ChoiceId str))
             in
             { fields =
                 [ name_field

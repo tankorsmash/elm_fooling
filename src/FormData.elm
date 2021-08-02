@@ -2,6 +2,9 @@ module FormData exposing
     ( DataType(..)
     , FormDefinition
     , FormField
+    , new_form_field_float
+    , new_form_field_int
+    , new_form_field_string
     , render_fields
     , unset_float_getter
     , unset_int_getter
@@ -186,5 +189,34 @@ render_fields fields form_data =
             fields
 
 
+new_form_field_int : String -> (fd -> Int) -> (String -> msg) -> FormField fd msg
+new_form_field_int name getter on_input_msg =
+    { field_name = name
+    , data_type = IntType
+    , string_getter = Nothing
+    , int_getter = Just getter
+    , float_getter = Nothing
+    , on_input_msg = on_input_msg
+    }
 
--- ++ [ render_field_input_number ]
+
+new_form_field_string : String -> (fd -> String) -> (String -> msg) -> FormField fd msg
+new_form_field_string name getter on_input_msg =
+    { field_name = name
+    , data_type = StringType
+    , string_getter = Just getter
+    , int_getter = Nothing
+    , float_getter = Nothing
+    , on_input_msg = on_input_msg
+    }
+
+
+new_form_field_float : String -> (fd -> Float) -> (String -> msg) -> FormField fd msg
+new_form_field_float name getter on_input_msg =
+    { field_name = name
+    , data_type = FloatType
+    , string_getter = Nothing
+    , int_getter = Nothing
+    , float_getter = Just getter
+    , on_input_msg = on_input_msg
+    }

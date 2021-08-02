@@ -28,6 +28,7 @@ import Html
         , br
         , button
         , div
+        , form
         , h1
         , h2
         , h3
@@ -43,7 +44,7 @@ import Html
         , tr
         )
 import Html.Attributes exposing (attribute, href, property, style, value)
-import Html.Events exposing (onClick, onInput)
+import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
 import Json.Decode exposing (Decoder, at, field, list, string)
 import Json.Encode exposing (string)
@@ -1015,8 +1016,14 @@ homeView model =
 
                 RedditListingTab ->
                     div []
-                        [ button_primary DownloadRedditPosts "Download Reddit Data"
-                        , input [ value model.reddit_subreddit_to_download, onInput ChangeSubredditToDownload ] []
+                        [ form [ onSubmit DownloadRedditPosts ]
+                            [ button_primary DownloadRedditPosts "Download Reddit Data"
+                            , input
+                                [ value model.reddit_subreddit_to_download
+                                , onInput ChangeSubredditToDownload
+                                ]
+                                []
+                            ]
                         , listing_view model
                         ]
 

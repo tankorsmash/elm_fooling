@@ -367,15 +367,15 @@ init _ url navKey =
             let
                 name_field : FormData.FormField WeaponFrame Msg
                 name_field =
-                    new_form_field_string "weapon_name" .weapon_name (\str -> UpdateFormData (Name str))
+                    new_form_field_string "weapon_name" .weapon_name (Name >> UpdateFormData)
 
                 frame_id_field : FormData.FormField WeaponFrame Msg
                 frame_id_field =
-                    new_form_field_int "frame_id" .frame_id (\str -> UpdateFormData (FrameId str))
+                    new_form_field_int "frame_id" .frame_id (FrameId >> UpdateFormData)
 
                 choice_id_field : FormData.FormField WeaponFrame Msg
                 choice_id_field =
-                    new_form_field_int "choice_id" .choice_id (\str -> UpdateFormData (ChoiceId str))
+                    new_form_field_int "choice_id" .choice_id (ChoiceId >> UpdateFormData)
             in
             { fields =
                 [ name_field

@@ -3,6 +3,7 @@ port module Main exposing (..)
 import Bootstrap.Button as Button
 import Bootstrap.CDN as CDN
 import Bootstrap.Card as Card
+import Bootstrap.Form as Form
 import Bootstrap.Form.Input as Input
 import Bootstrap.Form.InputGroup as InputGroup
 import Bootstrap.Grid as Grid
@@ -103,6 +104,7 @@ type Msg
     | RequestJSONPFromSubreddit String
     | RecvFromPort String
     | UpdateFormData FormUpdateType
+    | SubmitFormData
 
 
 
@@ -712,6 +714,9 @@ update2 msg model =
         UpdateFormData form_update_type ->
             ( { model | form_data = update_form_data model.form_data form_update_type }, Cmd.none )
 
+        SubmitFormData ->
+            ( model, Cmd.none )
+
 
 humanize : Time.Posix -> Time.Zone -> String
 humanize time zone =
@@ -823,8 +828,10 @@ form_data_view model =
             model.form_definition
     in
     div []
-        [ span [] [ text <| "Some FormData Text" ]
-        , div [] [ FormData.render_fields form_definition.fields form_data ]
+        [ Form.form []
+            [ FormData.render_fields form_definition.fields form_data
+            , button_primary DownloadRedditPosts "Submit"
+            ]
         ]
 
 

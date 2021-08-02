@@ -214,6 +214,7 @@ type TabType
     | RedditListingTab
     | WeatherTab
     | FormDataTab
+    | ModalTab
 
 
 qwe : DataType
@@ -917,6 +918,7 @@ navbar model =
             , ( SinglePostDataTab, "Single PostData" )
             , ( WeatherTab, "Weather" )
             , ( FormDataTab, "Form Example" )
+            , ( ModalTab, "Modal Example" )
             ]
     in
     Navbar.config NavbarMsg
@@ -1030,6 +1032,29 @@ homeView model =
                         [ h4 [] [ text "FormData!" ]
                         , form_data_view model
                         ]
+
+                ModalTab ->
+                    div []
+                        [ h4 [] [ text "Modal Example" ]
+                        , Button.button
+                            [ Button.primary
+                            , Button.attrs [ onClick <| AlertModalShow "This is text" ]
+                            ]
+                            [ text "Show Modal" ]
+                        , Modal.config AlertModalHide
+                            |> Modal.small
+                            |> Modal.hideOnBackdropClick True
+                            |> Modal.h3 [] [ text "Modal Header" ]
+                            |> Modal.body [] [ p [] [ text model.alert_modal_text ] ]
+                            |> Modal.footer []
+                                [ Button.button
+                                    [ Button.outlinePrimary
+                                    , Button.attrs [ onClick AlertModalHide ]
+                                    ]
+                                    [ text "Close" ]
+                                ]
+                            |> Modal.view model.alert_modal_open
+                        ]
     in
     div [ add_class "container" ]
         [ div [ add_class "row" ]
@@ -1049,28 +1074,6 @@ homeView model =
             [ div [ add_class "col-md-12" ] [ tab_content ]
             ]
         , br [] []
-        , div [ add_class "row" ]
-            [ div [ add_class "col-md-12" ]
-                [ Button.button
-                    [ Button.primary
-                    , Button.attrs [ onClick <| AlertModalShow "This is text" ]
-                    ]
-                    [ text "Show Modal" ]
-                , Modal.config AlertModalHide
-                    |> Modal.small
-                    |> Modal.hideOnBackdropClick True
-                    |> Modal.h3 [] [ text "Modal Header" ]
-                    |> Modal.body [] [ p [] [ text model.alert_modal_text ] ]
-                    |> Modal.footer []
-                        [ Button.button
-                            [ Button.outlinePrimary
-                            , Button.attrs [ onClick AlertModalHide ]
-                            ]
-                            [ text "Close" ]
-                        ]
-                    |> Modal.view model.alert_modal_open
-                ]
-            ]
         ]
 
 

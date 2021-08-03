@@ -827,10 +827,12 @@ form_data_view model =
         form_definition =
             model.form_definition
     in
-    div []
-        [ Form.form []
-            [ FormData.render_fields form_definition.fields form_data
-            , button_primary DownloadRedditPosts "Submit"
+    Grid.row []
+        [ Grid.col [ Col.md6 ]
+            [ Form.form []
+                [ FormData.render_fields form_definition.fields form_data
+                , button_primary DownloadRedditPosts "Submit"
+                ]
             ]
         ]
 

@@ -44,7 +44,7 @@ import Html
         , thead
         , tr
         )
-import Html.Attributes exposing (attribute, href, property, style, value)
+import Html.Attributes exposing (attribute, href, property, style, value, classList)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
 import Json.Decode exposing (Decoder, at, field, list, string)
@@ -1045,7 +1045,7 @@ homeView model =
 
                 FormDataTab ->
                     div []
-                        [ h4 [] [ text "FormData!" ]
+                        [ h4 [add_class "testId"] [ text "FormData!" ]
                         , form_data_view model
                         ]
 

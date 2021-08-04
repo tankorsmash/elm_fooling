@@ -40,11 +40,12 @@ import Html
         , table
         , td
         , text
+        , img
         , th
         , thead
         , tr
         )
-import Html.Attributes exposing (attribute, classList, href, property, style, value)
+import Html.Attributes exposing (attribute, classList, href, property, style, value, src)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
 import Json.Decode exposing (Decoder, at, field, list, string)
@@ -1019,11 +1020,15 @@ navbar model =
 
 open_dota_view : Model -> Html Msg
 open_dota_view model =
+    let
+        player_profile = model.dota_data.player_data.profile
+    in
     div []
         [ h4 [] [ text "Open Dota!" ]
         , div [] [ text "SOME DATA" ]
         , button_primary (DotaDownloadPlayerData 24801519) "Download Profile"
-        , div [] [ text <| "Player name: " ++ model.dota_data.player_data.profile.personaname ]
+        , div [] [ text <| "Player name: " ++ player_profile.personaname ]
+        , img [src player_profile.avatarfull] []
         ]
 
 

@@ -34,18 +34,18 @@ import Html
         , h2
         , h3
         , h4
+        , img
         , input
         , p
         , span
         , table
         , td
         , text
-        , img
         , th
         , thead
         , tr
         )
-import Html.Attributes exposing (attribute, classList, href, property, style, value, src)
+import Html.Attributes exposing (attribute, classList, href, property, src, style, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
 import Json.Decode exposing (Decoder, at, field, list, string)
@@ -267,7 +267,7 @@ type alias Model =
 
 
 type alias DotaData =
-    { player_data : OpenDota.PlayerData }
+    { player_data : Maybe OpenDota.PlayerData }
 
 
 type Page
@@ -394,21 +394,21 @@ init _ url navKey =
         initial_tab =
             OpenDotaTab
 
-        dota_player_profile : OpenDota.PlayerProfile
-        dota_player_profile =
-            { account_id = -1
-            , personaname = "Unset personaname"
-            , name = "Unset name"
-            , avatar = "Unset avatar"
-            , avatarfull = "Unset avatarfull"
-            }
-
-        dota_player_data : OpenDota.PlayerData
-        dota_player_data =
-            { profile = dota_player_profile }
-
+        -- We use a Maybe so we don't have to worry about unset data
+        -- dota_player_profile : OpenDota.PlayerProfile
+        -- dota_player_profile =
+        --     { account_id = -1
+        --     , personaname = "Unset personaname"
+        --     , name = "Unset name"
+        --     , avatar = "Unset avatar"
+        --     , avatarfull = "Unset avatarfull"
+        --     }
+        --
+        -- dota_player_data : OpenDota.PlayerData
+        -- dota_player_data =
+        --     { profile = dota_player_profile }
         dota_data =
-            { player_data = dota_player_data }
+            { player_data = Nothing }
 
         initial_model =
             { count = 0
@@ -759,10 +759,10 @@ update2 msg model =
                 new_player_data =
                     case response of
                         Ok player_data ->
-                            player_data
+                            Just player_data
 
                         Err err ->
-                            model.dota_data.player_data
+                            Nothing
 
                 dota_data =
                     model.dota_data
@@ -1021,14 +1021,25 @@ navbar model =
 open_dota_view : Model -> Html Msg
 open_dota_view model =
     let
-        player_profile = model.dota_data.player_data.profile
+        rendered_profile =
+            case model.dota_data.player_data of
+                Just player_data ->
+                    let
+                        player_profile =
+                            player_data.profile
+                    in
+                    div []
+                        [ div [] [ text <| "Player name: " ++ player_profile.personaname ]
+                        , img [ src player_profile.avatarfull ] []
+                        ]
+
+                Nothing ->
+                    div [] [ text "No downloaded player profile" ]
     in
     div []
         [ h4 [] [ text "Open Dota!" ]
-        , div [] [ text "SOME DATA" ]
         , button_primary (DotaDownloadPlayerData 24801519) "Download Profile"
-        , div [] [ text <| "Player name: " ++ player_profile.personaname ]
-        , img [src player_profile.avatarfull] []
+        , rendered_profile
         ]
 
 

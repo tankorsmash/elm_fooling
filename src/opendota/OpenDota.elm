@@ -28,8 +28,8 @@ decode_player_profile : Decoder PlayerProfile
 decode_player_profile =
     Decode.succeed PlayerProfile
         |> required "account_id" int
-        |> required "personname" string
-        |> required "name" string
+        |> required "personaname" string
+        |> optional "name" string "unset name"
         |> required "avatar" string
         |> required "avatarfull" string
 

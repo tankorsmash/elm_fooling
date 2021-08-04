@@ -72,6 +72,12 @@ type TableType
     = RedditListingTable
     | PostDatasTable
 
+type alias DotaModel
+    = { profile_id: Int
+    , player_data : Maybe OpenDota.PlayerData }
+
+type DotaMsg
+    = ChangeProfile String
 
 type Msg
     = OnPageLoad Time.Posix
@@ -228,11 +234,6 @@ type TabType
     | OpenDotaTab
 
 
-qwe : DataType
-qwe =
-    StringType
-
-
 type FormUpdateType
     = Name String
     | FrameId String
@@ -263,12 +264,9 @@ type alias Model =
     , current_areas_str : String
     , form_definition : FormData.FormDefinition WeaponFrame Msg
     , form_data : WeaponFrame
-    , dota_data : DotaData
+    , dota_model : DotaModel
     }
 
-
-type alias DotaData =
-    { player_data : Maybe OpenDota.PlayerData }
 
 
 type Page
@@ -408,9 +406,10 @@ init _ url navKey =
         -- dota_player_data : OpenDota.PlayerData
         -- dota_player_data =
         --     { profile = dota_player_profile }
-        dota_data =
-            { player_data = Nothing }
+        dota_model =
+            { player_data = Nothing, profile_id = 0 }
 
+        initial_model : Model
         initial_model =
             { count = 0
             , content = "ASD"
@@ -435,7 +434,7 @@ init _ url navKey =
             , current_areas_str = "Gatineau"
             , form_data = form_data
             , form_definition = form_definition
-            , dota_data = dota_data
+            , dota_model = dota_model
             }
 
         existingCmds =
@@ -775,13 +774,13 @@ update2 msg model =
                         Err err ->
                             Nothing
 
-                dota_data =
-                    model.dota_data
+                dota_model =
+                    model.dota_model
 
                 new_dota_data =
-                    { dota_data | player_data = new_player_data }
+                    { dota_model | player_data = new_player_data }
             in
-            ( { model | dota_data = new_dota_data }, Cmd.none )
+            ( { model | dota_model = new_dota_data }, Cmd.none )
 
 
 humanize : Time.Posix -> Time.Zone -> String
@@ -1029,11 +1028,11 @@ navbar model =
         |> Navbar.view model.current_navbar_state
 
 
-open_dota_view : Model -> Html Msg
-open_dota_view model =
+open_dota_view : DotaModel -> Html Msg
+open_dota_view dota_model =
     let
         rendered_profile =
-            case model.dota_data.player_data of
+            case dota_model.player_data of
                 Just player_data ->
                     let
                         player_profile =
@@ -1173,7 +1172,7 @@ homeView model =
 
                 OpenDotaTab ->
                     div []
-                        [ open_dota_view model
+                        [ open_dota_view model.dota_model
                         ]
     in
     div [ add_class "container" ]

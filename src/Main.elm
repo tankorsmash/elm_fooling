@@ -14,6 +14,7 @@ import Bootstrap.Navbar as Navbar
 import Browser
 import Browser.Navigation as Nav
 import Debug
+import OpenDota.OpenDota
 import FormData
     exposing
         ( DataType(..)
@@ -220,6 +221,7 @@ type TabType
     | WeatherTab
     | FormDataTab
     | ModalTab
+    | OpenDotaTab
 
 
 qwe : DataType
@@ -932,6 +934,7 @@ navbar model =
             , ( WeatherTab, "Weather" )
             , ( FormDataTab, "Form Example" )
             , ( ModalTab, "Modal Example" )
+            , ( OpenDotaTab, "OpenDota" )
             ]
     in
     Navbar.config NavbarMsg
@@ -1081,6 +1084,11 @@ homeView model =
                                 ]
                             |> Modal.view model.alert_modal_open
                         ]
+
+                OpenDotaTab ->
+                    div []
+                    [ h4 [] [ text "Open Dota!"]
+                    ]
     in
     div [ add_class "container" ]
         [ div [ add_class "row" ]

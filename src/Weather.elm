@@ -20,10 +20,10 @@ type alias CurrentWeatherResponse =
     { name : String, main: CurrentWeatherMain }
 
 
-current_weather_url =
+current_weather_url area_str =
     String.concat
         [ "http://api.openweathermap.org/data/2.5/weather?q="
-        , open_weather_city_code
+        , area_str
         -- , "Houston,TX,US"
         , "&appid="
         , open_weather_map_api_key
@@ -53,13 +53,16 @@ decode_current_weather_response =
         |> required "main" decode_current_weather_main
 
 
-downloader : (Result Http.Error a -> msg) -> Decoder a -> Cmd msg
-downloader the_msg decoder =
+downloader : String -> (Result Http.Error a -> msg) -> Decoder a -> Cmd msg
+downloader area the_msg decoder =
     Http.get
-        { url = current_weather_url
+        { url = current_weather_url area
         , expect = Http.expectJson the_msg decoder
         }
 
 
 download_current_weather the_msg =
-    downloader the_msg decode_current_weather_response
+    downloader "Gatineau" the_msg decode_current_weather_response
+
+download_current_areas_weather area_str the_msg =
+    downloader area_str the_msg decode_current_weather_response

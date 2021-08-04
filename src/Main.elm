@@ -44,7 +44,7 @@ import Html
         , thead
         , tr
         )
-import Html.Attributes exposing (attribute, href, property, style, value, classList)
+import Html.Attributes exposing (attribute, classList, href, property, style, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
 import Json.Decode exposing (Decoder, at, field, list, string)
@@ -94,6 +94,8 @@ type Msg
     | ChangeTab TabType
     | NavbarMsg Navbar.State
     | DownloadCurrentWeather
+    | DownloadCurrentAreasWeather
+    | ChangeCurrentWeatherArea String
     | DownloadedCurrentWeather (Result Http.Error Weather.CurrentWeatherResponse)
     | PrevPageMsg TableType
     | NextPageMsg TableType
@@ -252,6 +254,7 @@ type alias Model =
     , current_tab : TabType
     , current_navbar_state : Navbar.State
     , current_weather_response : Weather.CurrentWeatherResponse
+    , current_areas_str : String
     , form_definition : FormData.FormDefinition WeaponFrame Msg
     , form_data : WeaponFrame
     }
@@ -317,16 +320,6 @@ downloader the_msg decoder =
 download_all_posts : Cmd Msg
 download_all_posts =
     downloader DownloadedAllPosts (list PostData.decode_single)
-
-
-
--- Http.get
---     { url = root_json_server_url ++ "posts"
---     , expect = Http.expectJson DownloadedAllPosts (list PostData.decode_single)
---     }
--- download_current_weather : Cmd Msg
--- download_current_weather =
---     Http.get
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
@@ -406,9 +399,10 @@ init _ url navKey =
             , reddit_listing_page_info = reddit_listing_page_info
             , reddit_subreddit_to_download = ""
             , reddit_is_downloaded = False
-            , current_tab = FormDataTab
+            , current_tab = WeatherTab
             , current_navbar_state = navbarState
             , current_weather_response = current_weather_response
+            , current_areas_str = "Gatineau"
             , form_data = form_data
             , form_definition = form_definition
             }
@@ -625,6 +619,12 @@ update2 msg model =
 
         DownloadCurrentWeather ->
             ( model, Weather.download_current_weather DownloadedCurrentWeather )
+
+        ChangeCurrentWeatherArea new_areas_str ->
+            ( { model | current_areas_str = new_areas_str }, Cmd.none )
+
+        DownloadCurrentAreasWeather ->
+            ( model, Weather.download_current_areas_weather model.current_areas_str DownloadedCurrentWeather )
 
         DownloadedCurrentWeather result ->
             case result of
@@ -1039,13 +1039,20 @@ homeView model =
                 WeatherTab ->
                     div []
                         [ h4 [] [ text "Weather!" ]
-                        , button_primary DownloadCurrentWeather "Download Current Weather"
+                        , form []
+                            [ button_primary DownloadCurrentAreasWeather "Download Current Areas Weather"
+                            , input
+                                [ value model.current_areas_str
+                                , onInput ChangeCurrentWeatherArea
+                                ]
+                                []
+                            ]
                         , weather_view model
                         ]
 
                 FormDataTab ->
                     div []
-                        [ h4 [add_class "testId"] [ text "FormData!" ]
+                        [ h4 [ add_class "testId" ] [ text "FormData!" ]
                         , form_data_view model
                         ]
 

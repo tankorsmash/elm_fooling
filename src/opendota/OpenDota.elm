@@ -15,6 +15,10 @@ root_url =
     "https://api.opendota.com/api/"
 
 
+type alias MMREstimate =
+    { estimate : Int }
+
+
 type alias PlayerProfile =
     { account_id : Int
     , personaname : String
@@ -25,7 +29,15 @@ type alias PlayerProfile =
 
 
 type alias PlayerData =
-    { profile : PlayerProfile }
+    { profile : PlayerProfile
+    , mmr_estimate : MMREstimate
+    }
+
+
+decode_mmr_estimate : Decoder MMREstimate
+decode_mmr_estimate =
+    Decode.succeed MMREstimate
+        |> required "estimate" int
 
 
 decode_player_profile : Decoder PlayerProfile
@@ -42,6 +54,7 @@ decode_player_data : Decoder PlayerData
 decode_player_data =
     Decode.succeed PlayerData
         |> required "profile" decode_player_profile
+        |> required "mmr_estimate" decode_mmr_estimate
 
 
 download_player_data : Int -> (Result Http.Error PlayerData -> msg) -> Cmd msg

@@ -767,7 +767,7 @@ update msg model =
         -- DotaDownloadedPlayerData (Result Http.Error OpenDota.PlayerData)
         DotaDownloadedPlayerData response ->
             let
-                lg =
+                _ =
                     Debug.log "Received a response: " response
 
                 new_player_data =
@@ -776,6 +776,10 @@ update msg model =
                             Just player_data
 
                         Err err ->
+                            let
+                                _ =
+                                    Debug.log "Error: \n" err
+                            in
                             Nothing
 
                 dota_model =
@@ -1057,7 +1061,10 @@ open_dota_view dota_model =
                             player_data.profile
                     in
                     div []
-                        [ div [] [ text <| "Player name: " ++ player_profile.personaname ]
+                        [ div []
+                            [ text <| "Player name: " ++ player_profile.personaname
+                            ]
+                        , div [] [ text <| "Est. MMR: " ++ String.fromInt player_data.mmr_estimate.estimate]
                         , img [ src player_profile.avatarfull ] []
                         ]
 

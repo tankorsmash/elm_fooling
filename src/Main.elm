@@ -188,13 +188,13 @@ empty_div =
 
 main =
     -- Browser.element {
-    --     init = init, view = view, update = update2,
+    --     init = init, view = view, update = update,
     --     subscriptions = subscriptions
     -- }
     Browser.application
         { init = init
         , view = view
-        , update = update2
+        , update = update
         , subscriptions = subscriptions
         , onUrlChange = UrlChanged
         , onUrlRequest = LinkClicked
@@ -407,7 +407,7 @@ init _ url navKey =
         -- dota_player_data =
         --     { profile = dota_player_profile }
         dota_model =
-            { player_data = Nothing, profile_id = 0 }
+            { player_data = Nothing, profile_id = 24801519 }
 
         initial_model : Model
         initial_model =
@@ -478,8 +478,8 @@ initCurrentPage ( model, existingCmds ) =
 -- UPDATE
 
 
-update2 : Msg -> Model -> ( Model, Cmd Msg )
-update2 msg model =
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
     case msg of
         OnPageLoad time ->
             let
@@ -601,7 +601,7 @@ update2 msg model =
 
                 _ ->
                     -- ( model, Reddit.download_subreddit_posts model.reddit_subreddit_to_download DownloadedRedditPosts )
-                    update2 (RequestJSONPFromSubreddit model.reddit_subreddit_to_download) model
+                    update (RequestJSONPFromSubreddit model.reddit_subreddit_to_download) model
 
         DownloadedRedditPostsJSONP listing_json_value ->
             --TODO: update page info as well

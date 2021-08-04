@@ -74,7 +74,8 @@ type TableType
 
 
 type Msg
-    = Increment
+    = OnPageLoad Time.Posix
+    | Increment
     | Decrement
     | Poop
     | Change String
@@ -441,6 +442,8 @@ init _ url navKey =
             Cmd.batch
                 [ --Task.perform AdjustTimeZone Time.here,
                   navbarCmd
+                  -- , Task.perform OnPageLoad Time.now
+                  , Task.perform (\_ -> DotaDownloadPlayerData 24801519) Time.now
                 ]
     in
     initCurrentPage ( initial_model, existingCmds )
@@ -478,6 +481,10 @@ initCurrentPage ( model, existingCmds ) =
 update2 : Msg -> Model -> ( Model, Cmd Msg )
 update2 msg model =
     case msg of
+        OnPageLoad time ->
+            let lg = Debug.log "DEBUG: Page Loaded!" ""
+            in
+            ( model , Cmd.none )
         Increment ->
             ( { model | count = model.count + 10 }, Cmd.none )
 

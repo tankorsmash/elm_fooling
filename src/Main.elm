@@ -72,12 +72,16 @@ type TableType
     = RedditListingTable
     | PostDatasTable
 
-type alias DotaModel
-    = { profile_id: Int
-    , player_data : Maybe OpenDota.PlayerData }
+
+type alias DotaModel =
+    { account_id : Int
+    , player_data : Maybe OpenDota.PlayerData
+    }
+
 
 type DotaMsg
-    = ChangeProfile String
+    = ChangeAccountId Int
+
 
 type Msg
     = OnPageLoad Time.Posix
@@ -118,6 +122,7 @@ type Msg
     | SubmitFormData
     | DotaDownloadPlayerData Int
     | DotaDownloadedPlayerData (Result Http.Error OpenDota.PlayerData)
+    | DotaUpdate DotaMsg
 
 
 
@@ -268,7 +273,6 @@ type alias Model =
     }
 
 
-
 type Page
     = NotFoundPage
     | HomePage
@@ -407,7 +411,7 @@ init _ url navKey =
         -- dota_player_data =
         --     { profile = dota_player_profile }
         dota_model =
-            { player_data = Nothing, profile_id = 24801519 }
+            { player_data = Nothing, account_id = 24801519 }
 
         initial_model : Model
         initial_model =
@@ -782,6 +786,20 @@ update msg model =
             in
             ( { model | dota_model = new_dota_data }, Cmd.none )
 
+        DotaUpdate dota_msg ->
+            let
+                ( dota_model, dota_cmd ) =
+                    dota_update dota_msg model.dota_model
+            in
+            ( { model | dota_model = dota_model }, dota_cmd )
+
+
+dota_update : DotaMsg -> DotaModel -> ( DotaModel, Cmd Msg )
+dota_update msg dota_model =
+    case msg of
+        ChangeAccountId account_id ->
+            ( { dota_model | account_id = account_id }, Cmd.none )
+
 
 humanize : Time.Posix -> Time.Zone -> String
 humanize time zone =
@@ -1048,7 +1066,22 @@ open_dota_view dota_model =
     in
     div []
         [ h4 [] [ text "Open Dota!" ]
-        , button_primary (DotaDownloadPlayerData 24801519) "Download Profile"
+        , form []
+            [ button_primary (DotaDownloadPlayerData 24801519) "Download Profile"
+            , input
+                [ value <| String.fromInt dota_model.account_id
+                , onInput
+                    (\val ->
+                        case String.toInt val of
+                            Just valid_id ->
+                                DotaUpdate <| ChangeAccountId valid_id
+
+                            Nothing ->
+                                DotaUpdate <| ChangeAccountId dota_model.account_id
+                    )
+                ]
+                []
+            ]
         , rendered_profile
         ]
 

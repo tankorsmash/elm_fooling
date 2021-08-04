@@ -50,7 +50,7 @@ import Http
 import Json.Decode exposing (Decoder, at, field, list, string)
 import Json.Encode exposing (string)
 import List
-import OpenDota.OpenDota
+import OpenDota.OpenDota as OpenDota
 import PostData exposing (PostData)
 import Reddit
 import String
@@ -108,6 +108,8 @@ type Msg
     | RecvFromPort String
     | UpdateFormData FormUpdateType
     | SubmitFormData
+    | DotaDownloadPlayerData Int
+    | DotaDownloadedPlayerData (Result Http.Error OpenDota.PlayerData)
 
 
 
@@ -722,6 +724,16 @@ update2 msg model =
         SubmitFormData ->
             ( model, Cmd.none )
 
+        DotaDownloadPlayerData account_id ->
+            ( model, OpenDota.download_player_data account_id DotaDownloadedPlayerData)
+
+        -- DotaDownloadedPlayerData (Result Http.Error OpenDota.PlayerData)
+        DotaDownloadedPlayerData response ->
+            let
+                lg = Debug.log "" response
+            in
+            ( model, Cmd.none)
+
 
 humanize : Time.Posix -> Time.Zone -> String
 humanize time zone =
@@ -973,6 +985,7 @@ open_dota_view model =
     div []
         [ h4 [] [ text "Open Dota!" ]
         , div [] [ text "SOME DATA" ]
+        , button_primary (DotaDownloadPlayerData 24801519) "Download Profile"
         ]
 
 

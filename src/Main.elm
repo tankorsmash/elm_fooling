@@ -1067,7 +1067,7 @@ open_dota_view dota_model =
     div []
         [ h4 [] [ text "Open Dota!" ]
         , form []
-            [ button_primary (DotaDownloadPlayerData 24801519) "Download Profile"
+            [ button_primary (DotaDownloadPlayerData dota_model.account_id) "Download Profile"
             , input
                 [ value <| String.fromInt dota_model.account_id
                 , onInput

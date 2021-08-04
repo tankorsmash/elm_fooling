@@ -5,8 +5,10 @@ import Json.Decode as Decode exposing (Decoder, field, int, list, string)
 import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
 import Result
 
+
 root_json_server_url =
     "http://localhost:5021/"
+
 
 root_url : String
 root_url =
@@ -42,10 +44,17 @@ decode_player_data =
         |> required "profile" decode_player_profile
 
 
-download_player_data : (Int) -> (Result Http.Error PlayerData -> msg) -> Cmd msg
+download_player_data : Int -> (Result Http.Error PlayerData -> msg) -> Cmd msg
 download_player_data account_id the_msg =
+    let
+        url =
+            if account_id == 24801519 then
+                root_json_server_url ++ "open_dota_player_data"
+
+            else
+                root_url ++ "players/" ++ String.fromInt account_id
+    in
     Http.get
-        -- { url = root_url ++ "players/" ++ String.fromInt account_id
-        { url = root_json_server_url ++ "open_dota_player_data"
+        { url = url
         , expect = Http.expectJson the_msg decode_player_data
         }

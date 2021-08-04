@@ -14,7 +14,6 @@ import Bootstrap.Navbar as Navbar
 import Browser
 import Browser.Navigation as Nav
 import Debug
-import OpenDota.OpenDota
 import FormData
     exposing
         ( DataType(..)
@@ -51,6 +50,7 @@ import Http
 import Json.Decode exposing (Decoder, at, field, list, string)
 import Json.Encode exposing (string)
 import List
+import OpenDota.OpenDota
 import PostData exposing (PostData)
 import Reddit
 import String
@@ -384,7 +384,7 @@ init _ url navKey =
             }
 
         initial_tab =
-            PostDataTableTab
+            OpenDotaTab
 
         initial_model =
             { count = 0
@@ -968,6 +968,14 @@ navbar model =
         |> Navbar.view model.current_navbar_state
 
 
+open_dota_view : Model -> Html Msg
+open_dota_view model =
+    div []
+        [ h4 [] [ text "Open Dota!" ]
+        , div [] [ text "SOME DATA" ]
+        ]
+
+
 homeView : Model -> Html Msg
 homeView model =
     let
@@ -1087,8 +1095,8 @@ homeView model =
 
                 OpenDotaTab ->
                     div []
-                    [ h4 [] [ text "Open Dota!"]
-                    ]
+                        [ open_dota_view model
+                        ]
     in
     div [ add_class "container" ]
         [ div [ add_class "row" ]

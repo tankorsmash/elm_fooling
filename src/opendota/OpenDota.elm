@@ -1,13 +1,48 @@
 module OpenDota.OpenDota exposing (..)
 
 import Http
+import Json.Decode as Decode exposing (Decoder, field, int, list, string)
+import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
+import Result
+
 
 root_url : String
-root_url = "https://api.opendota.com/api/"
+root_url =
+    "https://api.opendota.com/api/"
 
-download_subreddit_posts : String -> (Result Http.Error ListingWrapper -> msg) -> Cmd msg
-download_subreddit_posts subreddit the_msg =
+
+type alias PlayerProfile =
+    { account_id : Int
+    , personname : String
+    , name : String
+    , avatar : String
+    , avatarfull : String
+    }
+
+
+type alias PlayerData =
+    { profile : PlayerProfile }
+
+
+decode_player_profile : Decoder PlayerProfile
+decode_player_profile =
+    Decode.succeed PlayerProfile
+        |> required "account_id" int
+        |> required "personname" string
+        |> required "name" string
+        |> required "avatar" string
+        |> required "avatarfull" string
+
+
+decode_player_data : Decoder PlayerData
+decode_player_data =
+    Decode.succeed PlayerData
+        |> required "profile" decode_player_profile
+
+
+download_player_data : (Int) -> (Result Http.Error PlayerData -> msg) -> Cmd msg
+download_player_data account_id the_msg =
     Http.get
-        { url = root_reddit_url ++ "r/" ++ subreddit ++ "/.json?jsonp=jsonpCallback"
-        , expect = Http.expectJson the_msg decode_listing_wrapper
+        { url = root_url ++ "players/" ++ String.fromInt account_id
+        , expect = Http.expectJson the_msg decode_player_data
         }

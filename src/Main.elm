@@ -261,7 +261,12 @@ type alias Model =
     , current_areas_str : String
     , form_definition : FormData.FormDefinition WeaponFrame Msg
     , form_data : WeaponFrame
+    , dota_data : DotaData
     }
+
+
+type alias DotaData =
+    { player_data : OpenDota.PlayerData }
 
 
 type Page
@@ -388,6 +393,22 @@ init _ url navKey =
         initial_tab =
             OpenDotaTab
 
+        dota_player_profile : OpenDota.PlayerProfile
+        dota_player_profile =
+            { account_id = -1
+            , personaname = "Unset personaname"
+            , name = "Unset name"
+            , avatar = "Unset avatar"
+            , avatarfull = "Unset avatarfull"
+            }
+
+        dota_player_data : OpenDota.PlayerData
+        dota_player_data =
+            { profile = dota_player_profile }
+
+        dota_data =
+            { player_data = dota_player_data }
+
         initial_model =
             { count = 0
             , content = "ASD"
@@ -412,6 +433,7 @@ init _ url navKey =
             , current_areas_str = "Gatineau"
             , form_data = form_data
             , form_definition = form_definition
+            , dota_data = dota_data
             }
 
         existingCmds =
@@ -725,14 +747,29 @@ update2 msg model =
             ( model, Cmd.none )
 
         DotaDownloadPlayerData account_id ->
-            ( model, OpenDota.download_player_data account_id DotaDownloadedPlayerData)
+            ( model, OpenDota.download_player_data account_id DotaDownloadedPlayerData )
 
         -- DotaDownloadedPlayerData (Result Http.Error OpenDota.PlayerData)
         DotaDownloadedPlayerData response ->
             let
-                lg = Debug.log "" response
+                lg =
+                    Debug.log "Received a response: " response
+
+                new_player_data =
+                    case response of
+                        Ok player_data ->
+                            player_data
+
+                        Err err ->
+                            model.dota_data.player_data
+
+                dota_data =
+                    model.dota_data
+
+                new_dota_data =
+                    { dota_data | player_data = new_player_data }
             in
-            ( model, Cmd.none)
+            ( { model | dota_data = new_dota_data }, Cmd.none )
 
 
 humanize : Time.Posix -> Time.Zone -> String
@@ -986,6 +1023,7 @@ open_dota_view model =
         [ h4 [] [ text "Open Dota!" ]
         , div [] [ text "SOME DATA" ]
         , button_primary (DotaDownloadPlayerData 24801519) "Download Profile"
+        , div [] [ text <| "Player name: " ++ model.dota_data.player_data.profile.personaname ]
         ]
 
 

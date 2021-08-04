@@ -13,7 +13,7 @@ root_url =
 
 type alias PlayerProfile =
     { account_id : Int
-    , personname : String
+    , personaname : String
     , name : String
     , avatar : String
     , avatarfull : String

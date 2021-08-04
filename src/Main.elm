@@ -381,7 +381,10 @@ init _ url navKey =
                 ]
             }
 
-        model =
+        initial_tab =
+            PostDataTableTab
+
+        initial_model =
             { count = 0
             , content = "ASD"
             , time = Time.millisToPosix 0
@@ -399,7 +402,7 @@ init _ url navKey =
             , reddit_listing_page_info = reddit_listing_page_info
             , reddit_subreddit_to_download = ""
             , reddit_is_downloaded = False
-            , current_tab = WeatherTab
+            , current_tab = initial_tab
             , current_navbar_state = navbarState
             , current_weather_response = current_weather_response
             , current_areas_str = "Gatineau"
@@ -413,7 +416,7 @@ init _ url navKey =
                   navbarCmd
                 ]
     in
-    initCurrentPage ( model, existingCmds )
+    initCurrentPage ( initial_model, existingCmds )
 
 
 initCurrentPage : ( Model, Cmd Msg ) -> ( Model, Cmd Msg )

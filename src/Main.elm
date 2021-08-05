@@ -452,7 +452,7 @@ init _ url navKey =
 
                 -- , Task.perform OnPageLoad Time.now
                 , Task.perform (\_ -> DotaDownloadPlayerData 24801519) Time.now
-                , Task.perform (\_ -> DotaDownloadHeroStats ) Time.now
+                , Task.perform (\_ -> DotaDownloadHeroStats) Time.now
                 ]
     in
     initCurrentPage ( initial_model, existingCmds )
@@ -1082,28 +1082,38 @@ navbar model =
         -- ]
         |> Navbar.view model.current_navbar_state
 
+
 title_case : String -> String
 title_case raw_str =
-        case String.uncons raw_str of
-            Just (letter, rest) ->
-                let
-                    maybe_first_letter = (List.head <| String.toList <| String.toUpper <| String.fromChar <| letter)
-                in
-                    case maybe_first_letter of
-                        Just first_letter -> String.cons first_letter (rest)
-                        Nothing -> raw_str
-            Nothing -> raw_str
+    case String.uncons raw_str of
+        Just ( letter, rest ) ->
+            let
+                maybe_first_letter =
+                    List.head <| String.toList <| String.toUpper <| String.fromChar <| letter
+            in
+            case maybe_first_letter of
+                Just first_letter ->
+                    String.cons first_letter rest
+
+                Nothing ->
+                    raw_str
+
+        Nothing ->
+            raw_str
+
 
 hero_row : OpenDota.HeroStat -> Html Msg
 hero_row hero_stat =
     let
-        pretty_attr = title_case hero_stat.primary_attr
+        pretty_attr =
+            title_case hero_stat.primary_attr
     in
     Grid.row []
         [ Grid.col [ Col.md2 ] [ img [ add_class "img-fluid", src <| OpenDota.root_steam_cdn_url ++ hero_stat.img ] [] ]
         , Grid.col [ Col.md9 ]
-            [ text hero_stat.localized_name
-            , span [add_class "text-muted"] [text <| " " ++pretty_attr]
+            [ b [] [ text hero_stat.localized_name]
+            , span [ add_class "text-muted" ] [ text <| " " ++ pretty_attr ]
+            , div [] <| List.map (\r -> text <| r ++ " ") hero_stat.roles
             ]
         ]
 

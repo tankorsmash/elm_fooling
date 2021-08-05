@@ -91,7 +91,8 @@ download_hero_stats : (Result Http.Error (List HeroStat) -> msg) -> Cmd msg
 download_hero_stats the_msg =
     let
         url =
-            root_url ++ "heroStats"
+            -- root_url ++ "heroStats"
+            root_json_server_url ++ "open_dota_hero_stats"
     in
     Http.get
         { url = url

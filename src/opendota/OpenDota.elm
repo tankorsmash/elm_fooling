@@ -71,3 +71,29 @@ download_player_data account_id the_msg =
         { url = url
         , expect = Http.expectJson the_msg decode_player_data
         }
+
+
+type alias HeroStat = { id: Int }
+
+decode_hero_stat : Decoder HeroStat
+decode_hero_stat =
+    Decode.succeed HeroStat
+        |> required "id" int
+
+
+decode_hero_stats : Decoder (List HeroStat)
+decode_hero_stats =
+    list decode_hero_stat
+    -- Decode.succeed (List HeroStat)
+    --     |> 
+
+download_hero_stats : (Result Http.Error (List HeroStat) -> msg) -> Cmd msg
+download_hero_stats the_msg =
+    let
+        url =
+            root_url ++ "heroStats"
+    in
+    Http.get
+        { url = url
+        , expect = Http.expectJson the_msg decode_hero_stats
+        }

@@ -76,6 +76,7 @@ type TableType
 type alias DotaModel =
     { account_id : Int
     , player_data : Maybe OpenDota.PlayerData
+    , hero_stats : Maybe (List OpenDota.HeroStat)
     }
 
 
@@ -122,6 +123,8 @@ type Msg
     | SubmitFormData
     | DotaDownloadPlayerData Int
     | DotaDownloadedPlayerData (Result Http.Error OpenDota.PlayerData)
+    | DotaDownloadHeroStats
+    | DotaDownloadedHeroStats (Result Http.Error (List OpenDota.HeroStat))
     | DotaUpdate DotaMsg
 
 
@@ -410,8 +413,9 @@ init _ url navKey =
         -- dota_player_data : OpenDota.PlayerData
         -- dota_player_data =
         --     { profile = dota_player_profile }
+        dota_model : DotaModel
         dota_model =
-            { player_data = Nothing, account_id = 24801519 }
+            { player_data = Nothing, account_id = 24801519, hero_stats = Nothing }
 
         initial_model : Model
         initial_model =
@@ -764,6 +768,9 @@ update msg model =
         DotaDownloadPlayerData account_id ->
             ( model, OpenDota.download_player_data account_id DotaDownloadedPlayerData )
 
+        DotaDownloadHeroStats ->
+            ( model, OpenDota.download_hero_stats DotaDownloadedHeroStats )
+
         -- DotaDownloadedPlayerData (Result Http.Error OpenDota.PlayerData)
         DotaDownloadedPlayerData response ->
             let
@@ -787,6 +794,31 @@ update msg model =
 
                 new_dota_data =
                     { dota_model | player_data = new_player_data }
+            in
+            ( { model | dota_model = new_dota_data }, Cmd.none )
+
+        DotaDownloadedHeroStats response ->
+            let
+                _ =
+                    Debug.log "Received a response: " response
+
+                new_hero_stats =
+                    case response of
+                        Ok hero_stats ->
+                            Just hero_stats
+
+                        Err err ->
+                            let
+                                _ =
+                                    Debug.log "Error: \n" err
+                            in
+                            Nothing
+
+                dota_model =
+                    model.dota_model
+
+                new_dota_data =
+                    { dota_model | hero_stats = new_hero_stats }
             in
             ( { model | dota_model = new_dota_data }, Cmd.none )
 
@@ -1064,17 +1096,28 @@ open_dota_view dota_model =
                         [ div []
                             [ text <| "Player name: " ++ player_profile.personaname
                             ]
-                        , div [] [ text <| "Est. MMR: " ++ String.fromInt player_data.mmr_estimate.estimate]
+                        , div [] [ text <| "Est. MMR: " ++ String.fromInt player_data.mmr_estimate.estimate ]
                         , img [ src player_profile.avatarfull ] []
                         ]
 
                 Nothing ->
                     div [] [ text "No downloaded player profile" ]
+
+        rendered_hero_stats =
+            case dota_model.hero_stats of
+                Just hero_stats ->
+                    div [] [ text "Downloaded Hero Stats" ]
+
+                Nothing ->
+                    div [] [ text "No hero stats downloaded" ]
     in
     div []
         [ h4 [] [ text "Open Dota!" ]
         , form []
-            [ button_primary (DotaDownloadPlayerData dota_model.account_id) "Download Profile"
+            [ div [] [ button_primary DotaDownloadHeroStats "Download Hero Stats" ]
+            , rendered_hero_stats
+            , br [] []
+            , button_primary (DotaDownloadPlayerData dota_model.account_id) "Download Profile"
             , input
                 [ value <| String.fromInt dota_model.account_id
                 , onInput

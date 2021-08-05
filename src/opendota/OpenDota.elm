@@ -73,19 +73,43 @@ download_player_data account_id the_msg =
         }
 
 
-type alias HeroStat = { id: Int }
+type alias HeroStat =
+    { id : Int
+    , name : String
+    , localized_name : String
+    , primary_attr : String
+    , attack_type : String
+    , roles : List String
+    , img : String
+    , icon : String
+    , hero_id : Int
+    , pro_win : Int
+    , pro_pick : Int
+    , pro_ban : Int
+    }
+
 
 decode_hero_stat : Decoder HeroStat
 decode_hero_stat =
     Decode.succeed HeroStat
         |> required "id" int
+        |> required "name" string
+        |> required "localized_name" string
+        |> required "primary_attr" string
+        |> required "attack_type" string
+        |> required "roles" (list string)
+        |> required "img" string
+        |> required "icon" string
+        |> required "hero_id" int
+        |> required "pro_win" int
+        |> required "pro_pick" int
+        |> required "pro_ban" int
 
 
 decode_hero_stats : Decoder (List HeroStat)
 decode_hero_stats =
     list decode_hero_stat
-    -- Decode.succeed (List HeroStat)
-    --     |> 
+
 
 download_hero_stats : (Result Http.Error (List HeroStat) -> msg) -> Cmd msg
 download_hero_stats the_msg =

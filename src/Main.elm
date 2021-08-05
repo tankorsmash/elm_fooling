@@ -1102,25 +1102,36 @@ title_case raw_str =
             raw_str
 
 
-hero_row : OpenDota.HeroStat -> Html Msg
-hero_row hero_stat =
+hero_row : Int -> OpenDota.HeroStat -> Html Msg
+hero_row total_bans hero_stat =
     let
         pretty_attr =
             title_case hero_stat.primary_attr
+
+        raw_ban_rate =
+            (toFloat hero_stat.pro_ban / toFloat total_bans) * 100
     in
     Grid.row []
         [ Grid.col [ Col.md2 ] [ img [ add_class "img-fluid", src <| OpenDota.root_steam_cdn_url ++ hero_stat.img ] [] ]
-        , Grid.col [ Col.md9 ]
-            [ b [] [ text hero_stat.localized_name]
+        , Grid.col []
+            [ span [ add_class "h5" ] [ text hero_stat.localized_name ]
             , span [ add_class "text-muted" ] [ text <| " " ++ pretty_attr ]
             , div [] <| List.map (\r -> text <| r ++ " ") hero_stat.roles
+            ]
+        , Grid.col []
+            [ text <| "Ban: " ++ (String.join "" <| List.map String.fromChar <| List.take 5 <| String.toList <| String.fromFloat raw_ban_rate) ++ "%"
             ]
         ]
 
 
 hero_list_view : List OpenDota.HeroStat -> Html Msg
 hero_list_view hero_stats =
-    div [] <| List.map hero_row hero_stats
+    let
+        total_bans : Int
+        total_bans =
+            List.foldr (.pro_ban >> (+)) 0 hero_stats
+    in
+    div [] <| [ text <| "Total Bans in the last month: " ++ String.fromInt total_bans ] ++ List.map (hero_row total_bans) hero_stats
 
 
 open_dota_view : DotaModel -> Html Msg

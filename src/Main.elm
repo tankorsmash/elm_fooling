@@ -1082,6 +1082,19 @@ navbar model =
         |> Navbar.view model.current_navbar_state
 
 
+hero_row : OpenDota.HeroStat -> Html Msg
+hero_row hero_stat =
+    Grid.row []
+        [ Grid.col [Col.md2] [ img [ add_class "img-fluid", src <| OpenDota.root_steam_cdn_url ++ hero_stat.img ] [] ]
+        , Grid.col [Col.md9] [ text hero_stat.localized_name ]
+        ]
+
+
+hero_list_view : List OpenDota.HeroStat -> Html Msg
+hero_list_view hero_stats =
+    div [] <| List.map hero_row hero_stats
+
+
 open_dota_view : DotaModel -> Html Msg
 open_dota_view dota_model =
     let
@@ -1106,7 +1119,7 @@ open_dota_view dota_model =
         rendered_hero_stats =
             case dota_model.hero_stats of
                 Just hero_stats ->
-                    div [] [ text "Downloaded Hero Stats" ]
+                    hero_list_view hero_stats
 
                 Nothing ->
                     div [] [ text "No hero stats downloaded" ]

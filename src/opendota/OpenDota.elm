@@ -10,6 +10,9 @@ root_json_server_url =
     "http://localhost:5021/"
 
 
+root_steam_cdn_url =
+    "https://steamcdn-a.akamaihd.net/"
+
 root_url : String
 root_url =
     "https://api.opendota.com/api/"
@@ -101,9 +104,9 @@ decode_hero_stat =
         |> required "img" string
         |> required "icon" string
         |> required "hero_id" int
-        |> required "pro_win" int
-        |> required "pro_pick" int
-        |> required "pro_ban" int
+        |> optional "pro_win" int 0
+        |> optional "pro_pick" int 0
+        |> optional "pro_ban" int 0
 
 
 decode_hero_stats : Decoder (List HeroStat)

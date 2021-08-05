@@ -71,6 +71,7 @@ type alias WeaponFrame =
 type TableType
     = RedditListingTable
     | PostDatasTable
+    | DotaHeroStatsTable
 
 
 type alias DotaModel =
@@ -273,6 +274,7 @@ type alias Model =
     , form_definition : FormData.FormDefinition WeaponFrame Msg
     , form_data : WeaponFrame
     , dota_model : DotaModel
+    , dota_hero_stats_page_info : Table.PageInfo Msg
     }
 
 
@@ -371,6 +373,9 @@ init _ url navKey =
         reddit_listing_page_info =
             Table.PageInfo 0 0 10 (PrevPageMsg RedditListingTable) (NextPageMsg RedditListingTable) (ChangePageMsg RedditListingTable)
 
+        dota_hero_stats_page_info =
+            Table.PageInfo 0 0 10 (PrevPageMsg DotaHeroStatsTable) (NextPageMsg DotaHeroStatsTable) (ChangePageMsg DotaHeroStatsTable)
+
         form_data : WeaponFrame
         form_data =
             { weapon_name = "unset in init wapn_ame", frame_id = 123, choice_id = -1 }
@@ -443,6 +448,7 @@ init _ url navKey =
             , form_data = form_data
             , form_definition = form_definition
             , dota_model = dota_model
+            , dota_hero_stats_page_info = dota_hero_stats_page_info
             }
 
         existingCmds =
@@ -711,6 +717,16 @@ update msg model =
             in
             ( { model | reddit_listing_page_info = new_page_info }, Cmd.none )
 
+        PrevPageMsg DotaHeroStatsTable ->
+            let
+                page_info =
+                    model.dota_hero_stats_page_info
+
+                new_page_info =
+                    Table.decrement_page_idx page_info
+            in
+            ( { model | dota_hero_stats_page_info = new_page_info }, Cmd.none )
+
         NextPageMsg PostDatasTable ->
             let
                 page_info =
@@ -731,6 +747,16 @@ update msg model =
             in
             ( { model | reddit_listing_page_info = new_page_info }, Cmd.none )
 
+        NextPageMsg DotaHeroStatsTable ->
+            let
+                page_info =
+                    model.dota_hero_stats_page_info
+
+                new_page_info =
+                    Table.increment_page_idx page_info
+            in
+            ( { model | dota_hero_stats_page_info = new_page_info }, Cmd.none )
+
         ChangePageMsg PostDatasTable new_page_idx ->
             let
                 page_info =
@@ -744,6 +770,13 @@ update msg model =
                     model.reddit_listing_page_info
             in
             ( { model | reddit_listing_page_info = { page_info | current_page_idx = new_page_idx } }, Cmd.none )
+
+        ChangePageMsg DotaHeroStatsTable new_page_idx ->
+            let
+                page_info =
+                    model.dota_hero_stats_page_info
+            in
+            ( { model | dota_hero_stats_page_info = { page_info | current_page_idx = new_page_idx } }, Cmd.none )
 
         ChangeSubredditToDownload new_subreddit ->
             ( { model | reddit_subreddit_to_download = new_subreddit }, Cmd.none )
@@ -904,6 +937,39 @@ my_column_lookups =
             ColumnLookup "author" .author
     in
     [ title, author, id_ ]
+
+dota_hero_table_lookups : List (ColumnLookup OpenDota.HeroStat)
+dota_hero_table_lookups =
+    let
+        id_ = ColumnLookup "id" <| \hs -> String.fromInt hs.id
+        icon = ColumnLookup "icon" .icon
+        localized_name = ColumnLookup "localized_name" .localized_name
+    in
+        [id_, icon, localized_name]
+
+dota_column_defs : List ColumnDef
+dota_column_defs =
+    [ { column_id = "id"
+      , idx = 0
+      , pretty_title = "Hero ID"
+      , styles = []
+      }
+    , { column_id = "localized_name"
+      , idx = 1
+      , pretty_title = "Name"
+      , styles = []
+      }
+    , { column_id = "icon"
+      , idx = 2
+      , pretty_title = "Icon"
+      , styles = []
+      }
+    -- , { column_id = "post_id"
+    --   , idx = 0
+    --   , pretty_title = "ID"
+    --   , styles = []
+    --   }
+    ]
 
 
 my_row_datas : List PostData
@@ -1134,9 +1200,25 @@ hero_list_view hero_stats =
     div [] <| [ text <| "Total Bans in the last month: " ++ String.fromInt total_bans ] ++ List.map (hero_row total_bans) hero_stats
 
 
-open_dota_view : DotaModel -> Html Msg
-open_dota_view dota_model =
+dota_hero_stats_table : Table.PageInfo Msg -> List OpenDota.HeroStat -> Html Msg
+dota_hero_stats_table page_info hero_stats =
     let
+        lookups =
+            List.map .lookup_func dota_hero_table_lookups
+        table_rows =
+            List.map (do_lookups lookups) hero_stats
+
+        table_definition = {title= Just "Hero Stats", columns=dota_column_defs}
+    in
+    Table.view table_definition table_rows page_info
+
+open_dota_view : Table.PageInfo Msg -> DotaModel -> Html Msg
+open_dota_view page_info dota_model =
+    let
+        rendered_hero_table = case dota_model.hero_stats of
+            Just hero_stats -> dota_hero_stats_table page_info hero_stats
+            Nothing -> div [] [text "No hero stats for table"]
+
         rendered_profile =
             case dota_model.player_data of
                 Just player_data ->
@@ -1167,6 +1249,7 @@ open_dota_view dota_model =
         [ h4 [] [ text "Open Dota!" ]
         , form []
             [ div [] [ button_primary DotaDownloadHeroStats "Download Hero Stats" ]
+            , rendered_hero_table
             , rendered_hero_stats
             , br [] []
             , button_primary (DotaDownloadPlayerData dota_model.account_id) "Download Profile"
@@ -1194,12 +1277,7 @@ homeView model =
         columns =
             my_table_definition.columns
 
-        -- single_col = case (List.head columns) of
-        --     Nothing -> { column_loop = "" }
-        --     Just col -> col
         lookups =
-            -- List.map .column_lookup columns
-            -- List.map .column_lookup my_column_lookups
             List.map .lookup_func my_column_lookups
 
         table_rows : List (List String)
@@ -1307,7 +1385,7 @@ homeView model =
 
                 OpenDotaTab ->
                     div []
-                        [ open_dota_view model.dota_model
+                        [ open_dota_view model.dota_hero_stats_page_info model.dota_model
                         ]
     in
     div [ add_class "container" ]

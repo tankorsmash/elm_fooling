@@ -989,8 +989,8 @@ my_table_definition =
 --call a list of functions on an row
 
 
-do_lookups : List (obj -> String) -> obj -> List String
-do_lookups lookups row =
+build_rows : List (obj -> String) -> obj -> List String
+build_rows lookups row =
     List.foldl (\func acc -> acc ++ [ func row ]) [] lookups
 
 
@@ -1095,7 +1095,7 @@ listing_view model =
         -- lookups =
         --     List.map .lookup_func column_lookups
         table_rows =
-            List.map (do_lookups column_lookups) model.reddit_listing_wrapper.data.children
+            List.map (build_rows column_lookups) model.reddit_listing_wrapper.data.children
     in
     div []
         [ br [] []
@@ -1206,7 +1206,7 @@ dota_hero_stats_table page_info hero_stats =
         lookups =
             List.map .lookup_func dota_hero_table_lookups
         table_rows =
-            List.map (do_lookups lookups) hero_stats
+            List.map (build_rows lookups) hero_stats
 
         table_definition = {title= Just "Hero Stats", columns=dota_column_defs}
     in
@@ -1282,7 +1282,7 @@ homeView model =
 
         table_rows : List (List String)
         table_rows =
-            List.map (do_lookups lookups) model.post_datas
+            List.map (build_rows lookups) model.post_datas
 
         tab_content =
             case model.current_tab of

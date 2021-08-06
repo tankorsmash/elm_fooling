@@ -989,9 +989,9 @@ my_table_definition =
 --call a list of functions on an row
 
 
-build_rows : List (obj -> String) -> obj -> List String
+build_rows : List (String, obj -> String) -> obj -> List String
 build_rows lookups row =
-    List.foldl (\func acc -> acc ++ [ func row ]) [] lookups
+    List.foldl (\(column_id, func) acc -> acc ++ [ func row ]) [] lookups
 
 
 nbsp : String
@@ -1089,13 +1089,14 @@ listing_view model =
         table_def =
             { title = Just "Submissions", columns = column_defs }
 
+        column_lookups : List (Table.ColumnLookup Reddit.SubmissionWrapper)
         column_lookups =
-            [ \w -> w.data.title, \w -> w.data.url, \w -> w.data.author ]
+            [ ColumnLookup "title" <| \w -> w.data.title, ColumnLookup "url" <| \w -> w.data.url, ColumnLookup "author" <| \w -> w.data.author ]
 
-        -- lookups =
-        --     List.map .lookup_func column_lookups
+        lookups =
+            List.map (\l -> (l.column_id, l.lookup_func)) column_lookups
         table_rows =
-            List.map (build_rows column_lookups) model.reddit_listing_wrapper.data.children
+            List.map (build_rows lookups) model.reddit_listing_wrapper.data.children
     in
     div []
         [ br [] []
@@ -1203,8 +1204,9 @@ hero_list_view hero_stats =
 dota_hero_stats_table : Table.PageInfo Msg -> List OpenDota.HeroStat -> Html Msg
 dota_hero_stats_table page_info hero_stats =
     let
+        lookups : List (String, OpenDota.HeroStat -> String)
         lookups =
-            List.map .lookup_func dota_hero_table_lookups
+            List.map (\l -> (l.column_id, l.lookup_func)) dota_hero_table_lookups
         table_rows =
             List.map (build_rows lookups) hero_stats
 
@@ -1277,8 +1279,9 @@ homeView model =
         columns =
             my_table_definition.columns
 
+        lookups : List (String, PostData -> String)
         lookups =
-            List.map .lookup_func my_column_lookups
+            List.map (\l -> (l.column_id, l.lookup_func)) my_column_lookups
 
         table_rows : List (List String)
         table_rows =

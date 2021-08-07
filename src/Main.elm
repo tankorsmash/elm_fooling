@@ -1003,11 +1003,6 @@ my_table_definition =
 --call a list of functions on an row
 
 
-build_rows : List (ColumnDef obj) -> obj -> List String
-build_rows column_defs row =
-    List.foldl (\cl acc -> acc ++ [ cl.lookup_func row ]) [] <| List.sortBy .idx column_defs
-
-
 nbsp : String
 nbsp =
     "\u{00A0}"
@@ -1118,12 +1113,12 @@ listing_view model =
         table_def =
             { title = Just "Submissions", columns = column_defs }
 
-        table_rows =
-            List.map (build_rows column_defs) model.reddit_listing_wrapper.data.children
+        row_data =
+             model.reddit_listing_wrapper.data.children
     in
     div []
         [ br [] []
-        , Table.view table_def table_rows model.reddit_listing_page_info
+        , Table.view table_def row_data model.reddit_listing_page_info
         ]
 
 
@@ -1227,13 +1222,10 @@ hero_list_view hero_stats =
 dota_hero_stats_table : Table.PageInfo Msg -> List OpenDota.HeroStat -> Html Msg
 dota_hero_stats_table page_info hero_stats =
     let
-        table_rows =
-            List.map (build_rows dota_column_defs) hero_stats
-
         table_definition =
             { title = Just "Hero Stats", columns = dota_column_defs }
     in
-    Table.view table_definition table_rows page_info
+    Table.view table_definition hero_stats page_info
 
 
 open_dota_view : Table.PageInfo Msg -> DotaModel -> Html Msg
@@ -1302,13 +1294,6 @@ open_dota_view page_info dota_model =
 homeView : Model -> Html Msg
 homeView model =
     let
-        columns =
-            my_table_definition.columns
-
-        table_rows : List (List String)
-        table_rows =
-            List.map (build_rows columns) model.post_datas
-
         tab_content =
             case model.current_tab of
                 HomeTab ->
@@ -1349,7 +1334,7 @@ homeView model =
                 PostDataTableTab ->
                     div []
                         [ button_primary DownloadAllPosts "Download All Posts"
-                        , Table.view my_table_definition table_rows model.post_datas_page_info
+                        , Table.view my_table_definition model.post_datas model.post_datas_page_info
                         ]
 
                 RedditListingTab ->

@@ -1,9 +1,9 @@
 module Table exposing
     ( ColumnDef
-    -- , ColumnLookup
     , ColumnType
     , PageInfo
     , TableDefinition
+    , build_rows
     , decrement_page_idx
     , increment_page_idx
     , initialize_page_info
@@ -63,13 +63,11 @@ type alias ColumnDef obj =
     }
 
 
+
 -- type alias ColumnLookup obj =
 --     { column_id : String
 --     , lookup_func : obj -> String
 --     }
-
-
-
 --obj is the type of things in the rows we're holding in the table
 
 
@@ -218,13 +216,21 @@ paginate per_page page_idx rows =
     paginated
 
 
+build_rows : List (ColumnDef obj) -> obj -> List String
+build_rows column_defs row =
+    List.foldl (\cl acc -> acc ++ [ cl.lookup_func row ]) [] <| List.sortBy .idx column_defs
+
+
 {-| Assumes `rows` comes in column-idx order already
 -}
-view : TableDefinition obj -> List (List String) -> PageInfo msg -> Html msg
-view table_def rows page_info =
+view : TableDefinition obj -> List obj -> PageInfo msg -> Html msg
+view table_def unsorted_rows page_info =
     let
         columns =
             List.sortBy .idx table_def.columns
+
+        sorted_rows =
+            List.map (build_rows columns) unsorted_rows
 
         table_headers =
             [ build_table_headers columns ]
@@ -233,20 +239,20 @@ view table_def rows page_info =
         col_styles =
             List.map .styles columns
 
-        rows_ : List (List String)
-        rows_ =
-            paginate page_info.per_page page_info.current_page_idx rows
+        paginated_rows : List (List String)
+        paginated_rows =
+            paginate page_info.per_page page_info.current_page_idx sorted_rows
 
         row_builder row =
             build_table_row row col_styles
 
         row_content =
-            case rows_ of
+            case paginated_rows of
                 [] ->
                     [ div [] [ text "no content" ] ]
 
                 _ ->
-                    List.map row_builder rows_
+                    List.map row_builder paginated_rows
 
         create_page_btn page_idx =
             let

@@ -917,16 +917,16 @@ dota_column_defs =
       , idx = 0
       , pretty_title = "Hero ID"
       , styles = []
-      , lookup_func = \hs -> String.fromInt hs.id
+      , lookup_func =  String.fromInt << .id
       }
     , { column_id = "localized_name"
-      , idx = 2
+      , idx = 1
       , pretty_title = "Name"
       , styles = []
       , lookup_func = .localized_name
       }
     , { column_id = "icon"
-      , idx = 1
+      , idx = 2
       , pretty_title = "Icon"
       , styles = []
       , lookup_func = .icon

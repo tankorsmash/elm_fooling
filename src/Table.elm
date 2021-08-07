@@ -38,6 +38,7 @@ import Html
         , img
         )
 import Html.Attributes exposing (style, src)
+import Html.Events exposing (onClick, onMouseEnter, onMouseLeave)
 import Utils exposing (add_class)
 
 
@@ -292,6 +293,7 @@ view table_def unsorted_rows page_info =
             ButtonGroup.button
                 [ btn_style
                 , Button.onClick <| page_info.change_page_msg page_idx
+                , Button.attrs [onMouseEnter <| page_info.change_page_msg page_idx]
                 ]
                 [ text <| "Page " ++ String.fromInt (page_idx + 1) ]
 

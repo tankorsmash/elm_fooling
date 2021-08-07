@@ -837,8 +837,12 @@ update msg model =
 
                 new_dota_data =
                     { dota_model | hero_stats = new_hero_stats }
+
+                dota_hero_stats_page_info = case new_hero_stats of
+                    Just hero_stats -> Table.initialize_page_info model.dota_hero_stats_page_info hero_stats
+                    Nothing -> model.dota_hero_stats_page_info
             in
-            ( { model | dota_model = new_dota_data }, Cmd.none )
+            ( { model | dota_model = new_dota_data, dota_hero_stats_page_info=dota_hero_stats_page_info }, Cmd.none )
 
         DotaUpdate dota_msg ->
             let

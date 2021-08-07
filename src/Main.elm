@@ -1005,7 +1005,7 @@ my_table_definition =
 
 build_rows : List (ColumnDef obj) -> obj -> List String
 build_rows column_defs row =
-    List.foldl (\cl acc -> acc ++ [ cl.lookup_func row ]) [] column_defs
+    List.foldl (\cl acc -> acc ++ [ cl.lookup_func row ]) [] <| List.sortBy .idx column_defs
 
 
 nbsp : String

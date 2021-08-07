@@ -224,7 +224,7 @@ view : TableDefinition obj -> List (List String) -> PageInfo msg -> Html msg
 view table_def rows page_info =
     let
         columns =
-            table_def.columns
+            List.sortBy .idx table_def.columns
 
         table_headers =
             [ build_table_headers columns ]

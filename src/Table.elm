@@ -100,18 +100,18 @@ build_table_headers column_datas =
     thead [] [ tr [] table_headers ]
 
 
-build_col : String -> StylePairList -> Html msg
-build_col value col_styles =
+build_col : String -> ColumnDef obj -> Html msg
+build_col value col_def =
     let
         styles =
-            List.map (\( s, n ) -> style s n) col_styles
+            List.map (\( s, n ) -> style s n) col_def.styles
     in
     td styles [ text value ]
 
 
-build_table_row : List String -> List StylePairList -> Html msg
-build_table_row row_data col_styles =
-    tr [] <| List.map2 build_col row_data col_styles
+build_table_row : List String -> ColumnDefList obj -> Html msg
+build_table_row row_data columns =
+    tr [] <| List.map2 build_col row_data columns
 
 
 type alias StylePair =
@@ -120,6 +120,9 @@ type alias StylePair =
 
 type alias StylePairList =
     List StylePair
+
+type alias ColumnDefList obj =
+    List (ColumnDef obj)
 
 
 type alias PageInfo msg =
@@ -250,17 +253,17 @@ view table_def unsorted_rows page_info =
         table_headers =
             [ build_table_headers columns ]
 
-        col_styles : List StylePairList
-        col_styles =
-            List.map .styles columns
-
+        -- col_styles : List StylePairList
+        -- col_styles =
+        --     List.map .styles columns
+        --
         paginated_rows : List (List String)
         paginated_rows =
             paginate page_info.per_page page_info.current_page_idx sorted_rows
 
         row_builder : List String -> Html msg
         row_builder row =
-            build_table_row row col_styles
+            build_table_row row columns
 
         row_content : List (Html msg)
         row_content =

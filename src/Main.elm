@@ -55,7 +55,7 @@ import OpenDota.OpenDota as OpenDota
 import PostData exposing (PostData)
 import Reddit
 import String
-import Table exposing (ColumnDef, ColumnLookup, ColumnType, TableDefinition, view)
+import Table exposing (ColumnDef, ColumnType, TableDefinition, view)
 import Task
 import Time
 import Url
@@ -904,66 +904,80 @@ site_navigation model =
         ]
 
 
-my_column_defs : List ColumnDef
+my_column_defs : List (ColumnDef PostData)
 my_column_defs =
     [ { column_id = "title"
       , idx = 2
       , pretty_title = "The Title"
       , styles = []
+      , lookup_func = .title
       }
     , { column_id = "author"
       , idx = 1
       , pretty_title = "Author"
       , styles = []
+      , lookup_func = .author
       }
     , { column_id = "post_id"
       , idx = 0
       , pretty_title = "ID"
       , styles = []
+      , lookup_func = String.fromInt << .id
       }
     ]
 
 
-my_column_lookups : List (ColumnLookup PostData)
-my_column_lookups =
-    let
-        title =
-            ColumnLookup "title" .title
+-- my_column_lookups : List (ColumnLookup PostData)
+-- my_column_lookups =
+--     let
+--         title =
+--             ColumnLookup "title" .title
+--
+--         id_ =
+--             ColumnLookup "post_id" (\o -> String.fromInt o.id)
+--
+--         author =
+--             ColumnLookup "author" .author
+--     in
+--     [ title, author, id_ ]
+--
 
-        id_ =
-            ColumnLookup "post_id" (\o -> String.fromInt o.id)
+-- dota_hero_table_lookups : List (ColumnLookup OpenDota.HeroStat)
+-- dota_hero_table_lookups =
+--     let
+--         id_ =
+--             ColumnLookup "id" <| \hs -> String.fromInt hs.id
+--
+--         icon =
+--             ColumnLookup "icon" .icon
+--
+--         localized_name =
+--             ColumnLookup "localized_name" .localized_name
+--     in
+--     [ id_, icon, localized_name ]
 
-        author =
-            ColumnLookup "author" .author
-    in
-    [ title, author, id_ ]
 
-dota_hero_table_lookups : List (ColumnLookup OpenDota.HeroStat)
-dota_hero_table_lookups =
-    let
-        id_ = ColumnLookup "id" <| \hs -> String.fromInt hs.id
-        icon = ColumnLookup "icon" .icon
-        localized_name = ColumnLookup "localized_name" .localized_name
-    in
-        [id_, icon, localized_name]
-
-dota_column_defs : List ColumnDef
+dota_column_defs : List (ColumnDef OpenDota.HeroStat)
 dota_column_defs =
     [ { column_id = "id"
       , idx = 0
       , pretty_title = "Hero ID"
       , styles = []
+      , lookup_func = \hs -> String.fromInt hs.id
       }
     , { column_id = "localized_name"
-      , idx = 1
+      , idx = 2
       , pretty_title = "Name"
       , styles = []
+      , lookup_func = .localized_name
       }
     , { column_id = "icon"
-      , idx = 2
+      , idx = 1
       , pretty_title = "Icon"
       , styles = []
+      , lookup_func = .icon
       }
+
     -- , { column_id = "post_id"
     --   , idx = 0
     --   , pretty_title = "ID"
@@ -980,7 +994,7 @@ my_row_datas =
     ]
 
 
-my_table_definition : TableDefinition
+my_table_definition : TableDefinition PostData
 my_table_definition =
     { title = Just "Post Datas", columns = my_column_defs }
 
@@ -989,9 +1003,9 @@ my_table_definition =
 --call a list of functions on an row
 
 
-build_rows : List (String, obj -> String) -> obj -> List String
-build_rows lookups row =
-    List.foldl (\(column_id, func) acc -> acc ++ [ func row ]) [] lookups
+build_rows : List (ColumnDef obj) -> obj -> List String
+build_rows column_defs row =
+    List.foldl (\cl acc -> acc ++ [ cl.lookup_func row ]) [] column_defs
 
 
 nbsp : String
@@ -1081,22 +1095,31 @@ listing_view model =
             ]
 
         column_defs =
-            [ { column_id = "title", idx = 0, pretty_title = "Title", styles = ellipses_style }
-            , { column_id = "url", idx = 1, pretty_title = "URL", styles = ellipses_style }
-            , { column_id = "author", idx = 2, pretty_title = "Author", styles = [] }
+            [ { column_id = "title"
+              , idx = 0
+              , pretty_title = "Title"
+              , styles = ellipses_style
+              , lookup_func = \w -> w.data.title
+              }
+            , { column_id = "url"
+              , idx = 1
+              , pretty_title = "URL"
+              , styles = ellipses_style
+              , lookup_func = \w -> w.data.url
+              }
+            , { column_id = "author"
+              , idx = 2
+              , pretty_title = "Author"
+              , styles = []
+              , lookup_func = \w -> w.data.author
+              }
             ]
 
         table_def =
             { title = Just "Submissions", columns = column_defs }
 
-        column_lookups : List (Table.ColumnLookup Reddit.SubmissionWrapper)
-        column_lookups =
-            [ ColumnLookup "title" <| \w -> w.data.title, ColumnLookup "url" <| \w -> w.data.url, ColumnLookup "author" <| \w -> w.data.author ]
-
-        lookups =
-            List.map (\l -> (l.column_id, l.lookup_func)) column_lookups
         table_rows =
-            List.map (build_rows lookups) model.reddit_listing_wrapper.data.children
+            List.map (build_rows column_defs) model.reddit_listing_wrapper.data.children
     in
     div []
         [ br [] []
@@ -1204,22 +1227,25 @@ hero_list_view hero_stats =
 dota_hero_stats_table : Table.PageInfo Msg -> List OpenDota.HeroStat -> Html Msg
 dota_hero_stats_table page_info hero_stats =
     let
-        lookups : List (String, OpenDota.HeroStat -> String)
-        lookups =
-            List.map (\l -> (l.column_id, l.lookup_func)) dota_hero_table_lookups
         table_rows =
-            List.map (build_rows lookups) hero_stats
+            List.map (build_rows dota_column_defs) hero_stats
 
-        table_definition = {title= Just "Hero Stats", columns=dota_column_defs}
+        table_definition =
+            { title = Just "Hero Stats", columns = dota_column_defs }
     in
     Table.view table_definition table_rows page_info
+
 
 open_dota_view : Table.PageInfo Msg -> DotaModel -> Html Msg
 open_dota_view page_info dota_model =
     let
-        rendered_hero_table = case dota_model.hero_stats of
-            Just hero_stats -> dota_hero_stats_table page_info hero_stats
-            Nothing -> div [] [text "No hero stats for table"]
+        rendered_hero_table =
+            case dota_model.hero_stats of
+                Just hero_stats ->
+                    dota_hero_stats_table page_info hero_stats
+
+                Nothing ->
+                    div [] [ text "No hero stats for table" ]
 
         rendered_profile =
             case dota_model.player_data of
@@ -1279,13 +1305,9 @@ homeView model =
         columns =
             my_table_definition.columns
 
-        lookups : List (String, PostData -> String)
-        lookups =
-            List.map (\l -> (l.column_id, l.lookup_func)) my_column_lookups
-
         table_rows : List (List String)
         table_rows =
-            List.map (build_rows lookups) model.post_datas
+            List.map (build_rows columns) model.post_datas
 
         tab_content =
             case model.current_tab of

@@ -1,6 +1,6 @@
 module Table exposing
     ( ColumnDef
-    , ColumnLookup
+    -- , ColumnLookup
     , ColumnType
     , PageInfo
     , TableDefinition
@@ -54,26 +54,27 @@ type ColumnType
     | ColInt
 
 
-type alias ColumnDef =
+type alias ColumnDef obj =
     { column_id : String
     , idx : Int
     , pretty_title : String
     , styles : List ( String, String )
-    }
-
-
-type alias ColumnLookup obj =
-    { column_id : String
     , lookup_func : obj -> String
     }
+
+
+-- type alias ColumnLookup obj =
+--     { column_id : String
+--     , lookup_func : obj -> String
+--     }
 
 
 
 --obj is the type of things in the rows we're holding in the table
 
 
-type alias TableDefinition =
-    { title : Maybe String, columns : List ColumnDef }
+type alias TableDefinition obj =
+    { title : Maybe String, columns : List (ColumnDef obj) }
 
 
 build_single_table_header : ( String, List ( String, String ) ) -> Html msg
@@ -85,7 +86,7 @@ build_single_table_header ( col_name, col_styles ) =
     th styles [ text col_name ]
 
 
-build_table_headers : List ColumnDef -> Html msg
+build_table_headers : List (ColumnDef obj) -> Html msg
 build_table_headers column_datas =
     let
         col_names =
@@ -219,7 +220,7 @@ paginate per_page page_idx rows =
 
 {-| Assumes `rows` comes in column-idx order already
 -}
-view : TableDefinition -> List (List String) -> PageInfo msg -> Html msg
+view : TableDefinition obj -> List (List String) -> PageInfo msg -> Html msg
 view table_def rows page_info =
     let
         columns =

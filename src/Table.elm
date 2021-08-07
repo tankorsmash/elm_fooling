@@ -1,9 +1,8 @@
 module Table exposing
     ( ColumnDef
-    , ColumnType
+    , ColumnType(..)
     , PageInfo
     , TableDefinition
-    , build_rows
     , decrement_page_idx
     , increment_page_idx
     , initialize_page_info
@@ -50,8 +49,9 @@ ellipses_style =
 
 
 type ColumnType
-    = ColString
-    | ColInt
+    = String
+    | Int
+    | Img
 
 
 type alias ColumnDef obj =
@@ -60,6 +60,7 @@ type alias ColumnDef obj =
     , pretty_title : String
     , styles : List ( String, String )
     , lookup_func : obj -> String
+    , column_type : ColumnType
     }
 
 
@@ -218,7 +219,21 @@ paginate per_page page_idx rows =
 
 build_rows : List (ColumnDef obj) -> obj -> List String
 build_rows column_defs row =
-    List.foldl (\cl acc -> acc ++ [ cl.lookup_func row ]) [] <| List.sortBy .idx column_defs
+    let
+        cell_builder cl =
+            case cl.column_type of
+                String -> cl.lookup_func row
+                Int -> cl.lookup_func row
+                Img -> cl.lookup_func row
+    in
+    List.foldl
+        (\cl acc ->
+            acc
+                ++ [ cell_builder cl ]
+        )
+        []
+    <|
+        List.sortBy .idx column_defs
 
 
 {-| Assumes `rows` comes in column-idx order already
@@ -243,9 +258,11 @@ view table_def unsorted_rows page_info =
         paginated_rows =
             paginate page_info.per_page page_info.current_page_idx sorted_rows
 
+        row_builder : List String -> Html msg
         row_builder row =
             build_table_row row col_styles
 
+        row_content : List (Html msg)
         row_content =
             case paginated_rows of
                 [] ->

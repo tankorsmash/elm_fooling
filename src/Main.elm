@@ -55,7 +55,7 @@ import OpenDota.OpenDota as OpenDota
 import PostData exposing (PostData)
 import Reddit
 import String
-import Table exposing (ColumnDef, ColumnType, TableDefinition, view)
+import Table exposing (ColumnDef, ColumnType(..), TableDefinition, view)
 import Task
 import Time
 import Url
@@ -895,18 +895,21 @@ my_column_defs =
       , pretty_title = "The Title"
       , styles = []
       , lookup_func = .title
+      , column_type = String
       }
     , { column_id = "author"
       , idx = 1
       , pretty_title = "Author"
       , styles = []
       , lookup_func = .author
+      , column_type = String
       }
     , { column_id = "post_id"
       , idx = 0
       , pretty_title = "ID"
       , styles = []
       , lookup_func = String.fromInt << .id
+      , column_type = String
       }
     ]
 
@@ -918,18 +921,21 @@ dota_column_defs =
       , pretty_title = "Hero ID"
       , styles = []
       , lookup_func =  String.fromInt << .id
+      , column_type = String
       }
     , { column_id = "localized_name"
       , idx = 1
       , pretty_title = "Name"
       , styles = []
       , lookup_func = .localized_name
+      , column_type = String
       }
     , { column_id = "icon"
       , idx = 2
       , pretty_title = "Icon"
       , styles = []
       , lookup_func = .icon
+      , column_type = String
       }
     ]
 
@@ -1043,18 +1049,21 @@ listing_view model =
               , pretty_title = "Title"
               , styles = ellipses_style
               , lookup_func = \w -> w.data.title
+              , column_type = String
               }
             , { column_id = "url"
               , idx = 1
               , pretty_title = "URL"
               , styles = ellipses_style
               , lookup_func = \w -> w.data.url
+              , column_type = String
               }
             , { column_id = "author"
               , idx = 2
               , pretty_title = "Author"
               , styles = []
               , lookup_func = \w -> w.data.author
+              , column_type = String
               }
             ]
 

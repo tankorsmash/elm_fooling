@@ -920,7 +920,7 @@ dota_column_defs =
       , idx = 1
       , pretty_title = "Hero ID"
       , styles = []
-      , lookup_func =  String.fromInt << .id
+      , lookup_func = String.fromInt << .id
       , column_type = String
       }
     , { column_id = "localized_name"
@@ -934,7 +934,7 @@ dota_column_defs =
       , idx = 0
       , pretty_title = "Icon"
       , styles = []
-      , lookup_func = (++) OpenDota.root_steam_cdn_url  << .icon
+      , lookup_func = (++) OpenDota.root_steam_cdn_url << .icon
       , column_type = Img
       }
     ]

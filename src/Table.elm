@@ -35,8 +35,9 @@ import Html
         , th
         , thead
         , tr
+        , img
         )
-import Html.Attributes exposing (style)
+import Html.Attributes exposing (style, src)
 import Utils exposing (add_class)
 
 
@@ -105,8 +106,13 @@ build_col value col_def =
     let
         styles =
             List.map (\( s, n ) -> style s n) col_def.styles
+        rendered_col =
+            case col_def.column_type of
+                String -> text value
+                Int -> text value
+                Img -> img [ add_class "img-fluid", src <| value ] []
     in
-    td styles [ text value ]
+    td styles [rendered_col]
 
 
 build_table_row : List String -> ColumnDefList obj -> Html msg

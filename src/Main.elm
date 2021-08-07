@@ -917,25 +917,25 @@ my_column_defs =
 dota_column_defs : List (ColumnDef OpenDota.HeroStat)
 dota_column_defs =
     [ { column_id = "id"
-      , idx = 0
+      , idx = 1
       , pretty_title = "Hero ID"
       , styles = []
       , lookup_func =  String.fromInt << .id
       , column_type = String
       }
     , { column_id = "localized_name"
-      , idx = 1
+      , idx = 2
       , pretty_title = "Name"
       , styles = []
       , lookup_func = .localized_name
       , column_type = String
       }
     , { column_id = "icon"
-      , idx = 2
+      , idx = 0
       , pretty_title = "Icon"
       , styles = []
-      , lookup_func = .icon
-      , column_type = String
+      , lookup_func = (++) OpenDota.root_steam_cdn_url  << .icon
+      , column_type = Img
       }
     ]
 

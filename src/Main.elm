@@ -405,19 +405,6 @@ init _ url navKey =
         initial_tab =
             OpenDotaTab
 
-        -- We use a Maybe so we don't have to worry about unset data
-        -- dota_player_profile : OpenDota.PlayerProfile
-        -- dota_player_profile =
-        --     { account_id = -1
-        --     , personaname = "Unset personaname"
-        --     , name = "Unset name"
-        --     , avatar = "Unset avatar"
-        --     , avatarfull = "Unset avatarfull"
-        --     }
-        --
-        -- dota_player_data : OpenDota.PlayerData
-        -- dota_player_data =
-        --     { profile = dota_player_profile }
         dota_model : DotaModel
         dota_model =
             { player_data = Nothing, account_id = 24801519, hero_stats = Nothing }
@@ -619,7 +606,6 @@ update msg model =
                     update (RequestJSONPFromSubreddit model.reddit_subreddit_to_download) model
 
         DownloadedRedditPostsJSONP listing_json_value ->
-            --TODO: update page info as well
             let
                 decoded_value =
                     case Json.Decode.decodeValue Reddit.decode_listing_wrapper listing_json_value of
@@ -631,8 +617,6 @@ update msg model =
             in
             ( { model | reddit_listing_wrapper = decoded_value }, Cmd.none )
 
-        -- ( { model | reddit_listing_wrapper = listing }, Cmd.none )
-        -- ( model, Reddit.download_reddit_posts )
         DownloadedRedditPosts result ->
             case result of
                 Ok new_listing ->
@@ -927,36 +911,6 @@ my_column_defs =
     ]
 
 
--- my_column_lookups : List (ColumnLookup PostData)
--- my_column_lookups =
---     let
---         title =
---             ColumnLookup "title" .title
---
---         id_ =
---             ColumnLookup "post_id" (\o -> String.fromInt o.id)
---
---         author =
---             ColumnLookup "author" .author
---     in
---     [ title, author, id_ ]
---
-
--- dota_hero_table_lookups : List (ColumnLookup OpenDota.HeroStat)
--- dota_hero_table_lookups =
---     let
---         id_ =
---             ColumnLookup "id" <| \hs -> String.fromInt hs.id
---
---         icon =
---             ColumnLookup "icon" .icon
---
---         localized_name =
---             ColumnLookup "localized_name" .localized_name
---     in
---     [ id_, icon, localized_name ]
-
-
 dota_column_defs : List (ColumnDef OpenDota.HeroStat)
 dota_column_defs =
     [ { column_id = "id"
@@ -977,12 +931,6 @@ dota_column_defs =
       , styles = []
       , lookup_func = .icon
       }
-
-    -- , { column_id = "post_id"
-    --   , idx = 0
-    --   , pretty_title = "ID"
-    --   , styles = []
-    --   }
     ]
 
 
@@ -1114,7 +1062,7 @@ listing_view model =
             { title = Just "Submissions", columns = column_defs }
 
         row_data =
-             model.reddit_listing_wrapper.data.children
+            model.reddit_listing_wrapper.data.children
     in
     div []
         [ br [] []

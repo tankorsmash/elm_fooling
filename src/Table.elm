@@ -26,6 +26,7 @@ import Html
         , h2
         , h3
         , h4
+        , img
         , input
         , span
         , table
@@ -35,9 +36,8 @@ import Html
         , th
         , thead
         , tr
-        , img
         )
-import Html.Attributes exposing (style, src)
+import Html.Attributes exposing (src, style)
 import Html.Events exposing (onClick, onMouseEnter, onMouseLeave)
 import Utils exposing (add_class)
 
@@ -107,13 +107,19 @@ build_col value col_def =
     let
         styles =
             List.map (\( s, n ) -> style s n) col_def.styles
+
         rendered_col =
             case col_def.column_type of
-                String -> text value
-                Int -> text value
-                Img -> img [ add_class "img-fluid", src <| value ] []
+                String ->
+                    text value
+
+                Int ->
+                    text value
+
+                Img ->
+                    img [ add_class "img-fluid", src <| value ] []
     in
-    td styles [rendered_col]
+    td styles [ rendered_col ]
 
 
 build_table_row : List String -> ColumnDefList obj -> Html msg
@@ -127,6 +133,7 @@ type alias StylePair =
 
 type alias StylePairList =
     List StylePair
+
 
 type alias ColumnDefList obj =
     List (ColumnDef obj)
@@ -232,9 +239,14 @@ build_rows column_defs row =
     let
         cell_builder cl =
             case cl.column_type of
-                String -> cl.lookup_func row
-                Int -> cl.lookup_func row
-                Img -> cl.lookup_func row
+                String ->
+                    cl.lookup_func row
+
+                Int ->
+                    cl.lookup_func row
+
+                Img ->
+                    cl.lookup_func row
     in
     List.foldl
         (\cl acc ->
@@ -266,7 +278,29 @@ view table_def unsorted_rows page_info =
         --
         paginated_rows : List (List String)
         paginated_rows =
-            paginate page_info.per_page page_info.current_page_idx sorted_rows
+            let
+                per_page =
+                    page_info.per_page
+
+                rows =
+                    paginate page_info.per_page page_info.current_page_idx sorted_rows
+            in
+            case per_page - List.length rows of
+                0 ->
+                    rows
+
+                num_missing ->
+                    rows
+                        ++ (let
+                                dummy_row =
+                                    -- [ "https://picsum.photos/32/32", "123", "HERO NAME" ]
+                                    List.map (\_ -> "") <| List.range 0 (List.length columns - 1)
+
+                                val =
+                                    List.map (\_ -> dummy_row) <| List.range 0 (num_missing - 1)
+                            in
+                            val
+                           )
 
         row_builder : List String -> Html msg
         row_builder row =
@@ -293,7 +327,7 @@ view table_def unsorted_rows page_info =
             ButtonGroup.button
                 [ btn_style
                 , Button.onClick <| page_info.change_page_msg page_idx
-                , Button.attrs [onMouseEnter <| page_info.change_page_msg page_idx]
+                , Button.attrs [ onMouseEnter <| page_info.change_page_msg page_idx ]
                 ]
                 [ text <| "Page " ++ String.fromInt (page_idx + 1) ]
 

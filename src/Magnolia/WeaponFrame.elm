@@ -15,6 +15,18 @@ type EditFormUpdateType
     | ChoiceId String
 
 
+{-| Returns either the int value of maybe_new_val, or the fallback
+-}
+update_int_field : Int -> String -> Int
+update_int_field fallback maybe_new_val =
+    case String.toInt maybe_new_val of
+        Just new_val ->
+            new_val
+
+        Nothing ->
+            fallback
+
+
 update_edit_form_data : WeaponFrame -> EditFormUpdateType -> WeaponFrame
 update_edit_form_data form_data form_update_type =
     case form_update_type of
@@ -23,24 +35,12 @@ update_edit_form_data form_data form_update_type =
 
         ChoiceId new_choice_id ->
             { form_data
-                | choice_id =
-                    case String.toInt new_choice_id of
-                        Just new_int ->
-                            new_int
-
-                        Nothing ->
-                            form_data.choice_id
+                | choice_id = update_int_field form_data.choice_id new_choice_id
             }
 
         FrameId new_frame_id ->
             { form_data
-                | frame_id =
-                    case String.toInt new_frame_id of
-                        Just new_int ->
-                            new_int
-
-                        Nothing ->
-                            form_data.frame_id
+                | frame_id = update_int_field form_data.frame_id new_frame_id
             }
 
 

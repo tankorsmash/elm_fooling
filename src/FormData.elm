@@ -9,6 +9,7 @@ module FormData exposing
     , unset_float_getter
     , unset_int_getter
     , unset_string_getter
+    , update_int_field
     )
 
 import Bootstrap.Form.Input as Input
@@ -67,6 +68,17 @@ type DataType
     = StringType
     | IntType
     | FloatType
+
+{-| Returns either the int value of maybe_new_val, or the fallback
+-}
+update_int_field : Int -> String -> Int
+update_int_field fallback maybe_new_val =
+    case String.toInt maybe_new_val of
+        Just new_val ->
+            new_val
+
+        Nothing ->
+            fallback
 
 
 to_string : DataType -> String

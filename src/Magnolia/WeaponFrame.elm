@@ -6,6 +6,7 @@ import FormData
         , new_form_field_float
         , new_form_field_int
         , new_form_field_string
+        , update_int_field
         )
 
 
@@ -14,17 +15,6 @@ type EditFormUpdateType
     | FrameId String
     | ChoiceId String
 
-
-{-| Returns either the int value of maybe_new_val, or the fallback
--}
-update_int_field : Int -> String -> Int
-update_int_field fallback maybe_new_val =
-    case String.toInt maybe_new_val of
-        Just new_val ->
-            new_val
-
-        Nothing ->
-            fallback
 
 
 update_edit_form_data : WeaponFrame -> EditFormUpdateType -> WeaponFrame

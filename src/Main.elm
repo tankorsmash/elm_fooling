@@ -51,9 +51,9 @@ import Http
 import Json.Decode exposing (Decoder, at, field, list, string)
 import Json.Encode exposing (string)
 import List
+import Magnolia.WeaponFrame exposing (WeaponFrame)
 import OpenDota.OpenDota as OpenDota
 import PostData exposing (PostData)
-import Magnolia.WeaponFrame exposing (WeaponFrame)
 import Reddit
 import String
 import Table exposing (ColumnDef, ColumnType(..), TableDefinition, view)
@@ -63,8 +63,6 @@ import Url
 import Url.Parser exposing ((</>), Parser, int, map, oneOf, parse, s, string)
 import Utils exposing (add_class)
 import Weather
-
-
 
 
 type TableType
@@ -119,7 +117,7 @@ type Msg
     | RequestJSONP String
     | RequestJSONPFromSubreddit String
     | RecvFromPort String
-    | UpdateFormData FormUpdateType
+    | GotEditWeaponFormUpdate Magnolia.WeaponFrame.EditFormUpdateType
     | SubmitFormData
     | DotaDownloadPlayerData Int
     | DotaDownloadedPlayerData (Result Http.Error OpenDota.PlayerData)
@@ -130,36 +128,6 @@ type Msg
 
 
 -- MAIN
-
-
-update_form_data : WeaponFrame -> FormUpdateType -> WeaponFrame
-update_form_data form_data form_update_type =
-    case form_update_type of
-        Name new_name ->
-            { form_data | weapon_name = new_name }
-
-        ChoiceId new_choice_id ->
-            { form_data
-                | choice_id =
-                    case String.toInt new_choice_id of
-                        Just new_int ->
-                            new_int
-
-                        Nothing ->
-                            form_data.choice_id
-            }
-
-        FrameId new_frame_id ->
-            { form_data
-                | frame_id =
-                    case String.toInt new_frame_id of
-                        Just new_int ->
-                            new_int
-
-                        Nothing ->
-                            form_data.frame_id
-            }
-
 
 
 -- form_data
@@ -241,11 +209,6 @@ type TabType
     | ModalTab
     | OpenDotaTab
 
-
-type FormUpdateType
-    = Name String
-    | FrameId String
-    | ChoiceId String
 
 
 type alias Model =
@@ -378,7 +341,18 @@ init _ url navKey =
 
         form_data : WeaponFrame
         form_data =
-            { weapon_name = "unset in init wapn_ame", frame_id = 123, choice_id = -1 }
+            { weapon_name = "unset in init wapn_ame"
+            , frame_id = 123
+            , choice_id = -1
+            , pretty_name = "Pretty Wepn Name"
+            , description = "This is a description"
+            , frame_image_path = "weapon_img.png"
+            , bonus_attack = 0
+            , bonus_power = 0
+            , bonus_encumbrance = 0
+            , rarity_type = 0
+            , carry_weight = 0
+            }
 
         saved_form_data : Maybe WeaponFrame
         saved_form_data =
@@ -386,25 +360,7 @@ init _ url navKey =
 
         form_definition : FormData.FormDefinition WeaponFrame Msg
         form_definition =
-            let
-                name_field : FormData.FormField WeaponFrame Msg
-                name_field =
-                    new_form_field_string "weapon_name" .weapon_name (Name >> UpdateFormData)
-
-                frame_id_field : FormData.FormField WeaponFrame Msg
-                frame_id_field =
-                    new_form_field_int "frame_id" .frame_id (FrameId >> UpdateFormData)
-
-                choice_id_field : FormData.FormField WeaponFrame Msg
-                choice_id_field =
-                    new_form_field_int "choice_id" .choice_id (ChoiceId >> UpdateFormData)
-            in
-            { fields =
-                [ name_field
-                , frame_id_field
-                , choice_id_field
-                ]
-            }
+            Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate
 
         initial_tab =
             FormDataTab
@@ -782,8 +738,8 @@ update msg model =
         RecvFromPort str ->
             ( Debug.log ("Received from port: " ++ str) model, Cmd.none )
 
-        UpdateFormData form_update_type ->
-            ( { model | form_data = update_form_data model.form_data form_update_type }, Cmd.none )
+        GotEditWeaponFormUpdate form_update_type ->
+            ( { model | form_data = Magnolia.WeaponFrame.update_edit_form_data model.form_data form_update_type }, Cmd.none )
 
         SubmitFormData ->
             ( { model | saved_form_data = Just model.form_data }, Cmd.none )

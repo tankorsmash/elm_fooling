@@ -273,6 +273,7 @@ type alias Model =
     , current_areas_str : String
     , form_definition : FormData.FormDefinition WeaponFrame Msg
     , form_data : WeaponFrame
+    , saved_form_data : Maybe WeaponFrame
     , dota_model : DotaModel
     , dota_hero_stats_page_info : Table.PageInfo Msg
     }
@@ -380,6 +381,10 @@ init _ url navKey =
         form_data =
             { weapon_name = "unset in init wapn_ame", frame_id = 123, choice_id = -1 }
 
+        saved_form_data : Maybe WeaponFrame
+        saved_form_data =
+            Nothing
+
         form_definition : FormData.FormDefinition WeaponFrame Msg
         form_definition =
             let
@@ -403,7 +408,7 @@ init _ url navKey =
             }
 
         initial_tab =
-            OpenDotaTab
+            FormDataTab
 
         dota_model : DotaModel
         dota_model =
@@ -433,6 +438,7 @@ init _ url navKey =
             , current_weather_response = current_weather_response
             , current_areas_str = "Gatineau"
             , form_data = form_data
+            , saved_form_data = saved_form_data
             , form_definition = form_definition
             , dota_model = dota_model
             , dota_hero_stats_page_info = dota_hero_stats_page_info
@@ -444,8 +450,8 @@ init _ url navKey =
                   navbarCmd
 
                 -- , Task.perform OnPageLoad Time.now
-                , Task.perform (\_ -> DotaDownloadPlayerData 24801519) Time.now
-                , Task.perform (\_ -> DotaDownloadHeroStats) Time.now
+                -- , Task.perform (\_ -> DotaDownloadPlayerData 24801519) Time.now
+                -- , Task.perform (\_ -> DotaDownloadHeroStats) Time.now
                 ]
     in
     initCurrentPage ( initial_model, existingCmds )
@@ -781,7 +787,7 @@ update msg model =
             ( { model | form_data = update_form_data model.form_data form_update_type }, Cmd.none )
 
         SubmitFormData ->
-            ( model, Cmd.none )
+            ( { model | saved_form_data = Just model.form_data }, Cmd.none )
 
         DotaDownloadPlayerData account_id ->
             ( model, OpenDota.download_player_data account_id DotaDownloadedPlayerData )
@@ -838,11 +844,15 @@ update msg model =
                 new_dota_data =
                     { dota_model | hero_stats = new_hero_stats }
 
-                dota_hero_stats_page_info = case new_hero_stats of
-                    Just hero_stats -> Table.initialize_page_info model.dota_hero_stats_page_info hero_stats
-                    Nothing -> model.dota_hero_stats_page_info
+                dota_hero_stats_page_info =
+                    case new_hero_stats of
+                        Just hero_stats ->
+                            Table.initialize_page_info model.dota_hero_stats_page_info hero_stats
+
+                        Nothing ->
+                            model.dota_hero_stats_page_info
             in
-            ( { model | dota_model = new_dota_data, dota_hero_stats_page_info=dota_hero_stats_page_info }, Cmd.none )
+            ( { model | dota_model = new_dota_data, dota_hero_stats_page_info = dota_hero_stats_page_info }, Cmd.none )
 
         DotaUpdate dota_msg ->
             let
@@ -979,12 +989,25 @@ form_data_view model =
 
         form_definition =
             model.form_definition
+
+        rendered_saved_form_data =
+            case model.saved_form_data of
+                Nothing ->
+                    div [] []
+
+                Just saved_form_data ->
+                    div []
+                        [ div [] [ text "Saved Form Data" ]
+                        , FormData.render_fields form_definition.fields saved_form_data
+                        , br [] []
+                        ]
     in
     Grid.row []
         [ Grid.col [ Col.md6 ]
-            [ Form.form []
+            [ rendered_saved_form_data
+            , Form.form []
                 [ FormData.render_fields form_definition.fields form_data
-                , button_primary DownloadRedditPosts "Submit"
+                , button_primary SubmitFormData "Submit"
                 ]
             ]
         ]

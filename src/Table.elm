@@ -358,7 +358,7 @@ view table_def unsorted_rows page_info =
         next_btn =
             let
                 btn_attrs =
-                    if page_info.current_page_idx /= 0 then
+                    if page_info.current_page_idx /= page_info.page_count then
                         Button.attrs []
 
                     else

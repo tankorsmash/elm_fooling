@@ -53,6 +53,7 @@ import Json.Encode exposing (string)
 import List
 import OpenDota.OpenDota as OpenDota
 import PostData exposing (PostData)
+import Magnolia.WeaponFrame exposing (WeaponFrame)
 import Reddit
 import String
 import Table exposing (ColumnDef, ColumnType(..), TableDefinition, view)
@@ -64,8 +65,6 @@ import Utils exposing (add_class)
 import Weather
 
 
-type alias WeaponFrame =
-    { weapon_name : String, frame_id : Int, choice_id : Int }
 
 
 type TableType

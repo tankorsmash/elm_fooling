@@ -147,6 +147,7 @@ bootstrap_button type_ on_click text_ =
         [ text text_ ]
 
 
+button_primary : msg -> String -> Html msg
 button_primary on_click text_ =
     bootstrap_button Button.primary on_click text_
 
@@ -230,7 +231,7 @@ type alias Model =
     , current_navbar_state : Navbar.State
     , current_weather_response : Weather.CurrentWeatherResponse
     , current_areas_str : String
-    , form_definition : FormData.FormDefinition WeaponFrame Msg
+    , weapon_edit_form_definition : FormData.FormDefinition WeaponFrame Msg
     , form_data : WeaponFrame
     , saved_form_data : Maybe WeaponFrame
     , dota_model : DotaModel
@@ -387,7 +388,7 @@ init _ url navKey =
             , current_areas_str = "Gatineau"
             , form_data = form_data
             , saved_form_data = saved_form_data
-            , form_definition = Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate
+            , weapon_edit_form_definition = Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate
             , dota_model = dota_model
             , dota_hero_stats_page_info = dota_hero_stats_page_info
             }
@@ -929,17 +930,17 @@ temperature_val flt =
     span [] [ text <| String.fromFloat flt ++ "°" ]
 
 
-form_data_view : Model -> Html Msg
-form_data_view model =
+
+-- form_data_view : Model -> Html Msg
+-- form_data_view model =
+
+
+form_data_view : obj -> FormData.FormDefinition obj Msg -> Maybe obj -> Html Msg
+form_data_view form_data form_definition maybe_saved_form_data =
     let
-        form_data =
-            model.form_data
-
-        form_definition =
-            model.form_definition
-
+        rendered_saved_form_data : Html Msg
         rendered_saved_form_data =
-            case model.saved_form_data of
+            case maybe_saved_form_data of
                 Nothing ->
                     div [] []
 
@@ -1299,7 +1300,7 @@ homeView model =
                 FormDataTab ->
                     div []
                         [ h4 [ add_class "testId" ] [ text "FormData!" ]
-                        , form_data_view model
+                        , form_data_view model.form_data model.weapon_edit_form_definition model.saved_form_data
                         ]
 
                 ModalTab ->

@@ -128,8 +128,6 @@ type Msg
 
 
 -- MAIN
-
-
 -- form_data
 
 
@@ -208,7 +206,6 @@ type TabType
     | FormDataTab
     | ModalTab
     | OpenDotaTab
-
 
 
 type alias Model =
@@ -358,10 +355,6 @@ init _ url navKey =
         saved_form_data =
             Nothing
 
-        form_definition : FormData.FormDefinition WeaponFrame Msg
-        form_definition =
-            Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate
-
         initial_tab =
             FormDataTab
 
@@ -394,7 +387,7 @@ init _ url navKey =
             , current_areas_str = "Gatineau"
             , form_data = form_data
             , saved_form_data = saved_form_data
-            , form_definition = form_definition
+            , form_definition = Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate
             , dota_model = dota_model
             , dota_hero_stats_page_info = dota_hero_stats_page_info
             }

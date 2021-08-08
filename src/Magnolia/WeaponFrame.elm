@@ -1,4 +1,4 @@
-module Magnolia.WeaponFrame exposing (WeaponFrame, edit_form_definition, EditFormUpdateType, update_edit_form_data)
+module Magnolia.WeaponFrame exposing (EditFormUpdateType, WeaponFrame, edit_form_definition, update_edit_form_data)
 
 import FormData
     exposing
@@ -8,10 +8,12 @@ import FormData
         , new_form_field_string
         )
 
+
 type EditFormUpdateType
     = Name String
     | FrameId String
     | ChoiceId String
+
 
 update_edit_form_data : WeaponFrame -> EditFormUpdateType -> WeaponFrame
 update_edit_form_data form_data form_update_type =
@@ -42,29 +44,28 @@ update_edit_form_data form_data form_update_type =
             }
 
 
-
-
 edit_form_definition : (EditFormUpdateType -> msg) -> FormData.FormDefinition WeaponFrame msg
 edit_form_definition the_msg =
-            let
-                name_field : FormData.FormField WeaponFrame msg
-                name_field =
-                    new_form_field_string "weapon_name" .weapon_name (Name >> the_msg)
+    let
+        name_field : FormData.FormField WeaponFrame msg
+        name_field =
+            new_form_field_string "weapon_name" .weapon_name (Name >> the_msg)
 
-                frame_id_field : FormData.FormField WeaponFrame msg
-                frame_id_field =
-                    new_form_field_int "frame_id" .frame_id (FrameId >> the_msg)
+        frame_id_field : FormData.FormField WeaponFrame msg
+        frame_id_field =
+            new_form_field_int "frame_id" .frame_id (FrameId >> the_msg)
 
-                choice_id_field : FormData.FormField WeaponFrame msg
-                choice_id_field =
-                    new_form_field_int "choice_id" .choice_id (ChoiceId >> the_msg)
-            in
-            { fields =
-                [ name_field
-                , frame_id_field
-                , choice_id_field
-                ]
-            }
+        choice_id_field : FormData.FormField WeaponFrame msg
+        choice_id_field =
+            new_form_field_int "choice_id" .choice_id (ChoiceId >> the_msg)
+    in
+    { fields =
+        [ name_field
+        , frame_id_field
+        , choice_id_field
+        ]
+    }
+
 
 type alias WeaponFrame =
     { weapon_name : String

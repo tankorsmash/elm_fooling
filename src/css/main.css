@@ -1,3 +1,7 @@
 .testId {
     color: red;
 }
+
+#elm-live\:elmError {
+    white-space: break-spaces;
+}

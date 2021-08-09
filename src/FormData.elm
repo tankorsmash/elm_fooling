@@ -2,20 +2,23 @@ module FormData exposing
     ( DataType(..)
     , FormDefinition
     , FormField
+    , new_form_field_enum
     , new_form_field_float
     , new_form_field_int
     , new_form_field_string
-    , new_form_field_enum
     , render_fields
     , unset_float_getter
     , unset_int_getter
     , unset_string_getter
-    , update_int_field
     , update_enum_field
+    , update_int_field
     )
 
+import Bootstrap.Form as Form
+import Bootstrap.Form.Fieldset as Fieldset
 import Bootstrap.Form.Input as Input
 import Bootstrap.Form.InputGroup as InputGroup
+import Bootstrap.Form.Select as Select
 import Bootstrap.Grid as Grid
 import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
@@ -41,6 +44,7 @@ import Html
         , thead
         , tr
         )
+import Html.Attributes exposing (class, for)
 
 
 
@@ -72,7 +76,8 @@ type DataType
     | FloatType
     | EnumType
 
-{-| Returns either the int value of maybe_new_val, or the fallback
+
+{-| Returns either the int value of maybe\_new\_val, or the fallback
 -}
 update_int_field : Int -> String -> Int
 update_int_field fallback maybe_new_val =
@@ -83,11 +88,15 @@ update_int_field fallback maybe_new_val =
         Nothing ->
             fallback
 
+
 update_enum_field : a -> String -> (Int -> a) -> a
 update_enum_field fallback maybe_new_val int_to_enum =
     case String.toInt maybe_new_val of
-        Just new_int_enum_val -> int_to_enum new_int_enum_val
-        Nothing -> fallback
+        Just new_int_enum_val ->
+            int_to_enum new_int_enum_val
+
+        Nothing ->
+            fallback
 
 
 to_string : DataType -> String
@@ -136,24 +145,36 @@ render_field_input_string obj field =
             [ InputGroup.span [] [ text field.field_name ] ]
         |> InputGroup.view
 
+
 render_field_input_enum : fd -> FormField fd msg -> Html msg
 render_field_input_enum obj field =
-    InputGroup.config
-        (InputGroup.text
-            [ Input.placeholder "placeholder"
-            , Input.value <|
-                case field.enum_getter of
-                    Just getter ->
-                        getter obj
-
-                    Nothing ->
-                        "unset in field"
-            , Input.onInput field.on_input_msg
+    Form.group [Form.attrs [class "form-inline"]]
+        [ Form.label [ for field.field_name, class "mr-3" ] [ text field.field_name ]
+        , Select.select [ Select.id field.field_name ]
+            [ Select.item [] [ text "TODO" ]
+            , Select.item [] [ text "REPLACE" ]
+            , Select.item [] [ text "ME" ]
             ]
-        )
-        |> InputGroup.predecessors
-            [ InputGroup.span [] [ text field.field_name ] ]
-        |> InputGroup.view
+        ]
+
+
+
+-- InputGroup.config
+--     (InputGroup.text
+--         [ Input.placeholder "placeholder"
+--         , Input.value <|
+--             case field.enum_getter of
+--                 Just getter ->
+--                     getter obj
+--
+--                 Nothing ->
+--                     "unset in field"
+--         , Input.onInput field.on_input_msg
+--         ]
+--     )
+--     |> InputGroup.predecessors
+--         [ InputGroup.span [] [ text field.field_name ] ]
+--     |> InputGroup.view
 
 
 render_field_input_number : fd -> FormField fd msg -> Html msg
@@ -224,6 +245,7 @@ render_field obj field =
     case field.data_type of
         IntType ->
             div [] [ render_field_input_number obj field ]
+
         FloatType ->
             div [] [ render_field_input_number obj field ]
 
@@ -253,6 +275,7 @@ new_form_field_int name getter on_input_msg =
     , enum_getter = Nothing
     , on_input_msg = on_input_msg
     }
+
 
 new_form_field_enum : String -> (fd -> String) -> (String -> msg) -> FormField fd msg
 new_form_field_enum name getter on_input_msg =

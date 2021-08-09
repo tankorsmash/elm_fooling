@@ -5,11 +5,13 @@ module FormData exposing
     , new_form_field_float
     , new_form_field_int
     , new_form_field_string
+    , new_form_field_enum
     , render_fields
     , unset_float_getter
     , unset_int_getter
     , unset_string_getter
     , update_int_field
+    , update_enum_field
     )
 
 import Bootstrap.Form.Input as Input
@@ -68,6 +70,7 @@ type DataType
     = StringType
     | IntType
     | FloatType
+    | EnumType
 
 {-| Returns either the int value of maybe_new_val, or the fallback
 -}
@@ -79,6 +82,12 @@ update_int_field fallback maybe_new_val =
 
         Nothing ->
             fallback
+
+update_enum_field : a -> String -> (Int -> a) -> a
+update_enum_field fallback maybe_new_val int_to_enum =
+    case String.toInt maybe_new_val of
+        Just new_int_enum_val -> int_to_enum new_int_enum_val
+        Nothing -> fallback
 
 
 to_string : DataType -> String
@@ -93,6 +102,9 @@ to_string dtype =
         FloatType ->
             "FloatType"
 
+        EnumType ->
+            "EnumType"
+
 
 type alias FormField fd msg =
     { field_name : String
@@ -100,6 +112,7 @@ type alias FormField fd msg =
     , string_getter : Maybe (fd -> String)
     , int_getter : Maybe (fd -> Int)
     , float_getter : Maybe (fd -> Float)
+    , enum_getter : Maybe (fd -> String) --In the field definition, we need to convert the enum to a string ourselves, and pass that string from the getter
     , on_input_msg : String -> msg
     }
 
@@ -111,6 +124,25 @@ render_field_input_string obj field =
             [ Input.placeholder "placeholder"
             , Input.value <|
                 case field.string_getter of
+                    Just getter ->
+                        getter obj
+
+                    Nothing ->
+                        "unset in field"
+            , Input.onInput field.on_input_msg
+            ]
+        )
+        |> InputGroup.predecessors
+            [ InputGroup.span [] [ text field.field_name ] ]
+        |> InputGroup.view
+
+render_field_input_enum : fd -> FormField fd msg -> Html msg
+render_field_input_enum obj field =
+    InputGroup.config
+        (InputGroup.text
+            [ Input.placeholder "placeholder"
+            , Input.value <|
+                case field.enum_getter of
                     Just getter ->
                         getter obj
 
@@ -173,6 +205,14 @@ lookup_field obj field =
                     Nothing ->
                         0.0
 
+        EnumType ->
+            case field.enum_getter of
+                Just getter ->
+                    getter obj
+
+                Nothing ->
+                    "unset enum in lookup"
+
 
 render_field_to_plaintext : fd -> FormField fd msg -> Html msg
 render_field_to_plaintext obj field =
@@ -184,12 +224,14 @@ render_field obj field =
     case field.data_type of
         IntType ->
             div [] [ render_field_input_number obj field ]
+        FloatType ->
+            div [] [ render_field_input_number obj field ]
 
         StringType ->
             div [] [ render_field_input_string obj field ]
 
-        unknown_type ->
-            div [] [ text <| "unknown field type: " ++ to_string unknown_type ]
+        EnumType ->
+            div [] [ render_field_input_enum obj field ]
 
 
 render_fields : List (FormField fd msg) -> fd -> Html msg
@@ -208,6 +250,18 @@ new_form_field_int name getter on_input_msg =
     , string_getter = Nothing
     , int_getter = Just getter
     , float_getter = Nothing
+    , enum_getter = Nothing
+    , on_input_msg = on_input_msg
+    }
+
+new_form_field_enum : String -> (fd -> String) -> (String -> msg) -> FormField fd msg
+new_form_field_enum name getter on_input_msg =
+    { field_name = name
+    , data_type = EnumType
+    , string_getter = Nothing
+    , int_getter = Nothing
+    , float_getter = Nothing
+    , enum_getter = Just getter
     , on_input_msg = on_input_msg
     }
 
@@ -219,6 +273,7 @@ new_form_field_string name getter on_input_msg =
     , string_getter = Just getter
     , int_getter = Nothing
     , float_getter = Nothing
+    , enum_getter = Nothing
     , on_input_msg = on_input_msg
     }
 
@@ -230,5 +285,6 @@ new_form_field_float name getter on_input_msg =
     , string_getter = Nothing
     , int_getter = Nothing
     , float_getter = Just getter
+    , enum_getter = Nothing
     , on_input_msg = on_input_msg
     }

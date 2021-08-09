@@ -13,7 +13,9 @@ import FormData
         , new_form_field_float
         , new_form_field_int
         , new_form_field_string
+        , new_form_field_enum
         , update_int_field
+        , update_enum_field
         )
 
 
@@ -26,6 +28,7 @@ type EditFormUpdateType
     | PrettyName String
     | Description String
     | FrameImagePath String
+    | WeaponDamageType String
     | BonusAttack String
     | BonusPower String
     | BonusEncumbrance String
@@ -57,6 +60,9 @@ update_edit_form_data form_data form_update_type =
 
         FrameImagePath new_frame_image_path ->
             { form_data | frame_image_path = new_frame_image_path }
+
+        WeaponDamageType new_weapon_damage_type ->
+            { form_data | damage_type = update_enum_field form_data.damage_type new_weapon_damage_type weapon_damage_type_from_int }
 
         BonusAttack new_bonus_attack ->
             { form_data | bonus_attack = update_int_field form_data.bonus_attack new_bonus_attack }
@@ -95,6 +101,7 @@ edit_form_definition the_msg =
         , choice_id_field
         , new_form_field_string "description" .description (Description >> the_msg)
         , new_form_field_string "frame_image_path" .frame_image_path (FrameImagePath >> the_msg)
+        , new_form_field_enum "damage_type" (.damage_type >> weapon_damage_type_to_string) (WeaponDamageType >> the_msg)
         , new_form_field_int "bonus_attack" .bonus_attack (BonusAttack >> the_msg)
         , new_form_field_int "bonus_power" .bonus_power (BonusPower >> the_msg)
         , new_form_field_int "bonus_encumbrance" .bonus_encumbrance (BonusEncumbrance >> the_msg)

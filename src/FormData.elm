@@ -35,9 +35,9 @@ import Html
         , h3
         , h4
         , input
+        , label
         , p
         , span
-        , label
         , table
         , td
         , text
@@ -157,16 +157,18 @@ render_field_input_enum obj field =
     --         , Select.item [] [ text "ME" ]
     --         ]
     --     ]
-    div [class "input-group"] [
-        div [class "input-group-prepend"][
-            Form.label [ for field.field_name, class "input-group-text" ] [ text field.field_name ]
-        ]
+    div [ class "input-group" ]
+        [ div [ class "input-group-prepend" ]
+            [ Form.label [ for field.field_name, class "input-group-text" ] [ text field.field_name ]
+            ]
         , Select.custom [ Select.id field.field_name ]
             [ Select.item [] [ text "TODO" ]
             , Select.item [] [ text "REPLACE" ]
             , Select.item [] [ text "ME" ]
             ]
         ]
+
+
 
 -- <div class="input-group mb-3">
 --   <div class="input-group-prepend">
@@ -179,24 +181,23 @@ render_field_input_enum obj field =
 --     <option value="3">Three</option>
 --   </select>
 -- </div>
-
-    -- InputGroup.config
-    --     (InputGroup.text
-    --         [ Input.placeholder "placeholder"
-    --         , Select.select [ ] [Select.item [] [] ]
-    --         -- , Input.value <|
-    --         --     case field.enum_getter of
-    --         --         Just getter ->
-    --         --             getter obj
-    --         --
-    --         --         Nothing ->
-    --         --             "unset in field"
-    --         , Input.onInput field.on_input_msg
-    --         ]
-    --     )
-    --     |> InputGroup.predecessors
-    --         [ InputGroup.span [] [ text field.field_name ] ]
-    --     |> InputGroup.view
+-- InputGroup.config
+--     (InputGroup.text
+--         [ Input.placeholder "placeholder"
+--         , Select.select [ ] [Select.item [] [] ]
+--         -- , Input.value <|
+--         --     case field.enum_getter of
+--         --         Just getter ->
+--         --             getter obj
+--         --
+--         --         Nothing ->
+--         --             "unset in field"
+--         , Input.onInput field.on_input_msg
+--         ]
+--     )
+--     |> InputGroup.predecessors
+--         [ InputGroup.span [] [ text field.field_name ] ]
+--     |> InputGroup.view
 
 
 render_field_input_number : fd -> FormField fd msg -> Html msg

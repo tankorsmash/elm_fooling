@@ -97,6 +97,51 @@ edit_form_definition the_msg =
     }
 
 
+type BattleRow
+    = Melee
+    | Ranged
+    | Rear
+
+battle_row_from_int : Int -> BattleRow
+battle_row_from_int int =
+    case int of
+        0 -> Melee
+        1 -> Ranged
+        2 -> Rear
+        _ -> Melee
+
+battle_row_to_string :  BattleRow -> String
+battle_row_to_string battle_row =
+    case battle_row of
+        Melee -> "Melee"
+        Ranged -> "Ranged"
+        Rear -> "Rear"
+
+
+type WeaponDamageType
+    = Unset
+    | Piercing
+    | Blunt
+    | Slashing
+
+
+weapon_damage_type_from_int : Int -> WeaponDamageType
+weapon_damage_type_from_int int =
+    case int of
+        0 -> Unset
+        1 -> Piercing
+        2 -> Blunt
+        3 -> Slashing
+        _ -> Unset
+
+weapon_damage_type_to_string :  WeaponDamageType -> String
+weapon_damage_type_to_string damage_type =
+    case damage_type of
+        Unset -> "Unset"
+        Piercing -> "Piercing"
+        Blunt -> "Blunt"
+        Slashing -> "Slashing"
+
 type alias WeaponFrame =
     { weapon_name : String
     , frame_id : Int

@@ -51,6 +51,7 @@ import Http
 import Json.Decode exposing (Decoder, at, field, list, string)
 import Json.Encode exposing (string)
 import List
+import Magnolia.FrameView as FrameView
 import Magnolia.WeaponFrame exposing (WeaponFrame)
 import OpenDota.OpenDota as OpenDota
 import PostData exposing (PostData)
@@ -142,7 +143,8 @@ type Msg
     | RequestJSONPFromSubreddit String
     | RecvFromPort String
     | GotEditWeaponFormUpdate Magnolia.WeaponFrame.EditFormUpdateType
-    | SubmitFormData
+      -- | SubmitFormData
+    | GotFrameViewMsg FrameView.Msg
     | DotaDownloadPlayerData Int
     | DotaDownloadedPlayerData (Result Http.Error OpenDota.PlayerData)
     | DotaDownloadHeroStats
@@ -228,7 +230,7 @@ type TabType
     | PostDataTableTab
     | RedditListingTab
     | WeatherTab
-    | FormDataTab
+    | FrameViewTab
     | ModalTab
     | OpenDotaTab
 
@@ -382,7 +384,7 @@ init _ url navKey =
             Nothing
 
         initial_tab =
-            FormDataTab
+            FrameViewTab
 
         dota_model : DotaModel
         dota_model =
@@ -689,9 +691,6 @@ update msg model =
         GotEditWeaponFormUpdate form_update_type ->
             ( { model | form_data = Magnolia.WeaponFrame.update_edit_form_data model.form_data form_update_type }, Cmd.none )
 
-        SubmitFormData ->
-            ( { model | saved_form_data = Just model.form_data }, Cmd.none )
-
         DotaDownloadPlayerData account_id ->
             ( model, OpenDota.download_player_data account_id DotaDownloadedPlayerData )
 
@@ -889,33 +888,6 @@ temperature_val flt =
 -- form_data_view model =
 
 
-form_data_view : obj -> FormData.FormDefinition obj Msg -> Maybe obj -> Html Msg
-form_data_view form_data form_definition maybe_saved_form_data =
-    let
-        rendered_saved_form_data : Html Msg
-        rendered_saved_form_data =
-            case maybe_saved_form_data of
-                Nothing ->
-                    div [] []
-
-                Just saved_form_data ->
-                    div []
-                        [ div [] [ text "Saved Form Data" ]
-                        , FormData.render_fields form_definition.fields saved_form_data
-                        , br [] []
-                        ]
-    in
-    Grid.row []
-        [ Grid.col [ Col.md6 ]
-            [ rendered_saved_form_data
-            , Form.form []
-                [ FormData.render_fields form_definition.fields form_data
-                , button_primary SubmitFormData "Submit"
-                ]
-            ]
-        ]
-
-
 weather_view : Model -> Html Msg
 weather_view model =
     let
@@ -1019,7 +991,7 @@ navbar model =
             , ( RedditListingTab, "Reddit Submissions Table" )
             , ( SinglePostDataTab, "Single PostData" )
             , ( WeatherTab, "Weather" )
-            , ( FormDataTab, "Form Example" )
+            , ( FrameViewTab, "Frame View" )
             , ( ModalTab, "Modal Example" )
             , ( OpenDotaTab, "OpenDota" )
             ]
@@ -1251,10 +1223,12 @@ homeView model =
                         , weather_view model
                         ]
 
-                FormDataTab ->
+                FrameViewTab ->
                     div []
                         [ h4 [ add_class "testId" ] [ text "FormData!" ]
-                        , form_data_view model.form_data model.weapon_edit_form_definition model.saved_form_data
+
+                        -- , form_data_view model.form_data model.weapon_edit_form_definition model.saved_form_data
+                        , FrameView.view model
                         ]
 
                 ModalTab ->

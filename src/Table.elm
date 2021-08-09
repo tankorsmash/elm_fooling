@@ -2,11 +2,12 @@ module Table exposing
     ( ColumnDef
     , ColumnType(..)
     , PageInfo
+    , PageInfoMsg
     , TableDefinition
     , decrement_page_idx
     , increment_page_idx
     , initialize_page_info
-    , PageInfoMsg
+    , update_page_info
     , view
     )
 
@@ -150,19 +151,25 @@ type alias PageInfo msg =
     { page_count : Int
     , current_page_idx : Int
     , per_page : Int
-    , custom_type : (PageInfoMsg -> msg)
-    -- , prev_page_msg : msg
-    -- , next_page_msg : msg
-    --
-    -- {- Takes an page_idx and returns a msg type -}
-    -- , change_page_msg : Int -> msg
+    , custom_type : PageInfoMsg -> msg
     }
 
 
+update_page_info : PageInfo msg -> PageInfoMsg -> PageInfo msg
+update_page_info page_info page_msg =
+    case page_msg of
+        PrevPageMsg ->
+            decrement_page_idx page_info
 
-{- Sets the page count based on per_page and the rows passed in -}
+        NextPageMsg ->
+            increment_page_idx page_info
+
+        ChangePageMsg page_idx ->
+            change_page_idx page_info page_idx
 
 
+{-| Sets the page count based on per\_page and the rows passed in
+-}
 initialize_page_info : PageInfo msg -> List a -> PageInfo msg
 initialize_page_info page_info rows =
     let
@@ -201,6 +208,11 @@ increment_page_idx page_info =
 
     else
         { page_info | current_page_idx = new_page_idx }
+
+
+change_page_idx : PageInfo msg -> Int -> PageInfo msg
+change_page_idx page_info new_page_idx =
+    { page_info | current_page_idx = new_page_idx }
 
 
 decrement_page_idx : PageInfo msg -> PageInfo msg
@@ -265,17 +277,21 @@ build_rows column_defs row =
     <|
         List.sortBy .idx column_defs
 
+
 build_prev_page_msg : PageInfo msg -> msg
 build_prev_page_msg page_info =
     page_info.custom_type PrevPageMsg
+
 
 build_next_page_msg : PageInfo msg -> msg
 build_next_page_msg page_info =
     page_info.custom_type NextPageMsg
 
-build_change_page_msg : (PageInfo msg) -> Int -> msg
+
+build_change_page_msg : PageInfo msg -> Int -> msg
 build_change_page_msg page_info page_idx =
-      page_info.custom_type (ChangePageMsg page_idx)
+    page_info.custom_type (ChangePageMsg page_idx)
+
 
 {-| Assumes `rows` comes in column-idx order already
 -}
@@ -315,8 +331,11 @@ view table_def unsorted_rows page_info =
                                     -- [ "https://picsum.photos/32/32", "123", "HERO NAME" ]
                                     -- List.map (\_ -> "") <| List.range 0 (List.length columns - 1)
                                     case rows of
-                                        [] -> []
-                                        head::rest -> head
+                                        [] ->
+                                            []
+
+                                        head :: rest ->
+                                            head
 
                                 val =
                                     List.map (\_ -> dummy_row) <| List.range 0 (num_missing - 1)
@@ -337,7 +356,7 @@ view table_def unsorted_rows page_info =
                 _ ->
                     List.map row_builder paginated_rows
 
-        create_page_btn : Int -> ButtonGroup.ButtonItem (msg)
+        create_page_btn : Int -> ButtonGroup.ButtonItem msg
         create_page_btn page_idx =
             let
                 btn_style =
@@ -349,13 +368,14 @@ view table_def unsorted_rows page_info =
             in
             ButtonGroup.button
                 [ btn_style
+
                 -- , Button.onClick <| page_info.change_page_msg page_idx
                 , Button.onClick <| build_change_page_msg page_info page_idx
-                , Button.attrs [ onMouseEnter <| build_change_page_msg page_info page_idx]
+                , Button.attrs [ onMouseEnter <| build_change_page_msg page_info page_idx ]
                 ]
                 [ text <| "Page " ++ String.fromInt (page_idx + 1) ]
 
-        prev_btn : List (ButtonGroup.ButtonItem (msg))
+        prev_btn : List (ButtonGroup.ButtonItem msg)
         prev_btn =
             let
                 btn_attrs =
@@ -367,6 +387,7 @@ view table_def unsorted_rows page_info =
             in
             [ ButtonGroup.button
                 [ Button.outlineSecondary
+
                 -- , Button.onClick page_info.prev_page_msg
                 , Button.onClick <| build_prev_page_msg page_info
                 , btn_attrs
@@ -374,7 +395,7 @@ view table_def unsorted_rows page_info =
                 [ text "<" ]
             ]
 
-        inner_page_btns : List (ButtonGroup.ButtonItem (msg))
+        inner_page_btns : List (ButtonGroup.ButtonItem msg)
         inner_page_btns =
             if page_info.page_count /= 0 then
                 List.map create_page_btn (List.range 0 page_info.page_count)
@@ -382,7 +403,7 @@ view table_def unsorted_rows page_info =
             else
                 []
 
-        next_btn : List (ButtonGroup.ButtonItem (msg))
+        next_btn : List (ButtonGroup.ButtonItem msg)
         next_btn =
             let
                 btn_attrs =
@@ -394,6 +415,7 @@ view table_def unsorted_rows page_info =
             in
             [ ButtonGroup.button
                 [ Button.outlineSecondary
+
                 -- , Button.onClick page_info.next_page_msg
                 , Button.onClick <| build_next_page_msg page_info
                 , btn_attrs
@@ -401,7 +423,7 @@ view table_def unsorted_rows page_info =
                 [ text ">" ]
             ]
 
-        page_buttons : Html (msg)
+        page_buttons : Html msg
         page_buttons =
             Grid.row [ Row.centerMd ]
                 [ Grid.col [ Col.mdAuto ]

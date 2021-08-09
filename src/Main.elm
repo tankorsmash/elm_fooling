@@ -56,7 +56,7 @@ import OpenDota.OpenDota as OpenDota
 import PostData exposing (PostData)
 import Reddit
 import String
-import Table exposing (ColumnDef, ColumnType(..), TableDefinition, view, PageInfoMsg)
+import Table exposing (ColumnDef, ColumnType(..), PageInfoMsg, TableDefinition, update_page_info, view)
 import Task
 import Time
 import Url
@@ -69,6 +69,32 @@ type TableType
     = RedditListingTable
     | PostDatasTable
     | DotaHeroStatsTable
+
+
+get_page_info : Model -> TableType -> Table.PageInfo Msg
+get_page_info model table_type =
+    case table_type of
+        PostDatasTable ->
+            model.post_datas_page_info
+
+        RedditListingTable ->
+            model.reddit_listing_page_info
+
+        DotaHeroStatsTable ->
+            model.dota_hero_stats_page_info
+
+
+set_page_info : Model -> TableType -> Table.PageInfo Msg -> Model
+set_page_info model table_type new_page_info =
+    case table_type of
+        PostDatasTable ->
+            { model | post_datas_page_info = new_page_info }
+
+        RedditListingTable ->
+            { model | reddit_listing_page_info = new_page_info }
+
+        DotaHeroStatsTable ->
+            { model | dota_hero_stats_page_info = new_page_info }
 
 
 type alias DotaModel =
@@ -110,9 +136,6 @@ type Msg
     | ChangeCurrentWeatherArea String
     | DownloadedCurrentWeather (Result Http.Error Weather.CurrentWeatherResponse)
     | GotPageMsg TableType PageInfoMsg
-    -- | PrevPageMsg TableType
-    -- | NextPageMsg TableType
-    -- | ChangePageMsg TableType Int
     | ChangeSubredditToDownload String
     | SendToPort String
     | RequestJSONP String
@@ -191,7 +214,7 @@ subscriptions model =
 -- MODEL
 
 
-type alias PageInfo =
+type alias UrlPageInfo =
     { key : Nav.Key
     , url : Url.Url
     , route : Route
@@ -215,7 +238,7 @@ type alias Model =
     , content : String
     , time : Time.Posix
     , zone : Time.Zone
-    , page_info : PageInfo
+    , page_info : UrlPageInfo
     , post_data : PostData
     , post_datas : List PostData
     , post_datas_page_info : Table.PageInfo Msg
@@ -309,7 +332,7 @@ init _ url navKey =
             parseUrl url
 
         page_info =
-            PageInfo navKey url (parseUrl url) UnsetPage
+            UrlPageInfo navKey url (parseUrl url) UnsetPage
 
         post_data =
             PostData -1 "No Name" "No Title"
@@ -639,8 +662,14 @@ update msg model =
                     ( model, Cmd.none )
 
         GotPageMsg table_type page_msg ->
-            Debug.todo "Write the Table.update_page_info"
-            ( model , Cmd.none)
+            let
+                old_page_info =
+                    get_page_info model table_type
+
+                updated_page_info =
+                    update_page_info old_page_info page_msg
+            in
+            ( set_page_info model table_type updated_page_info, Cmd.none )
 
         -- PrevPageMsg PostDatasTable ->
         --     let
@@ -722,7 +751,6 @@ update msg model =
         --             model.dota_hero_stats_page_info
         --     in
         --     ( { model | dota_hero_stats_page_info = { page_info | current_page_idx = new_page_idx } }, Cmd.none )
-
         ChangeSubredditToDownload new_subreddit ->
             ( { model | reddit_subreddit_to_download = new_subreddit }, Cmd.none )
 

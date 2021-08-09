@@ -345,6 +345,7 @@ init _ url navKey =
             , pretty_name = "Pretty Wepn Name"
             , description = "This is a description"
             , frame_image_path = "weapon_img.png"
+            , damage_type = Magnolia.WeaponFrame.Slashing
             , bonus_attack = 0
             , bonus_power = 0
             , bonus_encumbrance = 0

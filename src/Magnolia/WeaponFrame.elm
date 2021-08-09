@@ -1,4 +1,11 @@
-module Magnolia.WeaponFrame exposing (EditFormUpdateType, WeaponFrame, edit_form_definition, update_edit_form_data)
+module Magnolia.WeaponFrame exposing
+    ( BattleRow(..)
+    , EditFormUpdateType
+    , WeaponDamageType(..)
+    , WeaponFrame
+    , edit_form_definition
+    , update_edit_form_data
+    )
 
 import FormData
     exposing
@@ -102,20 +109,34 @@ type BattleRow
     | Ranged
     | Rear
 
+
 battle_row_from_int : Int -> BattleRow
 battle_row_from_int int =
     case int of
-        0 -> Melee
-        1 -> Ranged
-        2 -> Rear
-        _ -> Melee
+        0 ->
+            Melee
 
-battle_row_to_string :  BattleRow -> String
+        1 ->
+            Ranged
+
+        2 ->
+            Rear
+
+        _ ->
+            Melee
+
+
+battle_row_to_string : BattleRow -> String
 battle_row_to_string battle_row =
     case battle_row of
-        Melee -> "Melee"
-        Ranged -> "Ranged"
-        Rear -> "Rear"
+        Melee ->
+            "Melee"
+
+        Ranged ->
+            "Ranged"
+
+        Rear ->
+            "Rear"
 
 
 type WeaponDamageType
@@ -128,19 +149,37 @@ type WeaponDamageType
 weapon_damage_type_from_int : Int -> WeaponDamageType
 weapon_damage_type_from_int int =
     case int of
-        0 -> Unset
-        1 -> Piercing
-        2 -> Blunt
-        3 -> Slashing
-        _ -> Unset
+        0 ->
+            Unset
 
-weapon_damage_type_to_string :  WeaponDamageType -> String
+        1 ->
+            Piercing
+
+        2 ->
+            Blunt
+
+        3 ->
+            Slashing
+
+        _ ->
+            Unset
+
+
+weapon_damage_type_to_string : WeaponDamageType -> String
 weapon_damage_type_to_string damage_type =
     case damage_type of
-        Unset -> "Unset"
-        Piercing -> "Piercing"
-        Blunt -> "Blunt"
-        Slashing -> "Slashing"
+        Unset ->
+            "Unset"
+
+        Piercing ->
+            "Piercing"
+
+        Blunt ->
+            "Blunt"
+
+        Slashing ->
+            "Slashing"
+
 
 type alias WeaponFrame =
     { weapon_name : String
@@ -154,6 +193,7 @@ type alias WeaponFrame =
 
     -- , battle_row_type', prettyName: "Battle Row", prettifyEnumFn: prettifyBattleRowType, type: 'enum', defaultValue: 0},
     -- , damage_type', prettyName: "Damage Type (PBS)", prettifyEnumFn: prettifyWeaponDamageType, type: 'enum', defaultValue: 0},
+    , damage_type : WeaponDamageType
     , bonus_attack : Int
     , bonus_power : Int
     , bonus_encumbrance : Int

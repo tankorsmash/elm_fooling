@@ -56,7 +56,7 @@ import OpenDota.OpenDota as OpenDota
 import PostData exposing (PostData)
 import Reddit
 import String
-import Table exposing (ColumnDef, ColumnType(..), TableDefinition, view)
+import Table exposing (ColumnDef, ColumnType(..), TableDefinition, view, PageInfoMsg)
 import Task
 import Time
 import Url
@@ -109,9 +109,10 @@ type Msg
     | DownloadCurrentAreasWeather
     | ChangeCurrentWeatherArea String
     | DownloadedCurrentWeather (Result Http.Error Weather.CurrentWeatherResponse)
-    | PrevPageMsg TableType
-    | NextPageMsg TableType
-    | ChangePageMsg TableType Int
+    | GotPageMsg TableType PageInfoMsg
+    -- | PrevPageMsg TableType
+    -- | NextPageMsg TableType
+    -- | ChangePageMsg TableType Int
     | ChangeSubredditToDownload String
     | SendToPort String
     | RequestJSONP String
@@ -329,13 +330,13 @@ init _ url navKey =
             Weather.CurrentWeatherResponse "" current_weather_main
 
         post_datas_page_info =
-            Table.PageInfo 0 0 10 (PrevPageMsg PostDatasTable) (NextPageMsg PostDatasTable) (ChangePageMsg PostDatasTable)
+            Table.PageInfo 0 0 10 (GotPageMsg PostDatasTable)
 
         reddit_listing_page_info =
-            Table.PageInfo 0 0 10 (PrevPageMsg RedditListingTable) (NextPageMsg RedditListingTable) (ChangePageMsg RedditListingTable)
+            Table.PageInfo 0 0 10 (GotPageMsg RedditListingTable)
 
         dota_hero_stats_page_info =
-            Table.PageInfo 0 0 10 (PrevPageMsg DotaHeroStatsTable) (NextPageMsg DotaHeroStatsTable) (ChangePageMsg DotaHeroStatsTable)
+            Table.PageInfo 0 0 10 (GotPageMsg DotaHeroStatsTable)
 
         form_data : WeaponFrame
         form_data =
@@ -637,86 +638,90 @@ update msg model =
                     in
                     ( model, Cmd.none )
 
-        PrevPageMsg PostDatasTable ->
-            let
-                page_info =
-                    model.post_datas_page_info
+        GotPageMsg table_type page_msg ->
+            Debug.todo "Write the Table.update_page_info"
+            ( model , Cmd.none)
 
-                new_page_info =
-                    Table.decrement_page_idx page_info
-            in
-            ( { model | post_datas_page_info = new_page_info }, Cmd.none )
-
-        PrevPageMsg RedditListingTable ->
-            let
-                page_info =
-                    model.reddit_listing_page_info
-
-                new_page_info =
-                    Table.decrement_page_idx page_info
-            in
-            ( { model | reddit_listing_page_info = new_page_info }, Cmd.none )
-
-        PrevPageMsg DotaHeroStatsTable ->
-            let
-                page_info =
-                    model.dota_hero_stats_page_info
-
-                new_page_info =
-                    Table.decrement_page_idx page_info
-            in
-            ( { model | dota_hero_stats_page_info = new_page_info }, Cmd.none )
-
-        NextPageMsg PostDatasTable ->
-            let
-                page_info =
-                    model.post_datas_page_info
-
-                new_page_idx =
-                    Table.increment_page_idx page_info
-            in
-            ( { model | post_datas_page_info = page_info }, Cmd.none )
-
-        NextPageMsg RedditListingTable ->
-            let
-                page_info =
-                    model.reddit_listing_page_info
-
-                new_page_info =
-                    Table.increment_page_idx page_info
-            in
-            ( { model | reddit_listing_page_info = new_page_info }, Cmd.none )
-
-        NextPageMsg DotaHeroStatsTable ->
-            let
-                page_info =
-                    model.dota_hero_stats_page_info
-
-                new_page_info =
-                    Table.increment_page_idx page_info
-            in
-            ( { model | dota_hero_stats_page_info = new_page_info }, Cmd.none )
-
-        ChangePageMsg PostDatasTable new_page_idx ->
-            let
-                page_info =
-                    model.post_datas_page_info
-            in
-            ( { model | post_datas_page_info = { page_info | current_page_idx = new_page_idx } }, Cmd.none )
-
-        ChangePageMsg RedditListingTable new_page_idx ->
-            let
-                page_info =
-                    model.reddit_listing_page_info
-            in
-            ( { model | reddit_listing_page_info = { page_info | current_page_idx = new_page_idx } }, Cmd.none )
-
-        ChangePageMsg DotaHeroStatsTable new_page_idx ->
-            let
-                page_info =
-                    model.dota_hero_stats_page_info
-            in
-            ( { model | dota_hero_stats_page_info = { page_info | current_page_idx = new_page_idx } }, Cmd.none )
+        -- PrevPageMsg PostDatasTable ->
+        --     let
+        --         page_info =
+        --             model.post_datas_page_info
+        --
+        --         new_page_info =
+        --             Table.decrement_page_idx page_info
+        --     in
+        --     ( { model | post_datas_page_info = new_page_info }, Cmd.none )
+        --
+        -- PrevPageMsg RedditListingTable ->
+        --     let
+        --         page_info =
+        --             model.reddit_listing_page_info
+        --
+        --         new_page_info =
+        --             Table.decrement_page_idx page_info
+        --     in
+        --     ( { model | reddit_listing_page_info = new_page_info }, Cmd.none )
+        --
+        -- PrevPageMsg DotaHeroStatsTable ->
+        --     let
+        --         page_info =
+        --             model.dota_hero_stats_page_info
+        --
+        --         new_page_info =
+        --             Table.decrement_page_idx page_info
+        --     in
+        --     ( { model | dota_hero_stats_page_info = new_page_info }, Cmd.none )
+        --
+        -- NextPageMsg PostDatasTable ->
+        --     let
+        --         page_info =
+        --             model.post_datas_page_info
+        --
+        --         new_page_idx =
+        --             Table.increment_page_idx page_info
+        --     in
+        --     ( { model | post_datas_page_info = page_info }, Cmd.none )
+        --
+        -- NextPageMsg RedditListingTable ->
+        --     let
+        --         page_info =
+        --             model.reddit_listing_page_info
+        --
+        --         new_page_info =
+        --             Table.increment_page_idx page_info
+        --     in
+        --     ( { model | reddit_listing_page_info = new_page_info }, Cmd.none )
+        --
+        -- NextPageMsg DotaHeroStatsTable ->
+        --     let
+        --         page_info =
+        --             model.dota_hero_stats_page_info
+        --
+        --         new_page_info =
+        --             Table.increment_page_idx page_info
+        --     in
+        --     ( { model | dota_hero_stats_page_info = new_page_info }, Cmd.none )
+        --
+        -- ChangePageMsg PostDatasTable new_page_idx ->
+        --     let
+        --         page_info =
+        --             model.post_datas_page_info
+        --     in
+        --     ( { model | post_datas_page_info = { page_info | current_page_idx = new_page_idx } }, Cmd.none )
+        --
+        -- ChangePageMsg RedditListingTable new_page_idx ->
+        --     let
+        --         page_info =
+        --             model.reddit_listing_page_info
+        --     in
+        --     ( { model | reddit_listing_page_info = { page_info | current_page_idx = new_page_idx } }, Cmd.none )
+        --
+        -- ChangePageMsg DotaHeroStatsTable new_page_idx ->
+        --     let
+        --         page_info =
+        --             model.dota_hero_stats_page_info
+        --     in
+        --     ( { model | dota_hero_stats_page_info = { page_info | current_page_idx = new_page_idx } }, Cmd.none )
 
         ChangeSubredditToDownload new_subreddit ->
             ( { model | reddit_subreddit_to_download = new_subreddit }, Cmd.none )

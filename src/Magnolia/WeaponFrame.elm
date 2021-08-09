@@ -10,12 +10,12 @@ module Magnolia.WeaponFrame exposing
 import FormData
     exposing
         ( DataType(..)
+        , new_form_field_enum
         , new_form_field_float
         , new_form_field_int
         , new_form_field_string
-        , new_form_field_enum
-        , update_int_field
         , update_enum_field
+        , update_int_field
         )
 
 
@@ -83,25 +83,16 @@ update_edit_form_data form_data form_update_type =
 edit_form_definition : (EditFormUpdateType -> msg) -> FormData.FormDefinition WeaponFrame msg
 edit_form_definition the_msg =
     let
-        name_field : FormData.FormField WeaponFrame msg
-        name_field =
-            new_form_field_string "weapon_name" .weapon_name (Name >> the_msg)
-
-        frame_id_field : FormData.FormField WeaponFrame msg
-        frame_id_field =
-            new_form_field_int "frame_id" .frame_id (FrameId >> the_msg)
-
-        choice_id_field : FormData.FormField WeaponFrame msg
-        choice_id_field =
-            new_form_field_int "choice_id" .choice_id (ChoiceId >> the_msg)
+        damage_type_options =
+            []
     in
     { fields =
-        [ name_field
-        , frame_id_field
-        , choice_id_field
+        [ new_form_field_string "weapon_name" .weapon_name (Name >> the_msg)
+        , new_form_field_int "frame_id" .frame_id (FrameId >> the_msg)
+        , new_form_field_int "choice_id" .choice_id (ChoiceId >> the_msg)
         , new_form_field_string "description" .description (Description >> the_msg)
         , new_form_field_string "frame_image_path" .frame_image_path (FrameImagePath >> the_msg)
-        , new_form_field_enum "damage_type" (.damage_type >> weapon_damage_type_to_string) (WeaponDamageType >> the_msg)
+        , new_form_field_enum "damage_type" (.damage_type >> weapon_damage_type_to_string) (WeaponDamageType >> the_msg) weapon_damage_type_values
         , new_form_field_int "bonus_attack" .bonus_attack (BonusAttack >> the_msg)
         , new_form_field_int "bonus_power" .bonus_power (BonusPower >> the_msg)
         , new_form_field_int "bonus_encumbrance" .bonus_encumbrance (BonusEncumbrance >> the_msg)
@@ -131,6 +122,30 @@ battle_row_from_int int =
 
         _ ->
             Melee
+
+
+battle_row_values : List ( String, String )
+battle_row_values =
+    let
+        thing =
+            Melee
+
+        --hack to bring me back here if BattleRow changes
+        ignored _ =
+            case thing of
+                Melee ->
+                    ()
+
+                Ranged ->
+                    ()
+
+                Rear ->
+                    ()
+    in
+    [ ( "0", "Melee" )
+    , ( "1", "Ranged" )
+    , ( "2", "Rear" )
+    ]
 
 
 battle_row_to_string : BattleRow -> String
@@ -186,6 +201,34 @@ weapon_damage_type_to_string damage_type =
 
         Slashing ->
             "Slashing"
+
+
+weapon_damage_type_values : List ( String, String )
+weapon_damage_type_values =
+    let
+        thing =
+            Piercing
+
+        --hack to bring me back here if BattleRow changes
+        ignored _ =
+            case thing of
+                Unset ->
+                    ()
+
+                Piercing ->
+                    ()
+
+                Blunt ->
+                    ()
+
+                Slashing ->
+                    ()
+    in
+    [ ( "0", "Unset" )
+    , ( "1", "Piercing" )
+    , ( "2", "Blunt" )
+    , ( "2", "Slashing" )
+    ]
 
 
 type alias WeaponFrame =

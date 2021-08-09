@@ -45,7 +45,7 @@ import Html
         , thead
         , tr
         )
-import Html.Attributes exposing (class, for)
+import Html.Attributes exposing (class, for, value)
 
 
 
@@ -123,6 +123,7 @@ type alias FormField fd msg =
     , int_getter : Maybe (fd -> Int)
     , float_getter : Maybe (fd -> Float)
     , enum_getter : Maybe (fd -> String) --In the field definition, we need to convert the enum to a string ourselves, and pass that string from the getter
+    , enum_values : Maybe (List (String, String)) -- [(val, text), (val, text)]
     , on_input_msg : String -> msg
     }
 
@@ -161,11 +162,14 @@ render_field_input_enum obj field =
         [ div [ class "input-group-prepend" ]
             [ Form.label [ for field.field_name, class "input-group-text" ] [ text field.field_name ]
             ]
-        , Select.custom [ Select.id field.field_name ]
-            [ Select.item [] [ text "TODO" ]
-            , Select.item [] [ text "REPLACE" ]
-            , Select.item [] [ text "ME" ]
-            ]
+        , Select.custom [ Select.id field.field_name ] <|
+            case field.enum_values of
+                Nothing -> Debug.log "Nothing" []
+                Just values -> Debug.log "values" List.map (\(v, t) -> Select.item [value v] [ text t]) values
+            -- [ Select.item [] [ text "TODO" ]
+            -- , Select.item [] [ text "REPLACE" ]
+            -- , Select.item [] [ text "ME" ]
+            -- ]
         ]
 
 
@@ -296,18 +300,20 @@ new_form_field_int name getter on_input_msg =
     , int_getter = Just getter
     , float_getter = Nothing
     , enum_getter = Nothing
+    , enum_values = Nothing
     , on_input_msg = on_input_msg
     }
 
 
-new_form_field_enum : String -> (fd -> String) -> (String -> msg) -> FormField fd msg
-new_form_field_enum name getter on_input_msg =
+new_form_field_enum : String -> (fd -> String) -> (String -> msg) -> List (String, String) -> FormField fd msg
+new_form_field_enum name getter on_input_msg enum_values =
     { field_name = name
     , data_type = EnumType
     , string_getter = Nothing
     , int_getter = Nothing
     , float_getter = Nothing
     , enum_getter = Just getter
+    , enum_values = Just enum_values
     , on_input_msg = on_input_msg
     }
 
@@ -320,6 +326,7 @@ new_form_field_string name getter on_input_msg =
     , int_getter = Nothing
     , float_getter = Nothing
     , enum_getter = Nothing
+    , enum_values = Nothing
     , on_input_msg = on_input_msg
     }
 
@@ -332,5 +339,6 @@ new_form_field_float name getter on_input_msg =
     , int_getter = Nothing
     , float_getter = Just getter
     , enum_getter = Nothing
+    , enum_values = Nothing
     , on_input_msg = on_input_msg
     }

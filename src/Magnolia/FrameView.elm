@@ -72,16 +72,16 @@ type Msg
 
 type alias Model =
     { weapon_edit_form_definition : FormData.FormDefinition WeaponFrame Msg
-    , form_data : WeaponFrame
-    , saved_form_data : Maybe WeaponFrame
+    , weapon_frame_data : WeaponFrame
+    , saved_weapon_frame_data : Maybe WeaponFrame
     }
 
 
 init : Model
 init =
     let
-        form_data : WeaponFrame
-        form_data =
+        weapon_frame_data : WeaponFrame
+        weapon_frame_data =
             { weapon_name = "unset in init wapn_ame"
             , frame_id = 123
             , choice_id = -1
@@ -96,13 +96,13 @@ init =
             , carry_weight = 0
             }
 
-        saved_form_data : Maybe WeaponFrame
-        saved_form_data =
+        saved_weapon_frame_data : Maybe WeaponFrame
+        saved_weapon_frame_data =
             Nothing
     in
     { weapon_edit_form_definition = Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate
-    , form_data = form_data
-    , saved_form_data = saved_form_data
+    , weapon_frame_data = weapon_frame_data
+    , saved_weapon_frame_data = saved_weapon_frame_data
     }
 
 
@@ -110,10 +110,10 @@ update : Model -> Msg -> ( Model, Cmd Msg )
 update model msg =
     case msg of
         SubmitFormData ->
-            ( { model | saved_form_data = Just model.form_data }, Cmd.none )
+            ( { model | saved_weapon_frame_data = Just model.weapon_frame_data }, Cmd.none )
 
         GotEditWeaponFormUpdate form_update_type ->
-            ( { model | form_data = Magnolia.WeaponFrame.update_edit_form_data model.form_data form_update_type }, Cmd.none )
+            ( { model | weapon_frame_data = Magnolia.WeaponFrame.update_edit_form_data model.weapon_frame_data form_update_type }, Cmd.none )
 
 
 bootstrap_button type_ on_click text_ =
@@ -132,12 +132,12 @@ button_primary on_click text_ =
 view : Model -> Html Msg
 view model =
     div []
-        [ form_data_view model.form_data model.weapon_edit_form_definition model.saved_form_data
+        [ form_data_view model.weapon_frame_data model.weapon_edit_form_definition model.saved_weapon_frame_data
         ]
 
 
 form_data_view : obj -> FormData.FormDefinition obj Msg -> Maybe obj -> Html Msg
-form_data_view form_data form_definition maybe_saved_form_data =
+form_data_view weapon_frame_data form_definition maybe_saved_form_data =
     let
         rendered_saved_form_data : Html Msg
         rendered_saved_form_data =
@@ -145,10 +145,10 @@ form_data_view form_data form_definition maybe_saved_form_data =
                 Nothing ->
                     div [] []
 
-                Just saved_form_data ->
+                Just saved_weapon_frame_data ->
                     div []
                         [ div [] [ text "Saved Form Data" ]
-                        , FormData.render_fields form_definition.fields saved_form_data
+                        , FormData.render_fields form_definition.fields saved_weapon_frame_data
                         , br [] []
                         ]
     in
@@ -156,7 +156,7 @@ form_data_view form_data form_definition maybe_saved_form_data =
         [ Grid.col [ Col.md6 ]
             [ rendered_saved_form_data
             , Form.form []
-                [ FormData.render_fields form_definition.fields form_data
+                [ FormData.render_fields form_definition.fields weapon_frame_data
                 , button_primary SubmitFormData "Submit"
                 ]
             ]

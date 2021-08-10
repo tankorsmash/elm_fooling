@@ -142,7 +142,7 @@ type Msg
     | RequestJSONP String
     | RequestJSONPFromSubreddit String
     | RecvFromPort String
-    -- | GotEditWeaponFormUpdate Magnolia.WeaponFrame.EditFormUpdateType
+      -- | GotEditWeaponFormUpdate Magnolia.WeaponFrame.EditFormUpdateType
       -- | SubmitFormData
     | GotFrameViewMsg FrameView.Msg
     | DotaDownloadPlayerData Int
@@ -257,9 +257,11 @@ type alias Model =
     , current_navbar_state : Navbar.State
     , current_weather_response : Weather.CurrentWeatherResponse
     , current_areas_str : String
+
     -- , weapon_edit_form_definition : FormData.FormDefinition WeaponFrame Msg
     -- , form_data : WeaponFrame
     , frame_view_model : FrameView.Model
+
     -- , saved_form_data : Maybe WeaponFrame
     , dota_model : DotaModel
     , dota_hero_stats_page_info : Table.PageInfo Msg
@@ -394,6 +396,7 @@ init _ url navKey =
             , current_navbar_state = navbarState
             , current_weather_response = current_weather_response
             , current_areas_str = "Gatineau"
+
             -- , form_data = form_data
             -- , saved_form_data = saved_form_data
             -- , weapon_edit_form_definition = Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate
@@ -675,10 +678,10 @@ update msg model =
         --
         GotFrameViewMsg frame_view_msg ->
             let
-                (frame_model, frame_cmd) = FrameView.update model.frame_view_model frame_view_msg
+                ( frame_model, frame_cmd ) =
+                    FrameView.update model.frame_view_model frame_view_msg
             in
-                (model, Cmd.none)
-
+            ( model, Cmd.none )
 
         DotaDownloadPlayerData account_id ->
             ( model, OpenDota.download_player_data account_id DotaDownloadedPlayerData )
@@ -1213,12 +1216,14 @@ homeView model =
                         ]
 
                 FrameViewTab ->
-                    Html.map (\msg -> GotFrameViewMsg msg) <| div []
-                        [ h4 [ add_class "testId" ] [ text "FormData!" ]
+                    Html.map (\msg -> GotFrameViewMsg msg) <|
+                        div []
+                            [ h4 [ add_class "testId" ] [ text "FormData!" ]
 
-                        -- , form_data_view model.form_data model.weapon_edit_form_definition model.saved_form_data
-                        , FrameView.view model.frame_view_model
-                        ]
+                            -- , form_data_view model.form_data model.weapon_edit_form_definition model.saved_form_data
+                            , FrameView.view model.frame_view_model
+                            ]
+
                 ModalTab ->
                     div []
                         [ h4 [] [ text "Modal Example" ]

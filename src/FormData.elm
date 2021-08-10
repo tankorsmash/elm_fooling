@@ -154,7 +154,11 @@ render_field_input_enum obj field getter =
                 [ text field.field_name
                 ]
             ]
-        , Select.custom [ Select.id field.field_name ] <|
+        , Select.custom
+            [ Select.id field.field_name
+            , Select.onChange field.on_input_msg
+            ]
+          <|
             case field.enum_values of
                 Nothing ->
                     Debug.log "Nothing" []

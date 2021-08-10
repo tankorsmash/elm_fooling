@@ -71,11 +71,11 @@ type alias FormDefinition fd msg =
     { fields : List (FormField fd msg) }
 
 
-type DataType
-    = StringType
-    | IntType
-    | FloatType
-    | EnumType
+type DataType fd
+    = StringType (fd -> String)
+    | IntType (fd -> Int)
+    | FloatType (fd -> Float)
+    | EnumType (fd -> String)
 
 
 {-| Returns either the int value of maybe\_new\_val, or the fallback
@@ -100,30 +100,26 @@ update_enum_field fallback maybe_new_val int_to_enum =
             fallback
 
 
-to_string : DataType -> String
+to_string : DataType a -> String
 to_string dtype =
     case dtype of
-        StringType ->
+        StringType _ ->
             "StringType"
 
-        IntType ->
+        IntType _ ->
             "IntType"
 
-        FloatType ->
+        FloatType _ ->
             "FloatType"
 
-        EnumType ->
+        EnumType _ ->
             "EnumType"
 
 
 type alias FormField fd msg =
     { field_name : String
-    , data_type : DataType
-    , string_getter : Maybe (fd -> String)
-    , int_getter : Maybe (fd -> Int)
-    , float_getter : Maybe (fd -> Float)
-    , enum_getter : Maybe (fd -> String) --In the field definition, we need to convert the enum to a string ourselves, and pass that string from the getter
-    , enum_values : Maybe (List (String, String)) -- [(val, text), (val, text)]
+    , data_type : DataType fd
+    , enum_values : Maybe (List ( String, String )) -- [(val, text), (val, text)]
     , on_input_msg : String -> msg
     }
 
@@ -134,12 +130,12 @@ render_field_input_string obj field =
         (InputGroup.text
             [ Input.placeholder "placeholder"
             , Input.value <|
-                case field.string_getter of
-                    Just getter ->
+                case field.data_type of
+                    StringType getter ->
                         getter obj
 
-                    Nothing ->
-                        "unset in field"
+                    _ ->
+                        "Unknown DataType"
             , Input.onInput field.on_input_msg
             ]
         )
@@ -164,12 +160,16 @@ render_field_input_enum obj field =
             ]
         , Select.custom [ Select.id field.field_name ] <|
             case field.enum_values of
-                Nothing -> Debug.log "Nothing" []
-                Just values -> Debug.log "values" List.map (\(v, t) -> Select.item [value v] [ text t]) values
-            -- [ Select.item [] [ text "TODO" ]
-            -- , Select.item [] [ text "REPLACE" ]
-            -- , Select.item [] [ text "ME" ]
-            -- ]
+                Nothing ->
+                    Debug.log "Nothing" []
+
+                Just values ->
+                    Debug.log "values" List.map (\( v, t ) -> Select.item [ value v ] [ text t ]) values
+
+        -- [ Select.item [] [ text "TODO" ]
+        -- , Select.item [] [ text "REPLACE" ]
+        -- , Select.item [] [ text "ME" ]
+        -- ]
         ]
 
 
@@ -210,12 +210,12 @@ render_field_input_number obj field =
         (InputGroup.number
             [ Input.placeholder "placeholder"
             , Input.value <|
-                case field.int_getter of
-                    Just getter ->
+                case field.data_type of
+                    IntType getter ->
                         String.fromInt <| getter obj
 
-                    Nothing ->
-                        "-1233333"
+                    _ ->
+                        "Unknown DataType"
             , Input.onInput field.on_input_msg
             ]
         )
@@ -227,39 +227,17 @@ render_field_input_number obj field =
 lookup_field : fd -> FormField fd msg -> String
 lookup_field obj field =
     case field.data_type of
-        StringType ->
-            case field.string_getter of
-                Just getter ->
-                    getter obj
+        StringType getter ->
+            getter obj
 
-                Nothing ->
-                    "unset in lookup"
+        IntType getter ->
+            String.fromInt <| getter obj
 
-        IntType ->
-            String.fromInt <|
-                case field.int_getter of
-                    Just getter ->
-                        getter obj
+        FloatType getter ->
+            String.fromFloat <| getter obj
 
-                    Nothing ->
-                        0
-
-        FloatType ->
-            String.fromFloat <|
-                case field.float_getter of
-                    Just getter ->
-                        getter obj
-
-                    Nothing ->
-                        0.0
-
-        EnumType ->
-            case field.enum_getter of
-                Just getter ->
-                    getter obj
-
-                Nothing ->
-                    "unset enum in lookup"
+        EnumType getter ->
+            getter obj
 
 
 render_field_to_plaintext : fd -> FormField fd msg -> Html msg
@@ -270,16 +248,16 @@ render_field_to_plaintext obj field =
 render_field : fd -> FormField fd msg -> Html msg
 render_field obj field =
     case field.data_type of
-        IntType ->
+        IntType _ ->
             div [] [ render_field_input_number obj field ]
 
-        FloatType ->
+        FloatType _ ->
             div [] [ render_field_input_number obj field ]
 
-        StringType ->
+        StringType _ ->
             div [] [ render_field_input_string obj field ]
 
-        EnumType ->
+        EnumType _ ->
             div [] [ render_field_input_enum obj field ]
 
 
@@ -295,24 +273,16 @@ render_fields fields form_data =
 new_form_field_int : String -> (fd -> Int) -> (String -> msg) -> FormField fd msg
 new_form_field_int name getter on_input_msg =
     { field_name = name
-    , data_type = IntType
-    , string_getter = Nothing
-    , int_getter = Just getter
-    , float_getter = Nothing
-    , enum_getter = Nothing
+    , data_type = IntType getter
     , enum_values = Nothing
     , on_input_msg = on_input_msg
     }
 
 
-new_form_field_enum : String -> (fd -> String) -> (String -> msg) -> List (String, String) -> FormField fd msg
+new_form_field_enum : String -> (fd -> String) -> (String -> msg) -> List ( String, String ) -> FormField fd msg
 new_form_field_enum name getter on_input_msg enum_values =
     { field_name = name
-    , data_type = EnumType
-    , string_getter = Nothing
-    , int_getter = Nothing
-    , float_getter = Nothing
-    , enum_getter = Just getter
+    , data_type = EnumType getter
     , enum_values = Just enum_values
     , on_input_msg = on_input_msg
     }
@@ -321,11 +291,7 @@ new_form_field_enum name getter on_input_msg enum_values =
 new_form_field_string : String -> (fd -> String) -> (String -> msg) -> FormField fd msg
 new_form_field_string name getter on_input_msg =
     { field_name = name
-    , data_type = StringType
-    , string_getter = Just getter
-    , int_getter = Nothing
-    , float_getter = Nothing
-    , enum_getter = Nothing
+    , data_type = StringType getter
     , enum_values = Nothing
     , on_input_msg = on_input_msg
     }
@@ -334,11 +300,7 @@ new_form_field_string name getter on_input_msg =
 new_form_field_float : String -> (fd -> Float) -> (String -> msg) -> FormField fd msg
 new_form_field_float name getter on_input_msg =
     { field_name = name
-    , data_type = FloatType
-    , string_getter = Nothing
-    , int_getter = Nothing
-    , float_getter = Just getter
-    , enum_getter = Nothing
+    , data_type = FloatType getter
     , enum_values = Nothing
     , on_input_msg = on_input_msg
     }

@@ -124,18 +124,12 @@ type alias FormField fd msg =
     }
 
 
-render_field_input_string : fd -> FormField fd msg -> Html msg
-render_field_input_string obj field =
+render_field_input_string : fd -> FormField fd msg -> (fd -> String) -> Html msg
+render_field_input_string obj field getter =
     InputGroup.config
         (InputGroup.text
             [ Input.placeholder "placeholder"
-            , Input.value <|
-                case field.data_type of
-                    StringType getter ->
-                        getter obj
-
-                    _ ->
-                        "Unknown DataType"
+            , Input.value <| getter obj
             , Input.onInput field.on_input_msg
             ]
         )
@@ -144,8 +138,8 @@ render_field_input_string obj field =
         |> InputGroup.view
 
 
-render_field_input_enum : fd -> FormField fd msg -> Html msg
-render_field_input_enum obj field =
+render_field_input_enum : fd -> FormField fd msg -> (fd -> String) -> Html msg
+render_field_input_enum obj field getter =
     -- Form.group [Form.attrs [class ""]]
     --     [ Form.label [ for field.field_name, class "mr-3" ] [ text field.field_name ]
     --     , Select.select [ Select.id field.field_name ]
@@ -156,7 +150,12 @@ render_field_input_enum obj field =
     --     ]
     div [ class "input-group" ]
         [ div [ class "input-group-prepend" ]
-            [ Form.label [ for field.field_name, class "input-group-text" ] [ text field.field_name ]
+            [ Form.label
+                [ for field.field_name
+                , class "input-group-text"
+                ]
+                [ text field.field_name
+                ]
             ]
         , Select.custom [ Select.id field.field_name ] <|
             case field.enum_values of
@@ -204,18 +203,26 @@ render_field_input_enum obj field =
 --     |> InputGroup.view
 
 
-render_field_input_number : fd -> FormField fd msg -> Html msg
-render_field_input_number obj field =
+render_field_input_int : fd -> FormField fd msg -> (fd -> Int) -> Html msg
+render_field_input_int obj field getter =
     InputGroup.config
         (InputGroup.number
             [ Input.placeholder "placeholder"
-            , Input.value <|
-                case field.data_type of
-                    IntType getter ->
-                        String.fromInt <| getter obj
+            , Input.value <| String.fromInt <| getter obj
+            , Input.onInput field.on_input_msg
+            ]
+        )
+        |> InputGroup.predecessors
+            [ InputGroup.span [] [ text field.field_name ] ]
+        |> InputGroup.view
 
-                    _ ->
-                        "Unknown DataType"
+
+render_field_input_float : fd -> FormField fd msg -> (fd -> Float) -> Html msg
+render_field_input_float obj field getter =
+    InputGroup.config
+        (InputGroup.number
+            [ Input.placeholder "placeholder"
+            , Input.value <| String.fromFloat <| getter obj
             , Input.onInput field.on_input_msg
             ]
         )
@@ -248,17 +255,17 @@ render_field_to_plaintext obj field =
 render_field : fd -> FormField fd msg -> Html msg
 render_field obj field =
     case field.data_type of
-        IntType _ ->
-            div [] [ render_field_input_number obj field ]
+        IntType getter ->
+            div [] [ render_field_input_int obj field getter ]
 
-        FloatType _ ->
-            div [] [ render_field_input_number obj field ]
+        FloatType getter ->
+            div [] [ render_field_input_float obj field getter ]
 
-        StringType _ ->
-            div [] [ render_field_input_string obj field ]
+        StringType getter ->
+            div [] [ render_field_input_string obj field getter ]
 
-        EnumType _ ->
-            div [] [ render_field_input_enum obj field ]
+        EnumType getter ->
+            div [] [ render_field_input_enum obj field getter ]
 
 
 render_fields : List (FormField fd msg) -> fd -> Html msg

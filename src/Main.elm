@@ -681,7 +681,7 @@ update msg model =
                 ( frame_model, frame_cmd ) =
                     FrameView.update model.frame_view_model frame_view_msg
             in
-            ( model, Cmd.none )
+            ( { model | frame_view_model = frame_model }, Cmd.none )
 
         DotaDownloadPlayerData account_id ->
             ( model, OpenDota.download_player_data account_id DotaDownloadedPlayerData )

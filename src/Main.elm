@@ -1218,8 +1218,7 @@ homeView model =
                 FrameViewTab ->
                     Html.map (\msg -> GotFrameViewMsg msg) <|
                         div []
-                            [ h4 [] [ text "Frame View!" ]
-                            , FrameView.view model.frame_view_model
+                            [ FrameView.view model.frame_view_model
                             ]
 
                 ModalTab ->

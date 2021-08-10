@@ -11,6 +11,8 @@ import Bootstrap.Grid.Col as Col
 import Bootstrap.Grid.Row as Row
 import Bootstrap.Modal as Modal
 import Bootstrap.Navbar as Navbar
+import Bootstrap.Tab as Tab
+import Bootstrap.Utilities.Spacing as Spacing
 import Browser
 import Browser.Navigation as Nav
 import Debug
@@ -68,12 +70,14 @@ import Weather
 type Msg
     = SubmitFormData
     | GotEditWeaponFormUpdate Magnolia.WeaponFrame.EditFormUpdateType
+    | TabMsg Tab.State
 
 
 type alias Model =
     { weapon_edit_form_definition : FormData.FormDefinition WeaponFrame Msg
     , weapon_frame_data : WeaponFrame
     , saved_weapon_frame_data : Maybe WeaponFrame
+    , active_tab : Tab.State
     }
 
 
@@ -103,6 +107,7 @@ init =
     { weapon_edit_form_definition = Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate
     , weapon_frame_data = weapon_frame_data
     , saved_weapon_frame_data = saved_weapon_frame_data
+    , active_tab = Tab.initialState
     }
 
 
@@ -114,6 +119,9 @@ update model msg =
 
         GotEditWeaponFormUpdate form_update_type ->
             ( { model | weapon_frame_data = Magnolia.WeaponFrame.update_edit_form_data model.weapon_frame_data form_update_type }, Cmd.none )
+
+        TabMsg new_state ->
+            ( { model | active_tab = new_state }, Cmd.none )
 
 
 bootstrap_button type_ on_click text_ =
@@ -129,10 +137,36 @@ button_primary on_click text_ =
     bootstrap_button Button.primary on_click text_
 
 
+tabs_view : Model -> Html Msg
+tabs_view model =
+    Tab.config TabMsg
+        |> Tab.items
+            [ Tab.item
+                { id = "tab_item_1"
+                , link = Tab.link [] [ text "Edit WeaponFrame" ]
+                , pane =
+                    Tab.pane [ Spacing.mt3 ]
+                        [ h4 [] [ text "Edit WeaponFrame" ]
+                        , form_data_view model.weapon_frame_data model.weapon_edit_form_definition model.saved_weapon_frame_data
+                        ]
+                }
+            , Tab.item
+                { id = "tab_item_2"
+                , link = Tab.link [] [ text "Tab Item 2" ]
+                , pane =
+                    Tab.pane [ Spacing.mt3 ]
+                        [ h4 [] [ text "Tab 2 Heading" ]
+                        , p [] [ text "TODO" ]
+                        ]
+                }
+            ]
+        |> Tab.view model.active_tab
+
+
 view : Model -> Html Msg
 view model =
     div []
-        [ form_data_view model.weapon_frame_data model.weapon_edit_form_definition model.saved_weapon_frame_data
+        [ tabs_view model
         ]
 
 

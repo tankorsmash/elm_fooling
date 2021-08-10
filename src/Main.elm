@@ -1218,9 +1218,7 @@ homeView model =
                 FrameViewTab ->
                     Html.map (\msg -> GotFrameViewMsg msg) <|
                         div []
-                            [ h4 [ add_class "testId" ] [ text "FormData!" ]
-
-                            -- , form_data_view model.form_data model.weapon_edit_form_definition model.saved_form_data
+                            [ h4 [] [ text "Frame View!" ]
                             , FrameView.view model.frame_view_model
                             ]
 

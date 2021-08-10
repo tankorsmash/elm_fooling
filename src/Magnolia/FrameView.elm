@@ -72,8 +72,6 @@ type Msg
 
 type alias Model =
     { weapon_edit_form_definition : FormData.FormDefinition WeaponFrame Msg
-
-    -- { edit_form_definition: Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate}
     , form_data : WeaponFrame
     , saved_form_data : Maybe WeaponFrame
     }
@@ -118,10 +116,6 @@ update model msg =
             ( { model | form_data = Magnolia.WeaponFrame.update_edit_form_data model.form_data form_update_type }, Cmd.none )
 
 
-
--- model.form_data model.weapon_edit_form_definition model.saved_form_data
-
-
 bootstrap_button type_ on_click text_ =
     Button.button
         [ type_
@@ -138,7 +132,6 @@ button_primary on_click text_ =
 view : Model -> Html Msg
 view model =
     div []
-        -- [ text "Frame View"
         [ form_data_view model.form_data model.weapon_edit_form_definition model.saved_form_data
         ]
 

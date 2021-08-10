@@ -1,6 +1,7 @@
 module FormData exposing
     ( DataType(..)
     , FormDefinition
+    , EnumAccessor
     , FormField
     , new_form_field_enum
     , new_form_field_float
@@ -45,7 +46,7 @@ import Html
         , thead
         , tr
         )
-import Html.Attributes exposing (class, for, value)
+import Html.Attributes exposing (class, for, selected, value)
 
 
 
@@ -71,11 +72,13 @@ type alias FormDefinition fd msg =
     { fields : List (FormField fd msg) }
 
 
+type alias EnumAccessor fd = (fd -> String)
+
 type DataType fd
     = StringType (fd -> String)
     | IntType (fd -> Int)
     | FloatType (fd -> Float)
-    | EnumType (fd -> String)
+    | EnumType (EnumAccessor fd) --since C++ uses Ints as json values for enums, we need to give it a converter to go from string to enum's int
 
 
 {-| Returns either the int value of maybe\_new\_val, or the fallback
@@ -138,8 +141,8 @@ render_field_input_string obj field getter =
         |> InputGroup.view
 
 
-render_field_input_enum : fd -> FormField fd msg -> (fd -> String) -> Html msg
-render_field_input_enum obj field getter =
+render_field_input_enum : fd -> FormField fd msg -> EnumAccessor fd -> Html msg
+render_field_input_enum obj field (getter) =
     -- Form.group [Form.attrs [class ""]]
     --     [ Form.label [ for field.field_name, class "mr-3" ] [ text field.field_name ]
     --     , Select.select [ Select.id field.field_name ]
@@ -163,7 +166,21 @@ render_field_input_enum obj field getter =
                     Debug.log "Nothing" []
 
                 Just values ->
-                    Debug.log "values" List.map (\( v, t ) -> Select.item [ value v ] [ text t ]) values
+                    let
+                        str_val = getter obj
+                        _ = Debug.log "obj val: " <| str_val
+                        -- int_val = 
+                    in
+                    Debug.log "values"
+                        List.map
+                        (\( v, t ) ->
+                            Select.item
+                                [ value v
+                                , selected ((getter obj) == t)
+                                ]
+                                [ text t ]
+                        )
+                        values
 
         -- [ Select.item [] [ text "TODO" ]
         -- , Select.item [] [ text "REPLACE" ]
@@ -243,7 +260,7 @@ lookup_field obj field =
         FloatType getter ->
             String.fromFloat <| getter obj
 
-        EnumType getter ->
+        EnumType (getter) ->
             getter obj
 
 
@@ -286,10 +303,10 @@ new_form_field_int name getter on_input_msg =
     }
 
 
-new_form_field_enum : String -> (fd -> String) -> (String -> msg) -> List ( String, String ) -> FormField fd msg
-new_form_field_enum name getter on_input_msg enum_values =
+new_form_field_enum : String -> EnumAccessor fd -> (String -> msg) -> List ( String, String ) -> FormField fd msg
+new_form_field_enum name accessor on_input_msg enum_values =
     { field_name = name
-    , data_type = EnumType getter
+    , data_type = EnumType accessor
     , enum_values = Just enum_values
     , on_input_msg = on_input_msg
     }

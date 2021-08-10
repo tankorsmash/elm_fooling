@@ -89,6 +89,14 @@ edit_form_definition the_msg =
     let
         damage_type_options =
             []
+
+        damage_type_accessor : FormData.EnumAccessor WeaponFrame
+        damage_type_accessor =
+            .damage_type >> weapon_damage_type_to_string
+
+        battle_row_type_accessor : FormData.EnumAccessor WeaponFrame
+        battle_row_type_accessor =
+            .battle_row_type >> battle_row_to_string
     in
     { fields =
         [ new_form_field_string "weapon_name" .weapon_name (Name >> the_msg)
@@ -96,8 +104,8 @@ edit_form_definition the_msg =
         , new_form_field_int "choice_id" .choice_id (ChoiceId >> the_msg)
         , new_form_field_string "description" .description (Description >> the_msg)
         , new_form_field_string "frame_image_path" .frame_image_path (FrameImagePath >> the_msg)
-        , new_form_field_enum "battle_row_type" (.battle_row_type >> battle_row_to_string) (BattleRowType >> the_msg) battle_row_type_values
-        , new_form_field_enum "damage_type" (.damage_type >> weapon_damage_type_to_string) (WeaponDamageType >> the_msg) weapon_damage_type_values
+        , new_form_field_enum "battle_row_type" battle_row_type_accessor (BattleRowType >> the_msg) battle_row_type_values
+        , new_form_field_enum "damage_type" damage_type_accessor (WeaponDamageType >> the_msg) weapon_damage_type_values
         , new_form_field_int "bonus_attack" .bonus_attack (BonusAttack >> the_msg)
         , new_form_field_int "bonus_power" .bonus_power (BonusPower >> the_msg)
         , new_form_field_int "bonus_encumbrance" .bonus_encumbrance (BonusEncumbrance >> the_msg)
@@ -192,6 +200,30 @@ weapon_damage_type_from_int int =
             Unset
 
 
+weapon_damage_type_string_to_type : String -> WeaponDamageType
+weapon_damage_type_string_to_type damage_type =
+    case damage_type of
+        "Unset" ->
+            Unset
+
+        "Piercing" ->
+            Piercing
+
+        "Blunt" ->
+            Blunt
+
+        "Slashing" ->
+            Slashing
+
+        _ ->
+            Unset
+
+
+
+--
+-- weapon_damage_type_to_intstr
+
+
 weapon_damage_type_to_string : WeaponDamageType -> String
 weapon_damage_type_to_string damage_type =
     case damage_type of
@@ -245,7 +277,6 @@ type alias WeaponFrame =
 
     -- , affects_morale', prettyName: "Affects Morale (0, 1)", type: 'hidden'},
     , frame_image_path : String
-
     , battle_row_type : BattleRow
     , damage_type : WeaponDamageType
     , bonus_attack : Int

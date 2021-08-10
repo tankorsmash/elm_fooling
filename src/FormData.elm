@@ -1,7 +1,7 @@
 module FormData exposing
     ( DataType(..)
-    , FormDefinition
     , EnumAccessor
+    , FormDefinition
     , FormField
     , new_form_field_enum
     , new_form_field_float
@@ -72,7 +72,9 @@ type alias FormDefinition fd msg =
     { fields : List (FormField fd msg) }
 
 
-type alias EnumAccessor fd = (fd -> String)
+type alias EnumAccessor fd =
+    fd -> String
+
 
 type DataType fd
     = StringType (fd -> String)
@@ -142,15 +144,7 @@ render_field_input_string obj field getter =
 
 
 render_field_input_enum : fd -> FormField fd msg -> EnumAccessor fd -> Html msg
-render_field_input_enum obj field (getter) =
-    -- Form.group [Form.attrs [class ""]]
-    --     [ Form.label [ for field.field_name, class "mr-3" ] [ text field.field_name ]
-    --     , Select.select [ Select.id field.field_name ]
-    --         [ Select.item [] [ text "TODO" ]
-    --         , Select.item [] [ text "REPLACE" ]
-    --         , Select.item [] [ text "ME" ]
-    --         ]
-    --     ]
+render_field_input_enum obj field getter =
     div [ class "input-group" ]
         [ div [ class "input-group-prepend" ]
             [ Form.label
@@ -167,57 +161,25 @@ render_field_input_enum obj field (getter) =
 
                 Just values ->
                     let
-                        str_val = getter obj
-                        _ = Debug.log "obj val: " <| str_val
-                        -- int_val = 
+                        str_val =
+                            getter obj
+
+                        _ =
+                            Debug.log "obj val: " <| str_val
+
+                        -- int_val =
                     in
                     Debug.log "values"
                         List.map
                         (\( v, t ) ->
                             Select.item
                                 [ value v
-                                , selected ((getter obj) == t)
+                                , selected (getter obj == t)
                                 ]
                                 [ text t ]
                         )
                         values
-
-        -- [ Select.item [] [ text "TODO" ]
-        -- , Select.item [] [ text "REPLACE" ]
-        -- , Select.item [] [ text "ME" ]
-        -- ]
         ]
-
-
-
--- <div class="input-group mb-3">
---   <div class="input-group-prepend">
---     <label class="input-group-text" for="inputGroupSelect01">Options</label>
---   </div>
---   <select class="custom-select" id="inputGroupSelect01">
---     <option selected>Choose...</option>
---     <option value="1">One</option>
---     <option value="2">Two</option>
---     <option value="3">Three</option>
---   </select>
--- </div>
--- InputGroup.config
---     (InputGroup.text
---         [ Input.placeholder "placeholder"
---         , Select.select [ ] [Select.item [] [] ]
---         -- , Input.value <|
---         --     case field.enum_getter of
---         --         Just getter ->
---         --             getter obj
---         --
---         --         Nothing ->
---         --             "unset in field"
---         , Input.onInput field.on_input_msg
---         ]
---     )
---     |> InputGroup.predecessors
---         [ InputGroup.span [] [ text field.field_name ] ]
---     |> InputGroup.view
 
 
 render_field_input_int : fd -> FormField fd msg -> (fd -> Int) -> Html msg
@@ -260,7 +222,7 @@ lookup_field obj field =
         FloatType getter ->
             String.fromFloat <| getter obj
 
-        EnumType (getter) ->
+        EnumType getter ->
             getter obj
 
 

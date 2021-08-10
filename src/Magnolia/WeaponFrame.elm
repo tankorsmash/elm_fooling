@@ -200,30 +200,6 @@ weapon_damage_type_from_int int =
             Unset
 
 
-weapon_damage_type_string_to_type : String -> WeaponDamageType
-weapon_damage_type_string_to_type damage_type =
-    case damage_type of
-        "Unset" ->
-            Unset
-
-        "Piercing" ->
-            Piercing
-
-        "Blunt" ->
-            Blunt
-
-        "Slashing" ->
-            Slashing
-
-        _ ->
-            Unset
-
-
-
---
--- weapon_damage_type_to_intstr
-
-
 weapon_damage_type_to_string : WeaponDamageType -> String
 weapon_damage_type_to_string damage_type =
     case damage_type of

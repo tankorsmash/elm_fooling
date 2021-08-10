@@ -160,22 +160,11 @@ render_field_input_enum obj field getter =
                     Debug.log "Nothing" []
 
                 Just values ->
-                    let
-                        str_val =
-                            getter obj
-
-                        _ =
-                            Debug.log "obj val: " <| str_val
-
-                        -- int_val =
-                    in
                     Debug.log "values"
                         List.map
                         (\( v, t ) ->
                             Select.item
-                                [ value v
-                                , selected (getter obj == t)
-                                ]
+                                [ value v, selected (getter obj == t) ]
                                 [ text t ]
                         )
                         values

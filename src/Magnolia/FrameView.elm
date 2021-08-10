@@ -1,4 +1,4 @@
-module Magnolia.FrameView exposing (view, Msg)
+module Magnolia.FrameView exposing (Model, Msg, init, update, view)
 
 import Bootstrap.Button as Button
 import Bootstrap.CDN as CDN
@@ -64,24 +64,64 @@ import Url.Parser exposing ((</>), Parser, int, map, oneOf, parse, s, string)
 import Utils exposing (add_class)
 import Weather
 
+
 type Msg
     = SubmitFormData
+    | GotEditWeaponFormUpdate Magnolia.WeaponFrame.EditFormUpdateType
+
 
 type alias Model =
-    {weapon_edit_form_definition : FormData.FormDefinition WeaponFrame Msg
+    { weapon_edit_form_definition : FormData.FormDefinition WeaponFrame Msg
+
     -- { edit_form_definition: Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate}
     , form_data : WeaponFrame
     , saved_form_data : Maybe WeaponFrame
     }
 
-update : Model -> Msg -> (Model, Cmd Msg)
+
+init : Model
+init =
+    let
+        form_data : WeaponFrame
+        form_data =
+            { weapon_name = "unset in init wapn_ame"
+            , frame_id = 123
+            , choice_id = -1
+            , pretty_name = "Pretty Wepn Name"
+            , description = "This is a description"
+            , frame_image_path = "weapon_img.png"
+            , damage_type = Magnolia.WeaponFrame.Slashing
+            , bonus_attack = 0
+            , bonus_power = 0
+            , bonus_encumbrance = 0
+            , rarity_type = 0
+            , carry_weight = 0
+            }
+
+        saved_form_data : Maybe WeaponFrame
+        saved_form_data =
+            Nothing
+    in
+    { weapon_edit_form_definition = Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate
+    , form_data = form_data
+    , saved_form_data = saved_form_data
+    }
+
+
+update : Model -> Msg -> ( Model, Cmd Msg )
 update model msg =
     case msg of
         SubmitFormData ->
             ( { model | saved_form_data = Just model.form_data }, Cmd.none )
 
+        GotEditWeaponFormUpdate form_update_type ->
+            ( { model | form_data = Magnolia.WeaponFrame.update_edit_form_data model.form_data form_update_type }, Cmd.none )
+
+
 
 -- model.form_data model.weapon_edit_form_definition model.saved_form_data
+
+
 bootstrap_button type_ on_click text_ =
     Button.button
         [ type_
@@ -94,8 +134,14 @@ button_primary : msg -> String -> Html msg
 button_primary on_click text_ =
     bootstrap_button Button.primary on_click text_
 
-view : model -> Html Msg
-view model = div [] [text "Frame View"]
+
+view : Model -> Html Msg
+view model =
+    div []
+        -- [ text "Frame View"
+        [ form_data_view model.form_data model.weapon_edit_form_definition model.saved_form_data
+        ]
+
 
 form_data_view : obj -> FormData.FormDefinition obj Msg -> Maybe obj -> Html Msg
 form_data_view form_data form_definition maybe_saved_form_data =

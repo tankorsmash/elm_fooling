@@ -142,7 +142,7 @@ type Msg
     | RequestJSONP String
     | RequestJSONPFromSubreddit String
     | RecvFromPort String
-    | GotEditWeaponFormUpdate Magnolia.WeaponFrame.EditFormUpdateType
+    -- | GotEditWeaponFormUpdate Magnolia.WeaponFrame.EditFormUpdateType
       -- | SubmitFormData
     | GotFrameViewMsg FrameView.Msg
     | DotaDownloadPlayerData Int
@@ -257,9 +257,10 @@ type alias Model =
     , current_navbar_state : Navbar.State
     , current_weather_response : Weather.CurrentWeatherResponse
     , current_areas_str : String
-    , weapon_edit_form_definition : FormData.FormDefinition WeaponFrame Msg
-    , form_data : WeaponFrame
-    , saved_form_data : Maybe WeaponFrame
+    -- , weapon_edit_form_definition : FormData.FormDefinition WeaponFrame Msg
+    -- , form_data : WeaponFrame
+    , frame_view_model : FrameView.Model
+    -- , saved_form_data : Maybe WeaponFrame
     , dota_model : DotaModel
     , dota_hero_stats_page_info : Table.PageInfo Msg
     }
@@ -363,26 +364,6 @@ init _ url navKey =
         dota_hero_stats_page_info =
             Table.PageInfo 0 0 10 (GotPageMsg DotaHeroStatsTable)
 
-        form_data : WeaponFrame
-        form_data =
-            { weapon_name = "unset in init wapn_ame"
-            , frame_id = 123
-            , choice_id = -1
-            , pretty_name = "Pretty Wepn Name"
-            , description = "This is a description"
-            , frame_image_path = "weapon_img.png"
-            , damage_type = Magnolia.WeaponFrame.Slashing
-            , bonus_attack = 0
-            , bonus_power = 0
-            , bonus_encumbrance = 0
-            , rarity_type = 0
-            , carry_weight = 0
-            }
-
-        saved_form_data : Maybe WeaponFrame
-        saved_form_data =
-            Nothing
-
         initial_tab =
             FrameViewTab
 
@@ -413,11 +394,12 @@ init _ url navKey =
             , current_navbar_state = navbarState
             , current_weather_response = current_weather_response
             , current_areas_str = "Gatineau"
-            , form_data = form_data
-            , saved_form_data = saved_form_data
-            , weapon_edit_form_definition = Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate
+            -- , form_data = form_data
+            -- , saved_form_data = saved_form_data
+            -- , weapon_edit_form_definition = Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate
             , dota_model = dota_model
             , dota_hero_stats_page_info = dota_hero_stats_page_info
+            , frame_view_model = FrameView.init
             }
 
         existingCmds =
@@ -688,8 +670,15 @@ update msg model =
         RecvFromPort str ->
             ( Debug.log ("Received from port: " ++ str) model, Cmd.none )
 
-        GotEditWeaponFormUpdate form_update_type ->
-            ( { model | form_data = Magnolia.WeaponFrame.update_edit_form_data model.form_data form_update_type }, Cmd.none )
+        -- GotEditWeaponFormUpdate form_update_type ->
+        --     ( { model | form_data = Magnolia.WeaponFrame.update_edit_form_data model.form_data form_update_type }, Cmd.none )
+        --
+        GotFrameViewMsg frame_view_msg ->
+            let
+                (frame_model, frame_cmd) = FrameView.update model.frame_view_model frame_view_msg
+            in
+                (model, Cmd.none)
+
 
         DotaDownloadPlayerData account_id ->
             ( model, OpenDota.download_player_data account_id DotaDownloadedPlayerData )
@@ -1224,13 +1213,12 @@ homeView model =
                         ]
 
                 FrameViewTab ->
-                    div []
+                    Html.map (\msg -> GotFrameViewMsg msg) <| div []
                         [ h4 [ add_class "testId" ] [ text "FormData!" ]
 
                         -- , form_data_view model.form_data model.weapon_edit_form_definition model.saved_form_data
-                        , FrameView.view model
+                        , FrameView.view model.frame_view_model
                         ]
-
                 ModalTab ->
                     div []
                         [ h4 [] [ text "Modal Example" ]

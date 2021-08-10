@@ -28,6 +28,7 @@ type EditFormUpdateType
     | PrettyName String
     | Description String
     | FrameImagePath String
+    | BattleRowType String
     | WeaponDamageType String
     | BonusAttack String
     | BonusPower String
@@ -61,6 +62,9 @@ update_edit_form_data form_data form_update_type =
         FrameImagePath new_frame_image_path ->
             { form_data | frame_image_path = new_frame_image_path }
 
+        BattleRowType new_battle_row_type ->
+            { form_data | battle_row_type = update_enum_field form_data.battle_row_type new_battle_row_type battle_row_type_from_int }
+
         WeaponDamageType new_weapon_damage_type ->
             { form_data | damage_type = update_enum_field form_data.damage_type new_weapon_damage_type weapon_damage_type_from_int }
 
@@ -92,6 +96,7 @@ edit_form_definition the_msg =
         , new_form_field_int "choice_id" .choice_id (ChoiceId >> the_msg)
         , new_form_field_string "description" .description (Description >> the_msg)
         , new_form_field_string "frame_image_path" .frame_image_path (FrameImagePath >> the_msg)
+        , new_form_field_enum "battle_row_type" (.battle_row_type >> battle_row_to_string) (BattleRowType >> the_msg) battle_row_type_values
         , new_form_field_enum "damage_type" (.damage_type >> weapon_damage_type_to_string) (WeaponDamageType >> the_msg) weapon_damage_type_values
         , new_form_field_int "bonus_attack" .bonus_attack (BonusAttack >> the_msg)
         , new_form_field_int "bonus_power" .bonus_power (BonusPower >> the_msg)
@@ -108,8 +113,8 @@ type BattleRow
     | Rear
 
 
-battle_row_from_int : Int -> BattleRow
-battle_row_from_int int =
+battle_row_type_from_int : Int -> BattleRow
+battle_row_type_from_int int =
     case int of
         0 ->
             Melee
@@ -124,8 +129,8 @@ battle_row_from_int int =
             Melee
 
 
-battle_row_values : List ( String, String )
-battle_row_values =
+battle_row_type_values : List ( String, String )
+battle_row_type_values =
     let
         thing =
             Melee
@@ -242,6 +247,7 @@ type alias WeaponFrame =
     , frame_image_path : String
 
     -- , battle_row_type', prettyName: "Battle Row", prettifyEnumFn: prettifyBattleRowType, type: 'enum', defaultValue: 0},
+    , battle_row_type : BattleRow
     -- , damage_type', prettyName: "Damage Type (PBS)", prettifyEnumFn: prettifyWeaponDamageType, type: 'enum', defaultValue: 0},
     , damage_type : WeaponDamageType
     , bonus_attack : Int

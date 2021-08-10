@@ -92,6 +92,7 @@ init =
             , pretty_name = "Pretty Wepn Name"
             , description = "This is a description"
             , frame_image_path = "weapon_img.png"
+            , battle_row_type = Magnolia.WeaponFrame.Rear
             , damage_type = Magnolia.WeaponFrame.Slashing
             , bonus_attack = 0
             , bonus_power = 0

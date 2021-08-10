@@ -1,7 +1,6 @@
 module Magnolia.ArmorFrame exposing
     ( ArmorFrame
     , EditFormUpdateType
-    , WeaponDamageType(..)
     , edit_form_definition
     , update_edit_form_data
     )
@@ -37,34 +36,34 @@ update_edit_form_data : ArmorFrame -> EditFormUpdateType -> ArmorFrame
 update_edit_form_data form_data form_update_type =
     case form_update_type of
         FrameId new_frame_id ->
-            { form_data | frame_id = new_frame_id }
+            { form_data | frame_id = update_int_field form_data.frame_id new_frame_id }
 
         PrettyName new_pretty_name ->
             { form_data | pretty_name = new_pretty_name }
 
         BonusDefense new_bonus_defense ->
-            { form_data | bonus_defense = new_bonus_defense }
+            { form_data | bonus_defense = update_int_field form_data.bonus_defense new_bonus_defense }
 
         BonusProtection new_bonus_protection ->
-            { form_data | bonus_protection = new_bonus_protection }
+            { form_data | bonus_protection = update_int_field form_data.bonus_protection new_bonus_protection }
 
         BonusProtectionPiercing new_bonus_protection_piercing ->
-            { form_data | bonus_protection_piercing = new_bonus_protection_piercing }
+            { form_data | bonus_protection_piercing = update_int_field form_data.bonus_protection_piercing new_bonus_protection_piercing }
 
         BonusProtectionBlunt new_bonus_protection_blunt ->
-            { form_data | bonus_protection_blunt = new_bonus_protection_blunt }
+            { form_data | bonus_protection_blunt = update_int_field form_data.bonus_protection_blunt new_bonus_protection_blunt }
 
         BonusProtectionSlashing new_bonus_protection_slashing ->
-            { form_data | bonus_protection_slashing = new_bonus_protection_slashing }
+            { form_data | bonus_protection_slashing = update_int_field form_data.bonus_protection_slashing new_bonus_protection_slashing }
 
         BonusEncumbrance new_bonus_encumbrance ->
-            { form_data | bonus_encumbrance = new_bonus_encumbrance }
+            { form_data | bonus_encumbrance = update_int_field form_data.bonus_encumbrance new_bonus_encumbrance }
 
         RarityType new_rarity_type ->
-            { form_data | rarity_type = new_rarity_type }
+            { form_data | rarity_type = update_int_field form_data.rarity_type new_rarity_type }
 
         CarryWeight new_carry_weight ->
-            { form_data | carry_weight = new_carry_weight }
+            { form_data | carry_weight = update_int_field form_data.carry_weight new_carry_weight }
 
 edit_form_definition : (EditFormUpdateType -> msg) -> FormData.FormDefinition ArmorFrame msg
 edit_form_definition the_msg =
@@ -73,7 +72,7 @@ edit_form_definition the_msg =
             []
     in
     { fields =
-        [ new_form_field_string "armor_name" .armor_name (PrettyName >> the_msg)
+        [ new_form_field_string "pretty_name" .pretty_name (PrettyName >> the_msg)
         , new_form_field_int "frame_id" .frame_id (FrameId >> the_msg)
         , new_form_field_int "bonus_defense" .bonus_defense (BonusDefense >> the_msg)
         , new_form_field_int "bonus_protection" .bonus_protection (BonusProtection >> the_msg)

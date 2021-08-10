@@ -246,9 +246,7 @@ type alias WeaponFrame =
     -- , affects_morale', prettyName: "Affects Morale (0, 1)", type: 'hidden'},
     , frame_image_path : String
 
-    -- , battle_row_type', prettyName: "Battle Row", prettifyEnumFn: prettifyBattleRowType, type: 'enum', defaultValue: 0},
     , battle_row_type : BattleRow
-    -- , damage_type', prettyName: "Damage Type (PBS)", prettifyEnumFn: prettifyWeaponDamageType, type: 'enum', defaultValue: 0},
     , damage_type : WeaponDamageType
     , bonus_attack : Int
     , bonus_power : Int

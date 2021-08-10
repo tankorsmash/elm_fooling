@@ -54,6 +54,7 @@ import Json.Decode exposing (Decoder, at, field, list, string)
 import Json.Encode exposing (string)
 import List
 import Magnolia.WeaponFrame exposing (WeaponFrame)
+import Magnolia.ArmorFrame exposing (ArmorFrame)
 import OpenDota.OpenDota as OpenDota
 import PostData exposing (PostData)
 import Reddit
@@ -70,6 +71,7 @@ import Weather
 type Msg
     = SubmitFormData
     | GotEditWeaponFormUpdate Magnolia.WeaponFrame.EditFormUpdateType
+    | GotEditArmorFormUpdate Magnolia.ArmorFrame.EditFormUpdateType
     | TabMsg Tab.State
 
 
@@ -77,6 +79,9 @@ type alias Model =
     { weapon_edit_form_definition : FormData.FormDefinition WeaponFrame Msg
     , weapon_frame_data : WeaponFrame
     , saved_weapon_frame_data : Maybe WeaponFrame
+    , armor_edit_form_definition : FormData.FormDefinition ArmorFrame Msg
+    , armor_frame_data : ArmorFrame
+    , saved_armor_frame_data : Maybe ArmorFrame
     , active_tab : Tab.State
     }
 
@@ -104,10 +109,31 @@ init =
         saved_weapon_frame_data : Maybe WeaponFrame
         saved_weapon_frame_data =
             Nothing
+        armor_frame_data : ArmorFrame
+        armor_frame_data =
+            { pretty_name = "Unset ArmorFrame Name"
+            , frame_id = 123
+            , bonus_defense = 0
+            , bonus_protection = 0
+            , bonus_protection_piercing = 0
+            , bonus_protection_blunt = 0
+            , bonus_protection_slashing = 0
+            , bonus_encumbrance = 0
+            , rarity_type = 0
+            , carry_weight = 0
+            }
+
+        saved_armor_frame_data : Maybe ArmorFrame
+        saved_armor_frame_data =
+            Nothing
     in
     { weapon_edit_form_definition = Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate
     , weapon_frame_data = weapon_frame_data
     , saved_weapon_frame_data = saved_weapon_frame_data
+
+    , armor_edit_form_definition = Magnolia.ArmorFrame.edit_form_definition GotEditArmorFormUpdate
+    , armor_frame_data = armor_frame_data
+    , saved_armor_frame_data = saved_armor_frame_data
     , active_tab = Tab.initialState
     }
 
@@ -120,6 +146,9 @@ update model msg =
 
         GotEditWeaponFormUpdate form_update_type ->
             ( { model | weapon_frame_data = Magnolia.WeaponFrame.update_edit_form_data model.weapon_frame_data form_update_type }, Cmd.none )
+
+        GotEditArmorFormUpdate form_update_type ->
+            ( { model | armor_frame_data = Magnolia.ArmorFrame.update_edit_form_data model.armor_frame_data form_update_type }, Cmd.none )
 
         TabMsg new_state ->
             ( { model | active_tab = new_state }, Cmd.none )
@@ -144,7 +173,7 @@ tabs_view model =
         |> Tab.items
             [ Tab.item
                 { id = "tab_item_1"
-                , link = Tab.link [] [ text "Edit WeaponFrame" ]
+                , link = Tab.link [] [ text "WeaponFrame" ]
                 , pane =
                     Tab.pane [ Spacing.mt3 ]
                         [ h4 [] [ text "Edit WeaponFrame" ]
@@ -153,11 +182,11 @@ tabs_view model =
                 }
             , Tab.item
                 { id = "tab_item_2"
-                , link = Tab.link [] [ text "Tab Item 2" ]
+                , link = Tab.link [] [ text "ArmorFrame" ]
                 , pane =
                     Tab.pane [ Spacing.mt3 ]
-                        [ h4 [] [ text "Tab 2 Heading" ]
-                        , p [] [ text "TODO" ]
+                        [ h4 [] [ text "Edit ArmorFrame" ]
+                        , form_data_view model.armor_frame_data model.armor_edit_form_definition model.saved_armor_frame_data
                         ]
                 }
             ]

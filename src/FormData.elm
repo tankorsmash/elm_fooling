@@ -151,26 +151,34 @@ render_field_input_string obj field getter =
 render_field_input_list_string : fd -> FormField fd msg -> (fd -> List String) -> Html msg
 render_field_input_list_string obj field getter =
     let
+        vals_to_string : List String -> String
+        vals_to_string v = String.join ", " <| v
+
         rendered_list =
-            String.join ", " <| getter obj
+            vals_to_string <| getter obj
 
         values : List String
         values =
             getter obj
 
-        msg_sender : String -> msg
-        msg_sender str =
-            field.on_input_msg (Debug.log "str: " str)
+        --takes a substring and returns the FULL field value but with this idx swapped out
+        replace_value : Int -> String -> String
+        replace_value idx str = vals_to_string <| List.take idx values ++ str :: List.drop (idx+1) values
 
-        build_config : String -> InputGroup.Config msg
-        build_config value =
+        msg_sender :  Int -> String ->msg
+        msg_sender idx str =
+            -- field.on_input_msg (Debug.log "str: " str)
+            field.on_input_msg <| replace_value idx str
+
+        build_config : String -> Int -> InputGroup.Config msg
+        build_config value idx =
             InputGroup.config <|
                 InputGroup.text
                     [ Input.placeholder "placeholder"
                     , Input.value <| value
 
                     -- , Input.onInput (\str -> (Debug.log "Str: "++str) field.on_input_msg)
-                    , Input.onInput msg_sender
+                    , Input.onInput (msg_sender idx)
                     ]
 
         build_pred : String -> InputGroup.Config msg -> InputGroup.Config msg
@@ -179,13 +187,13 @@ render_field_input_list_string obj field getter =
                 |> InputGroup.predecessors
                     [ InputGroup.span [] [ text field_name ] ]
 
-        build_input_group : String -> String -> Html msg
-        build_input_group value field_name =
-            build_config value
+        build_input_group : Int -> String -> String -> Html msg
+        build_input_group idx value field_name =
+            build_config value idx
                 |> build_pred field_name
                 |> InputGroup.view
     in
-    div [] <| List.map (\val -> build_input_group val field.field_name) values
+    div [] <| List.indexedMap (\idx val -> build_input_group idx val field.field_name) values
 
 
 render_field_input_enum : fd -> FormField fd msg -> EnumAccessor fd -> Html msg

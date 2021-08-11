@@ -299,25 +299,35 @@ button_primary on_click text_ =
     bootstrap_button Button.primary on_click text_
 
 
+type alias TabItemConfig =
+    { id : String, link_text : String, header : String, view : Html Msg }
+
+
+render_tab_item : TabItemConfig -> Tab.Item Msg
+render_tab_item config =
+    Tab.item
+        { id = config.id
+        , link = Tab.link [] [ text config.link_text ]
+        , pane =
+            Tab.pane [ Spacing.mt3 ]
+                [ h4 [] [ text config.header ]
+                , config.view
+                ]
+        }
+
+
 tabs_view : Model -> Html Msg
 tabs_view model =
     let
-        tab_configs : List ({id: String, link_text: String, header:String, view: Html Msg})
+        tab_configs : List TabItemConfig
         tab_configs =
-            [ { id = "tab_item_1", link_text= "WeaponFrame", header= "Edit WeaponFrame", view=form_data_view model.frame_edit_datas.weapon}
-            , { id = "tab_item_2", link_text= "ArmorFrame", header= "Edit ArmorFrame", view=form_data_view model.frame_edit_datas.armor}
-            , { id = "tab_item_3", link_text= "ZoneFrame", header= "Edit ZoneFrame", view=form_data_view model.frame_edit_datas.zone}
+            [ { id = "tab_item_1", link_text = "WeaponFrame", header = "Edit WeaponFrame", view = form_data_view model.frame_edit_datas.weapon }
+            , { id = "tab_item_2", link_text = "ArmorFrame", header = "Edit ArmorFrame", view = form_data_view model.frame_edit_datas.armor }
+            , { id = "tab_item_3", link_text = "ZoneFrame", header = "Edit ZoneFrame", view = form_data_view model.frame_edit_datas.zone }
             ]
 
-        tab_items = List.map (\config -> Tab.item
-                { id = config.id
-                , link = Tab.link [] [ text config.link_text ]
-                , pane =
-                    Tab.pane [ Spacing.mt3 ]
-                        [ h4 [] [ text config.header ]
-                        , config.view
-                        ]
-                }) tab_configs
+        tab_items =
+            List.map render_tab_item tab_configs
     in
     Tab.config TabMsg
         |> Tab.items tab_items

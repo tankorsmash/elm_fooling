@@ -155,7 +155,7 @@ init =
             { name = "unset in init zone"
             , data_name = "unset_data_name"
             , required_zone_data_name_to_unlock = ""
-            , location_data_names_in_the_zone = []
+            , location_data_names_in_the_zone = ["first", "second"]
             }
 
         saved_zone_frame_data : Maybe ZoneFrame

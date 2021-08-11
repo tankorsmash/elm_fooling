@@ -154,21 +154,38 @@ render_field_input_list_string obj field getter =
         rendered_list =
             String.join ", " <| getter obj
 
-        config : String -> InputGroup.Input msg
-        config value =
-            InputGroup.text
-                [ Input.placeholder "placeholder"
-                , Input.value <| value
-                , Input.onInput field.on_input_msg
-                ]
+        values : List String
+        values =
+            getter obj
+
+        msg_sender : String -> msg
+        msg_sender str =
+            field.on_input_msg (Debug.log "str: " str)
+
+        build_config : String -> InputGroup.Config msg
+        build_config value =
+            InputGroup.config <|
+                InputGroup.text
+                    [ Input.placeholder "placeholder"
+                    , Input.value <| value
+
+                    -- , Input.onInput (\str -> (Debug.log "Str: "++str) field.on_input_msg)
+                    , Input.onInput msg_sender
+                    ]
+
+        build_pred : String -> InputGroup.Config msg -> InputGroup.Config msg
+        build_pred field_name cfg =
+            cfg
+                |> InputGroup.predecessors
+                    [ InputGroup.span [] [ text field_name ] ]
+
+        build_input_group : String -> String -> Html msg
+        build_input_group value field_name =
+            build_config rendered_list
+                |> build_pred field.field_name
+                |> InputGroup.view
     in
-    div []
-        [ InputGroup.config
-            (config rendered_list)
-            |> InputGroup.predecessors
-                [ InputGroup.span [] [ text field.field_name ] ]
-            |> InputGroup.view
-        ]
+    div [] <| List.map (\val -> build_input_group val field.field_name) values
 
 
 render_field_input_enum : fd -> FormField fd msg -> EnumAccessor fd -> Html msg

@@ -341,10 +341,6 @@ view model =
         ]
 
 
-
--- form_data_view : obj -> FormData.FormDefinition obj Msg -> Maybe obj -> Html Msg
-
-
 form_data_view : FrameEditData obj Msg -> Html Msg
 form_data_view frame_edit_data =
     let

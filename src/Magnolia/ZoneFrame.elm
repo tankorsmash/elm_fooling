@@ -12,6 +12,7 @@ import FormData
         , new_form_field_float
         , new_form_field_int
         , new_form_field_string
+        , new_form_field_list_string
         , update_enum_field
         , update_int_field
         )
@@ -37,7 +38,7 @@ update_edit_form_data form_data form_update_type =
             { form_data | required_zone_data_name_to_unlock = new_required_zone_data_name_to_unlock }
 
         LocationDataNamesInTheZone new_location_data_names_in_the_zone ->
-            { form_data | location_data_names_in_the_zone = new_location_data_names_in_the_zone }
+            { form_data | location_data_names_in_the_zone = String.split ", " new_location_data_names_in_the_zone }
 
 
 edit_form_definition : (EditFormUpdateType -> msg) -> FormData.FormDefinition ZoneFrame msg
@@ -46,7 +47,7 @@ edit_form_definition the_msg =
         [ new_form_field_string "name" .name (Name >> the_msg)
         , new_form_field_string "data_name" .data_name (DataName >> the_msg)
         , new_form_field_string "required_zone_data_name_to_unlock" .required_zone_data_name_to_unlock (RequiredZoneDataNameToUnlock >> the_msg)
-        , new_form_field_string "location_data_names_in_the_zone" .location_data_names_in_the_zone (LocationDataNamesInTheZone >> the_msg)
+        , new_form_field_list_string "location_data_names_in_the_zone" .location_data_names_in_the_zone (LocationDataNamesInTheZone >> the_msg)
         ]
     }
 
@@ -55,5 +56,5 @@ type alias ZoneFrame =
     { name : String
     , data_name : String
     , required_zone_data_name_to_unlock : String
-    , location_data_names_in_the_zone : String
+    , location_data_names_in_the_zone : List String
     }

@@ -6,6 +6,7 @@ module FormData exposing
     , new_form_field_enum
     , new_form_field_float
     , new_form_field_int
+    , new_form_field_list_string
     , new_form_field_string
     , render_fields
     , unset_float_getter
@@ -81,6 +82,7 @@ type DataType fd
     | IntType (fd -> Int)
     | FloatType (fd -> Float)
     | EnumType (EnumAccessor fd) --since C++ uses Ints as json values for enums, we need to give it a converter to go from string to enum's int
+    | ListStringType (fd -> List String)
 
 
 {-| Returns either the int value of maybe\_new\_val, or the fallback
@@ -120,6 +122,9 @@ to_string dtype =
         EnumType _ ->
             "EnumType"
 
+        ListStringType _ ->
+            "ListStringType"
+
 
 type alias FormField fd msg =
     { field_name : String
@@ -135,6 +140,24 @@ render_field_input_string obj field getter =
         (InputGroup.text
             [ Input.placeholder "placeholder"
             , Input.value <| getter obj
+            , Input.onInput field.on_input_msg
+            ]
+        )
+        |> InputGroup.predecessors
+            [ InputGroup.span [] [ text field.field_name ] ]
+        |> InputGroup.view
+
+
+render_field_input_list_string : fd -> FormField fd msg -> (fd -> List String) -> Html msg
+render_field_input_list_string obj field getter =
+    let
+        rendered_list =
+            String.join ", " <| getter obj
+    in
+    InputGroup.config
+        (InputGroup.text
+            [ Input.placeholder "placeholder"
+            , Input.value <| rendered_list
             , Input.onInput field.on_input_msg
             ]
         )
@@ -218,6 +241,9 @@ lookup_field obj field =
         EnumType getter ->
             getter obj
 
+        ListStringType getter ->
+            String.join ", " <| getter obj
+
 
 render_field_to_plaintext : fd -> FormField fd msg -> Html msg
 render_field_to_plaintext obj field =
@@ -238,6 +264,9 @@ render_field obj field =
 
         EnumType getter ->
             div [] [ render_field_input_enum obj field getter ]
+
+        ListStringType getter ->
+            div [] [ render_field_input_list_string obj field getter ]
 
 
 render_fields : List (FormField fd msg) -> fd -> Html msg
@@ -280,6 +309,15 @@ new_form_field_float : String -> (fd -> Float) -> (String -> msg) -> FormField f
 new_form_field_float name getter on_input_msg =
     { field_name = name
     , data_type = FloatType getter
+    , enum_values = Nothing
+    , on_input_msg = on_input_msg
+    }
+
+
+new_form_field_list_string : String -> (fd -> List String) -> (String -> msg) -> FormField fd msg
+new_form_field_list_string name getter on_input_msg =
+    { field_name = name
+    , data_type = ListStringType getter
     , enum_values = Nothing
     , on_input_msg = on_input_msg
     }

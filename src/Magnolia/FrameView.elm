@@ -179,7 +179,7 @@ init =
             , saved_frame_data = saved_zone_frame_data
             }
         }
-    , active_tab = Tab.initialState
+    , active_tab = Tab.customInitialState "tab_item_3"
     }
 
 

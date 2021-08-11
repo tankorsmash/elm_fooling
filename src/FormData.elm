@@ -182,7 +182,7 @@ render_field_input_list_string obj field getter =
         build_input_group : String -> String -> Html msg
         build_input_group value field_name =
             build_config value
-                |> build_pred field.field_name
+                |> build_pred field_name
                 |> InputGroup.view
     in
     div [] <| List.map (\val -> build_input_group val field.field_name) values

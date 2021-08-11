@@ -74,7 +74,7 @@ type Msg
     | GotEditWeaponFormUpdate Magnolia.WeaponFrame.EditFormUpdateType
     | GotEditZoneFormUpdate Magnolia.ZoneFrame.EditFormUpdateType
     | GotEditArmorFormUpdate Magnolia.ArmorFrame.EditFormUpdateType
-    | TabMsg Tab.State
+    | GotTabMsg Tab.State
 
 
 type alias FrameEditData f msg =
@@ -282,7 +282,7 @@ update model msg =
             , Cmd.none
             )
 
-        TabMsg new_state ->
+        GotTabMsg new_state ->
             ( { model | active_tab = new_state }, Cmd.none )
 
 
@@ -329,7 +329,7 @@ tabs_view model =
         tab_items =
             List.map render_tab_item tab_configs
     in
-    Tab.config TabMsg
+    Tab.config GotTabMsg
         |> Tab.items tab_items
         |> Tab.view model.active_tab
 

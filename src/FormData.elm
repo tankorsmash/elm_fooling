@@ -181,7 +181,7 @@ render_field_input_list_string obj field getter =
 
         build_input_group : String -> String -> Html msg
         build_input_group value field_name =
-            build_config rendered_list
+            build_config value
                 |> build_pred field.field_name
                 |> InputGroup.view
     in

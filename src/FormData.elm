@@ -153,17 +153,22 @@ render_field_input_list_string obj field getter =
     let
         rendered_list =
             String.join ", " <| getter obj
+
+        config : String -> InputGroup.Input msg
+        config value =
+            InputGroup.text
+                [ Input.placeholder "placeholder"
+                , Input.value <| value
+                , Input.onInput field.on_input_msg
+                ]
     in
-    InputGroup.config
-        (InputGroup.text
-            [ Input.placeholder "placeholder"
-            , Input.value <| rendered_list
-            , Input.onInput field.on_input_msg
-            ]
-        )
-        |> InputGroup.predecessors
-            [ InputGroup.span [] [ text field.field_name ] ]
-        |> InputGroup.view
+    div []
+        [ InputGroup.config
+            (config rendered_list)
+            |> InputGroup.predecessors
+                [ InputGroup.span [] [ text field.field_name ] ]
+            |> InputGroup.view
+        ]
 
 
 render_field_input_enum : fd -> FormField fd msg -> EnumAccessor fd -> Html msg

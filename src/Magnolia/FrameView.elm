@@ -53,8 +53,9 @@ import Http
 import Json.Decode exposing (Decoder, at, field, list, string)
 import Json.Encode exposing (string)
 import List
-import Magnolia.WeaponFrame exposing (WeaponFrame)
 import Magnolia.ArmorFrame exposing (ArmorFrame)
+import Magnolia.WeaponFrame exposing (WeaponFrame)
+import Magnolia.ZoneFrame exposing (ZoneFrame)
 import OpenDota.OpenDota as OpenDota
 import PostData exposing (PostData)
 import Reddit
@@ -71,17 +72,38 @@ import Weather
 type Msg
     = SubmitFormData
     | GotEditWeaponFormUpdate Magnolia.WeaponFrame.EditFormUpdateType
+    | GotEditZoneFormUpdate Magnolia.ZoneFrame.EditFormUpdateType
     | GotEditArmorFormUpdate Magnolia.ArmorFrame.EditFormUpdateType
     | TabMsg Tab.State
 
 
+type alias FrameEditData f msg =
+    { form_definition : FormData.FormDefinition f msg
+    , frame_data : f
+    , saved_frame_data : Maybe f
+    }
+
+
+type FrameType
+    = WeaponFrame
+    | ArmorFrame
+    | ZoneFrame
+
+
+type alias FrameEditDatas =
+    { weapon : FrameEditData WeaponFrame Msg
+    , armor : FrameEditData ArmorFrame Msg
+    , zone : FrameEditData ZoneFrame Msg
+    }
+
+
 type alias Model =
-    { weapon_edit_form_definition : FormData.FormDefinition WeaponFrame Msg
-    , weapon_frame_data : WeaponFrame
-    , saved_weapon_frame_data : Maybe WeaponFrame
-    , armor_edit_form_definition : FormData.FormDefinition ArmorFrame Msg
-    , armor_frame_data : ArmorFrame
-    , saved_armor_frame_data : Maybe ArmorFrame
+    -- { weapon_edit_form_definition : FormData.FormDefinition WeaponFrame Msg
+    -- , weapon_frame_data : WeaponFrame
+    -- , saved_weapon_frame_data : Maybe WeaponFrame
+    -- , armor_edit_form_definition : FormData.FormDefinition ArmorFrame Msg
+    -- , armor_frame_data : ArmorFrame
+    { frame_edit_datas : FrameEditDatas
     , active_tab : Tab.State
     }
 
@@ -109,6 +131,7 @@ init =
         saved_weapon_frame_data : Maybe WeaponFrame
         saved_weapon_frame_data =
             Nothing
+
         armor_frame_data : ArmorFrame
         armor_frame_data =
             { pretty_name = "Unset ArmorFrame Name"
@@ -126,29 +149,106 @@ init =
         saved_armor_frame_data : Maybe ArmorFrame
         saved_armor_frame_data =
             Nothing
-    in
-    { weapon_edit_form_definition = Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate
-    , weapon_frame_data = weapon_frame_data
-    , saved_weapon_frame_data = saved_weapon_frame_data
 
-    , armor_edit_form_definition = Magnolia.ArmorFrame.edit_form_definition GotEditArmorFormUpdate
-    , armor_frame_data = armor_frame_data
-    , saved_armor_frame_data = saved_armor_frame_data
+        zone_frame_data : ZoneFrame
+        zone_frame_data =
+            { name = "unset in init zone"
+            , data_name = "unset_data_name"
+            , required_zone_data_name_to_unlock = ""
+            , location_data_names_in_the_zone = ""
+            }
+
+        saved_zone_frame_data : Maybe ZoneFrame
+        saved_zone_frame_data =
+            Nothing
+    in
+    { frame_edit_datas =
+        { weapon =
+            { form_definition = Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate
+            , frame_data = weapon_frame_data
+            , saved_frame_data = saved_weapon_frame_data
+            }
+        , armor =
+            { form_definition = Magnolia.ArmorFrame.edit_form_definition GotEditArmorFormUpdate
+            , frame_data = armor_frame_data
+            , saved_frame_data = saved_armor_frame_data
+            }
+        , zone =
+            { form_definition = Magnolia.ZoneFrame.edit_form_definition GotEditZoneFormUpdate
+            , frame_data = zone_frame_data
+            , saved_frame_data = saved_zone_frame_data
+            }
+        }
     , active_tab = Tab.initialState
     }
+
+
+
+-- update_frame_edit_datas frame_type =
 
 
 update : Model -> Msg -> ( Model, Cmd Msg )
 update model msg =
     case msg of
         SubmitFormData ->
-            ( { model | saved_weapon_frame_data = Just model.weapon_frame_data }, Cmd.none )
+            let weapon_fed = model.frame_edit_datas.weapon
+                frame_edit_datas = model.frame_edit_datas
+                frame_data = weapon_fed.frame_data
+            in
+            ( { model
+                | frame_edit_datas =
+                    { frame_edit_datas | weapon =
+                        { weapon_fed | saved_frame_data = Just frame_data }
+                    }
+              }
+            , Cmd.none
+            )
 
         GotEditWeaponFormUpdate form_update_type ->
-            ( { model | weapon_frame_data = Magnolia.WeaponFrame.update_edit_form_data model.weapon_frame_data form_update_type }, Cmd.none )
+            let
+                frame_edit_datas = model.frame_edit_datas
+                weapon_fed = frame_edit_datas.weapon
+                frame_data = weapon_fed.frame_data
+            in
+            ( { model
+                | frame_edit_datas =
+                    {frame_edit_datas | weapon =
+                        { weapon_fed | frame_data = (Magnolia.WeaponFrame.update_edit_form_data frame_data form_update_type) }
+                    }
+              }
+            , Cmd.none
+            )
 
         GotEditArmorFormUpdate form_update_type ->
-            ( { model | armor_frame_data = Magnolia.ArmorFrame.update_edit_form_data model.armor_frame_data form_update_type }, Cmd.none )
+            let
+                frame_edit_datas = model.frame_edit_datas
+                armor_fed = frame_edit_datas.armor
+                frame_data = armor_fed.frame_data
+            in
+            ( { model
+                | frame_edit_datas =
+                    {frame_edit_datas | armor =
+                        { armor_fed | frame_data = (Magnolia.ArmorFrame.update_edit_form_data frame_data form_update_type) }
+                    }
+              }
+            , Cmd.none
+            )
+
+        GotEditZoneFormUpdate form_update_type ->
+            let
+                frame_edit_datas = model.frame_edit_datas
+                zone_fed = frame_edit_datas.zone
+                frame_data = zone_fed.frame_data
+            in
+            ( { model
+                | frame_edit_datas =
+                    {frame_edit_datas | zone =
+                        { zone_fed | frame_data = (Magnolia.ZoneFrame.update_edit_form_data frame_data form_update_type) }
+                    }
+              }
+            , Cmd.none
+            )
+
 
         TabMsg new_state ->
             ( { model | active_tab = new_state }, Cmd.none )
@@ -177,7 +277,7 @@ tabs_view model =
                 , pane =
                     Tab.pane [ Spacing.mt3 ]
                         [ h4 [] [ text "Edit WeaponFrame" ]
-                        , form_data_view model.weapon_frame_data model.weapon_edit_form_definition model.saved_weapon_frame_data
+                        , form_data_view model.frame_edit_datas.weapon
                         ]
                 }
             , Tab.item
@@ -186,7 +286,7 @@ tabs_view model =
                 , pane =
                     Tab.pane [ Spacing.mt3 ]
                         [ h4 [] [ text "Edit ArmorFrame" ]
-                        , form_data_view model.armor_frame_data model.armor_edit_form_definition model.saved_armor_frame_data
+                        , form_data_view model.frame_edit_datas.armor
                         ]
                 }
             ]
@@ -200,12 +300,19 @@ view model =
         ]
 
 
-form_data_view : obj -> FormData.FormDefinition obj Msg -> Maybe obj -> Html Msg
-form_data_view weapon_frame_data form_definition maybe_saved_form_data =
+
+-- form_data_view : obj -> FormData.FormDefinition obj Msg -> Maybe obj -> Html Msg
+
+
+form_data_view : FrameEditData obj Msg -> Html Msg
+form_data_view frame_edit_data =
     let
+        { frame_data, form_definition, saved_frame_data } =
+            frame_edit_data
+
         rendered_saved_form_data : Html Msg
         rendered_saved_form_data =
-            case maybe_saved_form_data of
+            case saved_frame_data of
                 Nothing ->
                     div [] []
 
@@ -220,7 +327,7 @@ form_data_view weapon_frame_data form_definition maybe_saved_form_data =
         [ Grid.col [ Col.md6 ]
             [ rendered_saved_form_data
             , Form.form []
-                [ FormData.render_fields form_definition.fields weapon_frame_data
+                [ FormData.render_fields form_definition.fields frame_data
                 , button_primary SubmitFormData "Submit"
                 ]
             ]

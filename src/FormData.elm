@@ -19,6 +19,7 @@ module FormData exposing
     , update_int_field
     )
 
+import Bootstrap.Button as Button
 import Bootstrap.Form as Form
 import Bootstrap.Form.Fieldset as Fieldset
 import Bootstrap.Form.Input as Input
@@ -187,8 +188,24 @@ render_field_input_list_string obj field getter =
         replace_value idx str =
             vals_to_string <| List.take idx values ++ str :: List.drop (idx + 1) values
 
-        split_msg : Int -> (String -> msg)
-        split_msg idx =
+        remove_value : Int -> String
+        remove_value idx =
+            vals_to_string <| List.take idx values ++ List.drop (idx + 1) values
+
+        remove_single_item_msg : Int -> (msg)
+        remove_single_item_msg idx =
+            (field.on_input_msg <| Change) <| remove_value idx
+
+        add_value : Int -> String
+        add_value idx =
+            vals_to_string <| List.take idx values  ++ (List.drop (idx) values)++ [""]
+
+        add_single_item_msg : Int -> (msg)
+        add_single_item_msg idx =
+            (field.on_input_msg <| Change) <| add_value idx
+
+        change_single_item_msg : Int -> (String -> msg)
+        change_single_item_msg idx =
             \str -> (field.on_input_msg <| Change) <| replace_value idx str
 
         build_config : String -> Int -> InputGroup.Config msg
@@ -197,14 +214,25 @@ render_field_input_list_string obj field getter =
                 InputGroup.text
                     [ Input.placeholder "placeholder"
                     , Input.value <| value
-                    , Input.onInput <| split_msg idx
+                    , Input.onInput <| change_single_item_msg idx
                     ]
 
         build_pred : String -> Int -> InputGroup.Config msg -> InputGroup.Config msg
         build_pred field_name idx cfg =
             cfg
                 |> InputGroup.predecessors
-                    [ InputGroup.span [] [ text <| field_name ++ " #" ++ String.fromInt idx ] ]
+                    [ InputGroup.span [] [ text <| field_name ++ " #" ++ String.fromInt idx ]
+                    , InputGroup.button
+                        [ Button.success
+                        , Button.onClick <| (add_single_item_msg idx)
+                        ]
+                        [ text "+" ]
+                    , InputGroup.button
+                        [ Button.danger
+                        , Button.onClick <| (remove_single_item_msg idx)
+                        ]
+                        [ text "-" ]
+                    ]
 
         build_input_group : Int -> String -> String -> Html msg
         build_input_group idx value field_name =

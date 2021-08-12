@@ -175,12 +175,12 @@ render_field_input_list_string obj field getter =
         vals_to_string v =
             String.join ", " <| v
 
-        rendered_list =
-            vals_to_string <| getter obj
-
         values : List String
         values =
             getter obj
+
+        rendered_list =
+            vals_to_string <| values
 
         --takes a substring and returns the FULL field value but with this idx swapped out
         replace_value : Int -> String -> String
@@ -204,7 +204,7 @@ render_field_input_list_string obj field getter =
         build_pred field_name idx cfg =
             cfg
                 |> InputGroup.predecessors
-                    [ InputGroup.span [] [ text <|field_name ++ " #"++String.fromInt idx ] ]
+                    [ InputGroup.span [] [ text <| field_name ++ " #" ++ String.fromInt idx ] ]
 
         build_input_group : Int -> String -> String -> Html msg
         build_input_group idx value field_name =

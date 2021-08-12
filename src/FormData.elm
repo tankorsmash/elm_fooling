@@ -3,6 +3,7 @@ module FormData exposing
     , EnumAccessor
     , FormDefinition
     , FormField
+    , ListFieldAlterType(..)
     , new_form_field_enum
     , new_form_field_float
     , new_form_field_int
@@ -75,6 +76,14 @@ type alias FormDefinition fd msg =
 
 type alias EnumAccessor fd =
     fd -> String
+
+
+{-| since list field types have buttons to add and remove fields, these should be attached to the generic FormUpdate msg they send
+-}
+type ListFieldAlterType
+    = Add
+    | Remove
+    | Change
 
 
 type DataType fd
@@ -152,7 +161,8 @@ render_field_input_list_string : fd -> FormField fd msg -> (fd -> List String) -
 render_field_input_list_string obj field getter =
     let
         vals_to_string : List String -> String
-        vals_to_string v = String.join ", " <| v
+        vals_to_string v =
+            String.join ", " <| v
 
         rendered_list =
             vals_to_string <| getter obj
@@ -163,9 +173,10 @@ render_field_input_list_string obj field getter =
 
         --takes a substring and returns the FULL field value but with this idx swapped out
         replace_value : Int -> String -> String
-        replace_value idx str = vals_to_string <| List.take idx values ++ str :: List.drop (idx+1) values
+        replace_value idx str =
+            vals_to_string <| List.take idx values ++ str :: List.drop (idx + 1) values
 
-        msg_sender :  Int -> String ->msg
+        msg_sender : Int -> String -> msg
         msg_sender idx str =
             -- field.on_input_msg (Debug.log "str: " str)
             field.on_input_msg <| replace_value idx str
@@ -344,7 +355,11 @@ new_form_field_float name getter on_input_msg =
     }
 
 
-new_form_field_list_string : String -> (fd -> List String) -> (String -> msg) -> FormField fd msg
+new_form_field_list_string :
+    String
+    -> (fd -> List String)
+    -> (String -> msg)
+    -> FormField fd msg
 new_form_field_list_string name getter on_input_msg =
     { field_name = name
     , data_type = ListStringType getter

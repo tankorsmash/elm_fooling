@@ -200,16 +200,16 @@ render_field_input_list_string obj field getter =
                     , Input.onInput <| split_msg idx
                     ]
 
-        build_pred : String -> InputGroup.Config msg -> InputGroup.Config msg
-        build_pred field_name cfg =
+        build_pred : String -> Int -> InputGroup.Config msg -> InputGroup.Config msg
+        build_pred field_name idx cfg =
             cfg
                 |> InputGroup.predecessors
-                    [ InputGroup.span [] [ text field_name ] ]
+                    [ InputGroup.span [] [ text <|field_name ++ " #"++String.fromInt idx ] ]
 
         build_input_group : Int -> String -> String -> Html msg
         build_input_group idx value field_name =
             build_config value idx
-                |> build_pred field_name
+                |> build_pred field_name idx
                 |> InputGroup.view
     in
     div [] <| List.indexedMap (\idx val -> build_input_group idx val field.field_name) values

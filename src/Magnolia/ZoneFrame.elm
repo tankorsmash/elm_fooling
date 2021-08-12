@@ -62,7 +62,7 @@ edit_form_definition the_msg =
                 "location_data_names_in_the_zone"
                 .location_data_names_in_the_zone
                 -- <| (\alter_type -> (LocationDataNamesInTheZone alter_type >> the_msg))
-                <| (\alter_type -> (LocationDataNamesInTheZone (Debug.log "alter type: " alter_type) >> the_msg))
+                <| (\alter_type -> (LocationDataNamesInTheZone alter_type >> the_msg))
     in
     { fields =
         [ new_form_field_string "name" .name <| ignore_alter ((\str -> Name str) >> the_msg)

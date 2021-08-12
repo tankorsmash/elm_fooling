@@ -185,9 +185,11 @@ render_field_input_list_string obj field getter =
 
         -- msg_sender : Int -> String -> InputCallback msg
         -- msg_sender idx str =
-            -- field.on_input_msg (Debug.log "str: " str)
-            -- field.on_input_msg <| replace_value idx str --TODO FIXME reimplement this
+        --     -- field.on_input_msg (Debug.log "str: " str)
+        --     field.on_input_msg <| replace_value idx str --TODO FIXME reimplement this
 
+        split_msg : (String -> msg)
+        split_msg = (\str -> (field.on_input_msg <| Change ) <| rendered_list)
 
         build_config : String -> Int -> InputGroup.Config msg
         build_config value idx =
@@ -198,7 +200,7 @@ render_field_input_list_string obj field getter =
 
                     -- , Input.onInput (\str -> (Debug.log "Str: "++str) field.on_input_msg)
                     -- , Input.onInput (msg_sender idx)
-                    , Input.onInput <| field.on_input_msg <| Change
+                    , Input.onInput split_msg
                     ]
 
         build_pred : String -> InputGroup.Config msg -> InputGroup.Config msg
@@ -248,10 +250,11 @@ render_field_input_enum obj field getter =
           <|
             case field.enum_values of
                 Nothing ->
-                    Debug.log "Nothing" []
+                    -- Debug.log "Nothing" <|
+                    []
 
                 Just values ->
-                    Debug.log "values"
+                    -- Debug.log "values" <|
                         List.map
                         (\( v, t ) ->
                             Select.item

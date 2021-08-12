@@ -360,8 +360,8 @@ form_data_view frame_edit_data =
                         , br [] []
                         ]
     in
-    Grid.row []
-        [ Grid.col [ Col.md6 ]
+    Grid.row [Row.centerMd]
+        [ Grid.col [ Col.sm11, Col.md8 ]
             [ rendered_saved_form_data
             , Form.form []
                 [ FormData.render_fields form_definition.fields frame_data

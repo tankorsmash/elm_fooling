@@ -10,6 +10,9 @@ module Magnolia.WeaponFrame exposing
 import FormData
     exposing
         ( DataType(..)
+        , InputCallback
+        , ListFieldAlterType
+        , ignore_alter
         , new_form_field_enum
         , new_form_field_float
         , new_form_field_int
@@ -94,23 +97,30 @@ edit_form_definition the_msg =
         damage_type_accessor =
             .damage_type >> weapon_damage_type_to_string
 
+        damage_type_msg : ListFieldAlterType -> InputCallback msg
+        damage_type_msg =
+            ignore_alter <| (WeaponDamageType >> the_msg)
+
         battle_row_type_accessor : FormData.EnumAccessor WeaponFrame
         battle_row_type_accessor =
             .battle_row_type >> battle_row_to_string
+
+        battle_row_type_msg =
+            ignore_alter <| (BattleRowType >> the_msg)
     in
     { fields =
-        [ new_form_field_string "weapon_name" .weapon_name (Name >> the_msg)
-        , new_form_field_int "frame_id" .frame_id (FrameId >> the_msg)
-        , new_form_field_int "choice_id" .choice_id (ChoiceId >> the_msg)
-        , new_form_field_string "description" .description (Description >> the_msg)
-        , new_form_field_string "frame_image_path" .frame_image_path (FrameImagePath >> the_msg)
-        , new_form_field_enum "battle_row_type" battle_row_type_accessor (BattleRowType >> the_msg) battle_row_type_values
-        , new_form_field_enum "damage_type" damage_type_accessor (WeaponDamageType >> the_msg) weapon_damage_type_values
-        , new_form_field_int "bonus_attack" .bonus_attack (BonusAttack >> the_msg)
-        , new_form_field_int "bonus_power" .bonus_power (BonusPower >> the_msg)
-        , new_form_field_int "bonus_encumbrance" .bonus_encumbrance (BonusEncumbrance >> the_msg)
-        , new_form_field_int "rarity_type" .rarity_type (RarityType >> the_msg)
-        , new_form_field_int "carry_weight" .carry_weight (CarryWeight >> the_msg)
+        [ new_form_field_string "weapon_name" .weapon_name <| ignore_alter <| Name >> the_msg
+        , new_form_field_int "frame_id" .frame_id <| ignore_alter <| FrameId >> the_msg
+        , new_form_field_int "choice_id" .choice_id <| ignore_alter <| ChoiceId >> the_msg
+        , new_form_field_string "description" .description <| ignore_alter <| Description >> the_msg
+        , new_form_field_string "frame_image_path" .frame_image_path <| ignore_alter <| FrameImagePath >> the_msg
+        , new_form_field_enum "battle_row_type" battle_row_type_accessor battle_row_type_msg battle_row_type_values
+        , new_form_field_enum "damage_type" damage_type_accessor damage_type_msg weapon_damage_type_values
+        , new_form_field_int "bonus_attack" .bonus_attack <| ignore_alter <| BonusAttack >> the_msg
+        , new_form_field_int "bonus_power" .bonus_power <| ignore_alter <| BonusPower >> the_msg
+        , new_form_field_int "bonus_encumbrance" .bonus_encumbrance <| ignore_alter <| BonusEncumbrance >> the_msg
+        , new_form_field_int "rarity_type" .rarity_type <| ignore_alter <| RarityType >> the_msg
+        , new_form_field_int "carry_weight" .carry_weight <| ignore_alter <| CarryWeight >> the_msg
         ]
     }
 

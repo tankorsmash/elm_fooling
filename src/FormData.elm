@@ -4,6 +4,8 @@ module FormData exposing
     , FormDefinition
     , FormField
     , ListFieldAlterType(..)
+    , InputCallback
+    , ignore_alter
     , new_form_field_enum
     , new_form_field_float
     , new_form_field_int
@@ -77,6 +79,8 @@ type alias FormDefinition fd msg =
 type alias EnumAccessor fd =
     fd -> String
 
+type alias InputCallback msg = (String -> msg)
+
 
 {-| since list field types have buttons to add and remove fields, these should be attached to the generic FormUpdate msg they send
 -}
@@ -84,6 +88,9 @@ type ListFieldAlterType
     = Add
     | Remove
     | Change
+
+ignore_alter : a -> ListFieldAlterType -> a
+ignore_alter rest _ = rest
 
 
 type DataType fd
@@ -139,7 +146,7 @@ type alias FormField fd msg =
     { field_name : String
     , data_type : DataType fd
     , enum_values : Maybe (List ( String, String )) -- [(val, text), (val, text)]
-    , on_input_msg : String -> msg
+    , on_input_msg : ListFieldAlterType -> InputCallback msg
     }
 
 
@@ -149,7 +156,7 @@ render_field_input_string obj field getter =
         (InputGroup.text
             [ Input.placeholder "placeholder"
             , Input.value <| getter obj
-            , Input.onInput field.on_input_msg
+            , Input.onInput <| field.on_input_msg <| Change
             ]
         )
         |> InputGroup.predecessors
@@ -176,10 +183,11 @@ render_field_input_list_string obj field getter =
         replace_value idx str =
             vals_to_string <| List.take idx values ++ str :: List.drop (idx + 1) values
 
-        msg_sender : Int -> String -> msg
-        msg_sender idx str =
+        -- msg_sender : Int -> String -> InputCallback msg
+        -- msg_sender idx str =
             -- field.on_input_msg (Debug.log "str: " str)
-            field.on_input_msg <| replace_value idx str
+            -- field.on_input_msg <| replace_value idx str --TODO FIXME reimplement this
+
 
         build_config : String -> Int -> InputGroup.Config msg
         build_config value idx =
@@ -189,7 +197,8 @@ render_field_input_list_string obj field getter =
                     , Input.value <| value
 
                     -- , Input.onInput (\str -> (Debug.log "Str: "++str) field.on_input_msg)
-                    , Input.onInput (msg_sender idx)
+                    -- , Input.onInput (msg_sender idx)
+                    , Input.onInput <| field.on_input_msg <| Change
                     ]
 
         build_pred : String -> InputGroup.Config msg -> InputGroup.Config msg
@@ -234,7 +243,7 @@ render_field_input_enum obj field getter =
             ]
         , Select.custom
             [ Select.id field.field_name
-            , Select.onChange field.on_input_msg
+            , Select.onChange (field.on_input_msg <| Change)
             ]
           <|
             case field.enum_values of
@@ -259,7 +268,7 @@ render_field_input_int obj field getter =
         (InputGroup.number
             [ Input.placeholder "placeholder"
             , Input.value <| String.fromInt <| getter obj
-            , Input.onInput field.on_input_msg
+            , Input.onInput <| field.on_input_msg <| Change
             ]
         )
         |> InputGroup.predecessors
@@ -273,7 +282,7 @@ render_field_input_float obj field getter =
         (InputGroup.number
             [ Input.placeholder "placeholder"
             , Input.value <| String.fromFloat <| getter obj
-            , Input.onInput field.on_input_msg
+            , Input.onInput <| field.on_input_msg <| Change
             ]
         )
         |> InputGroup.predecessors
@@ -333,7 +342,7 @@ render_fields fields form_data =
             fields
 
 
-new_form_field_int : String -> (fd -> Int) -> (String -> msg) -> FormField fd msg
+new_form_field_int : String -> (fd -> Int) -> (ListFieldAlterType -> InputCallback msg) -> FormField fd msg
 new_form_field_int name getter on_input_msg =
     { field_name = name
     , data_type = IntType getter
@@ -342,7 +351,7 @@ new_form_field_int name getter on_input_msg =
     }
 
 
-new_form_field_enum : String -> EnumAccessor fd -> (String -> msg) -> List ( String, String ) -> FormField fd msg
+new_form_field_enum : String -> EnumAccessor fd -> (ListFieldAlterType -> InputCallback msg) -> List ( String, String ) -> FormField fd msg
 new_form_field_enum name accessor on_input_msg enum_values =
     { field_name = name
     , data_type = EnumType accessor
@@ -351,7 +360,7 @@ new_form_field_enum name accessor on_input_msg enum_values =
     }
 
 
-new_form_field_string : String -> (fd -> String) -> (String -> msg) -> FormField fd msg
+new_form_field_string : String -> (fd -> String) -> (ListFieldAlterType -> InputCallback msg) -> FormField fd msg
 new_form_field_string name getter on_input_msg =
     { field_name = name
     , data_type = StringType getter
@@ -360,7 +369,7 @@ new_form_field_string name getter on_input_msg =
     }
 
 
-new_form_field_float : String -> (fd -> Float) -> (String -> msg) -> FormField fd msg
+new_form_field_float : String -> (fd -> Float) -> (ListFieldAlterType -> InputCallback msg) -> FormField fd msg
 new_form_field_float name getter on_input_msg =
     { field_name = name
     , data_type = FloatType getter
@@ -372,7 +381,7 @@ new_form_field_float name getter on_input_msg =
 new_form_field_list_string :
     String
     -> (fd -> List String)
-    -> (String -> msg)
+    -> (ListFieldAlterType -> InputCallback msg)
     -> FormField fd msg
 new_form_field_list_string name getter on_input_msg =
     { field_name = name

@@ -3,8 +3,8 @@ module FormData exposing
     , EnumAccessor
     , FormDefinition
     , FormField
-    , ListFieldAlterType(..)
     , InputCallback
+    , ListFieldAlterType(..)
     , ignore_alter
     , new_form_field_enum
     , new_form_field_float
@@ -79,7 +79,9 @@ type alias FormDefinition fd msg =
 type alias EnumAccessor fd =
     fd -> String
 
-type alias InputCallback msg = (String -> msg)
+
+type alias InputCallback msg =
+    String -> msg
 
 
 {-| since list field types have buttons to add and remove fields, these should be attached to the generic FormUpdate msg they send
@@ -89,8 +91,10 @@ type ListFieldAlterType
     | Remove
     | Change
 
+
 ignore_alter : a -> ListFieldAlterType -> a
-ignore_alter rest _ = rest
+ignore_alter rest _ =
+    rest
 
 
 type DataType fd
@@ -183,13 +187,9 @@ render_field_input_list_string obj field getter =
         replace_value idx str =
             vals_to_string <| List.take idx values ++ str :: List.drop (idx + 1) values
 
-        -- msg_sender : Int -> String -> InputCallback msg
-        -- msg_sender idx str =
-        --     -- field.on_input_msg (Debug.log "str: " str)
-        --     field.on_input_msg <| replace_value idx str --TODO FIXME reimplement this
-
-        split_msg : (String -> msg)
-        split_msg = (\str -> (field.on_input_msg <| Change ) <| rendered_list)
+        split_msg : Int -> (String -> msg)
+        split_msg idx =
+            \str -> (field.on_input_msg <| Change) <| replace_value idx str
 
         build_config : String -> Int -> InputGroup.Config msg
         build_config value idx =
@@ -197,10 +197,7 @@ render_field_input_list_string obj field getter =
                 InputGroup.text
                     [ Input.placeholder "placeholder"
                     , Input.value <| value
-
-                    -- , Input.onInput (\str -> (Debug.log "Str: "++str) field.on_input_msg)
-                    -- , Input.onInput (msg_sender idx)
-                    , Input.onInput split_msg
+                    , Input.onInput <| split_msg idx
                     ]
 
         build_pred : String -> InputGroup.Config msg -> InputGroup.Config msg
@@ -255,7 +252,7 @@ render_field_input_enum obj field getter =
 
                 Just values ->
                     -- Debug.log "values" <|
-                        List.map
+                    List.map
                         (\( v, t ) ->
                             Select.item
                                 [ value v, selected (getter obj == t) ]

@@ -48,6 +48,7 @@ edit_form_definition : (EditFormUpdateType -> msg) -> FormData.FormDefinition Zo
 edit_form_definition the_msg =
     let
         -- location_msg : String -> ListFieldAlterType -> msg
+        location_msg : String ->  msg
         location_msg =
             -- \str alter_type -> the_msg (LocationDataNamesInTheZone alter_type str)
             -- \str -> the_msg (Name str)
@@ -61,7 +62,7 @@ edit_form_definition the_msg =
                 location_msg
     in
     { fields =
-        [ new_form_field_string "name" .name (Name >> the_msg)
+        [ new_form_field_string "name" .name ((\str -> Name str) >> the_msg)
         , new_form_field_string "data_name" .data_name (DataName >> the_msg)
         , new_form_field_string "required_zone_data_name_to_unlock" .required_zone_data_name_to_unlock (RequiredZoneDataNameToUnlock >> the_msg)
         , location_field

@@ -192,15 +192,30 @@ render_field_input_list_string obj field getter =
         remove_value idx =
             vals_to_string <| List.take idx values ++ List.drop (idx + 1) values
 
-        remove_single_item_msg : Int -> (msg)
+        remove_single_item_msg : Int -> msg
         remove_single_item_msg idx =
             (field.on_input_msg <| Change) <| remove_value idx
 
         add_value : Int -> String
         add_value idx =
-            vals_to_string <| List.take idx values  ++ (List.drop (idx) values)++ [""]
+            let
+                first_vals =
+                    List.take idx values
 
-        add_single_item_msg : Int -> (msg)
+                new_val =
+                    [ "" ]
+
+                remainder =
+                    case List.drop idx values of
+                        x :: xs ->
+                            [ x ] ++ new_val ++ xs
+
+                        [] ->
+                            new_val
+            in
+            vals_to_string <| first_vals ++ remainder
+
+        add_single_item_msg : Int -> msg
         add_single_item_msg idx =
             (field.on_input_msg <| Change) <| add_value idx
 
@@ -224,12 +239,12 @@ render_field_input_list_string obj field getter =
                     [ InputGroup.span [] [ text <| field_name ++ " #" ++ String.fromInt idx ]
                     , InputGroup.button
                         [ Button.success
-                        , Button.onClick <| (add_single_item_msg idx)
+                        , Button.onClick <| add_single_item_msg idx
                         ]
                         [ text "+" ]
                     , InputGroup.button
                         [ Button.danger
-                        , Button.onClick <| (remove_single_item_msg idx)
+                        , Button.onClick <| remove_single_item_msg idx
                         ]
                         [ text "-" ]
                     ]

@@ -257,10 +257,10 @@ init =
 
 
 update_frame_edit_data :
-    FrameEditData fd msg
-    -> (fd -> subMsg -> fd)
-    -> subMsg
-    -> FrameEditData fd msg
+    FrameEditData frameData msg
+    -> UpdateEditFormFunc frameData updateMsg
+    -> updateMsg
+    -> FrameEditData frameData msg
 update_frame_edit_data frame_edit_data update_edit_form_data form_update_type =
     let
         frame_data =
@@ -275,32 +275,40 @@ get_frame_data =
 
 {-| takes a FrameEditDatas and a single FrameEditData and updates the Feds with the single one
 -}
-type alias FedsUpdater fd msg =
-    FrameEditDatas -> FrameEditData fd msg -> FrameEditDatas
+type alias FedsUpdater frameData msg =
+    FrameEditDatas -> FrameEditData frameData msg -> FrameEditDatas
 
 
 {-| returns a single Fed from a FrameEditDatas
 -}
-type alias FedGetter fd msg =
-    FrameEditDatas -> FrameEditData fd msg
+type alias FedGetter frameData msg =
+    FrameEditDatas -> FrameEditData frameData msg
 
 
-update_single_fed : FrameEditData fd msg -> fd -> FrameEditData fd msg
+{-| takes a FrameData and a field update type (Name, Description) and returns the updated frame data
+-}
+type alias UpdateEditFormFunc frameData updateType =
+    frameData -> updateType -> frameData
+
+
+update_single_fed : FrameEditData frameData msg -> frameData -> FrameEditData frameData msg
 update_single_fed fed new_frame_data =
     { fed | frame_data = new_frame_data }
 
-update_feds : FrameEditDatas -> FedsUpdater fd msg -> FrameEditData fd msg -> FrameEditDatas
+
+update_feds : FrameEditDatas -> FedsUpdater frameData msg -> FrameEditData frameData msg -> FrameEditDatas
 update_feds feds getter new_fed =
     getter feds new_fed
 
-update_form_edit_datas :
+
+update_frame_edit_datas :
     FrameEditDatas
-    -> FedGetter fd msg
-    -> FedsUpdater fd msg
-    -> (fd -> update_msg -> fd)
-    -> update_msg
+    -> FedGetter frameData msg
+    -> FedsUpdater frameData msg
+    -> (frameData -> updateType -> frameData)
+    -> updateType
     -> FrameEditDatas
-update_form_edit_datas frame_edit_datas fed_getter feds_updater update_edit_form_data form_update_type =
+update_frame_edit_datas frame_edit_datas fed_getter feds_updater update_edit_form_data form_update_type =
     let
         existing_fed =
             fed_getter frame_edit_datas
@@ -448,7 +456,6 @@ update model msg =
 
         GotEditBattleTextStructFormUpdate form_update_type ->
             let
-
                 feds_updater feds new_fed =
                     { feds | battle_text_struct = new_fed }
 
@@ -457,7 +464,7 @@ update model msg =
             in
             ( { model
                 | frame_edit_datas =
-                    update_form_edit_datas
+                    update_frame_edit_datas
                         model.frame_edit_datas
                         .battle_text_struct
                         feds_updater

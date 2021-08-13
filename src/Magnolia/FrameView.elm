@@ -54,8 +54,8 @@ import Json.Decode exposing (Decoder, at, field, list, string)
 import Json.Encode exposing (string)
 import List
 import Magnolia.ArmorFrame exposing (ArmorFrame)
-import Magnolia.WeaponFrame exposing (WeaponFrame)
 import Magnolia.WeaponCategoryFrame exposing (WeaponCategoryFrame)
+import Magnolia.WeaponFrame exposing (WeaponFrame)
 import Magnolia.ZoneFrame exposing (ZoneFrame)
 import OpenDota.OpenDota as OpenDota
 import PostData exposing (PostData)
@@ -106,6 +106,11 @@ type alias Model =
     }
 
 
+tab_prefix : String
+tab_prefix =
+    "frame_view_tab__"
+
+
 init : Model
 init =
     let
@@ -153,7 +158,7 @@ init =
             { name = "unset in init zone"
             , data_name = "unset_data_name"
             , required_zone_data_name_to_unlock = ""
-            , location_data_names_in_the_zone = ["first", "second"]
+            , location_data_names_in_the_zone = [ "first", "second" ]
             }
 
         saved_zone_frame_data : Maybe ZoneFrame
@@ -168,9 +173,9 @@ init =
             , frame_image_path = "unset .png"
             , rarity_type = 0
             , weapon_frame_ids = []
-            , rank_1_attr_frame_ids = [1, 11, 111]
-            , rank_2_attr_frame_ids = [2, 22, 222]
-            , rank_3_attr_frame_ids = [3, 33, 333]
+            , rank_1_attr_frame_ids = [ 1, 11, 111 ]
+            , rank_2_attr_frame_ids = [ 2, 22, 222 ]
+            , rank_3_attr_frame_ids = [ 3, 33, 333 ]
             }
 
         saved_weapon_category_frame_data : Maybe WeaponCategoryFrame
@@ -199,7 +204,7 @@ init =
             , saved_frame_data = saved_weapon_category_frame_data
             }
         }
-    , active_tab = Tab.customInitialState "tab_item_3"
+    , active_tab = Tab.customInitialState <| tab_prefix ++ "weapon_category_frame"
     }
 
 
@@ -362,10 +367,10 @@ tabs_view model =
     let
         tab_configs : List TabItemConfig
         tab_configs =
-            [ { id = "tab_item_1", link_text = "WeaponFrame", header = "Edit WeaponFrame", view = form_data_view model.frame_edit_datas.weapon }
-            , { id = "tab_item_2", link_text = "ArmorFrame", header = "Edit ArmorFrame", view = form_data_view model.frame_edit_datas.armor }
-            , { id = "tab_item_3", link_text = "ZoneFrame", header = "Edit ZoneFrame", view = form_data_view model.frame_edit_datas.zone }
-            , { id = "tab_item_4", link_text = "WeaponCategoryFrame", header = "Edit WeaponCategoryFrame", view = form_data_view model.frame_edit_datas.weapon_category }
+            [ { id = tab_prefix ++ "weapon_frame", link_text = "WeaponFrame", header = "Edit WeaponFrame", view = form_data_view model.frame_edit_datas.weapon }
+            , { id = tab_prefix ++ "armor_frame", link_text = "ArmorFrame", header = "Edit ArmorFrame", view = form_data_view model.frame_edit_datas.armor }
+            , { id = tab_prefix ++ "zone_frame", link_text = "ZoneFrame", header = "Edit ZoneFrame", view = form_data_view model.frame_edit_datas.zone }
+            , { id = tab_prefix ++ "weapon_category_frame", link_text = "WeaponCategoryFrame", header = "Edit WeaponCategoryFrame", view = form_data_view model.frame_edit_datas.weapon_category }
             ]
 
         tab_items =
@@ -402,7 +407,7 @@ form_data_view frame_edit_data =
                         , br [] []
                         ]
     in
-    Grid.row [Row.centerMd]
+    Grid.row [ Row.centerMd ]
         [ Grid.col [ Col.sm11, Col.md8 ]
             [ rendered_saved_form_data
             , Form.form []

@@ -55,6 +55,7 @@ import Json.Encode exposing (string)
 import List
 import Magnolia.ArmorFrame exposing (ArmorFrame)
 import Magnolia.WeaponFrame exposing (WeaponFrame)
+import Magnolia.WeaponCategoryFrame exposing (WeaponCategoryFrame)
 import Magnolia.ZoneFrame exposing (ZoneFrame)
 import OpenDota.OpenDota as OpenDota
 import PostData exposing (PostData)
@@ -73,6 +74,7 @@ type Msg
     = SubmitFormData
     | GotEditWeaponFormUpdate Magnolia.WeaponFrame.EditFormUpdateType
     | GotEditZoneFormUpdate Magnolia.ZoneFrame.EditFormUpdateType
+    | GotEditWeaponCategoryFormUpdate Magnolia.WeaponCategoryFrame.EditFormUpdateType
     | GotEditArmorFormUpdate Magnolia.ArmorFrame.EditFormUpdateType
     | GotTabMsg Tab.State
 
@@ -94,15 +96,11 @@ type alias FrameEditDatas =
     { weapon : FrameEditData WeaponFrame Msg
     , armor : FrameEditData ArmorFrame Msg
     , zone : FrameEditData ZoneFrame Msg
+    , weapon_category : FrameEditData WeaponCategoryFrame Msg
     }
 
 
 type alias Model =
-    -- { weapon_edit_form_definition : FormData.FormDefinition WeaponFrame Msg
-    -- , weapon_frame_data : WeaponFrame
-    -- , saved_weapon_frame_data : Maybe WeaponFrame
-    -- , armor_edit_form_definition : FormData.FormDefinition ArmorFrame Msg
-    -- , armor_frame_data : ArmorFrame
     { frame_edit_datas : FrameEditDatas
     , active_tab : Tab.State
     }
@@ -161,6 +159,23 @@ init =
         saved_zone_frame_data : Maybe ZoneFrame
         saved_zone_frame_data =
             Nothing
+
+        weapon_category_frame_data : WeaponCategoryFrame
+        weapon_category_frame_data =
+            { frame_id = 0
+            , pretty_name = "unset in init weapon_category"
+            , description = "description"
+            , frame_image_path = "unset .png"
+            , rarity_type = 0
+            , weapon_frame_ids = []
+            , rank_1_attr_frame_ids = [1, 11, 111]
+            , rank_2_attr_frame_ids = [2, 22, 222]
+            , rank_3_attr_frame_ids = [3, 33, 333]
+            }
+
+        saved_weapon_category_frame_data : Maybe WeaponCategoryFrame
+        saved_weapon_category_frame_data =
+            Nothing
     in
     { frame_edit_datas =
         { weapon =
@@ -177,6 +192,11 @@ init =
             { form_definition = Magnolia.ZoneFrame.edit_form_definition GotEditZoneFormUpdate
             , frame_data = zone_frame_data
             , saved_frame_data = saved_zone_frame_data
+            }
+        , weapon_category =
+            { form_definition = Magnolia.WeaponCategoryFrame.edit_form_definition GotEditWeaponCategoryFormUpdate
+            , frame_data = weapon_category_frame_data
+            , saved_frame_data = saved_weapon_category_frame_data
             }
         }
     , active_tab = Tab.customInitialState "tab_item_3"
@@ -282,6 +302,27 @@ update model msg =
             , Cmd.none
             )
 
+        GotEditWeaponCategoryFormUpdate form_update_type ->
+            let
+                frame_edit_datas =
+                    model.frame_edit_datas
+
+                weapon_category_fed =
+                    frame_edit_datas.weapon_category
+
+                frame_data =
+                    weapon_category_fed.frame_data
+            in
+            ( { model
+                | frame_edit_datas =
+                    { frame_edit_datas
+                        | weapon_category =
+                            { weapon_category_fed | frame_data = Magnolia.WeaponCategoryFrame.update_edit_form_data frame_data form_update_type }
+                    }
+              }
+            , Cmd.none
+            )
+
         GotTabMsg new_state ->
             ( { model | active_tab = new_state }, Cmd.none )
 
@@ -324,6 +365,7 @@ tabs_view model =
             [ { id = "tab_item_1", link_text = "WeaponFrame", header = "Edit WeaponFrame", view = form_data_view model.frame_edit_datas.weapon }
             , { id = "tab_item_2", link_text = "ArmorFrame", header = "Edit ArmorFrame", view = form_data_view model.frame_edit_datas.armor }
             , { id = "tab_item_3", link_text = "ZoneFrame", header = "Edit ZoneFrame", view = form_data_view model.frame_edit_datas.zone }
+            , { id = "tab_item_4", link_text = "WeaponCategoryFrame", header = "Edit WeaponCategoryFrame", view = form_data_view model.frame_edit_datas.weapon_category }
             ]
 
         tab_items =

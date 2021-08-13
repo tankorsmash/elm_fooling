@@ -10,6 +10,7 @@ module FormData exposing
     , new_form_field_float
     , new_form_field_int
     , new_form_field_list_string
+    , new_form_field_list_int
     , new_form_field_string
     , render_fields
     , unset_float_getter

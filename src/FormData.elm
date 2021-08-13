@@ -1,10 +1,10 @@
 module FormData exposing
     ( DataType(..)
     , EnumAccessor
+    , FieldAlterType(..)
     , FormDefinition
     , FormField
     , InputCallback
-    , FieldAlterType(..)
     , ignore_alter
     , new_form_field_enum
     , new_form_field_float
@@ -261,6 +261,7 @@ render_field_input_list_string obj field getter =
     in
     div [] <| List.indexedMap (\idx val -> build_input_group idx val field.field_name) values
 
+
 render_field_input_list_int : fd -> FormField fd msg -> (fd -> List Int) -> Html msg
 render_field_input_list_int obj field getter =
     let
@@ -515,6 +516,7 @@ new_form_field_list_string name getter on_input_msg =
     , enum_values = Nothing
     , on_input_msg = on_input_msg
     }
+
 
 new_form_field_list_int :
     String

@@ -10,8 +10,8 @@ module Magnolia.WeaponFrame exposing
 import FormData
     exposing
         ( DataType(..)
-        , InputCallback
         , FieldAlterType
+        , InputCallback
         , ignore_alter
         , new_form_field_enum
         , new_form_field_float

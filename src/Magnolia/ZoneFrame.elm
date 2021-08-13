@@ -26,7 +26,6 @@ type EditFormUpdateType
     | DataName String
     | RequiredZoneDataNameToUnlock String
     | LocationDataNamesInTheZone FieldAlterType String
-    -- | LocationDataNamesInTheZone String
 
 
 update_edit_form_data : ZoneFrame -> EditFormUpdateType -> ZoneFrame
@@ -41,7 +40,6 @@ update_edit_form_data form_data form_update_type =
         RequiredZoneDataNameToUnlock new_required_zone_data_name_to_unlock ->
             { form_data | required_zone_data_name_to_unlock = new_required_zone_data_name_to_unlock }
 
-        -- LocationDataNamesInTheZone alter_type new_location_data_names_in_the_zone ->
         LocationDataNamesInTheZone alter_type new_location_data_names_in_the_zone ->
             { form_data | location_data_names_in_the_zone = String.split ", " new_location_data_names_in_the_zone }
 
@@ -49,20 +47,13 @@ update_edit_form_data form_data form_update_type =
 edit_form_definition : (EditFormUpdateType -> msg) -> FormData.FormDefinition ZoneFrame msg
 edit_form_definition the_msg =
     let
-        -- -- location_msg : String -> FieldAlterType -> msg
-        -- location_msg : InputCallback msg
-        -- location_msg =
-        --     -- \str alter_type -> the_msg (LocationDataNamesInTheZone alter_type str)
-        --     -- \str -> the_msg (Name str)
-        --     \str -> the_msg (LocationDataNamesInTheZone str)
-
         location_field : FormData.FormField ZoneFrame msg
         location_field =
             new_form_field_list_string
                 "location_data_names_in_the_zone"
                 .location_data_names_in_the_zone
-                -- <| (\alter_type -> (LocationDataNamesInTheZone alter_type >> the_msg))
-                <| (\alter_type -> (LocationDataNamesInTheZone alter_type >> the_msg))
+            <|
+                \alter_type -> LocationDataNamesInTheZone alter_type >> the_msg
     in
     { fields =
         [ new_form_field_string "name" .name <| ignore_alter ((\str -> Name str) >> the_msg)

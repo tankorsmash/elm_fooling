@@ -291,8 +291,8 @@ type alias UpdateEditFormFunc frameData updateType =
     frameData -> updateType -> frameData
 
 
-update_single_fed : FrameEditData frameData msg -> frameData -> FrameEditData frameData msg
-update_single_fed fed new_frame_data =
+update_single_fed_frame_data : FrameEditData frameData msg -> frameData -> FrameEditData frameData msg
+update_single_fed_frame_data fed new_frame_data =
     { fed | frame_data = new_frame_data }
 
 
@@ -301,25 +301,27 @@ update_feds feds getter new_fed =
     getter feds new_fed
 
 
+{-| updates the model's FrameEditDatas, using the UpdateEditFormFunc
+-}
 update_frame_edit_datas :
-    FrameEditDatas
+    Model
     -> FedGetter frameData msg
     -> FedsUpdater frameData msg
-    -> (frameData -> updateType -> frameData)
+    -> UpdateEditFormFunc frameData updateType
     -> updateType
-    -> FrameEditDatas
-update_frame_edit_datas frame_edit_datas fed_getter feds_updater update_edit_form_data form_update_type =
+    -> Model
+update_frame_edit_datas model fed_getter feds_updater update_edit_form_data form_update_type =
     let
+        frame_edit_datas =
+            model.frame_edit_datas
+
         existing_fed =
             fed_getter frame_edit_datas
-
-        existing_frame_data =
-            get_frame_data <| existing_fed
 
         new_fed =
             update_frame_edit_data existing_fed update_edit_form_data form_update_type
     in
-    feds_updater frame_edit_datas new_fed
+    { model | frame_edit_datas = feds_updater frame_edit_datas new_fed }
 
 
 update : Model -> Msg -> ( Model, Cmd Msg )
@@ -455,22 +457,12 @@ update model msg =
             )
 
         GotEditBattleTextStructFormUpdate form_update_type ->
-            let
-                feds_updater feds new_fed =
-                    { feds | battle_text_struct = new_fed }
-
-                update_edit_form_data =
-                    Magnolia.BattleTextStructFrame.update_edit_form_data
-            in
-            ( { model
-                | frame_edit_datas =
-                    update_frame_edit_datas
-                        model.frame_edit_datas
-                        .battle_text_struct
-                        feds_updater
-                        update_edit_form_data
-                        form_update_type
-              }
+            ( update_frame_edit_datas
+                model
+                .battle_text_struct
+                (\feds new_fed -> { feds | battle_text_struct = new_fed })
+                Magnolia.BattleTextStructFrame.update_edit_form_data
+                form_update_type
             , Cmd.none
             )
 

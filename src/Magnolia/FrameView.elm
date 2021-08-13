@@ -54,9 +54,9 @@ import Json.Decode exposing (Decoder, at, field, list, string)
 import Json.Encode exposing (string)
 import List
 import Magnolia.ArmorFrame exposing (ArmorFrame)
-import Magnolia.WeaponCategoryFrame exposing (WeaponCategoryFrame)
 import Magnolia.AttributeFrame exposing (AttributeFrame)
 import Magnolia.BattleTextStructFrame exposing (BattleTextStructFrame)
+import Magnolia.WeaponCategoryFrame exposing (WeaponCategoryFrame)
 import Magnolia.WeaponFrame exposing (WeaponFrame)
 import Magnolia.ZoneFrame exposing (ZoneFrame)
 import OpenDota.OpenDota as OpenDota
@@ -256,13 +256,55 @@ init =
     }
 
 
-update_frame_edit_data : FrameEditData fd Msg -> (fd -> subMsg -> fd) -> subMsg -> FrameEditData fd Msg
+update_frame_edit_data : FrameEditData fd msg -> (fd -> subMsg -> fd) -> subMsg -> FrameEditData fd msg
 update_frame_edit_data frame_edit_data updater form_update_type =
     let
         frame_data =
             frame_edit_data.frame_data
     in
     { frame_edit_data | frame_data = updater frame_data form_update_type }
+
+
+get_frame_data =
+    .frame_data
+
+
+type alias FedGetter fed obj =
+    fed -> obj
+
+
+update_fed : FrameEditData fd msg -> fd -> FrameEditData fd msg
+update_fed fed new_frame_data =
+    { fed | frame_data = new_frame_data }
+
+
+update_feds : FrameEditDatas -> (FrameEditDatas -> FrameEditData fd msg -> FrameEditDatas) -> FrameEditData fd msg -> FrameEditDatas
+update_feds feds getter new_fed =
+    getter feds new_fed
+
+
+update_form_edit_datas :
+    FrameEditDatas
+    -> (FrameEditDatas -> FrameEditData fd msg)
+    -> (FrameEditDatas -> FrameEditData fd msg -> FrameEditDatas)
+    -> (fd -> update_msg -> fd)
+    -> update_msg
+    -> FrameEditDatas
+update_form_edit_datas frame_edit_datas fed_getter feds_updater update_edit_form_data form_update_type =
+    let
+        existing_fed =
+            fed_getter frame_edit_datas
+
+        existing_frame_data =
+            get_frame_data <| existing_fed
+
+        new_fed =
+            update_frame_edit_data existing_fed update_edit_form_data form_update_type
+
+        new_feds =
+            update_feds frame_edit_datas feds_updater new_fed
+    in
+    new_feds
 
 
 update : Model -> Msg -> ( Model, Cmd Msg )
@@ -399,22 +441,16 @@ update model msg =
 
         GotEditBattleTextStructFormUpdate form_update_type ->
             let
-                frame_edit_datas =
-                    model.frame_edit_datas
+                getter =
+                    .battle_text_struct
 
-                battle_text_struct_fed =
-                    frame_edit_datas.battle_text_struct
+                updater feds new_fed =
+                    { feds | battle_text_struct = new_fed }
 
-                frame_data =
-                    battle_text_struct_fed.frame_data
+                update_edit_form_data =
+                    Magnolia.BattleTextStructFrame.update_edit_form_data
             in
-            ( { model
-                | frame_edit_datas =
-                    { frame_edit_datas
-                        | battle_text_struct =
-                            { battle_text_struct_fed | frame_data = Magnolia.BattleTextStructFrame.update_edit_form_data frame_data form_update_type }
-                    }
-              }
+            ( { model | frame_edit_datas = update_form_edit_datas model.frame_edit_datas getter updater update_edit_form_data form_update_type }
             , Cmd.none
             )
 

@@ -196,8 +196,8 @@ render_field_input_list_string obj field getter =
         remove_single_item_msg idx =
             (field.on_input_msg <| Change) <| remove_value idx
 
-        add_value : Int -> String
-        add_value idx =
+        insert_value : Int -> String
+        insert_value idx =
             let
                 first_vals =
                     List.take idx values
@@ -217,7 +217,7 @@ render_field_input_list_string obj field getter =
 
         add_single_item_msg : Int -> msg
         add_single_item_msg idx =
-            (field.on_input_msg <| Change) <| add_value idx
+            (field.on_input_msg <| Change) <| insert_value idx
 
         change_single_item_msg : Int -> (String -> msg)
         change_single_item_msg idx =
@@ -250,6 +250,97 @@ render_field_input_list_string obj field getter =
                     ]
 
         build_input_group : Int -> String -> String -> Html msg
+        build_input_group idx value field_name =
+            build_config value idx
+                |> build_pred field_name idx
+                |> InputGroup.view
+    in
+    div [] <| List.indexedMap (\idx val -> build_input_group idx val field.field_name) values
+
+render_field_input_list_int : fd -> FormField fd msg -> (fd -> List Int) -> Html msg
+render_field_input_list_int obj field getter =
+    let
+        vals_to_string : List Int -> String
+        vals_to_string v =
+            String.join ", " <| List.map String.fromInt v
+
+        values : List Int
+        values =
+            getter obj
+
+        rendered_list =
+            vals_to_string <| values
+
+        --takes a substring and returns the FULL field value but with this idx swapped out
+        replace_value : Int -> Int -> String
+        replace_value idx str =
+            vals_to_string <| List.take idx values ++ str :: List.drop (idx + 1) values
+
+        remove_value : Int -> String
+        remove_value idx =
+            vals_to_string <| List.take idx values ++ List.drop (idx + 1) values
+
+        remove_single_item_msg : Int -> msg
+        remove_single_item_msg idx =
+            (field.on_input_msg <| Change) <| remove_value idx
+
+        insert_value : Int -> String
+        insert_value idx =
+            let
+                first_vals : List Int
+                first_vals =
+                    List.take idx values
+
+                new_val : List Int
+                new_val =
+                    [ -1 ]
+
+                remainder : List Int
+                remainder =
+                    case List.drop idx values of
+                        x :: xs ->
+                            [ x ] ++ new_val ++ xs
+
+                        [] ->
+                            new_val
+            in
+            vals_to_string <| first_vals ++ remainder
+
+        add_single_item_msg : Int -> msg
+        add_single_item_msg idx =
+            (field.on_input_msg <| Change) <| insert_value idx
+
+        change_single_item_msg : Int -> (String -> msg)
+        change_single_item_msg idx =
+            \str -> (field.on_input_msg <| Change) <| replace_value idx <| Maybe.withDefault 0 <| String.toInt str
+
+        build_config : Int -> Int -> InputGroup.Config msg
+        build_config value idx =
+            InputGroup.config <|
+                InputGroup.text
+                    [ Input.placeholder "enter location_data_name"
+                    , Input.value <| String.fromInt value
+                    , Input.onInput <| change_single_item_msg idx
+                    ]
+
+        build_pred : String -> Int -> InputGroup.Config msg -> InputGroup.Config msg
+        build_pred field_name idx cfg =
+            cfg
+                |> InputGroup.predecessors
+                    [ InputGroup.span [] [ text <| field_name ++ " #" ++ String.fromInt idx ]
+                    , InputGroup.button
+                        [ Button.success
+                        , Button.onClick <| add_single_item_msg idx
+                        ]
+                        [ text "+" ]
+                    , InputGroup.button
+                        [ Button.danger
+                        , Button.onClick <| remove_single_item_msg idx
+                        ]
+                        [ text "-" ]
+                    ]
+
+        build_input_group : Int -> Int -> String -> Html msg
         build_input_group idx value field_name =
             build_config value idx
                 |> build_pred field_name idx

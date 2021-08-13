@@ -256,13 +256,17 @@ init =
     }
 
 
-update_frame_edit_data : FrameEditData fd msg -> (fd -> subMsg -> fd) -> subMsg -> FrameEditData fd msg
-update_frame_edit_data frame_edit_data updater form_update_type =
+update_frame_edit_data :
+    FrameEditData fd msg
+    -> (fd -> subMsg -> fd)
+    -> subMsg
+    -> FrameEditData fd msg
+update_frame_edit_data frame_edit_data update_edit_form_data form_update_type =
     let
         frame_data =
             frame_edit_data.frame_data
     in
-    { frame_edit_data | frame_data = updater frame_data form_update_type }
+    { frame_edit_data | frame_data = update_edit_form_data frame_data form_update_type }
 
 
 get_frame_data =
@@ -285,6 +289,9 @@ update_single_fed : FrameEditData fd msg -> fd -> FrameEditData fd msg
 update_single_fed fed new_frame_data =
     { fed | frame_data = new_frame_data }
 
+update_feds : FrameEditDatas -> FedsUpdater fd msg -> FrameEditData fd msg -> FrameEditDatas
+update_feds feds getter new_fed =
+    getter feds new_fed
 
 update_form_edit_datas :
     FrameEditDatas
@@ -303,7 +310,6 @@ update_form_edit_datas frame_edit_datas fed_getter feds_updater update_edit_form
 
         new_fed =
             update_frame_edit_data existing_fed update_edit_form_data form_update_type
-
     in
     feds_updater frame_edit_datas new_fed
 
@@ -442,16 +448,22 @@ update model msg =
 
         GotEditBattleTextStructFormUpdate form_update_type ->
             let
-                getter =
-                    .battle_text_struct
 
-                updater feds new_fed =
+                feds_updater feds new_fed =
                     { feds | battle_text_struct = new_fed }
 
                 update_edit_form_data =
                     Magnolia.BattleTextStructFrame.update_edit_form_data
             in
-            ( { model | frame_edit_datas = update_form_edit_datas model.frame_edit_datas getter updater update_edit_form_data form_update_type }
+            ( { model
+                | frame_edit_datas =
+                    update_form_edit_datas
+                        model.frame_edit_datas
+                        .battle_text_struct
+                        feds_updater
+                        update_edit_form_data
+                        form_update_type
+              }
             , Cmd.none
             )
 

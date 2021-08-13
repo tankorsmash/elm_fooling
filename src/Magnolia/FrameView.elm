@@ -56,6 +56,7 @@ import List
 import Magnolia.ArmorFrame exposing (ArmorFrame)
 import Magnolia.WeaponCategoryFrame exposing (WeaponCategoryFrame)
 import Magnolia.AttributeFrame exposing (AttributeFrame)
+import Magnolia.BattleTextStructFrame exposing (BattleTextStructFrame)
 import Magnolia.WeaponFrame exposing (WeaponFrame)
 import Magnolia.ZoneFrame exposing (ZoneFrame)
 import OpenDota.OpenDota as OpenDota
@@ -77,6 +78,7 @@ type Msg
     | GotEditZoneFormUpdate Magnolia.ZoneFrame.EditFormUpdateType
     | GotEditWeaponCategoryFormUpdate Magnolia.WeaponCategoryFrame.EditFormUpdateType
     | GotEditAttributeFormUpdate Magnolia.AttributeFrame.EditFormUpdateType
+    | GotEditBattleTextStructFormUpdate Magnolia.BattleTextStructFrame.EditFormUpdateType
     | GotEditArmorFormUpdate Magnolia.ArmorFrame.EditFormUpdateType
     | GotTabMsg Tab.State
 
@@ -100,6 +102,7 @@ type alias FrameEditDatas =
     , zone : FrameEditData ZoneFrame Msg
     , weapon_category : FrameEditData WeaponCategoryFrame Msg
     , attribute : FrameEditData AttributeFrame Msg
+    , battle_text_struct : FrameEditData BattleTextStructFrame Msg
     }
 
 
@@ -200,6 +203,22 @@ init =
         saved_attribute_frame_data : Maybe AttributeFrame
         saved_attribute_frame_data =
             Nothing
+
+        battle_text_struct_frame_data : BattleTextStructFrame
+        battle_text_struct_frame_data =
+            { frame_id = 0
+            , pretty_name = "unset in init battle_text_struct"
+            , description = "description"
+            , frame_image_path = "unset .png"
+            , state_names = []
+            , state_names_pretty_funcs = []
+            , pretty_name_template = ""
+            , pretty_func_name = ""
+            }
+
+        saved_battle_text_struct_frame_data : Maybe BattleTextStructFrame
+        saved_battle_text_struct_frame_data =
+            Nothing
     in
     { frame_edit_datas =
         { weapon =
@@ -227,8 +246,13 @@ init =
             , frame_data = attribute_frame_data
             , saved_frame_data = saved_attribute_frame_data
             }
+        , battle_text_struct =
+            { form_definition = Magnolia.BattleTextStructFrame.edit_form_definition GotEditBattleTextStructFormUpdate
+            , frame_data = battle_text_struct_frame_data
+            , saved_frame_data = saved_battle_text_struct_frame_data
+            }
         }
-    , active_tab = Tab.customInitialState <| tab_prefix ++ "attribute_frame"
+    , active_tab = Tab.customInitialState <| tab_prefix ++ "battle_text_struct_frame"
     }
 
 
@@ -373,6 +397,27 @@ update model msg =
             , Cmd.none
             )
 
+        GotEditBattleTextStructFormUpdate form_update_type ->
+            let
+                frame_edit_datas =
+                    model.frame_edit_datas
+
+                battle_text_struct_fed =
+                    frame_edit_datas.battle_text_struct
+
+                frame_data =
+                    battle_text_struct_fed.frame_data
+            in
+            ( { model
+                | frame_edit_datas =
+                    { frame_edit_datas
+                        | battle_text_struct =
+                            { battle_text_struct_fed | frame_data = Magnolia.BattleTextStructFrame.update_edit_form_data frame_data form_update_type }
+                    }
+              }
+            , Cmd.none
+            )
+
         GotTabMsg new_state ->
             ( { model | active_tab = new_state }, Cmd.none )
 
@@ -417,6 +462,7 @@ tabs_view model =
             , { id = tab_prefix ++ "zone_frame", link_text = "ZoneFrame", header = "Edit ZoneFrame", view = form_data_view model.frame_edit_datas.zone }
             , { id = tab_prefix ++ "weapon_category_frame", link_text = "WeaponCategoryFrame", header = "Edit WeaponCategoryFrame", view = form_data_view model.frame_edit_datas.weapon_category }
             , { id = tab_prefix ++ "attribute_frame", link_text = "AttributeFrame", header = "Edit AttributeFrame", view = form_data_view model.frame_edit_datas.attribute }
+            , { id = tab_prefix ++ "battle_text_struct_frame", link_text = "BattleTextStructFrame", header = "Edit BattleTextStructFrame", view = form_data_view model.frame_edit_datas.battle_text_struct }
             ]
 
         tab_items =

@@ -104,6 +104,7 @@ type DataType fd
     | FloatType (fd -> Float)
     | EnumType (EnumAccessor fd) --since C++ uses Ints as json values for enums, we need to give it a converter to go from string to enum's int
     | ListStringType (fd -> List String)
+    | ListIntType (fd -> List Int)
 
 
 {-| Returns either the int value of maybe\_new\_val, or the fallback
@@ -145,6 +146,9 @@ to_string dtype =
 
         ListStringType _ ->
             "ListStringType"
+
+        ListIntType _ ->
+            "ListIntType"
 
 
 type alias FormField fd msg =
@@ -424,6 +428,9 @@ lookup_field obj field =
         ListStringType getter ->
             String.join ", " <| getter obj
 
+        ListIntType getter ->
+            String.join ", " <| List.map String.fromInt <| getter obj
+
 
 render_field_to_plaintext : fd -> FormField fd msg -> Html msg
 render_field_to_plaintext obj field =
@@ -447,6 +454,9 @@ render_field obj field =
 
         ListStringType getter ->
             div [] [ render_field_input_list_string obj field getter ]
+
+        ListIntType getter ->
+            div [] [ render_field_input_list_int obj field getter ]
 
 
 render_fields : List (FormField fd msg) -> fd -> Html msg
@@ -502,6 +512,18 @@ new_form_field_list_string :
 new_form_field_list_string name getter on_input_msg =
     { field_name = name
     , data_type = ListStringType getter
+    , enum_values = Nothing
+    , on_input_msg = on_input_msg
+    }
+
+new_form_field_list_int :
+    String
+    -> (fd -> List Int)
+    -> (ListFieldAlterType -> InputCallback msg)
+    -> FormField fd msg
+new_form_field_list_int name getter on_input_msg =
+    { field_name = name
+    , data_type = ListIntType getter
     , enum_values = Nothing
     , on_input_msg = on_input_msg
     }

@@ -55,6 +55,7 @@ import Json.Encode exposing (string)
 import List
 import Magnolia.ArmorFrame exposing (ArmorFrame)
 import Magnolia.WeaponCategoryFrame exposing (WeaponCategoryFrame)
+import Magnolia.AttributeFrame exposing (AttributeFrame)
 import Magnolia.WeaponFrame exposing (WeaponFrame)
 import Magnolia.ZoneFrame exposing (ZoneFrame)
 import OpenDota.OpenDota as OpenDota
@@ -75,6 +76,7 @@ type Msg
     | GotEditWeaponFormUpdate Magnolia.WeaponFrame.EditFormUpdateType
     | GotEditZoneFormUpdate Magnolia.ZoneFrame.EditFormUpdateType
     | GotEditWeaponCategoryFormUpdate Magnolia.WeaponCategoryFrame.EditFormUpdateType
+    | GotEditAttributeFormUpdate Magnolia.AttributeFrame.EditFormUpdateType
     | GotEditArmorFormUpdate Magnolia.ArmorFrame.EditFormUpdateType
     | GotTabMsg Tab.State
 
@@ -97,6 +99,7 @@ type alias FrameEditDatas =
     , armor : FrameEditData ArmorFrame Msg
     , zone : FrameEditData ZoneFrame Msg
     , weapon_category : FrameEditData WeaponCategoryFrame Msg
+    , attribute : FrameEditData AttributeFrame Msg
     }
 
 
@@ -181,6 +184,22 @@ init =
         saved_weapon_category_frame_data : Maybe WeaponCategoryFrame
         saved_weapon_category_frame_data =
             Nothing
+
+        attribute_frame_data : AttributeFrame
+        attribute_frame_data =
+            { frame_id = 0
+            , pretty_name = "unset in init attribute"
+            , description = "description"
+            , frame_image_path = "unset .png"
+            , state_names = []
+            , state_names_pretty_funcs = []
+            , pretty_name_template = ""
+            , pretty_func_name = ""
+            }
+
+        saved_attribute_frame_data : Maybe AttributeFrame
+        saved_attribute_frame_data =
+            Nothing
     in
     { frame_edit_datas =
         { weapon =
@@ -203,8 +222,13 @@ init =
             , frame_data = weapon_category_frame_data
             , saved_frame_data = saved_weapon_category_frame_data
             }
+        , attribute =
+            { form_definition = Magnolia.AttributeFrame.edit_form_definition GotEditAttributeFormUpdate
+            , frame_data = attribute_frame_data
+            , saved_frame_data = saved_attribute_frame_data
+            }
         }
-    , active_tab = Tab.customInitialState <| tab_prefix ++ "weapon_category_frame"
+    , active_tab = Tab.customInitialState <| tab_prefix ++ "attribute_frame"
     }
 
 
@@ -328,6 +352,27 @@ update model msg =
             , Cmd.none
             )
 
+        GotEditAttributeFormUpdate form_update_type ->
+            let
+                frame_edit_datas =
+                    model.frame_edit_datas
+
+                attribute_fed =
+                    frame_edit_datas.attribute
+
+                frame_data =
+                    attribute_fed.frame_data
+            in
+            ( { model
+                | frame_edit_datas =
+                    { frame_edit_datas
+                        | attribute =
+                            { attribute_fed | frame_data = Magnolia.AttributeFrame.update_edit_form_data frame_data form_update_type }
+                    }
+              }
+            , Cmd.none
+            )
+
         GotTabMsg new_state ->
             ( { model | active_tab = new_state }, Cmd.none )
 
@@ -371,6 +416,7 @@ tabs_view model =
             , { id = tab_prefix ++ "armor_frame", link_text = "ArmorFrame", header = "Edit ArmorFrame", view = form_data_view model.frame_edit_datas.armor }
             , { id = tab_prefix ++ "zone_frame", link_text = "ZoneFrame", header = "Edit ZoneFrame", view = form_data_view model.frame_edit_datas.zone }
             , { id = tab_prefix ++ "weapon_category_frame", link_text = "WeaponCategoryFrame", header = "Edit WeaponCategoryFrame", view = form_data_view model.frame_edit_datas.weapon_category }
+            , { id = tab_prefix ++ "attribute_frame", link_text = "AttributeFrame", header = "Edit AttributeFrame", view = form_data_view model.frame_edit_datas.attribute }
             ]
 
         tab_items =

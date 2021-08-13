@@ -227,7 +227,7 @@ render_field_input_list_string obj field getter =
         build_config value idx =
             InputGroup.config <|
                 InputGroup.text
-                    [ Input.placeholder "placeholder"
+                    [ Input.placeholder "enter location_data_name"
                     , Input.value <| value
                     , Input.onInput <| change_single_item_msg idx
                     ]
@@ -258,22 +258,12 @@ render_field_input_list_string obj field getter =
     div [] <| List.indexedMap (\idx val -> build_input_group idx val field.field_name) values
 
 
-
--- build_msg : String -> (update_msg -> msg) -> (String -> msg)
--- build_msg : (FormField fd msg) -> String -> (update_msg -> msg) -> (String -> msg)
--- build_msg field str on_input_msg =
---     -- field.on_input_msg str
---     let callback : String -> msg
---         -- callback = \s -> (field.on_input_msg s)
---         callback = field.on_input_msg str
---     in callback
--- build_dumb_msg : String -> msg
--- build_dumb_msg str = Msg
---
-
-
 render_field_input_enum : fd -> FormField fd msg -> EnumAccessor fd -> Html msg
 render_field_input_enum obj field getter =
+    let
+        item_builder =
+            \( val, txt ) -> Select.item [ value val, selected (getter obj == txt) ] [ text txt ]
+    in
     div [ class "input-group" ]
         [ div [ class "input-group-prepend" ]
             [ Form.label
@@ -290,18 +280,10 @@ render_field_input_enum obj field getter =
           <|
             case field.enum_values of
                 Nothing ->
-                    -- Debug.log "Nothing" <|
                     []
 
                 Just values ->
-                    -- Debug.log "values" <|
-                    List.map
-                        (\( v, t ) ->
-                            Select.item
-                                [ value v, selected (getter obj == t) ]
-                                [ text t ]
-                        )
-                        values
+                    List.map item_builder values
         ]
 
 

@@ -269,24 +269,27 @@ get_frame_data =
     .frame_data
 
 
-type alias FedGetter fed obj =
-    fed -> obj
+{-| takes a FrameEditDatas and a single FrameEditData and updates the Feds with the single one
+-}
+type alias FedsUpdater fd msg =
+    FrameEditDatas -> FrameEditData fd msg -> FrameEditDatas
 
 
-update_fed : FrameEditData fd msg -> fd -> FrameEditData fd msg
-update_fed fed new_frame_data =
+{-| returns a single Fed from a FrameEditDatas
+-}
+type alias FedGetter fd msg =
+    FrameEditDatas -> FrameEditData fd msg
+
+
+update_single_fed : FrameEditData fd msg -> fd -> FrameEditData fd msg
+update_single_fed fed new_frame_data =
     { fed | frame_data = new_frame_data }
-
-
-update_feds : FrameEditDatas -> (FrameEditDatas -> FrameEditData fd msg -> FrameEditDatas) -> FrameEditData fd msg -> FrameEditDatas
-update_feds feds getter new_fed =
-    getter feds new_fed
 
 
 update_form_edit_datas :
     FrameEditDatas
-    -> (FrameEditDatas -> FrameEditData fd msg)
-    -> (FrameEditDatas -> FrameEditData fd msg -> FrameEditDatas)
+    -> FedGetter fd msg
+    -> FedsUpdater fd msg
     -> (fd -> update_msg -> fd)
     -> update_msg
     -> FrameEditDatas
@@ -301,10 +304,8 @@ update_form_edit_datas frame_edit_datas fed_getter feds_updater update_edit_form
         new_fed =
             update_frame_edit_data existing_fed update_edit_form_data form_update_type
 
-        new_feds =
-            update_feds frame_edit_datas feds_updater new_fed
     in
-    new_feds
+    feds_updater frame_edit_datas new_fed
 
 
 update : Model -> Msg -> ( Model, Cmd Msg )

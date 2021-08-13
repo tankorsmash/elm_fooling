@@ -9,8 +9,8 @@ module FormData exposing
     , new_form_field_enum
     , new_form_field_float
     , new_form_field_int
-    , new_form_field_list_string
     , new_form_field_list_int
+    , new_form_field_list_string
     , new_form_field_string
     , render_fields
     , unset_float_getter
@@ -316,9 +316,9 @@ render_field_input_list_int obj field getter =
         add_single_item_msg idx =
             (field.on_input_msg <| Change) <| insert_value idx
 
-        change_single_item_msg : Int -> (String -> msg)
-        change_single_item_msg idx =
-            \str -> (field.on_input_msg <| Change) <| replace_value idx <| Maybe.withDefault 0 <| String.toInt str
+        change_single_item_msg : Int -> Int -> (String -> msg)
+        change_single_item_msg idx orig =
+            \str -> (field.on_input_msg <| Change) <| replace_value idx <| Maybe.withDefault orig <| String.toInt str
 
         build_config : Int -> Int -> InputGroup.Config msg
         build_config value idx =
@@ -326,7 +326,7 @@ render_field_input_list_int obj field getter =
                 InputGroup.text
                     [ Input.placeholder "enter location_data_name"
                     , Input.value <| String.fromInt value
-                    , Input.onInput <| change_single_item_msg idx
+                    , Input.onInput <| change_single_item_msg idx value
                     ]
 
         build_pred : String -> Int -> InputGroup.Config msg -> InputGroup.Config msg

@@ -4,7 +4,7 @@ module FormData exposing
     , FormDefinition
     , FormField
     , InputCallback
-    , ListFieldAlterType(..)
+    , FieldAlterType(..)
     , ignore_alter
     , new_form_field_enum
     , new_form_field_float
@@ -87,13 +87,13 @@ type alias InputCallback msg =
 
 {-| since list field types have buttons to add and remove fields, these should be attached to the generic FormUpdate msg they send
 -}
-type ListFieldAlterType
+type FieldAlterType
     = Add
     | Remove
     | Change
 
 
-ignore_alter : a -> ListFieldAlterType -> a
+ignore_alter : a -> FieldAlterType -> a
 ignore_alter rest _ =
     rest
 
@@ -155,7 +155,7 @@ type alias FormField fd msg =
     { field_name : String
     , data_type : DataType fd
     , enum_values : Maybe (List ( String, String )) -- [(val, text), (val, text)]
-    , on_input_msg : ListFieldAlterType -> InputCallback msg
+    , on_input_msg : FieldAlterType -> InputCallback msg
     }
 
 
@@ -468,7 +468,7 @@ render_fields fields form_data =
             fields
 
 
-new_form_field_int : String -> (fd -> Int) -> (ListFieldAlterType -> InputCallback msg) -> FormField fd msg
+new_form_field_int : String -> (fd -> Int) -> (FieldAlterType -> InputCallback msg) -> FormField fd msg
 new_form_field_int name getter on_input_msg =
     { field_name = name
     , data_type = IntType getter
@@ -477,7 +477,7 @@ new_form_field_int name getter on_input_msg =
     }
 
 
-new_form_field_enum : String -> EnumAccessor fd -> (ListFieldAlterType -> InputCallback msg) -> List ( String, String ) -> FormField fd msg
+new_form_field_enum : String -> EnumAccessor fd -> (FieldAlterType -> InputCallback msg) -> List ( String, String ) -> FormField fd msg
 new_form_field_enum name accessor on_input_msg enum_values =
     { field_name = name
     , data_type = EnumType accessor
@@ -486,7 +486,7 @@ new_form_field_enum name accessor on_input_msg enum_values =
     }
 
 
-new_form_field_string : String -> (fd -> String) -> (ListFieldAlterType -> InputCallback msg) -> FormField fd msg
+new_form_field_string : String -> (fd -> String) -> (FieldAlterType -> InputCallback msg) -> FormField fd msg
 new_form_field_string name getter on_input_msg =
     { field_name = name
     , data_type = StringType getter
@@ -495,7 +495,7 @@ new_form_field_string name getter on_input_msg =
     }
 
 
-new_form_field_float : String -> (fd -> Float) -> (ListFieldAlterType -> InputCallback msg) -> FormField fd msg
+new_form_field_float : String -> (fd -> Float) -> (FieldAlterType -> InputCallback msg) -> FormField fd msg
 new_form_field_float name getter on_input_msg =
     { field_name = name
     , data_type = FloatType getter
@@ -507,7 +507,7 @@ new_form_field_float name getter on_input_msg =
 new_form_field_list_string :
     String
     -> (fd -> List String)
-    -> (ListFieldAlterType -> InputCallback msg)
+    -> (FieldAlterType -> InputCallback msg)
     -> FormField fd msg
 new_form_field_list_string name getter on_input_msg =
     { field_name = name
@@ -519,7 +519,7 @@ new_form_field_list_string name getter on_input_msg =
 new_form_field_list_int :
     String
     -> (fd -> List Int)
-    -> (ListFieldAlterType -> InputCallback msg)
+    -> (FieldAlterType -> InputCallback msg)
     -> FormField fd msg
 new_form_field_list_int name getter on_input_msg =
     { field_name = name

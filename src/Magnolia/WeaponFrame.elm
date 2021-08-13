@@ -11,7 +11,7 @@ import FormData
     exposing
         ( DataType(..)
         , InputCallback
-        , ListFieldAlterType
+        , FieldAlterType
         , ignore_alter
         , new_form_field_enum
         , new_form_field_float
@@ -97,7 +97,7 @@ edit_form_definition the_msg =
         damage_type_accessor =
             .damage_type >> weapon_damage_type_to_string
 
-        damage_type_msg : ListFieldAlterType -> InputCallback msg
+        damage_type_msg : FieldAlterType -> InputCallback msg
         damage_type_msg =
             ignore_alter <| (WeaponDamageType >> the_msg)
 

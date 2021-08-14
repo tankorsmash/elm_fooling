@@ -405,7 +405,7 @@ button_primary on_click text_ =
 
 
 type alias TabItemConfig =
-    { id : String, link_text : String, header : String, view : Html Msg }
+    { id : String, link_text : String, header : String, form_edit_view : Html Msg }
 
 
 render_tab_item : TabItemConfig -> Tab.Item Msg
@@ -416,7 +416,7 @@ render_tab_item config =
         , pane =
             Tab.pane [ Spacing.mt3 ]
                 [ h4 [] [ text config.header ]
-                , config.view
+                , config.form_edit_view
                 ]
         }
 
@@ -426,12 +426,12 @@ tabs_view model =
     let
         tab_configs : List TabItemConfig
         tab_configs =
-            [ { id = tab_prefix ++ "weapon_frame", link_text = "WeaponFrame", header = "Edit WeaponFrame", view = form_data_view model.frame_edit_datas.weapon }
-            , { id = tab_prefix ++ "armor_frame", link_text = "ArmorFrame", header = "Edit ArmorFrame", view = form_data_view model.frame_edit_datas.armor }
-            , { id = tab_prefix ++ "zone_frame", link_text = "ZoneFrame", header = "Edit ZoneFrame", view = form_data_view model.frame_edit_datas.zone }
-            , { id = tab_prefix ++ "weapon_category_frame", link_text = "WeaponCategoryFrame", header = "Edit WeaponCategoryFrame", view = form_data_view model.frame_edit_datas.weapon_category }
-            , { id = tab_prefix ++ "attribute_frame", link_text = "AttributeFrame", header = "Edit AttributeFrame", view = form_data_view model.frame_edit_datas.attribute }
-            , { id = tab_prefix ++ "battle_text_struct_frame", link_text = "BattleTextStructFrame", header = "Edit BattleTextStructFrame", view = form_data_view model.frame_edit_datas.battle_text_struct }
+            [ { id = tab_prefix ++ "weapon_frame", link_text = "WeaponFrame", header = "Edit WeaponFrame", form_edit_view = form_data_view model.frame_edit_datas.weapon }
+            , { id = tab_prefix ++ "armor_frame", link_text = "ArmorFrame", header = "Edit ArmorFrame", form_edit_view = form_data_view model.frame_edit_datas.armor }
+            , { id = tab_prefix ++ "zone_frame", link_text = "ZoneFrame", header = "Edit ZoneFrame", form_edit_view = form_data_view model.frame_edit_datas.zone }
+            , { id = tab_prefix ++ "weapon_category_frame", link_text = "WeaponCategoryFrame", header = "Edit WeaponCategoryFrame", form_edit_view = form_data_view model.frame_edit_datas.weapon_category }
+            , { id = tab_prefix ++ "attribute_frame", link_text = "AttributeFrame", header = "Edit AttributeFrame", form_edit_view = form_data_view model.frame_edit_datas.attribute }
+            , { id = tab_prefix ++ "battle_text_struct_frame", link_text = "BattleTextStructFrame", header = "Edit BattleTextStructFrame", form_edit_view = form_data_view model.frame_edit_datas.battle_text_struct }
             ]
 
         tab_items =

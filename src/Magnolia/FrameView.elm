@@ -73,7 +73,9 @@ import Weather
 
 
 type Msg
-    = GotEditWeaponFormUpdate Magnolia.WeaponFrame.EditFormUpdateType
+    = ToggleFrameViewMode
+    | GotPageMsg PageInfoMsg
+    | GotEditWeaponFormUpdate Magnolia.WeaponFrame.EditFormUpdateType
     | GotEditZoneFormUpdate Magnolia.ZoneFrame.EditFormUpdateType
     | GotEditWeaponCategoryFormUpdate Magnolia.WeaponCategoryFrame.EditFormUpdateType
     | GotEditAttributeFormUpdate Magnolia.AttributeFrame.EditFormUpdateType
@@ -86,6 +88,7 @@ type alias FrameEditData f msg =
     { form_definition : FormData.FormDefinition f msg
     , frame_data : f
     , saved_frame_data : Maybe f
+    , table_view_page_info : Table.PageInfo msg
     }
 
 
@@ -105,8 +108,14 @@ type alias FrameEditDatas =
     }
 
 
+type FrameViewMode
+    = List
+    | Edit
+
+
 type alias Model =
     { frame_edit_datas : FrameEditDatas
+    , frame_view_mode : FrameViewMode
     , active_tab : Tab.State
     }
 
@@ -252,6 +261,7 @@ init =
             }
         }
     , active_tab = Tab.customInitialState <| tab_prefix ++ "battle_text_struct_frame"
+    , frame_view_mode = Edit
     }
 
 
@@ -327,6 +337,18 @@ update_frame_edit_datas model fed_getter feds_updater update_edit_form_data form
 update : Model -> Msg -> ( Model, Cmd Msg )
 update model msg =
     case msg of
+        ToggleFrameViewMode ->
+            let
+                new_frame_view_mode =
+                    case model.frame_view_mode of
+                        Edit ->
+                            List
+
+                        List ->
+                            Edit
+            in
+            ( { model | frame_view_mode = new_frame_view_mode }, Cmd.none )
+
         GotEditWeaponFormUpdate form_update_type ->
             ( update_frame_edit_datas
                 model
@@ -408,15 +430,37 @@ type alias TabItemConfig =
     { id : String, link_text : String, header : String, form_edit_view : Html Msg }
 
 
-render_tab_item : TabItemConfig -> Tab.Item Msg
-render_tab_item config =
+build_table_definition : List (FormData.FormField fd msg) -> TableDefinition fd
+build_table_definition form_fields =
+    { title = Just "Frame Table", columns = [] }
+
+
+render_tab_item : Model -> TabItemConfig -> Tab.Item Msg
+render_tab_item model config =
+    let
+        frame_edit_data : FrameEditData WeaponFrame Msg --TODO: make this generic
+        frame_edit_data = model.frame_edit_datas.weapon
+
+        --TODO: figure out how to get the form fields from this so i can build a table.
+        --      maybe it'll be splitting up the form def again so the data is split somewhere
+        form_fields = Magnolia.WeaponFrame.edit_form_definition (Magnolia.WeaponFrame.Name)
+
+        table_def : TableDefinition WeaponFrame
+        table_def = build_table_definition form_fields
+        row_data = [frame_edit_data.frame_data]
+        page_info = Table.PageInfo 0 0 10 (GotPageMsg)
+
+        rendered_tab_content = case model.frame_view_mode of
+            Edit -> config.form_edit_view
+            List -> Table.view table_def row_data frame_edit_data.table_view_page_info
+    in
     Tab.item
         { id = config.id
         , link = Tab.link [] [ text config.link_text ]
         , pane =
             Tab.pane [ Spacing.mt3 ]
                 [ h4 [] [ text config.header ]
-                , config.form_edit_view
+                , rendered_tab_content
                 ]
         }
 
@@ -435,7 +479,7 @@ tabs_view model =
             ]
 
         tab_items =
-            List.map render_tab_item tab_configs
+            List.map (render_tab_item model) tab_configs
     in
     Tab.config GotTabMsg
         |> Tab.items tab_items
@@ -454,7 +498,6 @@ form_data_view frame_edit_data =
     let
         { frame_data, form_definition, saved_frame_data } =
             frame_edit_data
-
     in
     Grid.row [ Row.centerMd ]
         [ Grid.col [ Col.sm11, Col.md8 ]

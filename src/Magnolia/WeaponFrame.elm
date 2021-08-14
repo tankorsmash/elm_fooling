@@ -1,6 +1,6 @@
 module Magnolia.WeaponFrame exposing
     ( BattleRow(..)
-    , EditFormUpdateType
+    , EditFormUpdateType(..)
     , WeaponDamageType(..)
     , WeaponFrame
     , edit_form_definition

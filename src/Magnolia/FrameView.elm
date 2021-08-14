@@ -73,8 +73,7 @@ import Weather
 
 
 type Msg
-    = SubmitFormData
-    | GotEditWeaponFormUpdate Magnolia.WeaponFrame.EditFormUpdateType
+    = GotEditWeaponFormUpdate Magnolia.WeaponFrame.EditFormUpdateType
     | GotEditZoneFormUpdate Magnolia.ZoneFrame.EditFormUpdateType
     | GotEditWeaponCategoryFormUpdate Magnolia.WeaponCategoryFrame.EditFormUpdateType
     | GotEditAttributeFormUpdate Magnolia.AttributeFrame.EditFormUpdateType
@@ -328,27 +327,6 @@ update_frame_edit_datas model fed_getter feds_updater update_edit_form_data form
 update : Model -> Msg -> ( Model, Cmd Msg )
 update model msg =
     case msg of
-        SubmitFormData ->
-            let
-                weapon_fed =
-                    model.frame_edit_datas.weapon
-
-                frame_edit_datas =
-                    model.frame_edit_datas
-
-                frame_data =
-                    weapon_fed.frame_data
-            in
-            ( { model
-                | frame_edit_datas =
-                    { frame_edit_datas
-                        | weapon =
-                            { weapon_fed | saved_frame_data = Just frame_data }
-                    }
-              }
-            , Cmd.none
-            )
-
         GotEditWeaponFormUpdate form_update_type ->
             ( update_frame_edit_datas
                 model
@@ -477,25 +455,11 @@ form_data_view frame_edit_data =
         { frame_data, form_definition, saved_frame_data } =
             frame_edit_data
 
-        rendered_saved_form_data : Html Msg
-        rendered_saved_form_data =
-            case saved_frame_data of
-                Nothing ->
-                    div [] []
-
-                Just saved_weapon_frame_data ->
-                    div []
-                        [ div [] [ text "Saved Form Data" ]
-                        , FormData.render_fields form_definition.fields saved_weapon_frame_data
-                        , br [] []
-                        ]
     in
     Grid.row [ Row.centerMd ]
         [ Grid.col [ Col.sm11, Col.md8 ]
-            [ rendered_saved_form_data
-            , Form.form []
+            [ Form.form []
                 [ FormData.render_fields form_definition.fields frame_data
-                , button_primary SubmitFormData "Submit"
                 ]
             ]
         ]

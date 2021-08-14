@@ -315,10 +315,12 @@ update_frame_edit_datas model fed_getter feds_updater update_edit_form_data form
             fed_getter existing_feds
 
         new_frame_data : frameData
-        new_frame_data = update_edit_form_data existing_fed.frame_data form_update_type
+        new_frame_data =
+            update_edit_form_data existing_fed.frame_data form_update_type
 
         new_fed : FrameEditData frameData msg
-        new_fed = update_single_fed_frame_data existing_fed new_frame_data
+        new_fed =
+            update_single_fed_frame_data existing_fed new_frame_data
     in
     { model | frame_edit_datas = feds_updater existing_feds new_fed }
 
@@ -348,110 +350,52 @@ update model msg =
             )
 
         GotEditWeaponFormUpdate form_update_type ->
-            let
-                feds =
-                    model.frame_edit_datas
-
-                weapon_fed =
-                    feds.weapon
-
-                updater =
-                    Magnolia.WeaponFrame.update_edit_form_data
-
-                new_frame_edit_datas =
-                    { feds
-                        | weapon =
-                            update_frame_edit_data weapon_fed updater form_update_type
-                    }
-            in
-            ( { model | frame_edit_datas = new_frame_edit_datas }
+            ( update_frame_edit_datas
+                model
+                .weapon
+                (\feds new_fed -> { feds | weapon = new_fed })
+                Magnolia.WeaponFrame.update_edit_form_data
+                form_update_type
             , Cmd.none
             )
 
         GotEditArmorFormUpdate form_update_type ->
-            let
-                feds =
-                    model.frame_edit_datas
-
-                armor_fed =
-                    feds.armor
-
-                frame_data =
-                    armor_fed.frame_data
-
-                updater =
-                    Magnolia.ArmorFrame.update_edit_form_data
-
-                new_feds =
-                    { feds | armor = update_frame_edit_data armor_fed updater form_update_type }
-            in
-            ( { model
-                | frame_edit_datas =
-                    new_feds
-              }
+            ( update_frame_edit_datas
+                model
+                .armor
+                (\feds new_fed -> { feds | armor = new_fed })
+                Magnolia.ArmorFrame.update_edit_form_data
+                form_update_type
             , Cmd.none
             )
 
         GotEditZoneFormUpdate form_update_type ->
-            let
-                frame_edit_datas =
-                    model.frame_edit_datas
-
-                zone_fed =
-                    frame_edit_datas.zone
-
-                frame_data =
-                    zone_fed.frame_data
-            in
-            ( { model
-                | frame_edit_datas =
-                    { frame_edit_datas
-                        | zone =
-                            { zone_fed | frame_data = Magnolia.ZoneFrame.update_edit_form_data frame_data form_update_type }
-                    }
-              }
+            ( update_frame_edit_datas
+                model
+                .zone
+                (\feds new_fed -> { feds | zone = new_fed })
+                Magnolia.ZoneFrame.update_edit_form_data
+                form_update_type
             , Cmd.none
             )
 
         GotEditWeaponCategoryFormUpdate form_update_type ->
-            let
-                frame_edit_datas =
-                    model.frame_edit_datas
-
-                weapon_category_fed =
-                    frame_edit_datas.weapon_category
-
-                frame_data =
-                    weapon_category_fed.frame_data
-            in
-            ( { model
-                | frame_edit_datas =
-                    { frame_edit_datas
-                        | weapon_category =
-                            { weapon_category_fed | frame_data = Magnolia.WeaponCategoryFrame.update_edit_form_data frame_data form_update_type }
-                    }
-              }
+            ( update_frame_edit_datas
+                model
+                .weapon_category
+                (\feds new_fed -> { feds | weapon_category = new_fed })
+                Magnolia.WeaponCategoryFrame.update_edit_form_data
+                form_update_type
             , Cmd.none
             )
 
         GotEditAttributeFormUpdate form_update_type ->
-            let
-                frame_edit_datas =
-                    model.frame_edit_datas
-
-                attribute_fed =
-                    frame_edit_datas.attribute
-
-                frame_data =
-                    attribute_fed.frame_data
-            in
-            ( { model
-                | frame_edit_datas =
-                    { frame_edit_datas
-                        | attribute =
-                            { attribute_fed | frame_data = Magnolia.AttributeFrame.update_edit_form_data frame_data form_update_type }
-                    }
-              }
+            ( update_frame_edit_datas
+                model
+                .attribute
+                (\feds new_fed -> { feds | attribute = new_fed })
+                Magnolia.AttributeFrame.update_edit_form_data
+                form_update_type
             , Cmd.none
             )
 

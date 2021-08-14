@@ -269,10 +269,6 @@ update_frame_edit_data frame_edit_data update_edit_form_data form_update_type =
     { frame_edit_data | frame_data = update_edit_form_data frame_data form_update_type }
 
 
-get_frame_data =
-    .frame_data
-
-
 {-| takes a FrameEditDatas and a single FrameEditData and updates the Feds with the single one
 -}
 type alias FedsUpdater frameData msg =
@@ -312,16 +308,19 @@ update_frame_edit_datas :
     -> Model
 update_frame_edit_datas model fed_getter feds_updater update_edit_form_data form_update_type =
     let
-        frame_edit_datas =
+        existing_feds =
             model.frame_edit_datas
 
         existing_fed =
-            fed_getter frame_edit_datas
+            fed_getter existing_feds
 
-        new_fed =
-            update_frame_edit_data existing_fed update_edit_form_data form_update_type
+        new_frame_data : frameData
+        new_frame_data = update_edit_form_data existing_fed.frame_data form_update_type
+
+        new_fed : FrameEditData frameData msg
+        new_fed = update_single_fed_frame_data existing_fed new_frame_data
     in
-    { model | frame_edit_datas = feds_updater frame_edit_datas new_fed }
+    { model | frame_edit_datas = feds_updater existing_feds new_fed }
 
 
 update : Model -> Msg -> ( Model, Cmd Msg )

@@ -429,32 +429,57 @@ update model msg =
                 updated_page_info =
                     update_page_info old_page_info page_msg
             in
-            ( {model | frame_edit_datas = set_page_info model.frame_edit_datas frame_type updated_page_info}, Cmd.none )
+            ( { model | frame_edit_datas = set_page_info model.frame_edit_datas frame_type updated_page_info }, Cmd.none )
 
 
 get_page_info : FrameEditDatas -> FrameType -> Table.PageInfo Msg
 get_page_info feds frame_type =
     case frame_type of
-        WeaponFrame -> feds.weapon.table_view_page_info
-        ArmorFrame -> feds.armor.table_view_page_info
-        ZoneFrame -> feds.zone.table_view_page_info
-        WeaponCategoryFrame -> feds.weapon_category.table_view_page_info
-        AttributeFrame -> feds.attribute.table_view_page_info
-        BattleTextStructFrame -> feds.battle_text_struct.table_view_page_info
+        WeaponFrame ->
+            feds.weapon.table_view_page_info
+
+        ArmorFrame ->
+            feds.armor.table_view_page_info
+
+        ZoneFrame ->
+            feds.zone.table_view_page_info
+
+        WeaponCategoryFrame ->
+            feds.weapon_category.table_view_page_info
+
+        AttributeFrame ->
+            feds.attribute.table_view_page_info
+
+        BattleTextStructFrame ->
+            feds.battle_text_struct.table_view_page_info
+
 
 update_only_page_info : FrameEditData frameData Msg -> Table.PageInfo Msg -> FrameEditData frameData Msg
 update_only_page_info old_fed new_page_info =
     { old_fed | table_view_page_info = new_page_info }
 
+
 set_page_info : FrameEditDatas -> FrameType -> Table.PageInfo Msg -> FrameEditDatas
 set_page_info feds frame_type new_page_info =
     case frame_type of
-        WeaponFrame -> { feds | weapon = update_only_page_info feds.weapon new_page_info }
-        ArmorFrame -> { feds | armor = update_only_page_info feds.armor new_page_info }
-        ZoneFrame -> { feds | zone = update_only_page_info feds.zone new_page_info }
-        WeaponCategoryFrame -> { feds | weapon_category = update_only_page_info feds.weapon_category new_page_info }
-        AttributeFrame -> { feds | attribute = update_only_page_info feds.attribute new_page_info }
-        BattleTextStructFrame -> { feds | battle_text_struct = update_only_page_info feds.battle_text_struct new_page_info }
+        WeaponFrame ->
+            { feds | weapon = update_only_page_info feds.weapon new_page_info }
+
+        ArmorFrame ->
+            { feds | armor = update_only_page_info feds.armor new_page_info }
+
+        ZoneFrame ->
+            { feds | zone = update_only_page_info feds.zone new_page_info }
+
+        WeaponCategoryFrame ->
+            { feds | weapon_category = update_only_page_info feds.weapon_category new_page_info }
+
+        AttributeFrame ->
+            { feds | attribute = update_only_page_info feds.attribute new_page_info }
+
+        BattleTextStructFrame ->
+            { feds | battle_text_struct = update_only_page_info feds.battle_text_struct new_page_info }
+
 
 bootstrap_button type_ on_click text_ =
     Button.button
@@ -518,7 +543,7 @@ render_tab_item model config =
         , link = Tab.link [] [ text config.link_text ]
         , pane =
             Tab.pane [ Spacing.mt3 ]
-                [ h4 [] [ text config.header , button_primary (ToggleFrameViewMode) "Toggle View"]
+                [ h4 [] [ text config.header, button_primary ToggleFrameViewMode "Toggle View" ]
                 , rendered_tab_content
                 ]
         }

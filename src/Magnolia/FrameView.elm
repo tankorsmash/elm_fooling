@@ -656,36 +656,41 @@ form_field_to_column idx form_field =
 --
 
 
-render_tab_item : Model -> TabItemConfig -> Tab.Item Msg
-render_tab_item model config =
+render_tab_item :
+    Model
+    -> TabItemConfig
+    -> FrameEditData fd Msg
+    -> FormData.FormDefinition fd Msg
+    -> Tab.Item Msg
+render_tab_item model config frame_edit_data form_definition =
     let
         frame_type : FrameType
-        frame_type = config.frame_type
+        frame_type =
+            config.frame_type
 
         --TODO: make this generic
-        frame_edit_data : FrameEditData WeaponFrame Msg
-        frame_edit_data =
-            model.frame_edit_datas.weapon
-
-        form_definition : FormData.FormDefinition WeaponFrame GotFrameEditFormUpdateMsg
-        form_definition =
-            Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate
-
-        form_fields : List (FormData.FormField WeaponFrame GotFrameEditFormUpdateMsg)
+        -- frame_edit_data : FrameEditData WeaponFrame Msg
+        -- frame_edit_data =
+        --     model.frame_edit_datas.weapon
+        -- form_definition : FormData.FormDefinition WeaponFrame GotFrameEditFormUpdateMsg
+        -- form_definition =
+        --     Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate
+        -- form_fields : List (FormData.FormField WeaponFrame GotFrameEditFormUpdateMsg)
         form_fields =
             form_definition.fields
 
-        table_definition : TableDefinition WeaponFrame
+        -- table_definition : TableDefinition WeaponFrame
         table_definition =
             build_table_definition form_fields
 
-        row_data : List WeaponFrame
+        -- row_data : List WeaponFrame
         row_data =
             frame_edit_data.all_frames
 
         page_info =
             Table.new_page_info <| GotPageMsg frame_type
 
+        rendered_tab_content : Html Msg
         rendered_tab_content =
             case model.frame_view_mode of
                 Edit ->
@@ -705,6 +710,14 @@ render_tab_item model config =
         }
 
 
+do_render_tab : Model -> TabItemConfig -> Tab.Item Msg
+do_render_tab model config =
+    render_tab_item model
+        config
+        model.frame_edit_datas.weapon
+        (Magnolia.WeaponFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponFormUpdate))
+
+
 tabs_view : Model -> Html Msg
 tabs_view model =
     let
@@ -720,7 +733,7 @@ tabs_view model =
 
         tab_items : List (Tab.Item Msg)
         tab_items =
-            List.map (render_tab_item model) tab_configs
+            List.map (do_render_tab model) tab_configs
     in
     Tab.config GotTabMsg
         |> Tab.items tab_items

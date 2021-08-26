@@ -71,16 +71,18 @@ import Url.Parser exposing ((</>), Parser, int, map, oneOf, parse, s, string)
 import Utils exposing (add_class)
 import Weather
 
-
-type Msg
-    = ToggleFrameViewMode
-    | GotPageMsg FrameType PageInfoMsg
-    | GotEditWeaponFormUpdate Magnolia.WeaponFrame.EditFormUpdateType
+type GotFrameEditFormUpdateMsg
+    = GotEditWeaponFormUpdate Magnolia.WeaponFrame.EditFormUpdateType
     | GotEditZoneFormUpdate Magnolia.ZoneFrame.EditFormUpdateType
     | GotEditWeaponCategoryFormUpdate Magnolia.WeaponCategoryFrame.EditFormUpdateType
     | GotEditAttributeFormUpdate Magnolia.AttributeFrame.EditFormUpdateType
     | GotEditBattleTextStructFormUpdate Magnolia.BattleTextStructFrame.EditFormUpdateType
     | GotEditArmorFormUpdate Magnolia.ArmorFrame.EditFormUpdateType
+
+type Msg
+    = ToggleFrameViewMode
+    | GotFrameEditFormUpdate GotFrameEditFormUpdateMsg
+    | GotPageMsg FrameType PageInfoMsg
     | GotTabMsg Tab.State
 
 
@@ -233,37 +235,37 @@ init =
     in
     { frame_edit_datas =
         { weapon =
-            { form_definition = Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate
+            { form_definition = Magnolia.WeaponFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponFormUpdate)
             , frame_data = weapon_frame_data
             , saved_frame_data = saved_weapon_frame_data
             , table_view_page_info = Table.PageInfo 0 0 10 (GotPageMsg WeaponFrame)
             }
         , armor =
-            { form_definition = Magnolia.ArmorFrame.edit_form_definition GotEditArmorFormUpdate
+            { form_definition = Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditArmorFormUpdate)
             , frame_data = armor_frame_data
             , saved_frame_data = saved_armor_frame_data
             , table_view_page_info = Table.PageInfo 0 0 10 (GotPageMsg ArmorFrame)
             }
         , zone =
-            { form_definition = Magnolia.ZoneFrame.edit_form_definition GotEditZoneFormUpdate
+            { form_definition = Magnolia.ZoneFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditZoneFormUpdate)
             , frame_data = zone_frame_data
             , saved_frame_data = saved_zone_frame_data
             , table_view_page_info = Table.PageInfo 0 0 10 (GotPageMsg ZoneFrame)
             }
         , weapon_category =
-            { form_definition = Magnolia.WeaponCategoryFrame.edit_form_definition GotEditWeaponCategoryFormUpdate
+            { form_definition = Magnolia.WeaponCategoryFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponCategoryFormUpdate)
             , frame_data = weapon_category_frame_data
             , saved_frame_data = saved_weapon_category_frame_data
             , table_view_page_info = Table.PageInfo 0 0 10 (GotPageMsg WeaponCategoryFrame)
             }
         , attribute =
-            { form_definition = Magnolia.AttributeFrame.edit_form_definition GotEditAttributeFormUpdate
+            { form_definition = Magnolia.AttributeFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditAttributeFormUpdate)
             , frame_data = attribute_frame_data
             , saved_frame_data = saved_attribute_frame_data
             , table_view_page_info = Table.PageInfo 0 0 10 (GotPageMsg AttributeFrame)
             }
         , battle_text_struct =
-            { form_definition = Magnolia.BattleTextStructFrame.edit_form_definition GotEditBattleTextStructFormUpdate
+            { form_definition = Magnolia.BattleTextStructFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditBattleTextStructFormUpdate)
             , frame_data = battle_text_struct_frame_data
             , saved_frame_data = saved_battle_text_struct_frame_data
             , table_view_page_info = Table.PageInfo 0 0 10 (GotPageMsg BattleTextStructFrame)
@@ -342,22 +344,9 @@ update_frame_edit_datas model fed_getter feds_updater update_edit_form_data form
     in
     { model | frame_edit_datas = feds_updater existing_feds new_fed }
 
-
-update : Model -> Msg -> ( Model, Cmd Msg )
-update model msg =
-    case msg of
-        ToggleFrameViewMode ->
-            let
-                new_frame_view_mode =
-                    case model.frame_view_mode of
-                        Edit ->
-                            List
-
-                        List ->
-                            Edit
-            in
-            ( { model | frame_view_mode = new_frame_view_mode }, Cmd.none )
-
+update_got_frame_edit_form_update : Model -> GotFrameEditFormUpdateMsg -> (Model, Cmd Msg)
+update_got_frame_edit_form_update model sub_msg =
+    case sub_msg of
         GotEditWeaponFormUpdate form_update_type ->
             ( update_frame_edit_datas
                 model
@@ -417,6 +406,25 @@ update model msg =
                 form_update_type
             , Cmd.none
             )
+
+
+update : Model -> Msg -> ( Model, Cmd Msg )
+update model msg =
+    case msg of
+        ToggleFrameViewMode ->
+            let
+                new_frame_view_mode =
+                    case model.frame_view_mode of
+                        Edit ->
+                            List
+
+                        List ->
+                            Edit
+            in
+            ( { model | frame_view_mode = new_frame_view_mode }, Cmd.none )
+
+        GotFrameEditFormUpdate sub_msg ->
+            update_got_frame_edit_form_update model sub_msg
 
         GotTabMsg new_state ->
             ( { model | active_tab = new_state }, Cmd.none )

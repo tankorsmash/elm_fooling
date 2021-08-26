@@ -654,10 +654,7 @@ render_tab_item model config =
         frame_edit_data =
             model.frame_edit_datas.weapon
 
-        --TODO: figure out how to get the form fields from this so i can build a table.
-        --      maybe it'll be splitting up the form def again so the data is split somewhere
         form_def =
-            -- Magnolia.WeaponFrame.edit_form_definition Magnolia.WeaponFrame.Name
             Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate
 
         form_fields =

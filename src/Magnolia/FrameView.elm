@@ -654,9 +654,11 @@ render_tab_item model config =
         frame_edit_data =
             model.frame_edit_datas.weapon
 
+        form_def : FormData.FormDefinition WeaponFrame GotFrameEditFormUpdateMsg
         form_def =
             Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate
 
+        form_fields : List (FormData.FormField WeaponFrame GotFrameEditFormUpdateMsg)
         form_fields =
             form_def.fields
 
@@ -664,6 +666,7 @@ render_tab_item model config =
         table_def =
             build_table_definition form_fields
 
+        row_data : List WeaponFrame
         row_data =
             frame_edit_data.all_frames
 

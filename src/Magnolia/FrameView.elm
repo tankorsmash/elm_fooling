@@ -659,6 +659,9 @@ form_field_to_column idx form_field =
 render_tab_item : Model -> TabItemConfig -> Tab.Item Msg
 render_tab_item model config =
     let
+        frame_type : FrameType
+        frame_type = config.frame_type
+
         --TODO: make this generic
         frame_edit_data : FrameEditData WeaponFrame Msg
         frame_edit_data =
@@ -681,7 +684,7 @@ render_tab_item model config =
             frame_edit_data.all_frames
 
         page_info =
-            Table.new_page_info <| GotPageMsg WeaponFrame
+            Table.new_page_info <| GotPageMsg frame_type
 
         rendered_tab_content =
             case model.frame_view_mode of
@@ -715,6 +718,7 @@ tabs_view model =
             , { id = tab_prefix ++ "battle_text_struct_frame", link_text = "BattleTextStructFrame", header = "Edit BattleTextStructFrame", form_edit_view = form_data_view model.frame_edit_datas.battle_text_struct, frame_type = BattleTextStructFrame }
             ]
 
+        tab_items : List (Tab.Item Msg)
         tab_items =
             List.map (render_tab_item model) tab_configs
     in

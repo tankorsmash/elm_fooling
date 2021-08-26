@@ -328,8 +328,8 @@ init =
             , table_view_page_info = Table.new_page_info (GotPageMsg BattleTextStructFrame)
             }
         }
-    , active_tab = Tab.customInitialState <| tab_prefix ++ "battle_text_struct_frame"
-    , frame_view_mode = Edit
+    , active_tab = Tab.customInitialState <| tab_prefix ++ "weapon_frame"
+    , frame_view_mode = List
     }
 
 

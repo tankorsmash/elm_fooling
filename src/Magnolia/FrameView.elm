@@ -238,37 +238,37 @@ init =
             { form_definition = Magnolia.WeaponFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponFormUpdate)
             , frame_data = weapon_frame_data
             , saved_frame_data = saved_weapon_frame_data
-            , table_view_page_info = Table.PageInfo 0 0 10 (GotPageMsg WeaponFrame)
+            , table_view_page_info = Table.new_page_info (GotPageMsg WeaponFrame)
             }
         , armor =
             { form_definition = Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditArmorFormUpdate)
             , frame_data = armor_frame_data
             , saved_frame_data = saved_armor_frame_data
-            , table_view_page_info = Table.PageInfo 0 0 10 (GotPageMsg ArmorFrame)
+            , table_view_page_info = Table.new_page_info (GotPageMsg ArmorFrame)
             }
         , zone =
             { form_definition = Magnolia.ZoneFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditZoneFormUpdate)
             , frame_data = zone_frame_data
             , saved_frame_data = saved_zone_frame_data
-            , table_view_page_info = Table.PageInfo 0 0 10 (GotPageMsg ZoneFrame)
+            , table_view_page_info = Table.new_page_info (GotPageMsg ZoneFrame)
             }
         , weapon_category =
             { form_definition = Magnolia.WeaponCategoryFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponCategoryFormUpdate)
             , frame_data = weapon_category_frame_data
             , saved_frame_data = saved_weapon_category_frame_data
-            , table_view_page_info = Table.PageInfo 0 0 10 (GotPageMsg WeaponCategoryFrame)
+            , table_view_page_info = Table.new_page_info (GotPageMsg WeaponCategoryFrame)
             }
         , attribute =
             { form_definition = Magnolia.AttributeFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditAttributeFormUpdate)
             , frame_data = attribute_frame_data
             , saved_frame_data = saved_attribute_frame_data
-            , table_view_page_info = Table.PageInfo 0 0 10 (GotPageMsg AttributeFrame)
+            , table_view_page_info = Table.new_page_info (GotPageMsg AttributeFrame)
             }
         , battle_text_struct =
             { form_definition = Magnolia.BattleTextStructFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditBattleTextStructFormUpdate)
             , frame_data = battle_text_struct_frame_data
             , saved_frame_data = saved_battle_text_struct_frame_data
-            , table_view_page_info = Table.PageInfo 0 0 10 (GotPageMsg BattleTextStructFrame)
+            , table_view_page_info = Table.new_page_info (GotPageMsg BattleTextStructFrame)
             }
         }
     , active_tab = Tab.customInitialState <| tab_prefix ++ "battle_text_struct_frame"
@@ -536,7 +536,7 @@ render_tab_item model config =
             [ frame_edit_data.frame_data ]
 
         page_info =
-            Table.PageInfo 0 0 10 <| GotPageMsg WeaponFrame
+            Table.new_page_info <| GotPageMsg WeaponFrame
 
         rendered_tab_content =
             case model.frame_view_mode of

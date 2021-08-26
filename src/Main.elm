@@ -358,13 +358,13 @@ init _ url navKey =
             Weather.CurrentWeatherResponse "" current_weather_main
 
         post_datas_page_info =
-            Table.PageInfo 0 0 10 (GotPageMsg PostDatasTable)
+            Table.new_page_info (GotPageMsg PostDatasTable)
 
         reddit_listing_page_info =
-            Table.PageInfo 0 0 10 (GotPageMsg RedditListingTable)
+            Table.new_page_info (GotPageMsg RedditListingTable)
 
         dota_hero_stats_page_info =
-            Table.PageInfo 0 0 10 (GotPageMsg DotaHeroStatsTable)
+            Table.new_page_info (GotPageMsg DotaHeroStatsTable)
 
         initial_tab =
             FrameViewTab

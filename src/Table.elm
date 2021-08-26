@@ -4,6 +4,7 @@ module Table exposing
     , PageInfo
     , PageInfoMsg
     , TableDefinition
+    , new_page_info
     , decrement_page_idx
     , increment_page_idx
     , initialize_page_info
@@ -167,6 +168,9 @@ update_page_info page_info page_msg =
         ChangePageMsg page_idx ->
             change_page_idx page_info page_idx
 
+
+new_page_info : (PageInfoMsg -> msg) -> PageInfo msg
+new_page_info handler = PageInfo 0 0 10 handler
 
 {-| Sets the page count based on per\_page and the rows passed in
 -}

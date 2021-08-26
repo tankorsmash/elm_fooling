@@ -373,6 +373,9 @@ init _ url navKey =
         dota_model =
             { player_data = Nothing, account_id = 24801519, hero_stats = Nothing }
 
+        ( frame_view_model, frame_view_cmds ) =
+            FrameView.init
+
         initial_model : Model
         initial_model =
             { count = 0
@@ -402,13 +405,14 @@ init _ url navKey =
             -- , weapon_edit_form_definition = Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate
             , dota_model = dota_model
             , dota_hero_stats_page_info = dota_hero_stats_page_info
-            , frame_view_model = FrameView.init
+            , frame_view_model = frame_view_model
             }
 
         existingCmds =
             Cmd.batch
                 [ --Task.perform AdjustTimeZone Time.here,
-                  navbarCmd
+                  frame_view_cmds
+                , navbarCmd
 
                 -- , Task.perform OnPageLoad Time.now
                 -- , Task.perform (\_ -> DotaDownloadPlayerData 24801519) Time.now

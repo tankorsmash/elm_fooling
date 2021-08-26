@@ -186,7 +186,7 @@ tab_prefix =
     "frame_view_tab__"
 
 
-init : Model
+init : ( Model, Cmd msg )
 init =
     let
         weapon_frame_data : WeaponFrame
@@ -288,54 +288,59 @@ init =
         saved_battle_text_struct_frame_data : Maybe BattleTextStructFrame
         saved_battle_text_struct_frame_data =
             Nothing
+
+        init_model =
+            { frame_edit_datas =
+                { weapon =
+                    { form_definition = Magnolia.WeaponFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponFormUpdate)
+                    , frame_data = weapon_frame_data
+                    , all_frames = []
+                    , saved_frame_data = saved_weapon_frame_data
+                    , table_view_page_info = Table.new_page_info (GotPageMsg WeaponFrame)
+                    }
+                , armor =
+                    { form_definition = Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditArmorFormUpdate)
+                    , frame_data = armor_frame_data
+                    , all_frames = []
+                    , saved_frame_data = saved_armor_frame_data
+                    , table_view_page_info = Table.new_page_info (GotPageMsg ArmorFrame)
+                    }
+                , zone =
+                    { form_definition = Magnolia.ZoneFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditZoneFormUpdate)
+                    , frame_data = zone_frame_data
+                    , all_frames = []
+                    , saved_frame_data = saved_zone_frame_data
+                    , table_view_page_info = Table.new_page_info (GotPageMsg ZoneFrame)
+                    }
+                , weapon_category =
+                    { form_definition = Magnolia.WeaponCategoryFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponCategoryFormUpdate)
+                    , frame_data = weapon_category_frame_data
+                    , all_frames = []
+                    , saved_frame_data = saved_weapon_category_frame_data
+                    , table_view_page_info = Table.new_page_info (GotPageMsg WeaponCategoryFrame)
+                    }
+                , attribute =
+                    { form_definition = Magnolia.AttributeFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditAttributeFormUpdate)
+                    , frame_data = attribute_frame_data
+                    , all_frames = []
+                    , saved_frame_data = saved_attribute_frame_data
+                    , table_view_page_info = Table.new_page_info (GotPageMsg AttributeFrame)
+                    }
+                , battle_text_struct =
+                    { form_definition = Magnolia.BattleTextStructFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditBattleTextStructFormUpdate)
+                    , frame_data = battle_text_struct_frame_data
+                    , all_frames = []
+                    , saved_frame_data = saved_battle_text_struct_frame_data
+                    , table_view_page_info = Table.new_page_info (GotPageMsg BattleTextStructFrame)
+                    }
+                }
+            , active_tab = Tab.customInitialState <| tab_prefix ++ "weapon_frame"
+            , frame_view_mode = List
+            }
+
+        init_cmds = Cmd.none
     in
-    { frame_edit_datas =
-        { weapon =
-            { form_definition = Magnolia.WeaponFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponFormUpdate)
-            , frame_data = weapon_frame_data
-            , all_frames = []
-            , saved_frame_data = saved_weapon_frame_data
-            , table_view_page_info = Table.new_page_info (GotPageMsg WeaponFrame)
-            }
-        , armor =
-            { form_definition = Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditArmorFormUpdate)
-            , frame_data = armor_frame_data
-            , all_frames = []
-            , saved_frame_data = saved_armor_frame_data
-            , table_view_page_info = Table.new_page_info (GotPageMsg ArmorFrame)
-            }
-        , zone =
-            { form_definition = Magnolia.ZoneFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditZoneFormUpdate)
-            , frame_data = zone_frame_data
-            , all_frames = []
-            , saved_frame_data = saved_zone_frame_data
-            , table_view_page_info = Table.new_page_info (GotPageMsg ZoneFrame)
-            }
-        , weapon_category =
-            { form_definition = Magnolia.WeaponCategoryFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponCategoryFormUpdate)
-            , frame_data = weapon_category_frame_data
-            , all_frames = []
-            , saved_frame_data = saved_weapon_category_frame_data
-            , table_view_page_info = Table.new_page_info (GotPageMsg WeaponCategoryFrame)
-            }
-        , attribute =
-            { form_definition = Magnolia.AttributeFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditAttributeFormUpdate)
-            , frame_data = attribute_frame_data
-            , all_frames = []
-            , saved_frame_data = saved_attribute_frame_data
-            , table_view_page_info = Table.new_page_info (GotPageMsg AttributeFrame)
-            }
-        , battle_text_struct =
-            { form_definition = Magnolia.BattleTextStructFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditBattleTextStructFormUpdate)
-            , frame_data = battle_text_struct_frame_data
-            , all_frames = []
-            , saved_frame_data = saved_battle_text_struct_frame_data
-            , table_view_page_info = Table.new_page_info (GotPageMsg BattleTextStructFrame)
-            }
-        }
-    , active_tab = Tab.customInitialState <| tab_prefix ++ "weapon_frame"
-    , frame_view_mode = List
-    }
+    ( init_model, init_cmds )
 
 
 update_frame_edit_data :

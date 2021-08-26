@@ -517,6 +517,13 @@ update model msg =
 
                 weapon_fed =
                     feds.weapon
+                new_page_info =
+                    case new_weapon_frames of
+                        Just weapon_frames ->
+                            Table.initialize_page_info weapon_fed.table_view_page_info weapon_frames
+
+                        Nothing ->
+                            weapon_fed.table_view_page_info
 
                 new_weapon_fed =
                     { weapon_fed
@@ -527,18 +534,12 @@ update model msg =
 
                                 Nothing ->
                                     weapon_fed.all_frames
+                        , table_view_page_info = new_page_info
                     }
 
                 new_feds =
                     { feds | weapon = new_weapon_fed }
 
-                -- dota_weapon_frames_page_info =
-                --     case new_weapon_frames of
-                --         Just weapon_frames ->
-                --             Table.initialize_page_info model.dota_weapon_frames_page_info weapon_frames
-                --
-                --         Nothing ->
-                --             model.dota_weapon_frames_page_info
             in
             ( { model
                 | frame_edit_datas = new_feds

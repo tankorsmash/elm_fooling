@@ -444,9 +444,8 @@ update_got_downloaded_all_frames model sub_msg =
     case sub_msg of
         DownloadedAllWeaponFrames response ->
             let
-                _ =
-                    Debug.log "Received a weapon frames response: " response
-
+                -- _ =
+                --     Debug.log "Received a weapon frames response: " response
                 new_weapon_frames =
                     case response of
                         Ok weapon_frames ->
@@ -739,12 +738,42 @@ tabs_view model =
     let
         tab_configs : List TabItemConfig
         tab_configs =
-            [ { id = tab_prefix ++ "weapon_frame", link_text = "WeaponFrame", header = "Edit WeaponFrame", form_edit_view = form_data_view model.frame_edit_datas.weapon, frame_type = WeaponFrame }
-            , { id = tab_prefix ++ "armor_frame", link_text = "ArmorFrame", header = "Edit ArmorFrame", form_edit_view = form_data_view model.frame_edit_datas.armor, frame_type = ArmorFrame }
-            , { id = tab_prefix ++ "zone_frame", link_text = "ZoneFrame", header = "Edit ZoneFrame", form_edit_view = form_data_view model.frame_edit_datas.zone, frame_type = ZoneFrame }
-            , { id = tab_prefix ++ "weapon_category_frame", link_text = "WeaponCategoryFrame", header = "Edit WeaponCategoryFrame", form_edit_view = form_data_view model.frame_edit_datas.weapon_category, frame_type = WeaponCategoryFrame }
-            , { id = tab_prefix ++ "attribute_frame", link_text = "AttributeFrame", header = "Edit AttributeFrame", form_edit_view = form_data_view model.frame_edit_datas.attribute, frame_type = AttributeFrame }
-            , { id = tab_prefix ++ "battle_text_struct_frame", link_text = "BattleTextStructFrame", header = "Edit BattleTextStructFrame", form_edit_view = form_data_view model.frame_edit_datas.battle_text_struct, frame_type = BattleTextStructFrame }
+            [ { id = tab_prefix ++ "weapon_frame"
+              , link_text = "WeaponFrame"
+              , header = "Edit WeaponFrame"
+              , form_edit_view = form_data_view model.frame_edit_datas.weapon
+              , frame_type = WeaponFrame
+              }
+            , { id = tab_prefix ++ "armor_frame"
+              , link_text = "ArmorFrame"
+              , header = "Edit ArmorFrame"
+              , form_edit_view = form_data_view model.frame_edit_datas.armor
+              , frame_type = ArmorFrame
+              }
+            , { id = tab_prefix ++ "zone_frame"
+              , link_text = "ZoneFrame"
+              , header = "Edit ZoneFrame"
+              , form_edit_view = form_data_view model.frame_edit_datas.zone
+              , frame_type = ZoneFrame
+              }
+            , { id = tab_prefix ++ "weapon_category_frame"
+              , link_text = "WeaponCategoryFrame"
+              , header = "Edit WeaponCategoryFrame"
+              , form_edit_view = form_data_view model.frame_edit_datas.weapon_category
+              , frame_type = WeaponCategoryFrame
+              }
+            , { id = tab_prefix ++ "attribute_frame"
+              , link_text = "AttributeFrame"
+              , header = "Edit AttributeFrame"
+              , form_edit_view = form_data_view model.frame_edit_datas.attribute
+              , frame_type = AttributeFrame
+              }
+            , { id = tab_prefix ++ "battle_text_struct_frame"
+              , link_text = "BattleTextStructFrame"
+              , header = "Edit BattleTextStructFrame"
+              , form_edit_view = form_data_view model.frame_edit_datas.battle_text_struct
+              , frame_type = BattleTextStructFrame
+              }
             ]
 
         tab_items : List (Tab.Item Msg)

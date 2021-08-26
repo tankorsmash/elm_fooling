@@ -2,7 +2,7 @@ port module Reddit exposing (..)
 
 import Http
 import Json.Decode as Decode exposing (Decoder, field, int, list, string)
-import Json.Decode.Pipeline exposing (optional, optionalAt, required, requiredAt, hardcoded)
+import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
 import Result
 
 
@@ -12,6 +12,7 @@ import Result
 
 root_json_server_url =
     "http://localhost:5021/"
+
 
 root_reddit_url =
     "http://old.reddit.com/"
@@ -24,11 +25,14 @@ type alias Thing a =
 type alias ListingWrapper =
     { kind : String, data : Listing }
 
+
 type alias Listing =
     { before : String, after : String, children : List SubmissionWrapper }
 
+
 type alias SubmissionWrapper =
     { kind : String, data : Submission }
+
 
 type alias Submission =
     { permalink : String
@@ -38,7 +42,10 @@ type alias Submission =
     , url : String
     }
 
+
 port reddit_send : String -> Cmd msg
+
+
 port reddit_receive : (String -> msg) -> Sub msg
 
 
@@ -48,6 +55,7 @@ download_subreddit_posts subreddit the_msg =
         { url = root_reddit_url ++ "r/" ++ subreddit ++ "/.json?jsonp=jsonpCallback"
         , expect = Http.expectJson the_msg decode_listing_wrapper
         }
+
 
 download_reddit_posts : (Result Http.Error ListingWrapper -> msg) -> Cmd msg
 download_reddit_posts the_msg =
@@ -61,11 +69,13 @@ subreddit_root_url : String -> String
 subreddit_root_url subreddit =
     root_reddit_url ++ "r/" ++ subreddit
 
+
 decode_submission_wrapper : Decoder SubmissionWrapper
 decode_submission_wrapper =
     Decode.succeed SubmissionWrapper
         |> required "kind" string
         |> required "data" decode_submission
+
 
 decode_submission : Decoder Submission
 decode_submission =
@@ -81,7 +91,7 @@ decode_listing_wrapper : Decoder ListingWrapper
 decode_listing_wrapper =
     Decode.succeed ListingWrapper
         |> required "kind" string
-        |> required "data" (decode_listing)
+        |> required "data" decode_listing
 
 
 decode_listing : Decoder Listing

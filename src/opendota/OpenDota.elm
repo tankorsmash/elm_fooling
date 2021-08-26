@@ -13,6 +13,7 @@ root_json_server_url =
 root_steam_cdn_url =
     "https://steamcdn-a.akamaihd.net/"
 
+
 root_url : String
 root_url =
     "https://api.opendota.com/api/"

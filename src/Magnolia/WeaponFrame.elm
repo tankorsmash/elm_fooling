@@ -3,9 +3,9 @@ module Magnolia.WeaponFrame exposing
     , EditFormUpdateType(..)
     , WeaponDamageType(..)
     , WeaponFrame
+    , battle_row_type_from_int
     , edit_form_definition
     , update_edit_form_data
-    , battle_row_type_from_int
     , weapon_damage_type_from_int
     )
 

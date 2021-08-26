@@ -1,7 +1,8 @@
 module Magnolia.FrameView exposing (Model, Msg, init, update, view)
 
-import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
-import Json.Decode exposing (Decoder, at, field, list, string, int)
+-- import Json.Encode exposing (string)
+-- import Url.Parser exposing ((</>), Parser, int, map, oneOf, parse, s, string)
+
 import Bootstrap.Button as Button
 import Bootstrap.CDN as CDN
 import Bootstrap.Card as Card
@@ -52,14 +53,14 @@ import Html
 import Html.Attributes exposing (attribute, classList, href, property, src, style, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
-import Json.Decode exposing (Decoder, at, field, list, string)
--- import Json.Encode exposing (string)
+import Json.Decode exposing (Decoder, at, field, int, list, string)
+import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
 import List
 import Magnolia.ArmorFrame exposing (ArmorFrame)
 import Magnolia.AttributeFrame exposing (AttributeFrame)
 import Magnolia.BattleTextStructFrame exposing (BattleTextStructFrame)
 import Magnolia.WeaponCategoryFrame exposing (WeaponCategoryFrame)
-import Magnolia.WeaponFrame exposing (WeaponFrame, BattleRow(..), WeaponDamageType(..), battle_row_type_from_int, weapon_damage_type_from_int)
+import Magnolia.WeaponFrame exposing (BattleRow(..), WeaponDamageType(..), WeaponFrame, battle_row_type_from_int, weapon_damage_type_from_int)
 import Magnolia.ZoneFrame exposing (ZoneFrame)
 import OpenDota.OpenDota as OpenDota
 import PostData exposing (PostData)
@@ -69,7 +70,6 @@ import Table exposing (ColumnDef, ColumnType(..), PageInfoMsg, TableDefinition, 
 import Task
 import Time
 import Url
--- import Url.Parser exposing ((</>), Parser, int, map, oneOf, parse, s, string)
 import Utils exposing (add_class, root_json_server_url)
 import Weather
 
@@ -91,12 +91,14 @@ type Msg
     | GotPageMsg FrameType PageInfoMsg
     | GotTabMsg Tab.State
 
+
 decode_battle_row : Decoder Magnolia.WeaponFrame.BattleRow
 decode_battle_row =
     -- Json.Decode.succeed Magnolia.WeaponFrame.BattleRow
     int |> Json.Decode.andThen (Json.Decode.succeed << battle_row_type_from_int)
 
-decode_weapon_damage_type: Decoder Magnolia.WeaponFrame.WeaponDamageType
+
+decode_weapon_damage_type : Decoder Magnolia.WeaponFrame.WeaponDamageType
 decode_weapon_damage_type =
     -- Json.Decode.succeed Magnolia.WeaponFrame.WeaponDamageType
     int |> Json.Decode.andThen (Json.Decode.succeed << weapon_damage_type_from_int)
@@ -110,7 +112,6 @@ decode_weapon_frame =
         |> required "choice_id" int
         |> required "pretty_name" string
         |> required "description" string
-
         -- |> required- , affects_morale', prettyName: "Affects Morale (0, 1)", type: 'hidden'},
         |> required "frame_image_path" string
         |> required "battle_row_type" decode_battle_row
@@ -121,8 +122,11 @@ decode_weapon_frame =
         |> required "rarity_type" int
         |> required "carry_weight" int
 
+
 decode_weapon_frames : Decoder (List WeaponFrame)
-decode_weapon_frames = list decode_weapon_frame
+decode_weapon_frames =
+    list decode_weapon_frame
+
 
 download_weapon_frames : (Result Http.Error (List WeaponFrame) -> msg) -> Cmd msg
 download_weapon_frames the_msg =
@@ -135,6 +139,7 @@ download_weapon_frames the_msg =
         { url = url
         , expect = Http.expectJson the_msg decode_weapon_frames
         }
+
 
 type alias FrameEditData f msg =
     { form_definition : FormData.FormDefinition f msg
@@ -485,7 +490,7 @@ update model msg =
             update_got_frame_edit_form_update model sub_msg
 
         DoDownloadWeaponFrames ->
-            (model, download_weapon_frames GotDownloadedWeaponFrames)
+            ( model, download_weapon_frames GotDownloadedWeaponFrames )
 
         GotDownloadedWeaponFrames response ->
             let
@@ -504,14 +509,22 @@ update model msg =
                             in
                             Nothing
 
-                feds = model.frame_edit_datas
+                feds =
+                    model.frame_edit_datas
 
-                weapon_fed = feds.weapon
+                weapon_fed =
+                    feds.weapon
 
-                new_weapon_fed = {weapon_fed | all_frames =
-                    case new_weapon_frames of
-                        Just weapon_frames -> weapon_frames
-                        Nothing -> weapon_fed.all_frames }
+                new_weapon_fed =
+                    { weapon_fed
+                        | all_frames =
+                            case new_weapon_frames of
+                                Just weapon_frames ->
+                                    weapon_frames
+
+                                Nothing ->
+                                    weapon_fed.all_frames
+                    }
 
                 new_feds =
                     { feds | weapon = new_weapon_fed }
@@ -524,9 +537,13 @@ update model msg =
                 --         Nothing ->
                 --             model.dota_weapon_frames_page_info
             in
-            ( { model | frame_edit_datas = new_feds
+            ( { model
+                | frame_edit_datas = new_feds
+
                 -- dota_weapon_frames_page_info = dota_weapon_frames_page_info
-            }, Cmd.none )
+              }
+            , Cmd.none
+            )
 
         GotTabMsg new_state ->
             ( { model | active_tab = new_state }, Cmd.none )

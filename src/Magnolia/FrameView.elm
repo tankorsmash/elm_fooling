@@ -518,7 +518,7 @@ render_tab_item model config =
         , link = Tab.link [] [ text config.link_text ]
         , pane =
             Tab.pane [ Spacing.mt3 ]
-                [ h4 [] [ text config.header ]
+                [ h4 [] [ text config.header , button_primary (ToggleFrameViewMode) "Toggle View"]
                 , rendered_tab_content
                 ]
         }

@@ -107,7 +107,6 @@ decode_weapon_damage_type =
 decode_weapon_frame : Decoder Magnolia.WeaponFrame.WeaponFrame
 decode_weapon_frame =
     Json.Decode.succeed Magnolia.WeaponFrame.WeaponFrame
-        |> required "weapon_name" string
         |> required "frame_id" int
         |> required "pretty_name" string
         |> required "description" string
@@ -190,8 +189,7 @@ init =
     let
         weapon_frame_data : WeaponFrame
         weapon_frame_data =
-            { weapon_name = "unset in init wapn_ame"
-            , frame_id = 123
+            { frame_id = 123
             , pretty_name = "Pretty Wepn Name"
             , description = "This is a description"
             , frame_image_path = "weapon_img.png"

@@ -27,8 +27,7 @@ import FormData
 {-| All these are strings because they get the msg from Html
 -}
 type EditFormUpdateType
-    = Name String
-    | FrameId String
+    = FrameId String
     | PrettyName String
     | Description String
     | FrameImagePath String
@@ -44,9 +43,6 @@ type EditFormUpdateType
 update_edit_form_data : WeaponFrame -> EditFormUpdateType -> WeaponFrame
 update_edit_form_data form_data form_update_type =
     case form_update_type of
-        Name new_name ->
-            { form_data | weapon_name = new_name }
-
         FrameId new_frame_id ->
             { form_data
                 | frame_id = update_int_field form_data.frame_id new_frame_id
@@ -105,8 +101,7 @@ edit_form_definition the_msg =
             ignore_alter <| (BattleRowType >> the_msg)
     in
     { fields =
-        [ new_form_field_string "weapon_name" .weapon_name <| ignore_alter <| Name >> the_msg
-        , new_form_field_int "frame_id" .frame_id <| ignore_alter <| FrameId >> the_msg
+        [ new_form_field_int "frame_id" .frame_id <| ignore_alter <| FrameId >> the_msg
         , new_form_field_string "description" .description <| ignore_alter <| Description >> the_msg
         , new_form_field_string "frame_image_path" .frame_image_path <| ignore_alter <| FrameImagePath >> the_msg
         , new_form_field_enum "battle_row_type" battle_row_type_accessor battle_row_type_msg battle_row_type_values
@@ -250,8 +245,7 @@ weapon_damage_type_values =
 
 
 type alias WeaponFrame =
-    { weapon_name : String
-    , frame_id : Int
+    { frame_id : Int
     , pretty_name : String
     , description : String
 

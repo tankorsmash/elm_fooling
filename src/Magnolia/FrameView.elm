@@ -60,7 +60,7 @@ import Magnolia.ArmorFrame exposing (ArmorFrame)
 import Magnolia.AttributeFrame exposing (AttributeFrame)
 import Magnolia.BattleTextStructFrame exposing (BattleTextStructFrame)
 import Magnolia.WeaponCategoryFrame exposing (WeaponCategoryFrame)
-import Magnolia.WeaponFrame exposing (BattleRow(..), WeaponDamageType(..), WeaponFrame, battle_row_type_from_int, weapon_damage_type_from_int, download_weapon_frames)
+import Magnolia.WeaponFrame exposing (BattleRow(..), WeaponDamageType(..), WeaponFrame, battle_row_type_from_int, download_weapon_frames, weapon_damage_type_from_int)
 import Magnolia.ZoneFrame exposing (ZoneFrame)
 import OpenDota.OpenDota as OpenDota
 import PostData exposing (PostData)
@@ -83,11 +83,17 @@ type GotFrameEditFormUpdateMsg
     | GotEditArmorFormUpdate Magnolia.ArmorFrame.EditFormUpdateType
 
 
+type AllFramesDownloaded
+    = DownloadedAllWeaponFrames (Result Http.Error (List WeaponFrame))
+
+
 type Msg
     = ToggleFrameViewMode
     | GotFrameEditFormUpdate GotFrameEditFormUpdateMsg
-    | DoDownloadWeaponFrames
-    | GotDownloadedWeaponFrames (Result Http.Error (List WeaponFrame))
+    | DoDownloadAllFrames FrameType
+      -- | DoDownloadWeaponFrames
+    | GotDownloadedAllFrames AllFramesDownloaded
+      -- | GotDownloadedWeaponFrames (Result Http.Error (List WeaponFrame))
     | GotPageMsg FrameType PageInfoMsg
     | GotTabMsg Tab.State
 
@@ -290,7 +296,7 @@ init =
 
         -- init_cmds = Cmd.none
         init_cmds =
-            Cmd.batch [ Task.perform (\_ -> DoDownloadWeaponFrames) Time.now ]
+            Cmd.batch [ Task.perform (\_ -> DoDownloadAllFrames WeaponFrame) Time.now ]
     in
     ( init_model, init_cmds )
 
@@ -364,6 +370,11 @@ update_frame_edit_datas model fed_getter feds_updater update_edit_form_data form
     { model | frame_edit_datas = feds_updater existing_feds new_fed }
 
 
+update_got_frame_download_all_frames_update : Model -> Msg -> ( Model, Cmd Msg )
+update_got_frame_download_all_frames_update model sub_msg =
+    ( model, Cmd.none )
+
+
 update_got_frame_edit_form_update : Model -> GotFrameEditFormUpdateMsg -> ( Model, Cmd Msg )
 update_got_frame_edit_form_update model sub_msg =
     case sub_msg of
@@ -428,28 +439,10 @@ update_got_frame_edit_form_update model sub_msg =
             )
 
 
-update : Model -> Msg -> ( Model, Cmd Msg )
-update model msg =
-    case msg of
-        ToggleFrameViewMode ->
-            let
-                new_frame_view_mode =
-                    case model.frame_view_mode of
-                        Edit ->
-                            List
-
-                        List ->
-                            Edit
-            in
-            ( { model | frame_view_mode = new_frame_view_mode }, Cmd.none )
-
-        GotFrameEditFormUpdate sub_msg ->
-            update_got_frame_edit_form_update model sub_msg
-
-        DoDownloadWeaponFrames ->
-            ( model, download_weapon_frames GotDownloadedWeaponFrames )
-
-        GotDownloadedWeaponFrames response ->
+update_got_downloaded_all_frames : Model -> AllFramesDownloaded -> (Model, Cmd Msg)
+update_got_downloaded_all_frames model sub_msg =
+    case sub_msg of
+        DownloadedAllWeaponFrames response ->
             let
                 _ =
                     Debug.log "Received a weapon frames response: " response
@@ -495,11 +488,43 @@ update model msg =
                 new_feds =
                     { feds | weapon = new_weapon_fed }
             in
-            ( { model
-                | frame_edit_datas = new_feds
-              }
-            , Cmd.none
-            )
+            ( { model | frame_edit_datas = new_feds }, Cmd.none )
+
+
+update : Model -> Msg -> ( Model, Cmd Msg )
+update model msg =
+    case msg of
+        ToggleFrameViewMode ->
+            let
+                new_frame_view_mode =
+                    case model.frame_view_mode of
+                        Edit ->
+                            List
+
+                        List ->
+                            Edit
+            in
+            ( { model | frame_view_mode = new_frame_view_mode }, Cmd.none )
+
+        GotFrameEditFormUpdate sub_msg ->
+            update_got_frame_edit_form_update model sub_msg
+
+        -- DoDownloadWeaponFrames ->
+        DoDownloadAllFrames frame_type ->
+            case frame_type of
+                WeaponFrame ->
+                    ( model, download_weapon_frames (GotDownloadedAllFrames << DownloadedAllWeaponFrames) )
+
+                _ ->
+                    Debug.todo "ASDASDSADSDSDS\n\nasdsad" ( model, Cmd.none )
+
+        -- GotDownloadedWeaponFrames response ->
+        GotDownloadedAllFrames all_frames_downloaded ->
+            let
+                (new_model, new_cmd) =
+                    update_got_downloaded_all_frames model all_frames_downloaded
+            in
+            ( new_model, new_cmd )
 
         GotTabMsg new_state ->
             ( { model | active_tab = new_state }, Cmd.none )
@@ -610,7 +635,7 @@ field_lookup field obj =
             String.join ", " <| List.map String.fromInt <| getter obj
 
 
-form_field_to_column : Int -> FormData.FormField fd msg ->  ColumnDef fd
+form_field_to_column : Int -> FormData.FormField fd msg -> ColumnDef fd
 form_field_to_column idx form_field =
     { column_id = form_field.field_name
     , idx = idx
@@ -640,7 +665,7 @@ render_tab_item model config =
 
         table_def : TableDefinition WeaponFrame
         table_def =
-            build_table_definition  form_fields
+            build_table_definition form_fields
 
         row_data =
             frame_edit_data.all_frames

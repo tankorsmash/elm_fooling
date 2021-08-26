@@ -71,6 +71,7 @@ import Url.Parser exposing ((</>), Parser, int, map, oneOf, parse, s, string)
 import Utils exposing (add_class)
 import Weather
 
+
 type GotFrameEditFormUpdateMsg
     = GotEditWeaponFormUpdate Magnolia.WeaponFrame.EditFormUpdateType
     | GotEditZoneFormUpdate Magnolia.ZoneFrame.EditFormUpdateType
@@ -78,6 +79,7 @@ type GotFrameEditFormUpdateMsg
     | GotEditAttributeFormUpdate Magnolia.AttributeFrame.EditFormUpdateType
     | GotEditBattleTextStructFormUpdate Magnolia.BattleTextStructFrame.EditFormUpdateType
     | GotEditArmorFormUpdate Magnolia.ArmorFrame.EditFormUpdateType
+
 
 type Msg
     = ToggleFrameViewMode
@@ -344,7 +346,8 @@ update_frame_edit_datas model fed_getter feds_updater update_edit_form_data form
     in
     { model | frame_edit_datas = feds_updater existing_feds new_fed }
 
-update_got_frame_edit_form_update : Model -> GotFrameEditFormUpdateMsg -> (Model, Cmd Msg)
+
+update_got_frame_edit_form_update : Model -> GotFrameEditFormUpdateMsg -> ( Model, Cmd Msg )
 update_got_frame_edit_form_update model sub_msg =
     case sub_msg of
         GotEditWeaponFormUpdate form_update_type ->

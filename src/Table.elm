@@ -184,12 +184,6 @@ initialize_page_info page_info rows =
 
         new_page_count =
             floor <| (toFloat <| num_rows) / toFloat page_info.per_page
-
-        lg =
-            Debug.log "Page count" new_page_count
-
-        lg2 =
-            Debug.log "Num rows" num_rows
     in
     { page_info | page_count = new_page_count }
 
@@ -263,6 +257,7 @@ paginate per_page page_idx rows =
 build_rows : List (ColumnDef obj) -> obj -> List String
 build_rows column_defs row =
     let
+
         cell_builder cl =
             case cl.column_type of
                 String ->
@@ -306,6 +301,13 @@ view table_def unsorted_rows page_info =
     let
         columns =
             List.sortBy .idx table_def.columns
+
+        no_col_def_warning =
+            if List.length columns == 0 then
+                h1 [] [ text "No column definitions passed in" ]
+
+            else
+                span [] []
 
         sorted_rows =
             List.map (build_rows columns) unsorted_rows
@@ -353,7 +355,8 @@ view table_def unsorted_rows page_info =
         row_builder row =
             build_table_row row columns
 
-        no_content_warning = [ tr [] [ td [] [ text "no content" ] ] ]
+        no_content_warning =
+            [ tr [] [ td [] [ text "no content" ] ] ]
 
         row_content : List (Html msg)
         row_content =
@@ -459,6 +462,7 @@ view table_def unsorted_rows page_info =
     in
     div []
         [ h4 [ style "color" "gray" ] [ text table_title ]
+        , no_col_def_warning
         , table
             [ add_class "table", add_class "table-striped", add_class "table-bordered" ]
             children

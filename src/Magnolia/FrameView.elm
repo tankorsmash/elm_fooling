@@ -336,7 +336,8 @@ init =
             }
 
         -- init_cmds = Cmd.none
-        init_cmds = Cmd.batch [Task.perform (\_ -> DoDownloadWeaponFrames) Time.now]
+        init_cmds =
+            Cmd.batch [ Task.perform (\_ -> DoDownloadWeaponFrames) Time.now ]
     in
     ( init_model, init_cmds )
 
@@ -517,6 +518,7 @@ update model msg =
 
                 weapon_fed =
                     feds.weapon
+
                 new_page_info =
                     case new_weapon_frames of
                         Just weapon_frames ->
@@ -539,12 +541,9 @@ update model msg =
 
                 new_feds =
                     { feds | weapon = new_weapon_fed }
-
             in
             ( { model
                 | frame_edit_datas = new_feds
-
-                -- dota_weapon_frames_page_info = dota_weapon_frames_page_info
               }
             , Cmd.none
             )
@@ -631,7 +630,42 @@ type alias TabItemConfig =
 
 build_table_definition : List (FormData.FormField fd msg) -> TableDefinition fd
 build_table_definition form_fields =
-    { title = Just "Frame Table", columns = [] }
+    { title = Just "Frame Table", columns = List.indexedMap form_field_to_column form_fields }
+
+
+{-| Looks up a FrameData's field and renders to a string
+-}
+field_lookup : FormData.FormField fd msg -> fd -> String
+field_lookup field obj =
+    case field.data_type of
+        IntType getter ->
+            String.fromInt <| getter obj
+
+        FloatType getter ->
+            String.fromFloat <| getter obj
+
+        StringType getter ->
+            getter obj
+
+        EnumType getter ->
+            getter obj
+
+        ListStringType getter ->
+            String.join ", " <| getter obj
+
+        ListIntType getter ->
+            String.join ", " <| List.map String.fromInt <| getter obj
+
+
+form_field_to_column : Int -> FormData.FormField fd msg ->  ColumnDef fd
+form_field_to_column idx form_field =
+    { column_id = form_field.field_name
+    , idx = idx
+    , pretty_title = form_field.field_name
+    , styles = []
+    , lookup_func = field_lookup form_field
+    , column_type = String --TODO
+    }
 
 
 render_tab_item : Model -> TabItemConfig -> Tab.Item Msg
@@ -653,10 +687,10 @@ render_tab_item model config =
 
         table_def : TableDefinition WeaponFrame
         table_def =
-            build_table_definition form_fields
+            build_table_definition  form_fields
 
         row_data =
-            [ frame_edit_data.frame_data ]
+            frame_edit_data.all_frames
 
         page_info =
             Table.new_page_info <| GotPageMsg WeaponFrame

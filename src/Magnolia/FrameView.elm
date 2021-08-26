@@ -718,26 +718,31 @@ do_render_tab model config =
                 config
                 model.frame_edit_datas.weapon
                 (Magnolia.WeaponFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponFormUpdate))
+
         ArmorFrame ->
             render_tab_item model
                 config
                 model.frame_edit_datas.armor
                 (Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditArmorFormUpdate))
+
         ZoneFrame ->
             render_tab_item model
                 config
                 model.frame_edit_datas.zone
                 (Magnolia.ZoneFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditZoneFormUpdate))
+
         WeaponCategoryFrame ->
             render_tab_item model
                 config
                 model.frame_edit_datas.weapon_category
                 (Magnolia.WeaponCategoryFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponCategoryFormUpdate))
+
         AttributeFrame ->
             render_tab_item model
                 config
                 model.frame_edit_datas.attribute
                 (Magnolia.AttributeFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditAttributeFormUpdate))
+
         BattleTextStructFrame ->
             render_tab_item model
                 config

@@ -1,5 +1,7 @@
 module Magnolia.FrameView exposing (Model, Msg, init, update, view)
 
+import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
+import Json.Decode exposing (Decoder, at, field, list, string, int)
 import Bootstrap.Button as Button
 import Bootstrap.CDN as CDN
 import Bootstrap.Card as Card
@@ -51,13 +53,13 @@ import Html.Attributes exposing (attribute, classList, href, property, src, styl
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
 import Json.Decode exposing (Decoder, at, field, list, string)
-import Json.Encode exposing (string)
+-- import Json.Encode exposing (string)
 import List
 import Magnolia.ArmorFrame exposing (ArmorFrame)
 import Magnolia.AttributeFrame exposing (AttributeFrame)
 import Magnolia.BattleTextStructFrame exposing (BattleTextStructFrame)
 import Magnolia.WeaponCategoryFrame exposing (WeaponCategoryFrame)
-import Magnolia.WeaponFrame exposing (WeaponFrame)
+import Magnolia.WeaponFrame exposing (WeaponFrame, BattleRow(..), WeaponDamageType(..), battle_row_type_from_int, weapon_damage_type_from_int)
 import Magnolia.ZoneFrame exposing (ZoneFrame)
 import OpenDota.OpenDota as OpenDota
 import PostData exposing (PostData)
@@ -67,8 +69,8 @@ import Table exposing (ColumnDef, ColumnType(..), PageInfoMsg, TableDefinition, 
 import Task
 import Time
 import Url
-import Url.Parser exposing ((</>), Parser, int, map, oneOf, parse, s, string)
-import Utils exposing (add_class)
+-- import Url.Parser exposing ((</>), Parser, int, map, oneOf, parse, s, string)
+import Utils exposing (add_class, root_json_server_url)
 import Weather
 
 
@@ -84,12 +86,59 @@ type GotFrameEditFormUpdateMsg
 type Msg
     = ToggleFrameViewMode
     | GotFrameEditFormUpdate GotFrameEditFormUpdateMsg
+    | DoDownloadWeaponFrames
+    | GotDownloadedWeaponFrames (Result Http.Error (List WeaponFrame))
     | GotPageMsg FrameType PageInfoMsg
     | GotTabMsg Tab.State
 
+decode_battle_row : Decoder Magnolia.WeaponFrame.BattleRow
+decode_battle_row =
+    -- Json.Decode.succeed Magnolia.WeaponFrame.BattleRow
+    int |> Json.Decode.andThen (Json.Decode.succeed << battle_row_type_from_int)
+
+decode_weapon_damage_type: Decoder Magnolia.WeaponFrame.WeaponDamageType
+decode_weapon_damage_type =
+    -- Json.Decode.succeed Magnolia.WeaponFrame.WeaponDamageType
+    int |> Json.Decode.andThen (Json.Decode.succeed << weapon_damage_type_from_int)
+
+
+decode_weapon_frame : Decoder Magnolia.WeaponFrame.WeaponFrame
+decode_weapon_frame =
+    Json.Decode.succeed Magnolia.WeaponFrame.WeaponFrame
+        |> required "weapon_name" string
+        |> required "frame_id" int
+        |> required "choice_id" int
+        |> required "pretty_name" string
+        |> required "description" string
+
+        -- |> required- , affects_morale', prettyName: "Affects Morale (0, 1)", type: 'hidden'},
+        |> required "frame_image_path" string
+        |> required "battle_row_type" decode_battle_row
+        |> required "damage_type" decode_weapon_damage_type
+        |> required "bonus_attack" int
+        |> required "bonus_power" int
+        |> required "bonus_encumbrance" int
+        |> required "rarity_type" int
+        |> required "carry_weight" int
+
+decode_weapon_frames : Decoder (List WeaponFrame)
+decode_weapon_frames = list decode_weapon_frame
+
+download_weapon_frames : (Result Http.Error (List WeaponFrame) -> msg) -> Cmd msg
+download_weapon_frames the_msg =
+    let
+        url =
+            -- root_url ++ "heroStats"
+            root_json_server_url ++ "all_weapon_frames"
+    in
+    Http.get
+        { url = url
+        , expect = Http.expectJson the_msg decode_weapon_frames
+        }
 
 type alias FrameEditData f msg =
     { form_definition : FormData.FormDefinition f msg
+    , all_frames : List f
     , frame_data : f
     , saved_frame_data : Maybe f
     , table_view_page_info : Table.PageInfo msg
@@ -239,36 +288,42 @@ init =
         { weapon =
             { form_definition = Magnolia.WeaponFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponFormUpdate)
             , frame_data = weapon_frame_data
+            , all_frames = []
             , saved_frame_data = saved_weapon_frame_data
             , table_view_page_info = Table.new_page_info (GotPageMsg WeaponFrame)
             }
         , armor =
             { form_definition = Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditArmorFormUpdate)
             , frame_data = armor_frame_data
+            , all_frames = []
             , saved_frame_data = saved_armor_frame_data
             , table_view_page_info = Table.new_page_info (GotPageMsg ArmorFrame)
             }
         , zone =
             { form_definition = Magnolia.ZoneFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditZoneFormUpdate)
             , frame_data = zone_frame_data
+            , all_frames = []
             , saved_frame_data = saved_zone_frame_data
             , table_view_page_info = Table.new_page_info (GotPageMsg ZoneFrame)
             }
         , weapon_category =
             { form_definition = Magnolia.WeaponCategoryFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponCategoryFormUpdate)
             , frame_data = weapon_category_frame_data
+            , all_frames = []
             , saved_frame_data = saved_weapon_category_frame_data
             , table_view_page_info = Table.new_page_info (GotPageMsg WeaponCategoryFrame)
             }
         , attribute =
             { form_definition = Magnolia.AttributeFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditAttributeFormUpdate)
             , frame_data = attribute_frame_data
+            , all_frames = []
             , saved_frame_data = saved_attribute_frame_data
             , table_view_page_info = Table.new_page_info (GotPageMsg AttributeFrame)
             }
         , battle_text_struct =
             { form_definition = Magnolia.BattleTextStructFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditBattleTextStructFormUpdate)
             , frame_data = battle_text_struct_frame_data
+            , all_frames = []
             , saved_frame_data = saved_battle_text_struct_frame_data
             , table_view_page_info = Table.new_page_info (GotPageMsg BattleTextStructFrame)
             }
@@ -428,6 +483,50 @@ update model msg =
 
         GotFrameEditFormUpdate sub_msg ->
             update_got_frame_edit_form_update model sub_msg
+
+        DoDownloadWeaponFrames ->
+            (model, download_weapon_frames GotDownloadedWeaponFrames)
+
+        GotDownloadedWeaponFrames response ->
+            let
+                _ =
+                    Debug.log "Received a weapon frames response: " response
+
+                new_weapon_frames =
+                    case response of
+                        Ok weapon_frames ->
+                            Just weapon_frames
+
+                        Err err ->
+                            let
+                                _ =
+                                    Debug.log "Error: \n" err
+                            in
+                            Nothing
+
+                feds = model.frame_edit_datas
+
+                weapon_fed = feds.weapon
+
+                new_weapon_fed = {weapon_fed | all_frames =
+                    case new_weapon_frames of
+                        Just weapon_frames -> weapon_frames
+                        Nothing -> weapon_fed.all_frames }
+
+                new_feds =
+                    { feds | weapon = new_weapon_fed }
+
+                -- dota_weapon_frames_page_info =
+                --     case new_weapon_frames of
+                --         Just weapon_frames ->
+                --             Table.initialize_page_info model.dota_weapon_frames_page_info weapon_frames
+                --
+                --         Nothing ->
+                --             model.dota_weapon_frames_page_info
+            in
+            ( { model | frame_edit_datas = new_feds
+                -- dota_weapon_frames_page_info = dota_weapon_frames_page_info
+            }, Cmd.none )
 
         GotTabMsg new_state ->
             ( { model | active_tab = new_state }, Cmd.none )

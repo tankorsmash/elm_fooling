@@ -6,3 +6,5 @@ import Json.Encode
 add_class cls =
     property "className" (Json.Encode.string cls)
 
+root_json_server_url =
+    "http://localhost:5021/"

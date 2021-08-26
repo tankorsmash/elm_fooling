@@ -186,7 +186,7 @@ tab_prefix =
     "frame_view_tab__"
 
 
-init : ( Model, Cmd msg )
+init : ( Model, Cmd Msg )
 init =
     let
         weapon_frame_data : WeaponFrame
@@ -289,6 +289,7 @@ init =
         saved_battle_text_struct_frame_data =
             Nothing
 
+        init_model : Model
         init_model =
             { frame_edit_datas =
                 { weapon =
@@ -338,7 +339,8 @@ init =
             , frame_view_mode = List
             }
 
-        init_cmds = Cmd.none
+        -- init_cmds = Cmd.none
+        init_cmds = Cmd.batch [Task.perform (\_ -> DoDownloadWeaponFrames) Time.now]
     in
     ( init_model, init_cmds )
 

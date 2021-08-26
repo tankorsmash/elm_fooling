@@ -408,10 +408,12 @@ init _ url navKey =
             , frame_view_model = frame_view_model
             }
 
+        existingCmds : Cmd Msg
         existingCmds =
             Cmd.batch
                 [ --Task.perform AdjustTimeZone Time.here,
-                  frame_view_cmds
+                  Cmd.map GotFrameViewMsg frame_view_cmds
+                  -- frame_view_cmds
                 , navbarCmd
 
                 -- , Task.perform OnPageLoad Time.now
@@ -684,8 +686,10 @@ update msg model =
             let
                 ( frame_model, frame_cmd ) =
                     FrameView.update model.frame_view_model frame_view_msg
+
+                mapped_frame_cmd = Cmd.map GotFrameViewMsg frame_cmd
             in
-            ( { model | frame_view_model = frame_model }, Cmd.none )
+            ( { model | frame_view_model = frame_model }, mapped_frame_cmd )
 
         DotaDownloadPlayerData account_id ->
             ( model, OpenDota.download_player_data account_id DotaDownloadedPlayerData )

@@ -603,7 +603,7 @@ button_primary on_click text_ =
 
 
 type alias TabItemConfig =
-    { id : String, link_text : String, header : String, form_edit_view : Html Msg }
+    { id : String, link_text : String, header : String, form_edit_view : Html Msg, frame_type : FrameType }
 
 
 build_table_definition : List (FormData.FormField fd msg) -> TableDefinition fd
@@ -646,24 +646,34 @@ form_field_to_column idx form_field =
     }
 
 
+
+-- get_form_definition : FrameType -> FormData.FormDefinition fd msg
+-- get_form_definition frame_type =
+--     case frame_type of
+--         WeaponFrame -> Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate
+--         ArmorFrame -> Magnolia.ArmorFrame.edit_form_definition GotEditArmorFormUpdate
+--         _ -> Debug.todo "ASDASD"
+--
+
+
 render_tab_item : Model -> TabItemConfig -> Tab.Item Msg
 render_tab_item model config =
     let
-        frame_edit_data : FrameEditData WeaponFrame Msg
         --TODO: make this generic
+        frame_edit_data : FrameEditData WeaponFrame Msg
         frame_edit_data =
             model.frame_edit_datas.weapon
 
-        form_def : FormData.FormDefinition WeaponFrame GotFrameEditFormUpdateMsg
-        form_def =
+        form_definition : FormData.FormDefinition WeaponFrame GotFrameEditFormUpdateMsg
+        form_definition =
             Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate
 
         form_fields : List (FormData.FormField WeaponFrame GotFrameEditFormUpdateMsg)
         form_fields =
-            form_def.fields
+            form_definition.fields
 
-        table_def : TableDefinition WeaponFrame
-        table_def =
+        table_definition : TableDefinition WeaponFrame
+        table_definition =
             build_table_definition form_fields
 
         row_data : List WeaponFrame
@@ -679,7 +689,7 @@ render_tab_item model config =
                     config.form_edit_view
 
                 List ->
-                    Table.view table_def row_data frame_edit_data.table_view_page_info
+                    Table.view table_definition row_data frame_edit_data.table_view_page_info
     in
     Tab.item
         { id = config.id
@@ -697,12 +707,12 @@ tabs_view model =
     let
         tab_configs : List TabItemConfig
         tab_configs =
-            [ { id = tab_prefix ++ "weapon_frame", link_text = "WeaponFrame", header = "Edit WeaponFrame", form_edit_view = form_data_view model.frame_edit_datas.weapon }
-            , { id = tab_prefix ++ "armor_frame", link_text = "ArmorFrame", header = "Edit ArmorFrame", form_edit_view = form_data_view model.frame_edit_datas.armor }
-            , { id = tab_prefix ++ "zone_frame", link_text = "ZoneFrame", header = "Edit ZoneFrame", form_edit_view = form_data_view model.frame_edit_datas.zone }
-            , { id = tab_prefix ++ "weapon_category_frame", link_text = "WeaponCategoryFrame", header = "Edit WeaponCategoryFrame", form_edit_view = form_data_view model.frame_edit_datas.weapon_category }
-            , { id = tab_prefix ++ "attribute_frame", link_text = "AttributeFrame", header = "Edit AttributeFrame", form_edit_view = form_data_view model.frame_edit_datas.attribute }
-            , { id = tab_prefix ++ "battle_text_struct_frame", link_text = "BattleTextStructFrame", header = "Edit BattleTextStructFrame", form_edit_view = form_data_view model.frame_edit_datas.battle_text_struct }
+            [ { id = tab_prefix ++ "weapon_frame", link_text = "WeaponFrame", header = "Edit WeaponFrame", form_edit_view = form_data_view model.frame_edit_datas.weapon, frame_type = WeaponFrame }
+            , { id = tab_prefix ++ "armor_frame", link_text = "ArmorFrame", header = "Edit ArmorFrame", form_edit_view = form_data_view model.frame_edit_datas.armor, frame_type = ArmorFrame }
+            , { id = tab_prefix ++ "zone_frame", link_text = "ZoneFrame", header = "Edit ZoneFrame", form_edit_view = form_data_view model.frame_edit_datas.zone, frame_type = ZoneFrame }
+            , { id = tab_prefix ++ "weapon_category_frame", link_text = "WeaponCategoryFrame", header = "Edit WeaponCategoryFrame", form_edit_view = form_data_view model.frame_edit_datas.weapon_category, frame_type = WeaponCategoryFrame }
+            , { id = tab_prefix ++ "attribute_frame", link_text = "AttributeFrame", header = "Edit AttributeFrame", form_edit_view = form_data_view model.frame_edit_datas.attribute, frame_type = AttributeFrame }
+            , { id = tab_prefix ++ "battle_text_struct_frame", link_text = "BattleTextStructFrame", header = "Edit BattleTextStructFrame", form_edit_view = form_data_view model.frame_edit_datas.battle_text_struct, frame_type = BattleTextStructFrame }
             ]
 
         tab_items =

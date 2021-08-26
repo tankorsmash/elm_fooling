@@ -74,7 +74,7 @@ import Weather
 
 type Msg
     = ToggleFrameViewMode
-    | GotPageMsg PageInfoMsg
+    | GotPageMsg FrameType PageInfoMsg
     | GotEditWeaponFormUpdate Magnolia.WeaponFrame.EditFormUpdateType
     | GotEditZoneFormUpdate Magnolia.ZoneFrame.EditFormUpdateType
     | GotEditWeaponCategoryFormUpdate Magnolia.WeaponCategoryFrame.EditFormUpdateType
@@ -96,6 +96,9 @@ type FrameType
     = WeaponFrame
     | ArmorFrame
     | ZoneFrame
+    | WeaponCategoryFrame
+    | AttributeFrame
+    | BattleTextStructFrame
 
 
 type alias FrameEditDatas =
@@ -233,31 +236,37 @@ init =
             { form_definition = Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate
             , frame_data = weapon_frame_data
             , saved_frame_data = saved_weapon_frame_data
+            , table_view_page_info = Table.PageInfo 0 0 10 (GotPageMsg WeaponFrame)
             }
         , armor =
             { form_definition = Magnolia.ArmorFrame.edit_form_definition GotEditArmorFormUpdate
             , frame_data = armor_frame_data
             , saved_frame_data = saved_armor_frame_data
+            , table_view_page_info = Table.PageInfo 0 0 10 (GotPageMsg ArmorFrame)
             }
         , zone =
             { form_definition = Magnolia.ZoneFrame.edit_form_definition GotEditZoneFormUpdate
             , frame_data = zone_frame_data
             , saved_frame_data = saved_zone_frame_data
+            , table_view_page_info = Table.PageInfo 0 0 10 (GotPageMsg ZoneFrame)
             }
         , weapon_category =
             { form_definition = Magnolia.WeaponCategoryFrame.edit_form_definition GotEditWeaponCategoryFormUpdate
             , frame_data = weapon_category_frame_data
             , saved_frame_data = saved_weapon_category_frame_data
+            , table_view_page_info = Table.PageInfo 0 0 10 (GotPageMsg WeaponCategoryFrame)
             }
         , attribute =
             { form_definition = Magnolia.AttributeFrame.edit_form_definition GotEditAttributeFormUpdate
             , frame_data = attribute_frame_data
             , saved_frame_data = saved_attribute_frame_data
+            , table_view_page_info = Table.PageInfo 0 0 10 (GotPageMsg AttributeFrame)
             }
         , battle_text_struct =
             { form_definition = Magnolia.BattleTextStructFrame.edit_form_definition GotEditBattleTextStructFormUpdate
             , frame_data = battle_text_struct_frame_data
             , saved_frame_data = saved_battle_text_struct_frame_data
+            , table_view_page_info = Table.PageInfo 0 0 10 (GotPageMsg BattleTextStructFrame)
             }
         }
     , active_tab = Tab.customInitialState <| tab_prefix ++ "battle_text_struct_frame"
@@ -412,6 +421,40 @@ update model msg =
         GotTabMsg new_state ->
             ( { model | active_tab = new_state }, Cmd.none )
 
+        GotPageMsg frame_type page_msg ->
+            let
+                old_page_info =
+                    get_page_info model.frame_edit_datas frame_type
+
+                updated_page_info =
+                    update_page_info old_page_info page_msg
+            in
+            ( {model | frame_edit_datas = set_page_info model.frame_edit_datas frame_type updated_page_info}, Cmd.none )
+
+
+get_page_info : FrameEditDatas -> FrameType -> Table.PageInfo Msg
+get_page_info feds frame_type =
+    case frame_type of
+        WeaponFrame -> feds.weapon.table_view_page_info
+        ArmorFrame -> feds.armor.table_view_page_info
+        ZoneFrame -> feds.zone.table_view_page_info
+        WeaponCategoryFrame -> feds.weapon_category.table_view_page_info
+        AttributeFrame -> feds.attribute.table_view_page_info
+        BattleTextStructFrame -> feds.battle_text_struct.table_view_page_info
+
+update_only_page_info : FrameEditData frameData Msg -> Table.PageInfo Msg -> FrameEditData frameData Msg
+update_only_page_info old_fed new_page_info =
+    { old_fed | table_view_page_info = new_page_info }
+
+set_page_info : FrameEditDatas -> FrameType -> Table.PageInfo Msg -> FrameEditDatas
+set_page_info feds frame_type new_page_info =
+    case frame_type of
+        WeaponFrame -> { feds | weapon = update_only_page_info feds.weapon new_page_info }
+        ArmorFrame -> { feds | armor = update_only_page_info feds.armor new_page_info }
+        ZoneFrame -> { feds | zone = update_only_page_info feds.zone new_page_info }
+        WeaponCategoryFrame -> { feds | weapon_category = update_only_page_info feds.weapon_category new_page_info }
+        AttributeFrame -> { feds | attribute = update_only_page_info feds.attribute new_page_info }
+        BattleTextStructFrame -> { feds | battle_text_struct = update_only_page_info feds.battle_text_struct new_page_info }
 
 bootstrap_button type_ on_click text_ =
     Button.button
@@ -438,21 +481,37 @@ build_table_definition form_fields =
 render_tab_item : Model -> TabItemConfig -> Tab.Item Msg
 render_tab_item model config =
     let
-        frame_edit_data : FrameEditData WeaponFrame Msg --TODO: make this generic
-        frame_edit_data = model.frame_edit_datas.weapon
+        frame_edit_data : FrameEditData WeaponFrame Msg
+        --TODO: make this generic
+        frame_edit_data =
+            model.frame_edit_datas.weapon
 
         --TODO: figure out how to get the form fields from this so i can build a table.
         --      maybe it'll be splitting up the form def again so the data is split somewhere
-        form_fields = Magnolia.WeaponFrame.edit_form_definition (Magnolia.WeaponFrame.Name)
+        form_def =
+            -- Magnolia.WeaponFrame.edit_form_definition Magnolia.WeaponFrame.Name
+            Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate
+
+        form_fields =
+            form_def.fields
 
         table_def : TableDefinition WeaponFrame
-        table_def = build_table_definition form_fields
-        row_data = [frame_edit_data.frame_data]
-        page_info = Table.PageInfo 0 0 10 (GotPageMsg)
+        table_def =
+            build_table_definition form_fields
 
-        rendered_tab_content = case model.frame_view_mode of
-            Edit -> config.form_edit_view
-            List -> Table.view table_def row_data frame_edit_data.table_view_page_info
+        row_data =
+            [ frame_edit_data.frame_data ]
+
+        page_info =
+            Table.PageInfo 0 0 10 <| GotPageMsg WeaponFrame
+
+        rendered_tab_content =
+            case model.frame_view_mode of
+                Edit ->
+                    config.form_edit_view
+
+                List ->
+                    Table.view table_def row_data frame_edit_data.table_view_page_info
     in
     Tab.item
         { id = config.id

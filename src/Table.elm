@@ -353,14 +353,20 @@ view table_def unsorted_rows page_info =
         row_builder row =
             build_table_row row columns
 
+        no_content_warning = [ tr [] [ td [] [ text "no content" ] ] ]
+
         row_content : List (Html msg)
         row_content =
             case paginated_rows of
                 [] ->
-                    [ div [] [ text "no content" ] ]
+                    no_content_warning
 
-                _ ->
-                    List.map row_builder paginated_rows
+                rows ->
+                    if List.all (\el -> List.length el == 0) rows then
+                        no_content_warning
+
+                    else
+                        List.map row_builder paginated_rows
 
         create_page_btn : Int -> ButtonGroup.ButtonItem msg
         create_page_btn page_idx =

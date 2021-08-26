@@ -646,16 +646,6 @@ form_field_to_column idx form_field =
     }
 
 
-
--- get_form_definition : FrameType -> FormData.FormDefinition fd msg
--- get_form_definition frame_type =
---     case frame_type of
---         WeaponFrame -> Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate
---         ArmorFrame -> Magnolia.ArmorFrame.edit_form_definition GotEditArmorFormUpdate
---         _ -> Debug.todo "ASDASD"
---
-
-
 render_tab_item :
     Model
     -> TabItemConfig
@@ -668,25 +658,19 @@ render_tab_item model config frame_edit_data form_definition =
         frame_type =
             config.frame_type
 
-        --TODO: make this generic
-        -- frame_edit_data : FrameEditData WeaponFrame Msg
-        -- frame_edit_data =
-        --     model.frame_edit_datas.weapon
-        -- form_definition : FormData.FormDefinition WeaponFrame GotFrameEditFormUpdateMsg
-        -- form_definition =
-        --     Magnolia.WeaponFrame.edit_form_definition GotEditWeaponFormUpdate
-        -- form_fields : List (FormData.FormField WeaponFrame GotFrameEditFormUpdateMsg)
+        form_fields : List (FormData.FormField fd Msg)
         form_fields =
             form_definition.fields
 
-        -- table_definition : TableDefinition WeaponFrame
+        table_definition : TableDefinition fd
         table_definition =
             build_table_definition form_fields
 
-        -- row_data : List WeaponFrame
+        row_data : List fd
         row_data =
             frame_edit_data.all_frames
 
+        page_info : Table.PageInfo Msg
         page_info =
             Table.new_page_info <| GotPageMsg frame_type
 

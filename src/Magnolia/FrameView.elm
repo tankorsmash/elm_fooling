@@ -439,7 +439,7 @@ update_got_frame_edit_form_update model sub_msg =
             )
 
 
-update_got_downloaded_all_frames : Model -> AllFramesDownloaded -> (Model, Cmd Msg)
+update_got_downloaded_all_frames : Model -> AllFramesDownloaded -> ( Model, Cmd Msg )
 update_got_downloaded_all_frames model sub_msg =
     case sub_msg of
         DownloadedAllWeaponFrames response ->
@@ -521,7 +521,7 @@ update model msg =
         -- GotDownloadedWeaponFrames response ->
         GotDownloadedAllFrames all_frames_downloaded ->
             let
-                (new_model, new_cmd) =
+                ( new_model, new_cmd ) =
                     update_got_downloaded_all_frames model all_frames_downloaded
             in
             ( new_model, new_cmd )

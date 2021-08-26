@@ -109,7 +109,6 @@ decode_weapon_frame =
     Json.Decode.succeed Magnolia.WeaponFrame.WeaponFrame
         |> required "weapon_name" string
         |> required "frame_id" int
-        |> required "choice_id" int
         |> required "pretty_name" string
         |> required "description" string
         -- |> required- , affects_morale', prettyName: "Affects Morale (0, 1)", type: 'hidden'},
@@ -193,7 +192,6 @@ init =
         weapon_frame_data =
             { weapon_name = "unset in init wapn_ame"
             , frame_id = 123
-            , choice_id = -1
             , pretty_name = "Pretty Wepn Name"
             , description = "This is a description"
             , frame_image_path = "weapon_img.png"

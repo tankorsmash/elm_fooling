@@ -29,7 +29,6 @@ import FormData
 type EditFormUpdateType
     = Name String
     | FrameId String
-    | ChoiceId String
     | PrettyName String
     | Description String
     | FrameImagePath String
@@ -47,11 +46,6 @@ update_edit_form_data form_data form_update_type =
     case form_update_type of
         Name new_name ->
             { form_data | weapon_name = new_name }
-
-        ChoiceId new_choice_id ->
-            { form_data
-                | choice_id = update_int_field form_data.choice_id new_choice_id
-            }
 
         FrameId new_frame_id ->
             { form_data
@@ -113,7 +107,6 @@ edit_form_definition the_msg =
     { fields =
         [ new_form_field_string "weapon_name" .weapon_name <| ignore_alter <| Name >> the_msg
         , new_form_field_int "frame_id" .frame_id <| ignore_alter <| FrameId >> the_msg
-        , new_form_field_int "choice_id" .choice_id <| ignore_alter <| ChoiceId >> the_msg
         , new_form_field_string "description" .description <| ignore_alter <| Description >> the_msg
         , new_form_field_string "frame_image_path" .frame_image_path <| ignore_alter <| FrameImagePath >> the_msg
         , new_form_field_enum "battle_row_type" battle_row_type_accessor battle_row_type_msg battle_row_type_values
@@ -259,7 +252,6 @@ weapon_damage_type_values =
 type alias WeaponFrame =
     { weapon_name : String
     , frame_id : Int
-    , choice_id : Int
     , pretty_name : String
     , description : String
 

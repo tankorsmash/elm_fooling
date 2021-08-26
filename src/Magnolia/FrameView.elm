@@ -712,10 +712,37 @@ render_tab_item model config frame_edit_data form_definition =
 
 do_render_tab : Model -> TabItemConfig -> Tab.Item Msg
 do_render_tab model config =
-    render_tab_item model
-        config
-        model.frame_edit_datas.weapon
-        (Magnolia.WeaponFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponFormUpdate))
+    case config.frame_type of
+        WeaponFrame ->
+            render_tab_item model
+                config
+                model.frame_edit_datas.weapon
+                (Magnolia.WeaponFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponFormUpdate))
+        ArmorFrame ->
+            render_tab_item model
+                config
+                model.frame_edit_datas.armor
+                (Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditArmorFormUpdate))
+        ZoneFrame ->
+            render_tab_item model
+                config
+                model.frame_edit_datas.zone
+                (Magnolia.ZoneFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditZoneFormUpdate))
+        WeaponCategoryFrame ->
+            render_tab_item model
+                config
+                model.frame_edit_datas.weapon_category
+                (Magnolia.WeaponCategoryFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponCategoryFormUpdate))
+        AttributeFrame ->
+            render_tab_item model
+                config
+                model.frame_edit_datas.attribute
+                (Magnolia.AttributeFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditAttributeFormUpdate))
+        BattleTextStructFrame ->
+            render_tab_item model
+                config
+                model.frame_edit_datas.battle_text_struct
+                (Magnolia.BattleTextStructFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditBattleTextStructFormUpdate))
 
 
 tabs_view : Model -> Html Msg

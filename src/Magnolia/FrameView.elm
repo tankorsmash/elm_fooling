@@ -60,7 +60,7 @@ import Magnolia.ArmorFrame exposing (ArmorFrame)
 import Magnolia.AttributeFrame exposing (AttributeFrame)
 import Magnolia.BattleTextStructFrame exposing (BattleTextStructFrame)
 import Magnolia.WeaponCategoryFrame exposing (WeaponCategoryFrame)
-import Magnolia.WeaponFrame exposing (BattleRow(..), WeaponDamageType(..), WeaponFrame, battle_row_type_from_int, weapon_damage_type_from_int)
+import Magnolia.WeaponFrame exposing (BattleRow(..), WeaponDamageType(..), WeaponFrame, battle_row_type_from_int, weapon_damage_type_from_int, download_weapon_frames)
 import Magnolia.ZoneFrame exposing (ZoneFrame)
 import OpenDota.OpenDota as OpenDota
 import PostData exposing (PostData)
@@ -90,53 +90,6 @@ type Msg
     | GotDownloadedWeaponFrames (Result Http.Error (List WeaponFrame))
     | GotPageMsg FrameType PageInfoMsg
     | GotTabMsg Tab.State
-
-
-decode_battle_row : Decoder Magnolia.WeaponFrame.BattleRow
-decode_battle_row =
-    -- Json.Decode.succeed Magnolia.WeaponFrame.BattleRow
-    int |> Json.Decode.andThen (Json.Decode.succeed << battle_row_type_from_int)
-
-
-decode_weapon_damage_type : Decoder Magnolia.WeaponFrame.WeaponDamageType
-decode_weapon_damage_type =
-    -- Json.Decode.succeed Magnolia.WeaponFrame.WeaponDamageType
-    int |> Json.Decode.andThen (Json.Decode.succeed << weapon_damage_type_from_int)
-
-
-decode_weapon_frame : Decoder Magnolia.WeaponFrame.WeaponFrame
-decode_weapon_frame =
-    Json.Decode.succeed Magnolia.WeaponFrame.WeaponFrame
-        |> required "frame_id" int
-        |> required "pretty_name" string
-        |> required "description" string
-        -- |> required- , affects_morale', prettyName: "Affects Morale (0, 1)", type: 'hidden'},
-        |> required "frame_image_path" string
-        |> required "battle_row_type" decode_battle_row
-        |> required "damage_type" decode_weapon_damage_type
-        |> required "bonus_attack" int
-        |> required "bonus_power" int
-        |> required "bonus_encumbrance" int
-        |> required "rarity_type" int
-        |> required "carry_weight" int
-
-
-decode_weapon_frames : Decoder (List WeaponFrame)
-decode_weapon_frames =
-    list decode_weapon_frame
-
-
-download_weapon_frames : (Result Http.Error (List WeaponFrame) -> msg) -> Cmd msg
-download_weapon_frames the_msg =
-    let
-        url =
-            -- root_url ++ "heroStats"
-            root_json_server_url ++ "all_weapon_frames"
-    in
-    Http.get
-        { url = url
-        , expect = Http.expectJson the_msg decode_weapon_frames
-        }
 
 
 type alias FrameEditData f msg =

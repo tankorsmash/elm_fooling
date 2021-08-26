@@ -7,6 +7,7 @@ module Magnolia.WeaponFrame exposing
     , edit_form_definition
     , update_edit_form_data
     , weapon_damage_type_from_int
+    , download_weapon_frames
     )
 
 import FormData
@@ -23,6 +24,10 @@ import FormData
         , update_int_field
         )
 
+import Http
+import Utils exposing (root_json_server_url)
+import Json.Decode as Decode exposing (Decoder, field, int, list, string, succeed, andThen)
+import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
 
 {-| All these are strings because they get the msg from Html
 -}
@@ -243,6 +248,53 @@ weapon_damage_type_values =
     , ( "2", "Slashing" )
     ]
 
+
+
+decode_battle_row : Decoder BattleRow
+decode_battle_row =
+    -- Json.Decode.succeed BattleRow
+    int |> andThen (succeed << battle_row_type_from_int)
+
+
+decode_weapon_damage_type : Decoder WeaponDamageType
+decode_weapon_damage_type =
+    -- Json.Decode.succeed WeaponDamageType
+    int |> andThen (succeed << weapon_damage_type_from_int)
+
+
+decode_weapon_frame : Decoder WeaponFrame
+decode_weapon_frame =
+    succeed WeaponFrame
+        |> required "frame_id" int
+        |> required "pretty_name" string
+        |> required "description" string
+        -- |> required- , affects_morale', prettyName: "Affects Morale (0, 1)", type: 'hidden'},
+        |> required "frame_image_path" string
+        |> required "battle_row_type" decode_battle_row
+        |> required "damage_type" decode_weapon_damage_type
+        |> required "bonus_attack" int
+        |> required "bonus_power" int
+        |> required "bonus_encumbrance" int
+        |> required "rarity_type" int
+        |> required "carry_weight" int
+
+
+decode_weapon_frames : Decoder (List WeaponFrame)
+decode_weapon_frames =
+    list decode_weapon_frame
+
+
+download_weapon_frames : (Result Http.Error (List WeaponFrame) -> msg) -> Cmd msg
+download_weapon_frames the_msg =
+    let
+        url =
+            -- root_url ++ "heroStats"
+            root_json_server_url ++ "all_weapon_frames"
+    in
+    Http.get
+        { url = url
+        , expect = Http.expectJson the_msg decode_weapon_frames
+        }
 
 type alias WeaponFrame =
     { frame_id : Int

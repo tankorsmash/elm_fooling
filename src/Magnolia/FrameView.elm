@@ -380,9 +380,11 @@ update_frame_edit_datas :
     -> Model
 update_frame_edit_datas model fed_getter feds_updater update_edit_form_data form_update_type =
     let
+        existing_feds : FrameEditDatas
         existing_feds =
             model.frame_edit_datas
 
+        existing_fed : FrameEditData frameData msg
         existing_fed =
             fed_getter existing_feds
 
@@ -481,19 +483,18 @@ unpack_response response =
 
 
 handle_feds_download :
-    Model
+    FrameEditDatas
     -> FedGetter frameData msg
     -> FedsUpdater frameData msg
     -> Maybe (List frameData)
-    -> Model
-handle_feds_download model fed_getter feds_updater maybe_all_frames =
+    -> FrameEditDatas
+handle_feds_download existing_feds fed_getter feds_updater maybe_all_frames =
     let
-        existing_feds =
-            model.frame_edit_datas
-
+        existing_fed : FrameEditData frameData msg
         existing_fed =
             fed_getter existing_feds
 
+        all_frames : List frameData
         all_frames =
             case maybe_all_frames of
                 Just new_all_frames ->
@@ -505,27 +506,35 @@ handle_feds_download model fed_getter feds_updater maybe_all_frames =
         new_page_info =
             Table.initialize_page_info existing_fed.table_view_page_info all_frames
 
+        new_fed : FrameEditData frameData msg
         new_fed =
             { existing_fed
                 | all_frames = all_frames
                 , table_view_page_info = new_page_info
             }
     in
-    { model | frame_edit_datas = feds_updater existing_feds new_fed }
+    feds_updater existing_feds new_fed
 
 
 update_got_downloaded_all_frames : Model -> AllFramesDownloaded -> ( Model, Cmd Msg )
 update_got_downloaded_all_frames model sub_msg =
-    case sub_msg of
-        DownloadedAllWeaponFrames response ->
-            let
-                maybe_weapon_frames =
-                    unpack_response response
+    let
+        feds =
+            model.frame_edit_datas
 
-                feds_updater =
-                    \feds_ new_fed -> { feds_ | weapon = new_fed }
-            in
-            ( handle_feds_download model .weapon feds_updater maybe_weapon_frames, Cmd.none )
+        cmd =
+            Cmd.none
+
+        new_feds =
+            case sub_msg of
+                DownloadedAllWeaponFrames response ->
+                    handle_feds_download
+                        feds
+                        .weapon
+                        (\feds_ new_fed -> { feds_ | weapon = new_fed })
+                        (unpack_response response)
+    in
+    ( { model | frame_edit_datas = new_feds }, cmd )
 
 
 update : Model -> Msg -> ( Model, Cmd Msg )

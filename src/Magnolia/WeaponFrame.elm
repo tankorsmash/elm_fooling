@@ -287,7 +287,6 @@ download_weapon_frames : (Result Http.Error (List WeaponFrame) -> msg) -> Cmd ms
 download_weapon_frames the_msg =
     let
         url =
-            -- root_url ++ "heroStats"
             root_json_server_url ++ "all_weapon_frames"
     in
     Http.get

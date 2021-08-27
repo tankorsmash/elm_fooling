@@ -586,10 +586,11 @@ update_do_download_all_frames model frame_type =
         AttributeFrame ->
             ( model, Magnolia.AttributeFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllAttributeFrames) )
 
-        -- BattleTextStructFrame ->
-        --     ( model, Magnolia.BattleTextStructFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllBattleTextStructFrames) )
-        _ ->
-            Debug.todo "ASDASDSADSDSDS\n\nasdsad" ( model, Cmd.none )
+        BattleTextStructFrame ->
+            ( model, Magnolia.BattleTextStructFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllBattleTextStructFrames) )
+
+        -- _ ->
+        --     Debug.todo "ASDASDSADSDSDS\n\nasdsad" ( model, Cmd.none )
 
 
 update_got_downloaded_all_frames : Model -> AllFramesDownloaded -> ( Model, Cmd Msg )

@@ -3,6 +3,7 @@ module Magnolia.BattleTextStructFrame exposing
     , EditFormUpdateType
     , edit_form_definition
     , update_edit_form_data
+    , download_all_frames
     )
 
 import FormData
@@ -20,6 +21,37 @@ import FormData
         , update_enum_field
         , update_int_field
         )
+
+import Http
+import Json.Decode as Decode exposing (Decoder, andThen, field, int, list, string, succeed)
+import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
+import Utils exposing (root_json_server_url)
+
+
+decode_battle_text_struct_frame : Decoder BattleTextStructFrame
+decode_battle_text_struct_frame =
+    succeed BattleTextStructFrame
+        |> required "frame_id" int
+        |> required "pretty_name" string
+        |> required "description" string
+        |> required "frame_image_path" string
+        |> required "state_names" (list string)
+        |> required "state_names_pretty_funcs" (list string)
+        |> required "pretty_name_template" string
+        |> required "pretty_func_name" string
+
+
+decode_battle_text_struct_frames : Decoder (List BattleTextStructFrame)
+decode_battle_text_struct_frames =
+    list decode_battle_text_struct_frame
+
+
+download_all_frames : (Result Http.Error (List BattleTextStructFrame) -> msg) -> Cmd msg
+download_all_frames callback =
+    Http.get
+        { url = root_json_server_url ++ "all_battle_text_struct_frames"
+        , expect = Http.expectJson callback decode_battle_text_struct_frames
+        }
 
 
 {-| All these are strings because they get the msg from Html

@@ -287,19 +287,24 @@ init hash =
                 case suffix of
                     "weapon_frame" ->
                         WeaponFrame
+
                     "armor_frame" ->
                         ArmorFrame
+
                     "zone_frame" ->
                         ZoneFrame
+
                     "weapon_category_frame" ->
                         WeaponCategoryFrame
+
                     "attribute_frame" ->
                         AttributeFrame
+
                     "battle_text_struct_frame" ->
                         BattleTextStructFrame
 
                     _ ->
-                        Debug.log ("error: unknown frame type suffix: "++suffix )WeaponFrame
+                        Debug.log ("error: unknown frame type suffix: " ++ suffix) WeaponFrame
 
             else
                 WeaponFrame
@@ -571,6 +576,7 @@ update_do_download_all_frames model frame_type =
 
         ArmorFrame ->
             ( model, Magnolia.ArmorFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllArmorFrames) )
+
         ZoneFrame ->
             ( model, Magnolia.ZoneFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllZoneFrames) )
 
@@ -582,8 +588,6 @@ update_do_download_all_frames model frame_type =
         --
         -- BattleTextStructFrame ->
         --     ( model, Magnolia.BattleTextStructFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllBattleTextStructFrames) )
-
-
         _ ->
             Debug.todo "ASDASDSADSDSDS\n\nasdsad" ( model, Cmd.none )
 

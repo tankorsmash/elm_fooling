@@ -1,9 +1,9 @@
 module Magnolia.ZoneFrame exposing
     ( EditFormUpdateType
     , ZoneFrame
+    , download_all_frames
     , edit_form_definition
     , update_edit_form_data
-    , download_all_frames
     )
 
 import FormData
@@ -25,6 +25,7 @@ import Json.Decode as Decode exposing (Decoder, andThen, field, int, list, strin
 import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
 import Utils exposing (root_json_server_url)
 
+
 decode_zone_frame : Decoder ZoneFrame
 decode_zone_frame =
     succeed ZoneFrame
@@ -45,6 +46,7 @@ download_all_frames callback =
         { url = root_json_server_url ++ "all_zone_frames"
         , expect = Http.expectJson callback decode_zone_frames
         }
+
 
 type EditFormUpdateType
     = Name String

@@ -4,10 +4,10 @@ module Magnolia.WeaponFrame exposing
     , WeaponDamageType(..)
     , WeaponFrame
     , battle_row_type_from_int
+    , download_weapon_frames
     , edit_form_definition
     , update_edit_form_data
     , weapon_damage_type_from_int
-    , download_weapon_frames
     )
 
 import FormData
@@ -23,11 +23,11 @@ import FormData
         , update_enum_field
         , update_int_field
         )
-
 import Http
-import Utils exposing (root_json_server_url)
-import Json.Decode as Decode exposing (Decoder, field, int, list, string, succeed, andThen)
+import Json.Decode as Decode exposing (Decoder, andThen, field, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
+import Utils exposing (root_json_server_url)
+
 
 {-| All these are strings because they get the msg from Html
 -}
@@ -249,7 +249,6 @@ weapon_damage_type_values =
     ]
 
 
-
 decode_battle_row : Decoder BattleRow
 decode_battle_row =
     -- Json.Decode.succeed BattleRow
@@ -295,6 +294,7 @@ download_weapon_frames the_msg =
         { url = url
         , expect = Http.expectJson the_msg decode_weapon_frames
         }
+
 
 type alias WeaponFrame =
     { frame_id : Int

@@ -257,7 +257,6 @@ paginate per_page page_idx rows =
 build_rows : List (ColumnDef obj) -> obj -> List String
 build_rows column_defs row =
     let
-
         cell_builder cl =
             case cl.column_type of
                 String ->

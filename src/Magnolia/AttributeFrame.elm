@@ -1,6 +1,7 @@
 module Magnolia.AttributeFrame exposing
     ( AttributeFrame
     , EditFormUpdateType
+    , download_all_frames
     , edit_form_definition
     , update_edit_form_data
     )
@@ -20,6 +21,36 @@ import FormData
         , update_enum_field
         , update_int_field
         )
+import Http
+import Json.Decode as Decode exposing (Decoder, andThen, field, int, list, string, succeed)
+import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
+import Utils exposing (root_json_server_url)
+
+
+decode_attribute_frame : Decoder AttributeFrame
+decode_attribute_frame =
+    succeed AttributeFrame
+        |> required "frame_id" int
+        |> required "pretty_name" string
+        |> required "description" string
+        |> required "frame_image_path" string
+        |> required "state_names" (list string)
+        |> required "state_names_pretty_funcs" (list string)
+        |> required "pretty_name_template" string
+        |> required "pretty_func_name" string
+
+
+decode_attribute_frames : Decoder (List AttributeFrame)
+decode_attribute_frames =
+    list decode_attribute_frame
+
+
+download_all_frames : (Result Http.Error (List AttributeFrame) -> msg) -> Cmd msg
+download_all_frames callback =
+    Http.get
+        { url = root_json_server_url ++ "all_attribute_frames"
+        , expect = Http.expectJson callback decode_attribute_frames
+        }
 
 
 {-| All these are strings because they get the msg from Html

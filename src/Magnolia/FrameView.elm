@@ -583,9 +583,9 @@ update_do_download_all_frames model frame_type =
         WeaponCategoryFrame ->
             ( model, Magnolia.WeaponCategoryFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllWeaponCategoryFrames) )
 
-        -- AttributeFrame ->
-        --     ( model, Magnolia.AttributeFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllAttributeFrames) )
-        --
+        AttributeFrame ->
+            ( model, Magnolia.AttributeFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllAttributeFrames) )
+
         -- BattleTextStructFrame ->
         --     ( model, Magnolia.BattleTextStructFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllBattleTextStructFrames) )
         _ ->

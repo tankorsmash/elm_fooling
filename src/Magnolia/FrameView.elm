@@ -60,7 +60,7 @@ import Magnolia.ArmorFrame exposing (ArmorFrame)
 import Magnolia.AttributeFrame exposing (AttributeFrame)
 import Magnolia.BattleTextStructFrame exposing (BattleTextStructFrame)
 import Magnolia.WeaponCategoryFrame exposing (WeaponCategoryFrame)
-import Magnolia.WeaponFrame exposing (BattleRow(..), WeaponDamageType(..), WeaponFrame, battle_row_type_from_int, download_weapon_frames, weapon_damage_type_from_int)
+import Magnolia.WeaponFrame exposing (BattleRow(..), WeaponDamageType(..), WeaponFrame, battle_row_type_from_int, weapon_damage_type_from_int)
 import Magnolia.ZoneFrame exposing (ZoneFrame)
 import OpenDota.OpenDota as OpenDota
 import PostData exposing (PostData)
@@ -195,8 +195,10 @@ init =
 
         armor_frame_data : ArmorFrame
         armor_frame_data =
-            { pretty_name = "Unset ArmorFrame Name"
-            , frame_id = 123
+            { frame_id = 123
+            , pretty_name = "Unset ArmorFrame Name"
+            , description = "unset desc"
+            , frame_image_path = "armor_img.png"
             , bonus_defense = 0
             , bonus_protection = 0
             , bonus_protection_piercing = 0
@@ -517,6 +519,17 @@ handle_feds_download existing_feds fed_getter feds_updater maybe_all_frames =
     feds_updater existing_feds new_fed
 
 
+update_do_download_all_frames : Model -> FrameType -> (Model, Cmd Msg)
+update_do_download_all_frames model frame_type =
+    case frame_type of
+        WeaponFrame ->
+            ( model, Magnolia.WeaponFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllWeaponFrames) )
+        ArmorFrame ->
+            ( model, Magnolia.ArmorFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllArmorFrames) )
+
+        _ ->
+            Debug.todo "ASDASDSADSDSDS\n\nasdsad" ( model, Cmd.none )
+
 update_got_downloaded_all_frames : Model -> AllFramesDownloaded -> ( Model, Cmd Msg )
 update_got_downloaded_all_frames model sub_msg =
     let
@@ -593,12 +606,7 @@ update model msg =
 
         -- DoDownloadWeaponFrames ->
         DoDownloadAllFrames frame_type ->
-            case frame_type of
-                WeaponFrame ->
-                    ( model, download_weapon_frames (GotDownloadedAllFrames << DownloadedAllWeaponFrames) )
-
-                _ ->
-                    Debug.todo "ASDASDSADSDSDS\n\nasdsad" ( model, Cmd.none )
+            update_do_download_all_frames model frame_type
 
         -- GotDownloadedWeaponFrames response ->
         GotDownloadedAllFrames all_frames_downloaded ->

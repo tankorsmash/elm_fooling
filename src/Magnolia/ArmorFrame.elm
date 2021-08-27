@@ -1,6 +1,7 @@
 module Magnolia.ArmorFrame exposing
     ( ArmorFrame
     , EditFormUpdateType
+    , download_all_frames
     , edit_form_definition
     , update_edit_form_data
     )
@@ -16,6 +17,10 @@ import FormData
         , update_enum_field
         , update_int_field
         )
+import Http
+import Json.Decode as Decode exposing (Decoder, andThen, field, int, list, string, succeed)
+import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
+import Utils exposing (root_json_server_url)
 
 
 {-| Need to be strings because it comes from html forms
@@ -88,12 +93,41 @@ edit_form_definition the_msg =
     }
 
 
-type alias ArmorFrame =
-    { pretty_name : String
-    , frame_id : Int
+decode_armor_frame : Decoder ArmorFrame
+decode_armor_frame =
+    succeed ArmorFrame
+        |> required "frame_id" int
+        |> required "pretty_name" string
+        |> required "description" string
+        |> required "frame_image_path" string
+        |> required "bonus_defense" int
+        |> required "bonus_protection" int
+        |> required "bonus_protection_piercing" int
+        |> required "bonus_protection_blunt" int
+        |> required "bonus_protection_slashing" int
+        |> required "bonus_encumbrance" int
+        |> required "rarity_type" int
+        |> required "carry_weight" int
 
-    -- , description : String
-    -- , frame_image_path : String
+
+decode_armor_frames : Decoder (List ArmorFrame)
+decode_armor_frames =
+    list decode_armor_frame
+
+
+download_all_frames : (Result Http.Error (List ArmorFrame) -> msg) -> Cmd msg
+download_all_frames callback =
+    Http.get
+        { url = root_json_server_url ++ "all_armor_frames"
+        , expect = Http.expectJson callback decode_armor_frames
+        }
+
+
+type alias ArmorFrame =
+    { frame_id : Int
+    , pretty_name : String
+    , description : String
+    , frame_image_path : String
     , bonus_defense : Int
     , bonus_protection : Int
     , bonus_protection_piercing : Int

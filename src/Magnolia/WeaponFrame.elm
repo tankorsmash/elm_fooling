@@ -4,7 +4,7 @@ module Magnolia.WeaponFrame exposing
     , WeaponDamageType(..)
     , WeaponFrame
     , battle_row_type_from_int
-    , download_weapon_frames
+    , download_all_frames
     , edit_form_definition
     , update_edit_form_data
     , weapon_damage_type_from_int
@@ -283,8 +283,8 @@ decode_weapon_frames =
     list decode_weapon_frame
 
 
-download_weapon_frames : (Result Http.Error (List WeaponFrame) -> msg) -> Cmd msg
-download_weapon_frames callback =
+download_all_frames : (Result Http.Error (List WeaponFrame) -> msg) -> Cmd msg
+download_all_frames callback =
     Http.get
         { url = root_json_server_url ++ "all_weapon_frames"
         , expect = Http.expectJson callback decode_weapon_frames

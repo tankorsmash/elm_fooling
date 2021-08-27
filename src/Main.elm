@@ -61,7 +61,7 @@ import Table exposing (ColumnDef, ColumnType(..), PageInfoMsg, TableDefinition, 
 import Task
 import Time
 import Url
-import Url.Parser exposing ((</>), Parser, int, map, oneOf, parse, s, string)
+import Url.Parser exposing ((</>), Parser, int, map, oneOf, parse, s, string, fragment)
 import Utils exposing (add_class)
 import Weather
 
@@ -276,7 +276,7 @@ type Page
 
 
 type Route
-    = Home
+    = Home (Maybe String)
     | NotFound
     | Profile
       -- | Topic String
@@ -299,7 +299,7 @@ parseUrl url =
 matchRoute : Parser (Route -> a) a
 matchRoute =
     oneOf
-        [ map Home (s "home")
+        [ map Home (s "home" </>  (fragment identity))
         , map Profile (s "profile")
 
         -- , map Topic   (s "topic" </> string)
@@ -337,7 +337,7 @@ init _ url navKey =
             parseUrl url
 
         page_info =
-            UrlPageInfo navKey url (parseUrl url) UnsetPage
+            UrlPageInfo navKey url parsedRoute UnsetPage
 
         post_data =
             PostData -1 "No Name" "No Title"
@@ -373,8 +373,11 @@ init _ url navKey =
         dota_model =
             { player_data = Nothing, account_id = 24801519, hero_stats = Nothing }
 
+        fragment = case parsedRoute of
+            Home (Just hash) -> Debug.log "filled hash" hash
+            _ -> Debug.log "empty hash" ""
         ( frame_view_model, frame_view_cmds ) =
-            FrameView.init
+            FrameView.init fragment
 
         initial_model : Model
         initial_model =
@@ -430,7 +433,7 @@ initCurrentPage ( model, existingCmds ) =
     let
         ( currentPage, mappedPageCmds ) =
             case model.page_info.route of
-                Home ->
+                Home fragment->
                     ( HomePage, Cmd.none )
 
                 Profile ->

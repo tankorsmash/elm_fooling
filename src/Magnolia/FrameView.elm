@@ -52,6 +52,7 @@ import Html
         )
 import Html.Attributes exposing (attribute, classList, href, property, src, style, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
+import Html.Lazy
 import Http
 import Json.Decode exposing (Decoder, at, field, int, list, string)
 import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
@@ -102,6 +103,7 @@ type Msg
       -- | GotDownloadedWeaponFrames (Result Http.Error (List WeaponFrame))
     | GotPageMsg FrameType PageInfoMsg
     | GotTabMsg Tab.State
+    | ClickChangeTab FrameType
 
 
 type alias FrameEditData f msg =
@@ -171,8 +173,8 @@ tab_prefix =
     "frame_view_tab__"
 
 
-init : ( Model, Cmd Msg )
-init =
+init : String -> ( Model, Cmd Msg )
+init hash =
     let
         weapon_frame_data : WeaponFrame
         weapon_frame_data =
@@ -274,6 +276,10 @@ init =
         saved_battle_text_struct_frame_data =
             Nothing
 
+        initial_active_tab = case hash of
+            "" -> Tab.customInitialState <| tab_prefix ++ "weapon_frame"
+            _ -> Tab.customInitialState <| hash
+
         init_model : Model
         init_model =
             { frame_edit_datas =
@@ -320,7 +326,7 @@ init =
                     , table_view_page_info = Table.new_page_info (GotPageMsg BattleTextStructFrame)
                     }
                 }
-            , active_tab = Tab.customInitialState <| tab_prefix ++ "weapon_frame"
+            , active_tab = initial_active_tab
             , frame_view_mode = List
             }
 
@@ -519,16 +525,18 @@ handle_feds_download existing_feds fed_getter feds_updater maybe_all_frames =
     feds_updater existing_feds new_fed
 
 
-update_do_download_all_frames : Model -> FrameType -> (Model, Cmd Msg)
+update_do_download_all_frames : Model -> FrameType -> ( Model, Cmd Msg )
 update_do_download_all_frames model frame_type =
     case frame_type of
         WeaponFrame ->
             ( model, Magnolia.WeaponFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllWeaponFrames) )
+
         ArmorFrame ->
             ( model, Magnolia.ArmorFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllArmorFrames) )
 
         _ ->
             Debug.todo "ASDASDSADSDSDS\n\nasdsad" ( model, Cmd.none )
+
 
 update_got_downloaded_all_frames : Model -> AllFramesDownloaded -> ( Model, Cmd Msg )
 update_got_downloaded_all_frames model sub_msg =
@@ -617,7 +625,17 @@ update model msg =
             ( new_model, new_cmd )
 
         GotTabMsg new_state ->
+            let
+                _ =
+                    Debug.log "changing tabs" ""
+
+                -- _ = case new_state of
+                --     Just _ -> Debug.log "" ""
+            in
             ( { model | active_tab = new_state }, Cmd.none )
+
+        ClickChangeTab frame_type ->
+            ( model, Cmd.none )
 
         GotPageMsg frame_type page_msg ->
             let
@@ -772,9 +790,12 @@ render_tab_item model config frame_edit_data form_definition =
 
                 List ->
                     Table.view table_definition row_data frame_edit_data.table_view_page_info
+
+        tab_id =
+            tab_prefix ++ (recase ToSnake <| to_string frame_type)
     in
     Tab.item
-        { id = tab_prefix ++ (recase ToSnake <| to_string frame_type)
+        { id = tab_id
         , link = Tab.link [] [ text <| to_string frame_type ]
         , pane =
             Tab.pane [ Spacing.mt3 ]
@@ -854,6 +875,7 @@ tabs_view model =
             List.map (do_render_tab model) tab_configs
     in
     Tab.config GotTabMsg
+        |> Tab.useHash True
         |> Tab.items tab_items
         |> Tab.view model.active_tab
 

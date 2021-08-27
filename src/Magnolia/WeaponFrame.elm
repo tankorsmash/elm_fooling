@@ -284,14 +284,10 @@ decode_weapon_frames =
 
 
 download_weapon_frames : (Result Http.Error (List WeaponFrame) -> msg) -> Cmd msg
-download_weapon_frames the_msg =
-    let
-        url =
-            root_json_server_url ++ "all_weapon_frames"
-    in
+download_weapon_frames callback =
     Http.get
-        { url = url
-        , expect = Http.expectJson the_msg decode_weapon_frames
+        { url = root_json_server_url ++ "all_weapon_frames"
+        , expect = Http.expectJson callback decode_weapon_frames
         }
 
 

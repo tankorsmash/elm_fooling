@@ -88,6 +88,10 @@ type AllFramesDownloaded
     = DownloadedAllWeaponFrames (Result Http.Error (List WeaponFrame))
 
 
+
+-- | DownloadedAllArmorFrames (Result Http.Error (List ArmorFrame))
+
+
 type Msg
     = ToggleFrameViewMode
     | GotFrameEditFormUpdate GotFrameEditFormUpdateMsg
@@ -462,55 +466,66 @@ update_got_frame_edit_form_update model sub_msg =
             )
 
 
+unpack_response : Result Http.Error a -> Maybe a
+unpack_response response =
+    case response of
+        Ok values ->
+            Just values
+
+        Err err ->
+            let
+                _ =
+                    Debug.log "Error: \n" err
+            in
+            Nothing
+
+
+handle_feds_download :
+    Model
+    -> FedGetter frameData msg
+    -> FedsUpdater frameData msg
+    -> Maybe (List frameData)
+    -> Model
+handle_feds_download model fed_getter feds_updater maybe_all_frames =
+    let
+        existing_feds =
+            model.frame_edit_datas
+
+        existing_fed =
+            fed_getter existing_feds
+
+        all_frames =
+            case maybe_all_frames of
+                Just new_all_frames ->
+                    new_all_frames
+
+                Nothing ->
+                    existing_fed.all_frames
+
+        new_page_info =
+            Table.initialize_page_info existing_fed.table_view_page_info all_frames
+
+        new_fed =
+            { existing_fed
+                | all_frames = all_frames
+                , table_view_page_info = new_page_info
+            }
+    in
+    { model | frame_edit_datas = feds_updater existing_feds new_fed }
+
+
 update_got_downloaded_all_frames : Model -> AllFramesDownloaded -> ( Model, Cmd Msg )
 update_got_downloaded_all_frames model sub_msg =
     case sub_msg of
         DownloadedAllWeaponFrames response ->
             let
-                -- _ =
-                --     Debug.log "Received a weapon frames response: " response
-                new_weapon_frames =
-                    case response of
-                        Ok weapon_frames ->
-                            Just weapon_frames
+                maybe_weapon_frames =
+                    unpack_response response
 
-                        Err err ->
-                            let
-                                _ =
-                                    Debug.log "Error: \n" err
-                            in
-                            Nothing
-
-                feds =
-                    model.frame_edit_datas
-
-                weapon_fed =
-                    feds.weapon
-
-                new_page_info =
-                    case new_weapon_frames of
-                        Just weapon_frames ->
-                            Table.initialize_page_info weapon_fed.table_view_page_info weapon_frames
-
-                        Nothing ->
-                            weapon_fed.table_view_page_info
-
-                new_weapon_fed =
-                    { weapon_fed
-                        | all_frames =
-                            case new_weapon_frames of
-                                Just weapon_frames ->
-                                    weapon_frames
-
-                                Nothing ->
-                                    weapon_fed.all_frames
-                        , table_view_page_info = new_page_info
-                    }
-
-                new_feds =
-                    { feds | weapon = new_weapon_fed }
+                feds_updater =
+                    \feds_ new_fed -> { feds_ | weapon = new_fed }
             in
-            ( { model | frame_edit_datas = new_feds }, Cmd.none )
+            ( handle_feds_download model .weapon feds_updater maybe_weapon_frames, Cmd.none )
 
 
 update : Model -> Msg -> ( Model, Cmd Msg )

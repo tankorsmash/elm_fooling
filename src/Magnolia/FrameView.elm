@@ -266,11 +266,9 @@ init hash =
             { frame_id = 0
             , pretty_name = "unset in init battle_text_struct"
             , description = "description"
-            , frame_image_path = "unset .png"
-            , state_names = []
-            , state_names_pretty_funcs = []
-            , pretty_name_template = ""
-            , pretty_func_name = ""
+            , battle_won_text_fid = -1
+            , battle_tied_text_fid = -1
+            , battle_lost_text_fid = -1
             }
 
         saved_battle_text_struct_frame_data : Maybe BattleTextStructFrame
@@ -589,8 +587,10 @@ update_do_download_all_frames model frame_type =
         BattleTextStructFrame ->
             ( model, Magnolia.BattleTextStructFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllBattleTextStructFrames) )
 
-        -- _ ->
-        --     Debug.todo "ASDASDSADSDSDS\n\nasdsad" ( model, Cmd.none )
+
+
+-- _ ->
+--     Debug.todo "ASDASDSADSDSDS\n\nasdsad" ( model, Cmd.none )
 
 
 update_got_downloaded_all_frames : Model -> AllFramesDownloaded -> ( Model, Cmd Msg )

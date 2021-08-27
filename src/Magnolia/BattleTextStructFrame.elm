@@ -1,9 +1,9 @@
 module Magnolia.BattleTextStructFrame exposing
     ( BattleTextStructFrame
     , EditFormUpdateType
+    , download_all_frames
     , edit_form_definition
     , update_edit_form_data
-    , download_all_frames
     )
 
 import FormData
@@ -21,7 +21,6 @@ import FormData
         , update_enum_field
         , update_int_field
         )
-
 import Http
 import Json.Decode as Decode exposing (Decoder, andThen, field, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
@@ -34,11 +33,9 @@ decode_battle_text_struct_frame =
         |> required "frame_id" int
         |> required "pretty_name" string
         |> required "description" string
-        |> required "frame_image_path" string
-        |> required "state_names" (list string)
-        |> required "state_names_pretty_funcs" (list string)
-        |> required "pretty_name_template" string
-        |> required "pretty_func_name" string
+        |> required "battle_won_text_fid" int
+        |> required "battle_tied_text_fid" int
+        |> required "battle_lost_text_fid" int
 
 
 decode_battle_text_struct_frames : Decoder (List BattleTextStructFrame)
@@ -60,11 +57,9 @@ type EditFormUpdateType
     = FrameId String
     | PrettyName String
     | Description String
-    | FrameImagePath String
-    | StateNames FieldAlterType String
-    | StateNamesPrettyFuncs FieldAlterType String
-    | PrettyNameTemplate String
-    | PrettyFuncName String
+    | BattleWonTextFID String
+    | BattleTiedTextFID String
+    | BattleLostTextFID String
 
 
 update_edit_form_data : BattleTextStructFrame -> EditFormUpdateType -> BattleTextStructFrame
@@ -81,20 +76,14 @@ update_edit_form_data form_data form_update_type =
         Description new_description ->
             { form_data | description = new_description }
 
-        FrameImagePath new_frame_image_path ->
-            { form_data | frame_image_path = new_frame_image_path }
+        BattleWonTextFID new_battle_won_text_fid ->
+            { form_data | battle_won_text_fid = update_int_field form_data.battle_won_text_fid new_battle_won_text_fid }
 
-        StateNames alter_type new_state_names ->
-            { form_data | state_names = String.split ", " new_state_names }
+        BattleTiedTextFID new_battle_tied_text_fid ->
+            { form_data | battle_tied_text_fid = update_int_field form_data.battle_tied_text_fid new_battle_tied_text_fid }
 
-        StateNamesPrettyFuncs alter_type new_pretty_funcs ->
-            { form_data | state_names_pretty_funcs = String.split ", " new_pretty_funcs }
-
-        PrettyNameTemplate new_name_template ->
-            { form_data | pretty_name_template = new_name_template }
-
-        PrettyFuncName new_func_name ->
-            { form_data | pretty_func_name = new_func_name }
+        BattleLostTextFID new_battle_lost_text_fid ->
+            { form_data | battle_lost_text_fid = update_int_field form_data.battle_lost_text_fid new_battle_lost_text_fid }
 
 
 edit_form_definition : (EditFormUpdateType -> msg) -> FormData.FormDefinition BattleTextStructFrame msg
@@ -107,11 +96,9 @@ edit_form_definition the_msg =
         [ new_form_field_int "frame_id" .frame_id <| ignore_alter <| FrameId >> the_msg
         , new_form_field_string "pretty_name" .pretty_name <| ignore_alter <| PrettyName >> the_msg
         , new_form_field_string "description" .description <| ignore_alter <| Description >> the_msg
-        , new_form_field_string "frame_image_path" .frame_image_path <| ignore_alter <| FrameImagePath >> the_msg
-        , new_form_field_list_string "state_names" .state_names <| \at -> StateNames at >> the_msg
-        , new_form_field_list_string "state_names_pretty_funcs" .state_names_pretty_funcs <| \at -> StateNamesPrettyFuncs at >> the_msg
-        , new_form_field_string "pretty_name_template" .pretty_name_template <| ignore_alter <| PrettyNameTemplate >> the_msg
-        , new_form_field_string "pretty_func_name" .pretty_func_name <| ignore_alter <| PrettyFuncName >> the_msg
+        , new_form_field_int "battle_won_text_fid" .battle_won_text_fid <| ignore_alter <| BattleWonTextFID >> the_msg
+        , new_form_field_int "battle_tied_text_fid" .battle_tied_text_fid <| ignore_alter <| BattleTiedTextFID >> the_msg
+        , new_form_field_int "battle_lost_text_fid" .battle_lost_text_fid <| ignore_alter <| BattleLostTextFID >> the_msg
         ]
     }
 
@@ -120,9 +107,7 @@ type alias BattleTextStructFrame =
     { frame_id : Int
     , pretty_name : String
     , description : String
-    , frame_image_path : String
-    , state_names : List String
-    , state_names_pretty_funcs : List String
-    , pretty_name_template : String
-    , pretty_func_name : String
+    , battle_won_text_fid : Int
+    , battle_tied_text_fid : Int
+    , battle_lost_text_fid : Int
     }

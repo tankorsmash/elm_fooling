@@ -1,6 +1,7 @@
 module Magnolia.WeaponCategoryFrame exposing
     ( EditFormUpdateType
     , WeaponCategoryFrame
+    , download_all_frames
     , edit_form_definition
     , update_edit_form_data
     )
@@ -19,6 +20,37 @@ import FormData
         , update_enum_field
         , update_int_field
         )
+import Http
+import Json.Decode as Decode exposing (Decoder, andThen, field, int, list, string, succeed)
+import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
+import Utils exposing (root_json_server_url)
+
+
+decode_weapon_category_frame : Decoder WeaponCategoryFrame
+decode_weapon_category_frame =
+    succeed WeaponCategoryFrame
+        |> required "frame_id" int
+        |> required "pretty_name" string
+        |> required "description" string
+        |> required "frame_image_path" string
+        |> required "rarity_type" int
+        |> required "weapon_frame_ids" (list int)
+        |> required "rank_1_attr_frame_ids" (list int)
+        |> required "rank_2_attr_frame_ids" (list int)
+        |> required "rank_3_attr_frame_ids" (list int)
+
+
+decode_weapon_category_frames : Decoder (List WeaponCategoryFrame)
+decode_weapon_category_frames =
+    list decode_weapon_category_frame
+
+
+download_all_frames : (Result Http.Error (List WeaponCategoryFrame) -> msg) -> Cmd msg
+download_all_frames callback =
+    Http.get
+        { url = root_json_server_url ++ "all_weapon_category_frames"
+        , expect = Http.expectJson callback decode_weapon_category_frames
+        }
 
 
 {-| All these are strings because they get the msg from Html

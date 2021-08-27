@@ -86,10 +86,11 @@ type GotFrameEditFormUpdateMsg
 
 type AllFramesDownloaded
     = DownloadedAllWeaponFrames (Result Http.Error (List WeaponFrame))
-
-
-
--- | DownloadedAllArmorFrames (Result Http.Error (List ArmorFrame))
+    | DownloadedAllArmorFrames (Result Http.Error (List ArmorFrame))
+    | DownloadedAllZoneFrames (Result Http.Error (List ZoneFrame))
+    | DownloadedAllWeaponCategoryFrames (Result Http.Error (List WeaponCategoryFrame))
+    | DownloadedAllAttributeFrames (Result Http.Error (List AttributeFrame))
+    | DownloadedAllBattleTextStructFrames (Result Http.Error (List BattleTextStructFrame))
 
 
 type Msg
@@ -532,6 +533,41 @@ update_got_downloaded_all_frames model sub_msg =
                         feds
                         .weapon
                         (\feds_ new_fed -> { feds_ | weapon = new_fed })
+                        (unpack_response response)
+
+                DownloadedAllArmorFrames response ->
+                    handle_feds_download
+                        feds
+                        .armor
+                        (\feds_ new_fed -> { feds_ | armor = new_fed })
+                        (unpack_response response)
+
+                DownloadedAllZoneFrames response ->
+                    handle_feds_download
+                        feds
+                        .zone
+                        (\feds_ new_fed -> { feds_ | zone = new_fed })
+                        (unpack_response response)
+
+                DownloadedAllWeaponCategoryFrames response ->
+                    handle_feds_download
+                        feds
+                        .weapon_category
+                        (\feds_ new_fed -> { feds_ | weapon_category = new_fed })
+                        (unpack_response response)
+
+                DownloadedAllAttributeFrames response ->
+                    handle_feds_download
+                        feds
+                        .attribute
+                        (\feds_ new_fed -> { feds_ | attribute = new_fed })
+                        (unpack_response response)
+
+                DownloadedAllBattleTextStructFrames response ->
+                    handle_feds_download
+                        feds
+                        .battle_text_struct
+                        (\feds_ new_fed -> { feds_ | battle_text_struct = new_fed })
                         (unpack_response response)
     in
     ( { model | frame_edit_datas = new_feds }, cmd )

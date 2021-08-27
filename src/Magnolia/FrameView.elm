@@ -112,6 +112,7 @@ type alias FrameEditData f msg =
     , frame_data : f
     , saved_frame_data : Maybe f
     , table_view_page_info : Table.PageInfo msg
+    , frame_type : FrameType
     }
 
 
@@ -276,9 +277,40 @@ init hash =
         saved_battle_text_struct_frame_data =
             Nothing
 
-        initial_active_tab = case hash of
-            "" -> Tab.customInitialState <| tab_prefix ++ "weapon_frame"
-            _ -> Tab.customInitialState <| hash
+        initial_active_tab_frame_type : FrameType
+        initial_active_tab_frame_type =
+            if String.startsWith tab_prefix hash then
+                let
+                    suffix =
+                        String.dropLeft (String.length tab_prefix) hash
+                in
+                case suffix of
+                    "weapon_frame" ->
+                        WeaponFrame
+                    "armor_frame" ->
+                        ArmorFrame
+                    "zone_frame" ->
+                        ZoneFrame
+                    "weapon_category_frame" ->
+                        WeaponCategoryFrame
+                    "attribute_frame" ->
+                        AttributeFrame
+                    "battle_text_struct_frame" ->
+                        BattleTextStructFrame
+
+                    _ ->
+                        Debug.log ("error: unknown frame type suffix: "++suffix )WeaponFrame
+
+            else
+                WeaponFrame
+
+        initial_active_tab =
+            case hash of
+                "" ->
+                    Tab.customInitialState <| tab_prefix ++ "weapon_frame"
+
+                _ ->
+                    Tab.customInitialState <| hash
 
         init_model : Model
         init_model =
@@ -289,6 +321,7 @@ init hash =
                     , all_frames = []
                     , saved_frame_data = saved_weapon_frame_data
                     , table_view_page_info = Table.new_page_info (GotPageMsg WeaponFrame)
+                    , frame_type = WeaponFrame
                     }
                 , armor =
                     { form_definition = Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditArmorFormUpdate)
@@ -296,6 +329,7 @@ init hash =
                     , all_frames = []
                     , saved_frame_data = saved_armor_frame_data
                     , table_view_page_info = Table.new_page_info (GotPageMsg ArmorFrame)
+                    , frame_type = ArmorFrame
                     }
                 , zone =
                     { form_definition = Magnolia.ZoneFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditZoneFormUpdate)
@@ -303,6 +337,7 @@ init hash =
                     , all_frames = []
                     , saved_frame_data = saved_zone_frame_data
                     , table_view_page_info = Table.new_page_info (GotPageMsg ZoneFrame)
+                    , frame_type = ZoneFrame
                     }
                 , weapon_category =
                     { form_definition = Magnolia.WeaponCategoryFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponCategoryFormUpdate)
@@ -310,6 +345,7 @@ init hash =
                     , all_frames = []
                     , saved_frame_data = saved_weapon_category_frame_data
                     , table_view_page_info = Table.new_page_info (GotPageMsg WeaponCategoryFrame)
+                    , frame_type = WeaponCategoryFrame
                     }
                 , attribute =
                     { form_definition = Magnolia.AttributeFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditAttributeFormUpdate)
@@ -317,6 +353,7 @@ init hash =
                     , all_frames = []
                     , saved_frame_data = saved_attribute_frame_data
                     , table_view_page_info = Table.new_page_info (GotPageMsg AttributeFrame)
+                    , frame_type = AttributeFrame
                     }
                 , battle_text_struct =
                     { form_definition = Magnolia.BattleTextStructFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditBattleTextStructFormUpdate)
@@ -324,6 +361,7 @@ init hash =
                     , all_frames = []
                     , saved_frame_data = saved_battle_text_struct_frame_data
                     , table_view_page_info = Table.new_page_info (GotPageMsg BattleTextStructFrame)
+                    , frame_type = BattleTextStructFrame
                     }
                 }
             , active_tab = initial_active_tab
@@ -332,7 +370,7 @@ init hash =
 
         -- init_cmds = Cmd.none
         init_cmds =
-            Cmd.batch [ Task.perform (\_ -> DoDownloadAllFrames WeaponFrame) Time.now ]
+            Cmd.batch [ Task.perform (\_ -> DoDownloadAllFrames initial_active_tab_frame_type) Time.now ]
     in
     ( init_model, init_cmds )
 
@@ -533,6 +571,18 @@ update_do_download_all_frames model frame_type =
 
         ArmorFrame ->
             ( model, Magnolia.ArmorFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllArmorFrames) )
+        ZoneFrame ->
+            ( model, Magnolia.ZoneFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllZoneFrames) )
+
+        -- WeaponCategoryFrame ->
+        --     ( model, Magnolia.WeaponCategoryFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllWeaponCategoryFrames) )
+        --
+        -- AttributeFrame ->
+        --     ( model, Magnolia.AttributeFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllAttributeFrames) )
+        --
+        -- BattleTextStructFrame ->
+        --     ( model, Magnolia.BattleTextStructFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllBattleTextStructFrames) )
+
 
         _ ->
             Debug.todo "ASDASDSADSDSDS\n\nasdsad" ( model, Cmd.none )

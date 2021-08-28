@@ -1,5 +1,6 @@
 port module Main exposing (..)
 
+import ElmUIPlayground
 import Bootstrap.Button as Button
 import Bootstrap.CDN as CDN
 import Bootstrap.Card as Card
@@ -150,6 +151,7 @@ type Msg
     | DotaDownloadHeroStats
     | DotaDownloadedHeroStats (Result Http.Error (List OpenDota.HeroStat))
     | DotaUpdate DotaMsg
+    | GotElmUIPlaygroundMsg ElmUIPlayground.Msg
 
 
 
@@ -233,6 +235,7 @@ type TabType
     | FrameViewTab
     | ModalTab
     | OpenDotaTab
+    | ElmUIPlaygroundTab
 
 
 type alias Model =
@@ -367,7 +370,8 @@ init _ url navKey =
             Table.new_page_info (GotPageMsg DotaHeroStatsTable)
 
         initial_tab =
-            FrameViewTab
+            -- FrameViewTab
+            ElmUIPlaygroundTab
 
         dota_model : DotaModel
         dota_model =
@@ -786,6 +790,8 @@ update msg model =
                     dota_update dota_msg model.dota_model
             in
             ( { model | dota_model = dota_model }, dota_cmd )
+        GotElmUIPlaygroundMsg elm_playground_msg ->
+            ( model, Cmd.none)
 
 
 dota_update : DotaMsg -> DotaModel -> ( DotaModel, Cmd Msg )
@@ -1018,6 +1024,7 @@ navbar model =
             , ( FrameViewTab, "Frame View" )
             , ( ModalTab, "Modal Example" )
             , ( OpenDotaTab, "OpenDota" )
+            , ( ElmUIPlaygroundTab, "ElmUI Playground" )
             ]
     in
     Navbar.config NavbarMsg
@@ -1280,6 +1287,9 @@ homeView model =
                     div []
                         [ open_dota_view model.dota_hero_stats_page_info model.dota_model
                         ]
+
+                ElmUIPlaygroundTab ->
+                    ElmUIPlayground.view
     in
     div [ add_class "container" ]
         [ div [ add_class "row" ]

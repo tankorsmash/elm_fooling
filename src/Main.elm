@@ -798,7 +798,7 @@ update msg model =
                 (sub_msg, sub_cmd) =
                     ElmUIPlayground.update elm_playground_msg model.elm_ui_playground_model
             in
-            ( model, Cmd.none)
+            ( model, Cmd.map GotElmUIPlaygroundMsg sub_cmd)
 
 
 dota_update : DotaMsg -> DotaModel -> ( DotaModel, Cmd Msg )

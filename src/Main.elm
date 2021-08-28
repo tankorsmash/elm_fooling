@@ -1296,7 +1296,7 @@ homeView model =
                         ]
 
                 ElmUIPlaygroundTab ->
-                    ElmUIPlayground.view
+                    ElmUIPlayground.view model.elm_ui_playground_model
     in
     div [ add_class "container" ]
         [ div [ add_class "row" ]

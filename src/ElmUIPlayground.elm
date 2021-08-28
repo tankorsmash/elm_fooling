@@ -11,13 +11,13 @@ type Msg
     = Click
 
 
-type Model
-    = Model Int
+type alias Model =
+    { rounded_edges : Int }
 
 
 init : Model
 init =
-    Model 1
+    { rounded_edges = 30 }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -27,27 +27,32 @@ update msg model =
             ( model, Cmd.none )
 
 
-view : Html.Html msg
-view =
-    Element.layout []
-        myRowOfStuff
+view : Model -> Html.Html msg
+view model =
+    Element.layout [] <|
+        myRowOfStuff model
 
 
-myRowOfStuff =
+myRowOfStuff : Model -> Element msg
+myRowOfStuff model =
+    let
+        { rounded_edges } =
+            model
+    in
     row [ width fill, centerY, spacing 30 ]
-        [ myElement "aa"
-        , myElement "ss"
+        [ myElement rounded_edges "aa"
+        , myElement rounded_edges "ss"
         , el [ alignRight ] <|
-            row [ padding 20, spacing 20 ] (List.map myElement [ "asd", "ddd", "qweee" ])
+            row [ padding 20, spacing 20 ] (List.map (myElement rounded_edges) [ "asd", "ddd", "qweee" ])
         ]
 
 
-myElement : String -> Element msg
-myElement txt =
+myElement : Int -> String -> Element msg
+myElement rounded_edges txt =
     el
         [ Background.color (rgb255 255 50 50)
         , Font.color (rgb255 255 255 255)
-        , Border.rounded 3
+        , Border.rounded rounded_edges
         , padding 30
         ]
         (text txt)

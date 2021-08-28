@@ -27,10 +27,9 @@ update msg model =
     case msg of
         Click ->
             ( model, Cmd.none )
+
         Increment ->
-            let old = Debug.log "old" model.rounded_edges
-            in
-            Debug.log "incremented!!!" ({model | rounded_edges = old +10}, Cmd.none)
+            ( { model | rounded_edges = model.rounded_edges + 10 }, Cmd.none )
 
 
 view : Model -> Html.Html Msg
@@ -39,7 +38,7 @@ view model =
         column [ width fill, centerY ]
             [ myRowOfStuff model
             , row []
-                [ Input.button [] { onPress = (Just Increment), label = text "Click me" }
+                [ Input.button [] { onPress = Just Increment, label = text "Click me" }
                 ]
             ]
 

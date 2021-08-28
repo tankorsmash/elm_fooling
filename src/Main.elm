@@ -268,6 +268,7 @@ type alias Model =
     -- , saved_form_data : Maybe WeaponFrame
     , dota_model : DotaModel
     , dota_hero_stats_page_info : Table.PageInfo Msg
+    , elm_ui_playground_model : ElmUIPlayground.Model
     }
 
 
@@ -418,6 +419,7 @@ init _ url navKey =
             , dota_model = dota_model
             , dota_hero_stats_page_info = dota_hero_stats_page_info
             , frame_view_model = frame_view_model
+            , elm_ui_playground_model = ElmUIPlayground.init
             }
 
         existingCmds : Cmd Msg
@@ -790,7 +792,12 @@ update msg model =
                     dota_update dota_msg model.dota_model
             in
             ( { model | dota_model = dota_model }, dota_cmd )
+
         GotElmUIPlaygroundMsg elm_playground_msg ->
+            let
+                (sub_msg, sub_cmd) =
+                    ElmUIPlayground.update elm_playground_msg model.elm_ui_playground_model
+            in
             ( model, Cmd.none)
 
 

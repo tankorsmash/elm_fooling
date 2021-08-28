@@ -1,4 +1,4 @@
-module ElmUIPlayground exposing (view, Msg)
+module ElmUIPlayground exposing (view, Msg, update, init, Model)
 
 import Element exposing (Element, alignLeft, alignRight, centerY, el, fill, padding, rgb255, row, spacing, text, width)
 import Element.Background as Background
@@ -7,6 +7,16 @@ import Element.Font as Font
 import Html
 
 type Msg = Click
+
+type Model = Model Int
+
+init : Model
+init = Model 1
+
+update :  Msg -> Model -> (Model, Cmd Msg)
+update msg model =
+    case msg of
+        Click -> (model, Cmd.none)
 
 view : Html.Html msg
 view =

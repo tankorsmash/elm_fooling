@@ -1,4 +1,4 @@
-module ElmUIPlayground exposing (view, Msg, update, init, Model)
+module ElmUIPlayground exposing (Model, Msg, init, update, view)
 
 import Element exposing (Element, alignLeft, alignRight, centerY, el, fill, padding, rgb255, row, spacing, text, width)
 import Element.Background as Background
@@ -6,17 +6,26 @@ import Element.Border as Border
 import Element.Font as Font
 import Html
 
-type Msg = Click
 
-type Model = Model Int
+type Msg
+    = Click
+
+
+type Model
+    = Model Int
+
 
 init : Model
-init = Model 1
+init =
+    Model 1
 
-update :  Msg -> Model -> (Model, Cmd Msg)
+
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        Click -> (model, Cmd.none)
+        Click ->
+            ( model, Cmd.none )
+
 
 view : Html.Html msg
 view =
@@ -28,8 +37,8 @@ myRowOfStuff =
     row [ width fill, centerY, spacing 30 ]
         [ myElement "aa"
         , myElement "ss"
-        , el [ alignRight ]
-            <| row [padding 20, spacing 20] (List.map myElement [ "asd", "ddd", "qweee" ])
+        , el [ alignRight ] <|
+            row [ padding 20, spacing 20 ] (List.map myElement [ "asd", "ddd", "qweee" ])
         ]
 
 

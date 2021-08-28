@@ -1,6 +1,5 @@
 port module Main exposing (..)
 
-import ElmUIPlayground
 import Bootstrap.Button as Button
 import Bootstrap.CDN as CDN
 import Bootstrap.Card as Card
@@ -15,6 +14,7 @@ import Bootstrap.Navbar as Navbar
 import Browser
 import Browser.Navigation as Nav
 import Debug
+import ElmUIPlayground
 import FormData
     exposing
         ( DataType(..)
@@ -795,10 +795,10 @@ update msg model =
 
         GotElmUIPlaygroundMsg elm_playground_msg ->
             let
-                (sub_msg, sub_cmd) =
+                ( sub_msg, sub_cmd ) =
                     ElmUIPlayground.update elm_playground_msg model.elm_ui_playground_model
             in
-            ( model, Cmd.map GotElmUIPlaygroundMsg sub_cmd)
+            ( model, Cmd.map GotElmUIPlaygroundMsg sub_cmd )
 
 
 dota_update : DotaMsg -> DotaModel -> ( DotaModel, Cmd Msg )

@@ -703,7 +703,7 @@ update model msg =
         HashUpdated hash ->
             let new_frame_type = frame_type_from_hash hash
             in
-            ( model, Cmd.none )
+            ( {model | active_tab_frame_type = new_frame_type} , Task.perform (\_ -> DoDownloadAllFrames new_frame_type) Time.now)
 
         GotPageMsg frame_type page_msg ->
             let

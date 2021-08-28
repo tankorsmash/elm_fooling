@@ -512,14 +512,15 @@ update msg model =
 
                         _ ->
                             Debug.log "empty hash on UrlChanged" ""
-                ( frame_model, _ ) =
+
+                ( frame_model, frame_cmd ) =
                     Magnolia.FrameView.update model.frame_view_model (Magnolia.FrameView.HashUpdated fragment)
             in
             ( { model
                 | page_info = { page_info | url = url, route = newRoute }
                 , frame_view_model = frame_model
               }
-            , Cmd.none
+            , Cmd.map GotFrameViewMsg frame_cmd
             )
                 |> initCurrentPage
 

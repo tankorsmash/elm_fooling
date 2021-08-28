@@ -1,6 +1,6 @@
 module ElmUIPlayground exposing (Model, Msg, init, update, view)
 
-import Element exposing (Element, alignLeft, alignRight, centerY, column, el, fill, padding, rgb255, row, spacing, text, width)
+import Element exposing (Element, alignLeft, alignRight, centerX, centerY, column, el, explain, fill, padding, rgb255, row, spacing, text, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
@@ -32,14 +32,23 @@ update msg model =
             ( { model | rounded_edges = model.rounded_edges + 10 }, Cmd.none )
 
 
+primary_button : Msg -> String -> Element Msg
+primary_button on_press label =
+    Input.button
+        [ centerX
+        , Background.color <| rgb255 0 0 255
+        , Border.rounded 12
+        ]
+        { onPress = Just on_press, label = text label }
+
+
 view : Model -> Html.Html Msg
 view model =
     Element.layout [] <|
         column [ width fill, centerY ]
             [ myRowOfStuff model
-            , row []
-                [ Input.button [] { onPress = Just Increment, label = text "Click me" }
-                ]
+            , row [ width fill ]
+                [ primary_button Increment "CLICK ME" ]
             ]
 
 

@@ -51,7 +51,7 @@ import Http
 import Json.Decode exposing (Decoder, at, field, list, string)
 import Json.Encode exposing (string)
 import List
-import Magnolia.FrameView as FrameView
+import Magnolia.FrameView exposing (Msg(..))
 import Magnolia.WeaponFrame exposing (WeaponFrame)
 import OpenDota.OpenDota as OpenDota
 import PostData exposing (PostData)
@@ -144,7 +144,7 @@ type Msg
     | RecvFromPort String
       -- | GotEditWeaponFormUpdate Magnolia.WeaponFrame.EditFormUpdateType
       -- | SubmitFormData
-    | GotFrameViewMsg FrameView.Msg
+    | GotFrameViewMsg Magnolia.FrameView.Msg
     | DotaDownloadPlayerData Int
     | DotaDownloadedPlayerData (Result Http.Error OpenDota.PlayerData)
     | DotaDownloadHeroStats
@@ -260,7 +260,7 @@ type alias Model =
 
     -- , weapon_edit_form_definition : FormData.FormDefinition WeaponFrame Msg
     -- , form_data : WeaponFrame
-    , frame_view_model : FrameView.Model
+    , frame_view_model : Magnolia.FrameView.Model
 
     -- , saved_form_data : Maybe WeaponFrame
     , dota_model : DotaModel
@@ -382,7 +382,7 @@ init _ url navKey =
                     Debug.log "empty hash" ""
 
         ( frame_view_model, frame_view_cmds ) =
-            FrameView.init fragment
+            Magnolia.FrameView.init fragment
 
         initial_model : Model
         initial_model =
@@ -504,8 +504,21 @@ update msg model =
 
                 newRoute =
                     parseUrl url
+
+                fragment =
+                    case newRoute of
+                        Home (Just hash) ->
+                            Debug.log "filled hash on UrlChanged" hash
+
+                        _ ->
+                            Debug.log "empty hash on UrlChanged" ""
+                ( frame_model, _ ) =
+                    Magnolia.FrameView.update model.frame_view_model (Magnolia.FrameView.HashUpdated fragment)
             in
-            ( { model | page_info = { page_info | url = url, route = newRoute } }
+            ( { model
+                | page_info = { page_info | url = url, route = newRoute }
+                , frame_view_model = frame_model
+              }
             , Cmd.none
             )
                 |> initCurrentPage
@@ -694,7 +707,7 @@ update msg model =
         GotFrameViewMsg frame_view_msg ->
             let
                 ( frame_model, frame_cmd ) =
-                    FrameView.update model.frame_view_model frame_view_msg
+                    Magnolia.FrameView.update model.frame_view_model frame_view_msg
 
                 mapped_frame_cmd =
                     Cmd.map GotFrameViewMsg frame_cmd
@@ -1236,7 +1249,7 @@ homeView model =
                 FrameViewTab ->
                     Html.map (\msg -> GotFrameViewMsg msg) <|
                         div []
-                            [ FrameView.view model.frame_view_model
+                            [ Magnolia.FrameView.view model.frame_view_model
                             ]
 
                 ModalTab ->

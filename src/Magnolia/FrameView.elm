@@ -1,4 +1,4 @@
-module Magnolia.FrameView exposing (Model, Msg, init, update, view)
+module Magnolia.FrameView exposing (Model, Msg(..), init, update, view)
 
 -- import Json.Encode exposing (string)
 -- import Url.Parser exposing ((</>), Parser, int, map, oneOf, parse, s, string)
@@ -104,6 +104,7 @@ type Msg
     | GotPageMsg FrameType PageInfoMsg
     | GotTabMsg Tab.State
     | ClickChangeTab FrameType
+    | HashUpdated String --hash
 
 
 type alias FrameEditData f msg =
@@ -166,12 +167,46 @@ type alias Model =
     { frame_edit_datas : FrameEditDatas
     , frame_view_mode : FrameViewMode
     , active_tab : Tab.State
+    , active_tab_frame_type : FrameType
     }
 
 
 tab_prefix : String
 tab_prefix =
     "frame_view_tab__"
+
+
+frame_type_from_hash : String -> FrameType
+frame_type_from_hash hash =
+    if String.startsWith tab_prefix hash then
+        let
+            suffix =
+                String.dropLeft (String.length tab_prefix) hash
+        in
+        case suffix of
+            "weapon_frame" ->
+                WeaponFrame
+
+            "armor_frame" ->
+                ArmorFrame
+
+            "zone_frame" ->
+                ZoneFrame
+
+            "weapon_category_frame" ->
+                WeaponCategoryFrame
+
+            "attribute_frame" ->
+                AttributeFrame
+
+            "battle_text_struct_frame" ->
+                BattleTextStructFrame
+
+            _ ->
+                Debug.log ("error: unknown frame type suffix: " ++ suffix) WeaponFrame
+
+    else
+        WeaponFrame
 
 
 init : String -> ( Model, Cmd Msg )
@@ -277,35 +312,7 @@ init hash =
 
         initial_active_tab_frame_type : FrameType
         initial_active_tab_frame_type =
-            if String.startsWith tab_prefix hash then
-                let
-                    suffix =
-                        String.dropLeft (String.length tab_prefix) hash
-                in
-                case suffix of
-                    "weapon_frame" ->
-                        WeaponFrame
-
-                    "armor_frame" ->
-                        ArmorFrame
-
-                    "zone_frame" ->
-                        ZoneFrame
-
-                    "weapon_category_frame" ->
-                        WeaponCategoryFrame
-
-                    "attribute_frame" ->
-                        AttributeFrame
-
-                    "battle_text_struct_frame" ->
-                        BattleTextStructFrame
-
-                    _ ->
-                        Debug.log ("error: unknown frame type suffix: " ++ suffix) WeaponFrame
-
-            else
-                WeaponFrame
+            frame_type_from_hash hash
 
         initial_active_tab =
             case hash of
@@ -368,6 +375,7 @@ init hash =
                     }
                 }
             , active_tab = initial_active_tab
+            , active_tab_frame_type = initial_active_tab_frame_type
             , frame_view_mode = List
             }
 
@@ -690,6 +698,11 @@ update model msg =
             ( { model | active_tab = new_state }, Cmd.none )
 
         ClickChangeTab frame_type ->
+            ( model, Cmd.none )
+
+        HashUpdated hash ->
+            let new_frame_type = frame_type_from_hash hash
+            in
             ( model, Cmd.none )
 
         GotPageMsg frame_type page_msg ->

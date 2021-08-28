@@ -15,6 +15,7 @@
             "elm/random": "1.0.0",
             "elm/time": "1.0.0",
             "elm/url": "1.0.0",
+            "mdgriffith/elm-ui": "1.1.8",
             "rundis/elm-bootstrap": "5.2.0",
             "s6o/elm-recase": "1.0.1"
         },

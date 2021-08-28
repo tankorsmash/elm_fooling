@@ -1,14 +1,16 @@
 module ElmUIPlayground exposing (Model, Msg, init, update, view)
 
-import Element exposing (Element, alignLeft, alignRight, centerY, el, fill, padding, rgb255, row, spacing, text, width)
+import Element exposing (Element, alignLeft, alignRight, centerY, column, el, fill, padding, rgb255, row, spacing, text, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
+import Element.Input as Input
 import Html
 
 
 type Msg
     = Click
+    | Increment
 
 
 type alias Model =
@@ -17,7 +19,7 @@ type alias Model =
 
 init : Model
 init =
-    { rounded_edges = 30 }
+    { rounded_edges = 3 }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -25,12 +27,21 @@ update msg model =
     case msg of
         Click ->
             ( model, Cmd.none )
+        Increment ->
+            let old = Debug.log "old" model.rounded_edges
+            in
+            Debug.log "incremented!!!" ({model | rounded_edges = old +10}, Cmd.none)
 
 
-view : Model -> Html.Html msg
+view : Model -> Html.Html Msg
 view model =
     Element.layout [] <|
-        myRowOfStuff model
+        column [ width fill, centerY ]
+            [ myRowOfStuff model
+            , row []
+                [ Input.button [] { onPress = (Just Increment), label = text "Click me" }
+                ]
+            ]
 
 
 myRowOfStuff : Model -> Element msg

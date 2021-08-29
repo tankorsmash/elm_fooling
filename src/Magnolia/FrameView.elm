@@ -667,23 +667,6 @@ update_got_downloaded_all_frames model sub_msg =
     ( { model | frame_edit_datas = new_feds }, cmd )
 
 
-update_frame_data_for_fed model fed_getter frame_data =
-    let
-        feds =
-            model.frame_edit_datas
-
-        fed =
-            fed_getter feds
-
-        new_fed =
-            update_single_fed_frame_data fed frame_data
-
-        new_feds =
-            { feds | weapon = new_fed }
-    in
-    new_feds
-
-
 update_table_row_clicked_frame_type : Model -> TableRowClickedFrameType -> ( Model, Cmd Msg )
 update_table_row_clicked_frame_type model sub_msg =
     let

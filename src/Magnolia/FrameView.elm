@@ -479,7 +479,7 @@ update_got_frame_edit_form_update model sub_msg =
             ( update_frame_edit_datas
                 model
                 .weapon
-                (\feds new_fed -> { feds | weapon = new_fed })
+                update_fed_weapon
                 Magnolia.WeaponFrame.update_edit_form_data
                 form_update_type
             , Cmd.none
@@ -489,7 +489,7 @@ update_got_frame_edit_form_update model sub_msg =
             ( update_frame_edit_datas
                 model
                 .armor
-                (\feds new_fed -> { feds | armor = new_fed })
+                update_fed_armor
                 Magnolia.ArmorFrame.update_edit_form_data
                 form_update_type
             , Cmd.none
@@ -499,7 +499,7 @@ update_got_frame_edit_form_update model sub_msg =
             ( update_frame_edit_datas
                 model
                 .zone
-                (\feds new_fed -> { feds | zone = new_fed })
+                update_fed_zone
                 Magnolia.ZoneFrame.update_edit_form_data
                 form_update_type
             , Cmd.none
@@ -509,7 +509,7 @@ update_got_frame_edit_form_update model sub_msg =
             ( update_frame_edit_datas
                 model
                 .weapon_category
-                (\feds new_fed -> { feds | weapon_category = new_fed })
+                update_fed_weapon_category
                 Magnolia.WeaponCategoryFrame.update_edit_form_data
                 form_update_type
             , Cmd.none
@@ -519,7 +519,7 @@ update_got_frame_edit_form_update model sub_msg =
             ( update_frame_edit_datas
                 model
                 .attribute
-                (\feds new_fed -> { feds | attribute = new_fed })
+                update_fed_attribute
                 Magnolia.AttributeFrame.update_edit_form_data
                 form_update_type
             , Cmd.none
@@ -529,7 +529,7 @@ update_got_frame_edit_form_update model sub_msg =
             ( update_frame_edit_datas
                 model
                 .battle_text_struct
-                (\feds new_fed -> { feds | battle_text_struct = new_fed })
+                update_fed_battle_text_struct
                 Magnolia.BattleTextStructFrame.update_edit_form_data
                 form_update_type
             , Cmd.none
@@ -626,42 +626,42 @@ update_got_downloaded_all_frames model sub_msg =
                     handle_feds_download
                         feds
                         .weapon
-                        (\feds_ new_fed -> { feds_ | weapon = new_fed })
+                        update_fed_weapon
                         (unpack_response response)
 
                 DownloadedAllArmorFrames response ->
                     handle_feds_download
                         feds
                         .armor
-                        (\feds_ new_fed -> { feds_ | armor = new_fed })
+                        update_fed_armor
                         (unpack_response response)
 
                 DownloadedAllZoneFrames response ->
                     handle_feds_download
                         feds
                         .zone
-                        (\feds_ new_fed -> { feds_ | zone = new_fed })
+                        update_fed_zone
                         (unpack_response response)
 
                 DownloadedAllWeaponCategoryFrames response ->
                     handle_feds_download
                         feds
                         .weapon_category
-                        (\feds_ new_fed -> { feds_ | weapon_category = new_fed })
+                        update_fed_weapon_category
                         (unpack_response response)
 
                 DownloadedAllAttributeFrames response ->
                     handle_feds_download
                         feds
                         .attribute
-                        (\feds_ new_fed -> { feds_ | attribute = new_fed })
+                        update_fed_attribute
                         (unpack_response response)
 
                 DownloadedAllBattleTextStructFrames response ->
                     handle_feds_download
                         feds
                         .battle_text_struct
-                        (\feds_ new_fed -> { feds_ | battle_text_struct = new_fed })
+                        update_fed_battle_text_struct
                         (unpack_response response)
     in
     ( { model | frame_edit_datas = new_feds }, cmd )

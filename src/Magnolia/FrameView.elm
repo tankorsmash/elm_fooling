@@ -95,12 +95,12 @@ type AllFramesDownloaded
 
 
 type TableRowClickedFrameType
-    = ClickedTableRowWeaponFrame WeaponFrame
-    | ClickedTableRowArmorFrame ArmorFrame
-    | ClickedTableRowZoneFrame ZoneFrame
-    | ClickedTableRowWeaponCategoryFrame WeaponCategoryFrame
-    | ClickedTableRowAttributeFrame AttributeFrame
-    | ClickedTableRowBattleTextStructFrame BattleTextStructFrame
+    = ClickedTableRowWeaponFrame FrameType WeaponFrame
+    | ClickedTableRowArmorFrame FrameType ArmorFrame
+    | ClickedTableRowZoneFrame FrameType ZoneFrame
+    | ClickedTableRowWeaponCategoryFrame FrameType WeaponCategoryFrame
+    | ClickedTableRowAttributeFrame FrameType AttributeFrame
+    | ClickedTableRowBattleTextStructFrame FrameType BattleTextStructFrame
 
 
 type Msg
@@ -691,26 +691,26 @@ update_table_row_clicked_frame_type model sub_msg =
             model.frame_edit_datas
     in
     case sub_msg of
-        ClickedTableRowWeaponFrame frame_data ->
+        ClickedTableRowWeaponFrame frame_type frame_data ->
             let
                 new_feds =
                     update_frame_data_for_fed model .weapon frame_data
             in
             ( { model | frame_edit_datas = new_feds }, Cmd.none )
 
-        ClickedTableRowArmorFrame frame_data ->
+        ClickedTableRowArmorFrame frame_type frame_data ->
             ( model, Cmd.none )
 
-        ClickedTableRowZoneFrame frame_data ->
+        ClickedTableRowZoneFrame frame_type frame_data ->
             ( model, Cmd.none )
 
-        ClickedTableRowWeaponCategoryFrame frame_data ->
+        ClickedTableRowWeaponCategoryFrame frame_type frame_data ->
             ( model, Cmd.none )
 
-        ClickedTableRowAttributeFrame frame_data ->
+        ClickedTableRowAttributeFrame frame_type frame_data ->
             ( model, Cmd.none )
 
-        ClickedTableRowBattleTextStructFrame frame_data ->
+        ClickedTableRowBattleTextStructFrame frame_type frame_data ->
             ( model, Cmd.none )
 
 
@@ -947,42 +947,42 @@ do_render_tab model config =
                 config
                 model.frame_edit_datas.weapon
                 (Magnolia.WeaponFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponFormUpdate))
-                (TableRowClicked << ClickedTableRowWeaponFrame)
+                (TableRowClicked << ClickedTableRowWeaponFrame WeaponFrame)
 
         ArmorFrame ->
             render_tab_item model
                 config
                 model.frame_edit_datas.armor
                 (Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditArmorFormUpdate))
-                (TableRowClicked << ClickedTableRowArmorFrame)
+                (TableRowClicked << ClickedTableRowArmorFrame ArmorFrame)
 
         ZoneFrame ->
             render_tab_item model
                 config
                 model.frame_edit_datas.zone
                 (Magnolia.ZoneFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditZoneFormUpdate))
-                (TableRowClicked << ClickedTableRowZoneFrame)
+                (TableRowClicked << ClickedTableRowZoneFrame ZoneFrame)
 
         WeaponCategoryFrame ->
             render_tab_item model
                 config
                 model.frame_edit_datas.weapon_category
                 (Magnolia.WeaponCategoryFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponCategoryFormUpdate))
-                (TableRowClicked << ClickedTableRowWeaponCategoryFrame)
+                (TableRowClicked << ClickedTableRowWeaponCategoryFrame WeaponCategoryFrame)
 
         AttributeFrame ->
             render_tab_item model
                 config
                 model.frame_edit_datas.attribute
                 (Magnolia.AttributeFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditAttributeFormUpdate))
-                (TableRowClicked << ClickedTableRowAttributeFrame)
+                (TableRowClicked << ClickedTableRowAttributeFrame AttributeFrame)
 
         BattleTextStructFrame ->
             render_tab_item model
                 config
                 model.frame_edit_datas.battle_text_struct
                 (Magnolia.BattleTextStructFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditBattleTextStructFormUpdate))
-                (TableRowClicked << ClickedTableRowBattleTextStructFrame)
+                (TableRowClicked << ClickedTableRowBattleTextStructFrame BattleTextStructFrame)
 
 
 tabs_view : Model -> Html Msg

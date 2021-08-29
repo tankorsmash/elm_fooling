@@ -94,6 +94,15 @@ type AllFramesDownloaded
     | DownloadedAllBattleTextStructFrames (Result Http.Error (List BattleTextStructFrame))
 
 
+type TableRowClickedFrameType
+    = ClickedTableRowWeaponFrame WeaponFrame
+    | ClickedTableRowArmorFrame ArmorFrame
+    | ClickedTableRowZoneFrame ZoneFrame
+    | ClickedTableRowWeaponCategoryFrame WeaponCategoryFrame
+    | ClickedTableRowAttributeFrame AttributeFrame
+    | ClickedTableRowBattleTextStructFrame BattleTextStructFrame
+
+
 type Msg
     = ToggleFrameViewMode
     | GotFrameEditFormUpdate GotFrameEditFormUpdateMsg
@@ -105,7 +114,7 @@ type Msg
     | GotTabMsg Tab.State
     | ClickChangeTab FrameType
     | HashUpdated String --hash
-    | TableRowClicked FrameType
+    | TableRowClicked TableRowClickedFrameType
 
 
 type alias FrameEditData f msg =
@@ -718,8 +727,12 @@ update model msg =
             in
             ( { model | frame_edit_datas = set_page_info model.frame_edit_datas frame_type updated_page_info }, Cmd.none )
 
-        TableRowClicked frame_type ->
-            Debug.log "TABLE_ROW_CLICKED" ( model, Cmd.none )
+        TableRowClicked table_row_clicked_frame_type ->
+            let
+                _ =
+                    Debug.log "FrameView Table row clicked" table_row_clicked_frame_type
+            in
+            ( model, Cmd.none )
 
 
 get_page_info : FrameEditDatas -> FrameType -> Table.PageInfo Msg
@@ -788,11 +801,11 @@ type alias TabItemConfig =
     { form_edit_view : Html Msg, frame_type : FrameType }
 
 
-build_table_definition : FrameType -> List (FormData.FormField fd Msg) -> TableDefinition fd Msg
-build_table_definition frame_type form_fields =
+build_table_definition : FrameType -> List (FormData.FormField fd Msg) -> (fd -> Msg) -> TableDefinition fd Msg
+build_table_definition frame_type form_fields on_row_click =
     { title = Just <| to_string frame_type
     , columns = List.indexedMap form_field_to_column form_fields
-    , on_row_click = \obj -> TableRowClicked frame_type
+    , on_row_click = on_row_click
     }
 
 
@@ -836,8 +849,9 @@ render_tab_item :
     -> TabItemConfig
     -> FrameEditData fd Msg
     -> FormData.FormDefinition fd Msg
+    -> (fd -> Msg)
     -> Tab.Item Msg
-render_tab_item model config frame_edit_data form_definition =
+render_tab_item model config frame_edit_data form_definition on_row_click =
     let
         frame_type : FrameType
         frame_type =
@@ -849,7 +863,7 @@ render_tab_item model config frame_edit_data form_definition =
 
         table_definition : TableDefinition fd Msg
         table_definition =
-            build_table_definition frame_type form_fields
+            build_table_definition frame_type form_fields on_row_click
 
         row_data : List fd
         row_data =
@@ -890,36 +904,42 @@ do_render_tab model config =
                 config
                 model.frame_edit_datas.weapon
                 (Magnolia.WeaponFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponFormUpdate))
+                (TableRowClicked << ClickedTableRowWeaponFrame)
 
         ArmorFrame ->
             render_tab_item model
                 config
                 model.frame_edit_datas.armor
                 (Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditArmorFormUpdate))
+                (TableRowClicked << ClickedTableRowArmorFrame)
 
         ZoneFrame ->
             render_tab_item model
                 config
                 model.frame_edit_datas.zone
                 (Magnolia.ZoneFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditZoneFormUpdate))
+                (TableRowClicked << ClickedTableRowZoneFrame)
 
         WeaponCategoryFrame ->
             render_tab_item model
                 config
                 model.frame_edit_datas.weapon_category
                 (Magnolia.WeaponCategoryFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponCategoryFormUpdate))
+                (TableRowClicked << ClickedTableRowWeaponCategoryFrame)
 
         AttributeFrame ->
             render_tab_item model
                 config
                 model.frame_edit_datas.attribute
                 (Magnolia.AttributeFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditAttributeFormUpdate))
+                (TableRowClicked << ClickedTableRowAttributeFrame)
 
         BattleTextStructFrame ->
             render_tab_item model
                 config
                 model.frame_edit_datas.battle_text_struct
                 (Magnolia.BattleTextStructFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditBattleTextStructFormUpdate))
+                (TableRowClicked << ClickedTableRowBattleTextStructFrame)
 
 
 tabs_view : Model -> Html Msg

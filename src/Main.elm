@@ -64,6 +64,7 @@ import Time
 import Url
 import Url.Parser exposing ((</>), Parser, fragment, int, map, oneOf, parse, s, string)
 import Utils exposing (add_class)
+import VisualOutput
 import Weather
 
 
@@ -153,6 +154,7 @@ type Msg
     | DotaUpdate DotaMsg
     | GotElmUIPlaygroundMsg ElmUIPlayground.Msg
     | TableRowClicked
+    | GotVisualOutputMsg VisualOutput.Msg
 
 
 
@@ -270,6 +272,7 @@ type alias Model =
     , dota_model : DotaModel
     , dota_hero_stats_page_info : Table.PageInfo Msg
     , elm_ui_playground_model : ElmUIPlayground.Model
+    , visual_output_model : VisualOutput.Model
     }
 
 
@@ -373,8 +376,8 @@ init _ url navKey =
 
         initial_tab =
             FrameViewTab
-            -- ElmUIPlaygroundTab
 
+        -- ElmUIPlaygroundTab
         dota_model : DotaModel
         dota_model =
             { player_data = Nothing, account_id = 24801519, hero_stats = Nothing }
@@ -421,6 +424,7 @@ init _ url navKey =
             , dota_hero_stats_page_info = dota_hero_stats_page_info
             , frame_view_model = frame_view_model
             , elm_ui_playground_model = ElmUIPlayground.init
+            , visual_output_model = VisualOutput.init
             }
 
         existingCmds : Cmd Msg
@@ -807,6 +811,15 @@ update msg model =
 
         TableRowClicked ->
             Debug.log "TABLE_ROW_CLICKED" ( model, Cmd.none )
+
+        GotVisualOutputMsg sub_msg ->
+            let
+                ( sub_model, sub_cmd ) =
+                    VisualOutput.update sub_msg model.visual_output_model
+            in
+            ( { model | visual_output_model = sub_model }
+            , Cmd.map GotVisualOutputMsg sub_cmd
+            )
 
 
 dota_update : DotaMsg -> DotaModel -> ( DotaModel, Cmd Msg )
@@ -1310,7 +1323,8 @@ homeView model =
                         ]
 
                 ElmUIPlaygroundTab ->
-                    Html.map GotElmUIPlaygroundMsg <| ElmUIPlayground.view model.elm_ui_playground_model
+                    Html.map GotElmUIPlaygroundMsg <|
+                        ElmUIPlayground.view model.elm_ui_playground_model
     in
     div [ add_class "container" ]
         [ div [ add_class "row" ]
@@ -1329,7 +1343,8 @@ homeView model =
         , div [ add_class "row" ]
             [ div [ add_class "col-md-12" ] [ tab_content ]
             ]
-        , br [] []
+        , Html.map (\msg -> GotVisualOutputMsg msg) <|
+            VisualOutput.view model.visual_output_model
         ]
 
 

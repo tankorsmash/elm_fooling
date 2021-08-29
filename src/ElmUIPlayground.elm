@@ -2,7 +2,7 @@ module ElmUIPlayground exposing (Model, Msg, init, update, view)
 
 import Color
 import Color.Convert as Convert
-import Element exposing (Color, Element, alignLeft, alignRight, centerX, centerY, column, el, explain, fill, padding, rgb, rgb255, row, spacing, text, width)
+import Element exposing (Color, Element, alignLeft, alignRight, centerX, centerY, column, el, explain, fill, fillPortion, padding, rgb, rgb255, row, spacing, text, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
@@ -55,20 +55,21 @@ update msg model =
             ( { model | rounded_edges = model.rounded_edges + 10 }, Cmd.none )
 
 
-primary_button : Msg -> String -> Element Msg
-primary_button on_press label =
+primary_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
+primary_button attrs on_press label =
     Input.button
-        [ centerX
-
-        -- bs4-like values
-        , Font.color white_color
-        , Font.size 16
-        , padding 6
-        , Background.color primary_color
-        , Border.rounded 5
-        , Border.width 5
-        , Border.color primary_color
-        ]
+        (attrs
+            ++ [ -- bs4-like values
+                 Font.color white_color
+               , Font.size 16
+               , Font.center
+               , padding 6
+               , Background.color primary_color
+               , Border.rounded 5
+               , Border.width 5
+               , Border.color primary_color
+               ]
+        )
         { onPress = Just on_press, label = text label }
 
 
@@ -78,7 +79,14 @@ view model =
         column [ width fill, centerY ]
             [ myRowOfStuff model
             , row [ width fill ]
-                [ primary_button Increment "Click Me" ]
+                [ row [ width <| fillPortion 2 ] []
+                , column [ width <| fillPortion 1 ]
+                    [ primary_button [] Increment "Click Me"
+                    ]
+                , column [ width <| fillPortion 1 ]
+                    [ primary_button [] Increment "End"
+                    ]
+                ]
             ]
 
 

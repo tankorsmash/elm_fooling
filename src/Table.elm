@@ -75,6 +75,12 @@ type alias ColumnDef obj =
     }
 
 
+type alias RenderedRow obj =
+    { row_data : List String
+    , row_obj : Maybe obj
+    }
+
+
 
 -- type alias ColumnLookup obj =
 --     { column_id : String
@@ -131,9 +137,9 @@ build_col value col_def =
     td styles [ rendered_col ]
 
 
-build_table_row : List String -> ColumnDefList obj -> Html msg
+build_table_row : RenderedRow obj -> ColumnDefList obj -> Html msg
 build_table_row row_data columns =
-    tr [] <| List.map2 build_col row_data columns
+    tr [] <| List.map2 build_col row_data.row_data columns
 
 
 type alias StylePair =
@@ -254,7 +260,7 @@ paginate per_page page_idx rows =
     paginated
 
 
-build_rows : List (ColumnDef obj) -> obj -> List String
+build_rows : List (ColumnDef obj) -> obj -> RenderedRow obj
 build_rows column_defs row =
     let
         cell_builder cl =
@@ -268,14 +274,17 @@ build_rows column_defs row =
                 Img ->
                     cl.lookup_func row
     in
-    List.foldl
-        (\cl acc ->
-            acc
-                ++ [ cell_builder cl ]
-        )
-        []
-    <|
-        List.sortBy .idx column_defs
+    { row_data =
+        List.foldl
+            (\cl acc ->
+                acc
+                    ++ [ cell_builder cl ]
+            )
+            []
+        <|
+            List.sortBy .idx column_defs
+    , row_obj = Just row
+    }
 
 
 build_prev_page_msg : PageInfo msg -> msg
@@ -308,6 +317,7 @@ view table_def unsorted_rows page_info =
             else
                 span [] []
 
+        sorted_rows : List (RenderedRow obj)
         sorted_rows =
             List.map (build_rows columns) unsorted_rows
 
@@ -318,12 +328,13 @@ view table_def unsorted_rows page_info =
         -- col_styles =
         --     List.map .styles columns
         --
-        paginated_rows : List (List String)
+        paginated_rows : List (RenderedRow obj)
         paginated_rows =
             let
                 per_page =
                     page_info.per_page
 
+                rows : List (RenderedRow obj)
                 rows =
                     paginate page_info.per_page page_info.current_page_idx sorted_rows
             in
@@ -335,15 +346,20 @@ view table_def unsorted_rows page_info =
                     rows
                         ++ (let
                                 dummy_row =
-                                    List.map (\_ -> "-") <| List.range 0 (List.length columns - 1)
+                                    { row_data =
+                                        List.map (\_ -> "-") <|
+                                            List.range 0 (List.length columns - 1)
+                                    , row_obj = Nothing
+                                    }
 
                                 val =
-                                    List.map (\_ -> dummy_row) <| List.range 0 (num_missing - 1)
+                                    List.map (\_ -> dummy_row) <|
+                                        List.range 0 (num_missing - 1)
                             in
                             val
                            )
 
-        row_builder : List String -> Html msg
+        row_builder : RenderedRow obj -> Html msg
         row_builder row =
             build_table_row row columns
 
@@ -357,7 +373,7 @@ view table_def unsorted_rows page_info =
                     no_content_warning
 
                 rows ->
-                    if List.all (\el -> List.length el == 0) rows then
+                    if List.all (\el -> List.length el.row_data == 0) rows then
                         no_content_warning
 
                     else

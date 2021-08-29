@@ -1372,7 +1372,7 @@ port exec_jsonp : String -> Cmd msg
 
 view : Model -> Browser.Document Msg
 view model =
-    { title = "URL Interceptor"
+    { title = "Elm Fooling"
     , body =
         [ case model.page_info.page of
             NotFoundPage ->

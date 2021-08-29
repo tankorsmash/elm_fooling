@@ -433,8 +433,8 @@ update_single_fed_frame_data fed new_frame_data =
 
 
 update_feds : FrameEditDatas -> FedsUpdater frameData msg -> FrameEditData frameData msg -> FrameEditDatas
-update_feds feds getter new_fed =
-    getter feds new_fed
+update_feds feds feds_updater new_fed =
+    feds_updater feds new_fed
 
 
 {-| updates the model's FrameEditDatas, using the UpdateEditFormFunc
@@ -667,6 +667,53 @@ update_got_downloaded_all_frames model sub_msg =
     ( { model | frame_edit_datas = new_feds }, cmd )
 
 
+update_frame_data_for_fed model fed_getter frame_data =
+    let
+        feds =
+            model.frame_edit_datas
+
+        fed =
+            model.frame_edit_datas.weapon
+
+        new_fed =
+            { fed | frame_data = frame_data }
+
+        new_feds =
+            { feds | weapon = new_fed }
+    in
+    new_feds
+
+
+update_table_row_clicked_frame_type : Model -> TableRowClickedFrameType -> ( Model, Cmd Msg )
+update_table_row_clicked_frame_type model sub_msg =
+    let
+        feds =
+            model.frame_edit_datas
+    in
+    case sub_msg of
+        ClickedTableRowWeaponFrame frame_data ->
+            let
+                new_feds =
+                    update_frame_data_for_fed model .weapon frame_data
+            in
+            ( { model | frame_edit_datas = new_feds }, Cmd.none )
+
+        ClickedTableRowArmorFrame frame_data ->
+            ( model, Cmd.none )
+
+        ClickedTableRowZoneFrame frame_data ->
+            ( model, Cmd.none )
+
+        ClickedTableRowWeaponCategoryFrame frame_data ->
+            ( model, Cmd.none )
+
+        ClickedTableRowAttributeFrame frame_data ->
+            ( model, Cmd.none )
+
+        ClickedTableRowBattleTextStructFrame frame_data ->
+            ( model, Cmd.none )
+
+
 update : Model -> Msg -> ( Model, Cmd Msg )
 update model msg =
     case msg of
@@ -727,12 +774,8 @@ update model msg =
             in
             ( { model | frame_edit_datas = set_page_info model.frame_edit_datas frame_type updated_page_info }, Cmd.none )
 
-        TableRowClicked table_row_clicked_frame_type ->
-            let
-                _ =
-                    Debug.log "FrameView Table row clicked" table_row_clicked_frame_type
-            in
-            ( model, Cmd.none )
+        TableRowClicked sub_msg ->
+            update_table_row_clicked_frame_type model sub_msg
 
 
 get_page_info : FrameEditDatas -> FrameType -> Table.PageInfo Msg

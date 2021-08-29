@@ -673,10 +673,10 @@ update_frame_data_for_fed model fed_getter frame_data =
             model.frame_edit_datas
 
         fed =
-            model.frame_edit_datas.weapon
+            fed_getter feds
 
         new_fed =
-            { fed | frame_data = frame_data }
+            update_single_fed_frame_data fed frame_data
 
         new_feds =
             { feds | weapon = new_fed }
@@ -689,29 +689,41 @@ update_table_row_clicked_frame_type model sub_msg =
     let
         feds =
             model.frame_edit_datas
+
+        new_feds =
+            case sub_msg of
+                ClickedTableRowWeaponFrame frame_type frame_data ->
+                    { feds
+                        | weapon =
+                            update_single_fed_frame_data feds.weapon frame_data
+                    }
+
+                ClickedTableRowArmorFrame frame_type frame_data ->
+                    { feds
+                        | armor = update_single_fed_frame_data feds.armor frame_data
+                    }
+
+                ClickedTableRowZoneFrame frame_type frame_data ->
+                    { feds
+                        | zone = update_single_fed_frame_data feds.zone frame_data
+                    }
+
+                ClickedTableRowWeaponCategoryFrame frame_type frame_data ->
+                    { feds
+                        | weapon_category = update_single_fed_frame_data feds.weapon_category frame_data
+                    }
+
+                ClickedTableRowAttributeFrame frame_type frame_data ->
+                    { feds
+                        | attribute = update_single_fed_frame_data feds.attribute frame_data
+                    }
+
+                ClickedTableRowBattleTextStructFrame frame_type frame_data ->
+                    { feds
+                        | battle_text_struct = update_single_fed_frame_data feds.battle_text_struct frame_data
+                    }
     in
-    case sub_msg of
-        ClickedTableRowWeaponFrame frame_type frame_data ->
-            let
-                new_feds =
-                    update_frame_data_for_fed model .weapon frame_data
-            in
-            ( { model | frame_edit_datas = new_feds }, Cmd.none )
-
-        ClickedTableRowArmorFrame frame_type frame_data ->
-            ( model, Cmd.none )
-
-        ClickedTableRowZoneFrame frame_type frame_data ->
-            ( model, Cmd.none )
-
-        ClickedTableRowWeaponCategoryFrame frame_type frame_data ->
-            ( model, Cmd.none )
-
-        ClickedTableRowAttributeFrame frame_type frame_data ->
-            ( model, Cmd.none )
-
-        ClickedTableRowBattleTextStructFrame frame_type frame_data ->
-            ( model, Cmd.none )
+    ( { model | frame_edit_datas = new_feds }, Cmd.none )
 
 
 update : Model -> Msg -> ( Model, Cmd Msg )

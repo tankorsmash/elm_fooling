@@ -335,14 +335,7 @@ view table_def unsorted_rows page_info =
                     rows
                         ++ (let
                                 dummy_row =
-                                    -- [ "https://picsum.photos/32/32", "123", "HERO NAME" ]
-                                    -- List.map (\_ -> "") <| List.range 0 (List.length columns - 1)
-                                    case rows of
-                                        [] ->
-                                            []
-
-                                        head :: rest ->
-                                            head
+                                    List.map (\_ -> "-") <| List.range 0 (List.length columns - 1)
 
                                 val =
                                     List.map (\_ -> dummy_row) <| List.range 0 (num_missing - 1)

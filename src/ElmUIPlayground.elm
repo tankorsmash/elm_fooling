@@ -1,6 +1,8 @@
 module ElmUIPlayground exposing (Model, Msg, init, update, view)
 
-import Element exposing (Element, alignLeft, alignRight, centerX, centerY, column, el, explain, fill, padding, rgb255, row, spacing, text, width)
+import Color
+import Color.Convert as Convert
+import Element exposing (Color, Element, alignLeft, alignRight, centerX, centerY, column, el, explain, fill, padding, rgb, rgb255, row, spacing, text, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Font as Font
@@ -15,6 +17,27 @@ type Msg
 
 type alias Model =
     { rounded_edges : Int }
+
+
+white_color : Color
+white_color =
+    rgb 1 1 1
+
+
+primary_color : Color
+primary_color =
+    case Convert.hexToColor "#007bff" of
+        Ok color ->
+            let
+                -- convert to a Color lib Color record
+                rgba =
+                    Color.toRgba color
+            in
+            -- from the Color record, call the ElmUI `rgb` func
+            rgb rgba.red rgba.green rgba.blue
+
+        Err err ->
+            rgb255 255 0 0
 
 
 init : Model
@@ -36,8 +59,15 @@ primary_button : Msg -> String -> Element Msg
 primary_button on_press label =
     Input.button
         [ centerX
-        , Background.color <| rgb255 0 0 255
-        , Border.rounded 12
+
+        -- bs4-like values
+        , Font.color white_color
+        , Font.size 16
+        , padding 6
+        , Background.color primary_color
+        , Border.rounded 5
+        , Border.width 5
+        , Border.color primary_color
         ]
         { onPress = Just on_press, label = text label }
 
@@ -48,7 +78,7 @@ view model =
         column [ width fill, centerY ]
             [ myRowOfStuff model
             , row [ width fill ]
-                [ primary_button Increment "CLICK ME" ]
+                [ primary_button Increment "Click Me" ]
             ]
 
 

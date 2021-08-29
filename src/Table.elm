@@ -65,6 +65,10 @@ type PageInfoMsg
     | ChangePageMsg Int
 
 
+type TableMsg obj
+    = RowClicked obj
+
+
 type alias ColumnDef obj =
     { column_id : String
     , idx : Int
@@ -89,8 +93,11 @@ type alias RenderedRow obj =
 --obj is the type of things in the rows we're holding in the table
 
 
-type alias TableDefinition obj =
-    { title : Maybe String, columns : List (ColumnDef obj) }
+type alias TableDefinition obj msg =
+    { title : Maybe String
+    , columns : List (ColumnDef obj)
+    , on_row_click : obj -> msg
+    }
 
 
 build_single_table_header : ( String, List ( String, String ) ) -> Html msg
@@ -137,9 +144,14 @@ build_col value col_def =
     td styles [ rendered_col ]
 
 
-build_table_row : RenderedRow obj -> ColumnDefList obj -> Html msg
-build_table_row row_data columns =
-    tr [] <| List.map2 build_col row_data.row_data columns
+build_table_row : RenderedRow obj -> ColumnDefList obj -> (obj -> msg) -> Html msg
+build_table_row { row_data, row_obj } columns to_msg =
+    case row_obj of
+        Just row_obj_ ->
+            tr [ onClick <| to_msg row_obj_ ] <| List.map2 build_col row_data columns
+
+        Nothing ->
+            tr [] <| List.map2 build_col row_data columns
 
 
 type alias StylePair =
@@ -304,7 +316,7 @@ build_change_page_msg page_info page_idx =
 
 {-| Assumes `rows` comes in column-idx order already
 -}
-view : TableDefinition obj -> List obj -> PageInfo msg -> Html msg
+view : TableDefinition obj msg -> List obj -> PageInfo msg -> Html msg
 view table_def unsorted_rows page_info =
     let
         columns =
@@ -361,7 +373,7 @@ view table_def unsorted_rows page_info =
 
         row_builder : RenderedRow obj -> Html msg
         row_builder row =
-            build_table_row row columns
+            build_table_row row columns table_def.on_row_click
 
         no_content_warning =
             [ tr [] [ td [] [ text "no content" ] ] ]

@@ -105,6 +105,7 @@ type Msg
     | GotTabMsg Tab.State
     | ClickChangeTab FrameType
     | HashUpdated String --hash
+    | TableRowClicked FrameType
 
 
 type alias FrameEditData f msg =
@@ -717,6 +718,9 @@ update model msg =
             in
             ( { model | frame_edit_datas = set_page_info model.frame_edit_datas frame_type updated_page_info }, Cmd.none )
 
+        TableRowClicked frame_type ->
+            Debug.log "TABLE_ROW_CLICKED" ( model, Cmd.none )
+
 
 get_page_info : FrameEditDatas -> FrameType -> Table.PageInfo Msg
 get_page_info feds frame_type =
@@ -784,9 +788,12 @@ type alias TabItemConfig =
     { form_edit_view : Html Msg, frame_type : FrameType }
 
 
-build_table_definition : FrameType -> List (FormData.FormField fd msg) -> TableDefinition fd
+build_table_definition : FrameType -> List (FormData.FormField fd Msg) -> TableDefinition fd Msg
 build_table_definition frame_type form_fields =
-    { title = Just <| to_string frame_type, columns = List.indexedMap form_field_to_column form_fields }
+    { title = Just <| to_string frame_type
+    , columns = List.indexedMap form_field_to_column form_fields
+    , on_row_click = \obj -> TableRowClicked frame_type
+    }
 
 
 {-| Looks up a FrameData's field and renders to a string
@@ -840,7 +847,7 @@ render_tab_item model config frame_edit_data form_definition =
         form_fields =
             form_definition.fields
 
-        table_definition : TableDefinition fd
+        table_definition : TableDefinition fd Msg
         table_definition =
             build_table_definition frame_type form_fields
 

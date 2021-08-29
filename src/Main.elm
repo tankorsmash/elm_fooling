@@ -152,6 +152,7 @@ type Msg
     | DotaDownloadedHeroStats (Result Http.Error (List OpenDota.HeroStat))
     | DotaUpdate DotaMsg
     | GotElmUIPlaygroundMsg ElmUIPlayground.Msg
+    | TableRowClicked
 
 
 
@@ -804,6 +805,9 @@ update msg model =
             , Cmd.map GotElmUIPlaygroundMsg sub_cmd
             )
 
+        TableRowClicked ->
+            Debug.log "TABLE_ROW_CLICKED" ( model, Cmd.none )
+
 
 dota_update : DotaMsg -> DotaModel -> ( DotaModel, Cmd Msg )
 dota_update msg dota_model =
@@ -905,9 +909,9 @@ my_row_datas =
     ]
 
 
-my_table_definition : TableDefinition PostData
+my_table_definition : TableDefinition PostData Msg
 my_table_definition =
-    { title = Just "Post Datas", columns = my_column_defs }
+    { title = Just "Post Datas", columns = my_column_defs, on_row_click = \obj -> TableRowClicked }
 
 
 
@@ -1011,7 +1015,10 @@ listing_view model =
             ]
 
         table_def =
-            { title = Just "Submissions", columns = column_defs }
+            { title = Just "Submissions"
+            , columns = column_defs
+            , on_row_click = \obj -> TableRowClicked
+            }
 
         row_data =
             model.reddit_listing_wrapper.data.children
@@ -1124,7 +1131,10 @@ dota_hero_stats_table : Table.PageInfo Msg -> List OpenDota.HeroStat -> Html Msg
 dota_hero_stats_table page_info hero_stats =
     let
         table_definition =
-            { title = Just "Hero Stats", columns = dota_column_defs }
+            { title = Just "Hero Stats"
+            , columns = dota_column_defs
+            , on_row_click = \obj -> TableRowClicked
+            }
     in
     Table.view table_definition hero_stats page_info
 

@@ -81,6 +81,7 @@ primary_button attrs on_press label =
         { onPress = Just on_press, label = text label }
 
 
+modal : Maybe String -> Element.Element Msg
 modal maybe_str =
     let
         str =

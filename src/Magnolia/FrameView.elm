@@ -667,6 +667,36 @@ update_got_downloaded_all_frames model sub_msg =
     ( { model | frame_edit_datas = new_feds }, cmd )
 
 
+update_fed_weapon : FrameEditDatas -> FrameEditData WeaponFrame Msg -> FrameEditDatas
+update_fed_weapon feds new_fed =
+    { feds | weapon = new_fed }
+
+
+update_fed_armor : FrameEditDatas -> FrameEditData ArmorFrame Msg -> FrameEditDatas
+update_fed_armor feds new_fed =
+    { feds | armor = new_fed }
+
+
+update_fed_zone : FrameEditDatas -> FrameEditData ZoneFrame Msg -> FrameEditDatas
+update_fed_zone feds new_fed =
+    { feds | zone = new_fed }
+
+
+update_fed_weapon_category : FrameEditDatas -> FrameEditData WeaponCategoryFrame Msg -> FrameEditDatas
+update_fed_weapon_category feds new_fed =
+    { feds | weapon_category = new_fed }
+
+
+update_fed_attribute : FrameEditDatas -> FrameEditData AttributeFrame Msg -> FrameEditDatas
+update_fed_attribute feds new_fed =
+    { feds | attribute = new_fed }
+
+
+update_fed_battle_text_struct : FrameEditDatas -> FrameEditData BattleTextStructFrame Msg -> FrameEditDatas
+update_fed_battle_text_struct feds new_fed =
+    { feds | battle_text_struct = new_fed }
+
+
 update_table_row_clicked_frame_type : Model -> TableRowClickedFrameType -> ( Model, Cmd Msg )
 update_table_row_clicked_frame_type model sub_msg =
     let
@@ -676,35 +706,28 @@ update_table_row_clicked_frame_type model sub_msg =
         new_feds =
             case sub_msg of
                 ClickedTableRowWeaponFrame frame_type frame_data ->
-                    { feds
-                        | weapon =
-                            update_single_fed_frame_data feds.weapon frame_data
-                    }
+                    update_fed_weapon feds <|
+                        update_single_fed_frame_data feds.weapon frame_data
 
                 ClickedTableRowArmorFrame frame_type frame_data ->
-                    { feds
-                        | armor = update_single_fed_frame_data feds.armor frame_data
-                    }
+                    update_fed_armor feds <|
+                        update_single_fed_frame_data feds.armor frame_data
 
                 ClickedTableRowZoneFrame frame_type frame_data ->
-                    { feds
-                        | zone = update_single_fed_frame_data feds.zone frame_data
-                    }
+                    update_fed_zone feds <|
+                        update_single_fed_frame_data feds.zone frame_data
 
                 ClickedTableRowWeaponCategoryFrame frame_type frame_data ->
-                    { feds
-                        | weapon_category = update_single_fed_frame_data feds.weapon_category frame_data
-                    }
+                    update_fed_weapon_category feds <|
+                        update_single_fed_frame_data feds.weapon_category frame_data
 
                 ClickedTableRowAttributeFrame frame_type frame_data ->
-                    { feds
-                        | attribute = update_single_fed_frame_data feds.attribute frame_data
-                    }
+                    update_fed_attribute feds <|
+                        update_single_fed_frame_data feds.attribute frame_data
 
                 ClickedTableRowBattleTextStructFrame frame_type frame_data ->
-                    { feds
-                        | battle_text_struct = update_single_fed_frame_data feds.battle_text_struct frame_data
-                    }
+                    update_fed_battle_text_struct feds <|
+                        update_single_fed_frame_data feds.battle_text_struct frame_data
     in
     ( { model | frame_edit_datas = new_feds }, Cmd.none )
 
@@ -804,22 +827,22 @@ set_page_info : FrameEditDatas -> FrameType -> Table.PageInfo Msg -> FrameEditDa
 set_page_info feds frame_type new_page_info =
     case frame_type of
         WeaponFrame ->
-            { feds | weapon = update_only_page_info feds.weapon new_page_info }
+            update_fed_weapon feds <| update_only_page_info feds.weapon new_page_info
 
         ArmorFrame ->
-            { feds | armor = update_only_page_info feds.armor new_page_info }
+            update_fed_armor feds <| update_only_page_info feds.armor new_page_info
 
         ZoneFrame ->
-            { feds | zone = update_only_page_info feds.zone new_page_info }
+            update_fed_zone feds <| update_only_page_info feds.zone new_page_info
 
         WeaponCategoryFrame ->
-            { feds | weapon_category = update_only_page_info feds.weapon_category new_page_info }
+            update_fed_weapon_category feds <| update_only_page_info feds.weapon_category new_page_info
 
         AttributeFrame ->
-            { feds | attribute = update_only_page_info feds.attribute new_page_info }
+            update_fed_attribute feds <| update_only_page_info feds.attribute new_page_info
 
         BattleTextStructFrame ->
-            { feds | battle_text_struct = update_only_page_info feds.battle_text_struct new_page_info }
+            update_fed_battle_text_struct feds <| update_only_page_info feds.battle_text_struct new_page_info
 
 
 bootstrap_button type_ on_click text_ =

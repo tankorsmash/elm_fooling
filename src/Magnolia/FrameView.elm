@@ -810,7 +810,7 @@ update model msg =
                 ( model_, cmd ) =
                     update_table_row_clicked_frame_type model sub_msg
             in
-            ( model_, cmd, Noop )
+            ( model_, cmd, ToVisualOutput "Clicked a table row")
 
 
 get_page_info : FrameEditDatas -> FrameType -> Table.PageInfo Msg

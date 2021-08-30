@@ -549,7 +549,7 @@ update msg model =
                         }
             in
             ( new_model
-            , Cmd.map GotFrameViewMsg frame_cmd
+            , Cmd.batch [ Cmd.map GotFrameViewMsg frame_cmd, new_cmd ]
             )
                 |> initCurrentPage
 
@@ -741,8 +741,12 @@ update msg model =
 
                 mapped_frame_cmd =
                     Cmd.map GotFrameViewMsg frame_cmd
+
+                ( new_model, new_cmd ) =
+                    processOutMsg out_msg
+                        { model | frame_view_model = frame_model }
             in
-            ( { model | frame_view_model = frame_model }, mapped_frame_cmd )
+            ( new_model, Cmd.batch [ mapped_frame_cmd, new_cmd ] )
 
         DotaDownloadPlayerData account_id ->
             ( model, OpenDota.download_player_data account_id DotaDownloadedPlayerData )

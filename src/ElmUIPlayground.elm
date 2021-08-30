@@ -121,7 +121,7 @@ view model =
         }
         [ in_front ]
     <|
-        column [ width fill, centerY ]
+        column [ width fill]
             [ myRowOfStuff model
             , row [ width fill ]
                 [ row [ width <| fillPortion 2 ] []

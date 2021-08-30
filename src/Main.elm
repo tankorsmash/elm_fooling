@@ -1368,16 +1368,23 @@ homeView model =
                 ElmUIPlaygroundTab ->
                     Html.map GotElmUIPlaygroundMsg <|
                         ElmUIPlayground.view model.elm_ui_playground_model
+
+        bootstrap_stylesheet =
+            CDN.stylesheet
+
+        visual_output_view =
+            div []
+                [ Html.map (\msg -> GotVisualOutputMsg msg) <|
+                    VisualOutput.view model.visual_output_model
+                ]
     in
     div [ add_class "container" ]
-        [ Html.map (\msg -> GotVisualOutputMsg msg) <|
-            VisualOutput.view model.visual_output_model
-        , div [ add_class "row" ]
+        [ div [ add_class "row" ]
             [ div [ add_class "col-md-12" ]
                 [ site_navigation model
-                , CDN.stylesheet
+                , bootstrap_stylesheet
                 ]
-            , br [] []
+            , visual_output_view
             ]
         , button_primary (RequestJSONP "ASDS") "Port Send"
         , div [ add_class "row" ]

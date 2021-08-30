@@ -105,6 +105,7 @@ type TableRowClickedFrameType
 
 type Msg
     = ToggleFrameViewMode
+    | SetFrameViewMode FrameViewMode
     | GotFrameEditFormUpdate GotFrameEditFormUpdateMsg
     | DoDownloadAllFrames FrameType
       -- | DoDownloadWeaponFrames
@@ -756,6 +757,9 @@ update model msg =
             in
             ( { model | frame_view_mode = new_frame_view_mode }, Cmd.none, Noop )
 
+        SetFrameViewMode new_frame_view_mode ->
+            ( { model | frame_view_mode = new_frame_view_mode }, Cmd.none, Noop )
+
         GotFrameEditFormUpdate sub_msg ->
             let
                 ( model_, cmd ) =
@@ -779,15 +783,15 @@ update model msg =
             in
             ( new_model, new_cmd, Noop )
 
-        GotTabMsg new_state ->
+        GotTabMsg new_active_tab ->
             let
                 _ =
                     Debug.log "changing tabs" ""
 
-                -- _ = case new_state of
-                --     Just _ -> Debug.log "" ""
+                ( new_model, new_cmd, _ ) =
+                    update { model | active_tab = new_active_tab } <| SetFrameViewMode List
             in
-            ( { model | active_tab = new_state }, Cmd.none, Noop )
+            ( new_model, new_cmd, Noop )
 
         ClickChangeTab frame_type ->
             ( model, Cmd.none, Noop )

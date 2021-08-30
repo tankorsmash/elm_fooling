@@ -12,8 +12,6 @@ _root_static_asset_dir_from_config = (
 )
 root_static_asset_dir = Path(_root_static_asset_dir_from_config)
 
-# app.config["TEST"] = "FOO"
-
 
 def open_json_file(path):
     combo_path = root_static_asset_dir / (path)

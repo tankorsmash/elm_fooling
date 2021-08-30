@@ -115,7 +115,7 @@ type Msg
     = OnPageLoad Time.Posix
     | Increment
     | Decrement
-    | Poop
+    | TestMsg (Result Http.Error Bool)
     | Change String
     | Tick Time.Posix
       -- | AdjustTimeZone Time.Zone
@@ -164,6 +164,9 @@ type Msg
 
 root_json_server_url =
     "http://localhost:5021/"
+
+root_data_json_server_url =
+    "http://localhost:4126/"
 
 
 add_class cls =
@@ -432,6 +435,10 @@ init _ url navKey =
             Cmd.batch
                 [ --Task.perform AdjustTimeZone Time.here,
                   Cmd.map GotFrameViewMsg frame_view_cmds
+                , Http.get
+                    { url = root_data_json_server_url ++ "test"
+                    , expect = Http.expectJson TestMsg (field "success" Json.Decode.bool)
+                    }
 
                 -- frame_view_cmds
                 , navbarCmd
@@ -487,7 +494,7 @@ processOutMsg outMsg model =
                 ( new_model, new_cmd ) =
                     update
                         (GotVisualOutputMsg <|
-                            VisualOutput.ShowModal (Just <| "Received a Magnolia.FrameView.ToVisualOutput msg:\n"++str)
+                            VisualOutput.ShowModal (Just <| "Received a Magnolia.FrameView.ToVisualOutput msg:\n" ++ str)
                         )
                         model
             in
@@ -510,8 +517,8 @@ update msg model =
         Decrement ->
             ( { model | count = model.count - 1 }, Cmd.none )
 
-        Poop ->
-            ( { model | count = model.count + 2 }, Cmd.none )
+        TestMsg resp ->
+            (  model , Cmd.none )
 
         Change newContent ->
             ( { model | content = newContent }, Cmd.none )

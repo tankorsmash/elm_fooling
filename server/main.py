@@ -1,7 +1,7 @@
 import json
 
 import bottle
-from bottle import route, run
+from bottle import route, run, get, post
 
 from pathlib import Path
 
@@ -35,6 +35,13 @@ FRAME_TYPES_TO_FILENAME = {
 def error(message="no set error message"):
     return {"success": False, "message": message}
 
+@post("/test")
+def test_post(data):
+    return {"success": True, "response": data}
+
+@get("/test")
+def test_get():
+    return {"success": True}
 
 @route("/frames/<frame_type>")
 def frames(frame_type):

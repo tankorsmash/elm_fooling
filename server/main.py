@@ -1,7 +1,7 @@
 import json
 
 import bottle
-from bottle import route, run, get, post
+from bottle import route, run, get, post, response
 
 from pathlib import Path
 
@@ -11,6 +11,31 @@ _root_static_asset_dir_from_config = (
     r"C:\Users\Josh\Documents\cocos_projects\magnolia_cocos\Resources\static_asset_dir"
 )
 root_static_asset_dir = Path(_root_static_asset_dir_from_config)
+
+
+class EnableCors:
+    """Enable CORS support for http reequests"""
+
+    name = "enable_cors"
+    api = 2
+
+    def apply(self, fn, context):
+        def _enable_cors(*args, **kwargs):
+            # set CORS headers
+            response.headers["Access-Control-Allow-Origin"] = "*"
+            response.headers["Access-Control-Allow-Methods"] = "GET, POST, PUT, OPTIONS"
+            response.headers[
+                "Access-Control-Allow-Headers"
+            ] = "Origin, Accept, Content-Type, X-Requested-With, X-CSRF-Token"
+
+            if bottle.request.method != "OPTIONS":
+                # actual request; reply with the actual response
+                return fn(*args, **kwargs)
+
+        return _enable_cors
+
+
+app.install(EnableCors())
 
 
 def open_json_file(path):
@@ -35,13 +60,16 @@ FRAME_TYPES_TO_FILENAME = {
 def error(message="no set error message"):
     return {"success": False, "message": message}
 
+
 @post("/test")
 def test_post(data):
     return {"success": True, "response": data}
 
+
 @get("/test")
 def test_get():
     return {"success": True}
+
 
 @route("/frames/<frame_type>")
 def frames(frame_type):

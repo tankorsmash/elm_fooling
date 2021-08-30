@@ -811,7 +811,7 @@ update model msg =
                     update_table_row_clicked_frame_type model sub_msg
             in
             -- ( model_, cmd, ToVisualOutput "Clicked a table row")
-            ( model_, cmd, Noop)
+            ( model_, cmd, Noop )
 
 
 get_page_info : FrameEditDatas -> FrameType -> Table.PageInfo Msg
@@ -969,7 +969,13 @@ render_tab_item model config frame_edit_data form_definition on_row_click =
         , link = Tab.link [] [ text <| to_string frame_type ]
         , pane =
             Tab.pane [ Spacing.mt3 ]
-                [ button_primary ToggleFrameViewMode "Toggle View"
+                [ Button.button
+                    [ Button.outlineSecondary
+                    , Button.block
+                    , Button.attrs [ onClick ToggleFrameViewMode ]
+                    ]
+                    [ text "Full Toggle View" ]
+                , br [] []
                 , rendered_tab_content
                 ]
         }

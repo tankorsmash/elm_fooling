@@ -733,8 +733,12 @@ update_table_row_clicked_frame_type model sub_msg =
                 ClickedTableRowBattleTextStructFrame frame_type frame_data ->
                     update_fed_battle_text_struct feds <|
                         update_single_fed_frame_data feds.battle_text_struct frame_data
+
+        -- toggle the ui so we are looking at the detail mode
+        ( new_model, new_cmd, _ ) =
+            update { model | frame_edit_datas = new_feds } ToggleFrameViewMode
     in
-    ( { model | frame_edit_datas = new_feds }, Cmd.none )
+    ( new_model, new_cmd )
 
 
 update : Model -> Msg -> ( Model, Cmd Msg, OutMsg )

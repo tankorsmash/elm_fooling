@@ -165,6 +165,7 @@ type Msg
 root_json_server_url =
     "http://localhost:5021/"
 
+
 root_data_json_server_url =
     "http://localhost:4126/"
 
@@ -341,6 +342,14 @@ download_all_posts =
     downloader DownloadedAllPosts (list PostData.decode_single)
 
 
+post_to_test_post : Cmd Msg
+post_to_test_post =
+    Http.get
+        { url = root_data_json_server_url ++ "test"
+        , expect = Http.expectJson TestMsg (field "success" Json.Decode.bool)
+        }
+
+
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init _ url navKey =
     let
@@ -435,10 +444,7 @@ init _ url navKey =
             Cmd.batch
                 [ --Task.perform AdjustTimeZone Time.here,
                   Cmd.map GotFrameViewMsg frame_view_cmds
-                , Http.get
-                    { url = root_data_json_server_url ++ "test"
-                    , expect = Http.expectJson TestMsg (field "success" Json.Decode.bool)
-                    }
+                , post_to_test_post
 
                 -- frame_view_cmds
                 , navbarCmd
@@ -518,7 +524,7 @@ update msg model =
             ( { model | count = model.count - 1 }, Cmd.none )
 
         TestMsg resp ->
-            (  model , Cmd.none )
+            ( model, Cmd.none )
 
         Change newContent ->
             ( { model | content = newContent }, Cmd.none )

@@ -1370,7 +1370,9 @@ homeView model =
                         ElmUIPlayground.view model.elm_ui_playground_model
     in
     div [ add_class "container" ]
-        [ div [ add_class "row" ]
+        [ Html.map (\msg -> GotVisualOutputMsg msg) <|
+            VisualOutput.view model.visual_output_model
+        , div [ add_class "row" ]
             [ div [ add_class "col-md-12" ]
                 [ site_navigation model
                 , CDN.stylesheet
@@ -1386,8 +1388,6 @@ homeView model =
         , div [ add_class "row" ]
             [ div [ add_class "col-md-12" ] [ tab_content ]
             ]
-        , Html.map (\msg -> GotVisualOutputMsg msg) <|
-            VisualOutput.view model.visual_output_model
         ]
 
 

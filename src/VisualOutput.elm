@@ -47,9 +47,10 @@ view model =
 
             else
                 -- TODO come up with a better way to return nothing from this
-                Element.inFront <| el [] <| text ""
+                Element.inFront <| Element.none
     in
-    Element.layout [ in_front ] <| column [] []
+    Element.layout [ in_front ] <| Element.none
+    -- Html.div [] []
 
 
 modal : Maybe String -> Element.Element Msg

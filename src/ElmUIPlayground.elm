@@ -115,7 +115,12 @@ view model =
                 -- TODO come up with a better way to return nothing from this
                 Element.inFront <| el [] <| text ""
     in
-    Element.layout [ in_front ] <|
+    -- Element.layout
+    Element.layoutWith
+        { options = [ Element.noStaticStyleSheet ]
+        }
+        [ in_front ]
+    <|
         column [ width fill, centerY ]
             [ myRowOfStuff model
             , row [ width fill ]
@@ -153,6 +158,6 @@ myElement rounded_edges txt =
         [ Background.color (rgb255 255 50 50)
         , Font.color (rgb255 255 255 255)
         , Border.rounded rounded_edges
-        , padding 5
+        , padding 30
         ]
         (text txt)

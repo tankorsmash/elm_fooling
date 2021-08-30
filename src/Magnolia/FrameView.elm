@@ -1,4 +1,4 @@
-module Magnolia.FrameView exposing (Model, Msg(..), init, update, view)
+module Magnolia.FrameView exposing (Model, Msg(..), OutMsg(..), init, update, view)
 
 -- import Json.Encode exposing (string)
 -- import Url.Parser exposing ((</>), Parser, int, map, oneOf, parse, s, string)
@@ -115,6 +115,11 @@ type Msg
     | ClickChangeTab FrameType
     | HashUpdated String --hash
     | TableRowClicked TableRowClickedFrameType
+
+
+type OutMsg
+    = Noop
+    | ToVisualOutput String
 
 
 type alias FrameEditData f msg =
@@ -732,7 +737,7 @@ update_table_row_clicked_frame_type model sub_msg =
     ( { model | frame_edit_datas = new_feds }, Cmd.none )
 
 
-update : Model -> Msg -> ( Model, Cmd Msg )
+update : Model -> Msg -> ( Model, Cmd Msg, OutMsg )
 update model msg =
     case msg of
         ToggleFrameViewMode ->
@@ -745,14 +750,22 @@ update model msg =
                         List ->
                             Edit
             in
-            ( { model | frame_view_mode = new_frame_view_mode }, Cmd.none )
+            ( { model | frame_view_mode = new_frame_view_mode }, Cmd.none, Noop )
 
         GotFrameEditFormUpdate sub_msg ->
-            update_got_frame_edit_form_update model sub_msg
+            let
+                ( model_, cmd ) =
+                    update_got_frame_edit_form_update model sub_msg
+            in
+            ( model_, cmd, Noop )
 
         -- DoDownloadWeaponFrames ->
         DoDownloadAllFrames frame_type ->
-            update_do_download_all_frames model frame_type
+            let
+                ( model_, cmd ) =
+                    update_do_download_all_frames model frame_type
+            in
+            ( model_, cmd, Noop )
 
         -- GotDownloadedWeaponFrames response ->
         GotDownloadedAllFrames all_frames_downloaded ->
@@ -760,7 +773,7 @@ update model msg =
                 ( new_model, new_cmd ) =
                     update_got_downloaded_all_frames model all_frames_downloaded
             in
-            ( new_model, new_cmd )
+            ( new_model, new_cmd, Noop )
 
         GotTabMsg new_state ->
             let
@@ -770,17 +783,17 @@ update model msg =
                 -- _ = case new_state of
                 --     Just _ -> Debug.log "" ""
             in
-            ( { model | active_tab = new_state }, Cmd.none )
+            ( { model | active_tab = new_state }, Cmd.none, Noop )
 
         ClickChangeTab frame_type ->
-            ( model, Cmd.none )
+            ( model, Cmd.none, Noop )
 
         HashUpdated hash ->
             let
                 new_frame_type =
                     frame_type_from_hash hash
             in
-            ( { model | active_tab_frame_type = new_frame_type }, Task.perform (\_ -> DoDownloadAllFrames new_frame_type) Time.now )
+            ( { model | active_tab_frame_type = new_frame_type }, Task.perform (\_ -> DoDownloadAllFrames new_frame_type) Time.now, Noop )
 
         GotPageMsg frame_type page_msg ->
             let
@@ -790,10 +803,14 @@ update model msg =
                 updated_page_info =
                     update_page_info old_page_info page_msg
             in
-            ( { model | frame_edit_datas = set_page_info model.frame_edit_datas frame_type updated_page_info }, Cmd.none )
+            ( { model | frame_edit_datas = set_page_info model.frame_edit_datas frame_type updated_page_info }, Cmd.none, Noop )
 
         TableRowClicked sub_msg ->
-            update_table_row_clicked_frame_type model sub_msg
+            let
+                ( model_, cmd ) =
+                    update_table_row_clicked_frame_type model sub_msg
+            in
+            ( model_, cmd, Noop )
 
 
 get_page_info : FrameEditDatas -> FrameType -> Table.PageInfo Msg

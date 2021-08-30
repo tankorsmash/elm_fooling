@@ -473,6 +473,20 @@ initCurrentPage ( model, existingCmds ) =
 -- UPDATE
 
 
+processOutMsg : Magnolia.FrameView.OutMsg -> Model -> ( Model, Cmd Msg )
+processOutMsg outMsg model =
+    case outMsg of
+        Magnolia.FrameView.Noop ->
+            ( model, Cmd.none )
+
+        Magnolia.FrameView.ToVisualOutput str ->
+            let
+                _ =
+                    Debug.log "got visual str" str
+            in
+            ( model, Cmd.none )
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -524,13 +538,17 @@ update msg model =
                         _ ->
                             Debug.log "empty hash on UrlChanged" ""
 
-                ( frame_model, frame_cmd ) =
+                ( frame_model, frame_cmd, out_msg ) =
                     Magnolia.FrameView.update model.frame_view_model (Magnolia.FrameView.HashUpdated fragment)
+
+                ( new_model, new_cmd ) =
+                    processOutMsg out_msg
+                        { model
+                            | page_info = { page_info | url = url, route = newRoute }
+                            , frame_view_model = frame_model
+                        }
             in
-            ( { model
-                | page_info = { page_info | url = url, route = newRoute }
-                , frame_view_model = frame_model
-              }
+            ( new_model
             , Cmd.map GotFrameViewMsg frame_cmd
             )
                 |> initCurrentPage
@@ -718,7 +736,7 @@ update msg model =
         --
         GotFrameViewMsg frame_view_msg ->
             let
-                ( frame_model, frame_cmd ) =
+                ( frame_model, frame_cmd, out_msg ) =
                     Magnolia.FrameView.update model.frame_view_model frame_view_msg
 
                 mapped_frame_cmd =

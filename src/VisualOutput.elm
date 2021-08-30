@@ -1,4 +1,4 @@
-module VisualOutput exposing (Model, Msg, init, update, view)
+module VisualOutput exposing (Model, Msg(..), init, update, view)
 
 import Color
 import Color.Convert as Convert

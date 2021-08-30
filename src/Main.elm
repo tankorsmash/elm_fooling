@@ -483,8 +483,15 @@ processOutMsg outMsg model =
             let
                 _ =
                     Debug.log "got visual str" str
+
+                ( new_model, new_cmd ) =
+                    update
+                        (GotVisualOutputMsg <|
+                            VisualOutput.ShowModal (Just <| "Received a Magnolia.FrameView.ToVisualOutput msg:\n"++str)
+                        )
+                        model
             in
-            ( model, Cmd.none )
+            ( new_model, new_cmd )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )

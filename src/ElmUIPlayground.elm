@@ -153,6 +153,6 @@ myElement rounded_edges txt =
         [ Background.color (rgb255 255 50 50)
         , Font.color (rgb255 255 255 255)
         , Border.rounded rounded_edges
-        , padding 30
+        , padding 5
         ]
         (text txt)

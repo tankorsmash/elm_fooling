@@ -387,7 +387,8 @@ init _ url navKey =
             Table.new_page_info (GotPageMsg DotaHeroStatsTable)
 
         initial_tab =
-            FrameViewTab
+            -- FrameViewTab
+            ElmUIPlaygroundTab
 
         -- ElmUIPlaygroundTab
         dota_model : DotaModel

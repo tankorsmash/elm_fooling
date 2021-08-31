@@ -524,7 +524,17 @@ update msg model =
         Decrement ->
             ( { model | count = model.count - 1 }, Cmd.none )
 
-        TestMsg resp ->
+        TestMsg resp_ ->
+            let
+                foo =
+                    case resp_ of
+                        Ok resp ->
+                            let _ = Debug.log "resp" resp
+                            in ()
+
+                        Err err ->
+                            ()
+            in
             ( model, Cmd.none )
 
         Change newContent ->

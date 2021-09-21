@@ -387,8 +387,8 @@ init _ url navKey =
             Table.new_page_info (GotPageMsg DotaHeroStatsTable)
 
         initial_tab =
-            -- FrameViewTab
-            ElmUIPlaygroundTab
+            FrameViewTab
+            -- ElmUIPlaygroundTab
 
         -- ElmUIPlaygroundTab
         dota_model : DotaModel
@@ -1391,12 +1391,12 @@ homeView model =
     div [ add_class "container" ]
         [ div [ add_class "row" ]
             [ div [ add_class "col-md-12" ]
-                [ site_navigation model
-                , bootstrap_stylesheet
+                [ -- site_navigation model
+                 bootstrap_stylesheet
                 ]
             , visual_output_view
             ]
-        , button_primary (RequestJSONP "ASDS") "Port Send"
+        -- , button_primary (RequestJSONP "ASDS") "Port Send"
         , div [ add_class "row" ]
             [ div [ add_class "col-md-12" ]
                 [ navbar model ]

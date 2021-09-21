@@ -392,7 +392,8 @@ init hash =
                 }
             , active_tab = initial_active_tab
             , active_tab_frame_type = initial_active_tab_frame_type
-            , frame_view_mode = List
+            -- , frame_view_mode = List
+            , frame_view_mode = Edit
             }
 
         -- init_cmds = Cmd.none
@@ -1087,6 +1088,7 @@ form_data_view frame_edit_data =
         [ Grid.col [ Col.sm11, Col.md8 ]
             [ Form.form []
                 [ FormData.render_fields form_definition.fields frame_data
+                 , div [] []
                 ]
             ]
         ]

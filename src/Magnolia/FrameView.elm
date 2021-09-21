@@ -107,6 +107,7 @@ type Msg
     = ToggleFrameViewMode
     | SetFrameViewMode FrameViewMode
     | GotFrameEditFormUpdate GotFrameEditFormUpdateMsg
+    | SubmitFrameEditForm
     | DoDownloadAllFrames FrameType
       -- | DoDownloadWeaponFrames
     | GotDownloadedAllFrames AllFramesDownloaded
@@ -768,6 +769,9 @@ update model msg =
             in
             ( model_, cmd, Noop )
 
+        SubmitFrameEditForm ->
+            (model, Cmd.none, Noop)
+
         -- DoDownloadWeaponFrames ->
         DoDownloadAllFrames frame_type ->
             let
@@ -1088,7 +1092,7 @@ form_data_view frame_edit_data =
         [ Grid.col [ Col.sm11, Col.md8 ]
             [ Form.form []
                 [ FormData.render_fields form_definition.fields frame_data
-                 , div [] []
+                 , button_primary SubmitFrameEditForm "Submit"
                 ]
             ]
         ]

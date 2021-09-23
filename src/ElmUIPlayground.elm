@@ -39,6 +39,8 @@ type Msg
     = Click
     | Increment
     | ShowModal (Maybe String)
+    | GotHoverOnCard
+    | EndHoverOnCard
 
 
 type alias Model =
@@ -91,6 +93,12 @@ update msg model =
         ShowModal maybe_str ->
             ( { model | show_modal = not model.show_modal, modal_text = maybe_str }, Cmd.none )
 
+        GotHoverOnCard ->
+            ( { model | rounded_edges = 50 }, Cmd.none )
+
+        EndHoverOnCard ->
+            ( { model | rounded_edges = 3 }, Cmd.none )
+
 
 primary_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
 primary_button attrs on_press label =
@@ -137,14 +145,16 @@ scaled_font x =
     Font.size <| scaled x
 
 
-left_card : Element msg
-left_card =
+left_card : Model -> Element Msg
+left_card model =
     row
         [ Background.color (rgb255 0xA0 0xA0 0xA0)
         , scaled_font 2
         , paddingXY 5 10
         , width fill
-        , Border.rounded 10
+        , Border.rounded <| model.rounded_edges + 10
+        , Events.onMouseEnter <| GotHoverOnCard
+        , Events.onMouseLeave <| EndHoverOnCard
         ]
         [ column [ width fill ]
             [ el [ centerX, scaled_font 3 ] <| text "Card Header"
@@ -195,7 +205,7 @@ view model =
                     [ width <| fillPortion 3
                     , padding 1
                     ]
-                    [ left_card ]
+                    [ left_card model ]
                 , column [ width <| fillPortion 2 ] [ text "B" ]
                 , column [ width fill ] [ text "C" ]
                 ]

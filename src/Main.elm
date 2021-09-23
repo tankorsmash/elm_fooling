@@ -387,8 +387,8 @@ init _ url navKey =
             Table.new_page_info (GotPageMsg DotaHeroStatsTable)
 
         initial_tab =
-            -- FrameViewTab
-            ElmUIPlaygroundTab
+            FrameViewTab
+            -- ElmUIPlaygroundTab
 
         -- ElmUIPlaygroundTab
         dota_model : DotaModel
@@ -445,7 +445,7 @@ init _ url navKey =
             Cmd.batch
                 [ --Task.perform AdjustTimeZone Time.here,
                   Cmd.map GotFrameViewMsg frame_view_cmds
-                , post_to_test_post
+                -- , post_to_test_post
 
                 -- frame_view_cmds
                 , navbarCmd

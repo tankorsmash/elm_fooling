@@ -393,13 +393,16 @@ init hash =
                 }
             , active_tab = initial_active_tab
             , active_tab_frame_type = initial_active_tab_frame_type
+
             -- , frame_view_mode = List
             , frame_view_mode = Edit
             }
 
         -- init_cmds = Cmd.none
         init_cmds =
-            Cmd.batch [ Task.perform (\_ -> DoDownloadAllFrames initial_active_tab_frame_type) Time.now ]
+            Cmd.batch
+                [ -- Task.perform (\_ -> DoDownloadAllFrames initial_active_tab_frame_type) Time.now
+                ]
     in
     ( init_model, init_cmds )
 
@@ -770,7 +773,7 @@ update model msg =
             ( model_, cmd, Noop )
 
         SubmitFrameEditForm ->
-            (model, Cmd.none, Noop)
+            ( model, Cmd.none, Noop )
 
         -- DoDownloadWeaponFrames ->
         DoDownloadAllFrames frame_type ->
@@ -1092,7 +1095,7 @@ form_data_view frame_edit_data =
         [ Grid.col [ Col.sm11, Col.md8 ]
             [ Form.form []
                 [ FormData.render_fields form_definition.fields frame_data
-                 , button_primary SubmitFrameEditForm "Submit"
+                , button_primary SubmitFrameEditForm "Submit"
                 ]
             ]
         ]

@@ -2,7 +2,7 @@ module ElmUIPlayground exposing (Model, Msg, init, update, view)
 
 import Color
 import Color.Convert as Convert
-import Element exposing (Color, Element, alignLeft, alignRight, centerX, centerY, column, el, explain, fill, fillPortion, height, padding, rgb, rgb255, row, spacing, text, width)
+import Element exposing (Color, Element, alignLeft, alignRight, centerX, centerY, column, el, explain, fill, fillPortion, height, modular, padding, paddingXY, paragraph, rgb, rgb255, row, spacing, text, width)
 import Element.Background as Background
 import Element.Border as Border
 import Element.Events as Events
@@ -24,6 +24,11 @@ type alias Model =
 white_color : Color
 white_color =
     rgb 1 1 1
+
+
+scaled : Int -> Int
+scaled val =
+    modular 16 1.25 val |> round
 
 
 primary_color : Color
@@ -104,6 +109,32 @@ modal maybe_str =
         [ column [ centerX ] [ text str ] ]
 
 
+scaled_font x =
+    Font.size <| scaled x
+
+
+left_card : Element msg
+left_card =
+    row
+        [ Background.color (rgb255 0xA0 0xA0 0xA0)
+        , scaled_font 2
+        , paddingXY 5 10
+        , width fill
+        , Border.rounded 10
+        ]
+        [ column [ width fill ]
+            [ el [ centerX, scaled_font 3 ] <| text "Card Header"
+            , el [ scaled_font 0, Font.italic, centerX, padding 1 ] <| text "Subtitle here"
+            , paragraph []
+                [ text "This is the main body of card. "
+                , text "More text too. "
+                , el [ Font.color (rgb 0.6 0 0) ] <| text "Red text is nice."
+                , el [ Font.bold ] <| text "But bold is better."
+                ]
+            ]
+        ]
+
+
 view : Model -> Html.Html Msg
 view model =
     let
@@ -121,7 +152,7 @@ view model =
         }
         [ in_front ]
     <|
-        column [ width fill]
+        column [ width fill ]
             [ myRowOfStuff model
             , row [ width fill ]
                 [ row [ width <| fillPortion 2 ] []
@@ -134,6 +165,15 @@ view model =
                 , column [ width <| fillPortion 1 ]
                     [ primary_button [] Increment "End"
                     ]
+                ]
+            , row [ width fill ]
+                [ column
+                    [ width <| fillPortion 3
+                    , padding 1
+                    ]
+                    [ left_card ]
+                , column [ width <| fillPortion 2 ] [ text "B" ]
+                , column [ width fill ] [ text "C" ]
                 ]
             ]
 

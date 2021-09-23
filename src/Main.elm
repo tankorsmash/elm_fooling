@@ -388,7 +388,6 @@ init _ url navKey =
 
         initial_tab =
             FrameViewTab
-            -- ElmUIPlaygroundTab
 
         -- ElmUIPlaygroundTab
         dota_model : DotaModel
@@ -398,10 +397,10 @@ init _ url navKey =
         fragment =
             case parsedRoute of
                 Home (Just hash) ->
-                    Debug.log "filled hash" hash
+                    hash
 
                 _ ->
-                    Debug.log "empty hash" ""
+                    ""
 
         ( frame_view_model, frame_view_cmds ) =
             Magnolia.FrameView.init fragment
@@ -445,8 +444,8 @@ init _ url navKey =
             Cmd.batch
                 [ --Task.perform AdjustTimeZone Time.here,
                   Cmd.map GotFrameViewMsg frame_view_cmds
-                -- , post_to_test_post
 
+                -- , post_to_test_post
                 -- frame_view_cmds
                 , navbarCmd
 
@@ -529,8 +528,11 @@ update msg model =
                 foo =
                     case resp_ of
                         Ok resp ->
-                            let _ = Debug.log "resp" resp
-                            in ()
+                            let
+                                _ =
+                                    Debug.log "resp" resp
+                            in
+                            ()
 
                         Err err ->
                             ()
@@ -1392,10 +1394,11 @@ homeView model =
         [ div [ add_class "row" ]
             [ div [ add_class "col-md-12" ]
                 [ -- site_navigation model
-                 bootstrap_stylesheet
+                  bootstrap_stylesheet
                 ]
             , visual_output_view
             ]
+
         -- , button_primary (RequestJSONP "ASDS") "Port Send"
         , div [ add_class "row" ]
             [ div [ add_class "col-md-12" ]

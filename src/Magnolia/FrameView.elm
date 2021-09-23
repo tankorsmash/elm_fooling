@@ -132,6 +132,7 @@ type alias FrameEditData f msg =
     , saved_frame_data : Maybe f
     , table_view_page_info : Table.PageInfo msg
     , frame_type : FrameType
+    , frame_type_str : String -- "weapon", "zone", "weapon_category" etc
     }
 
 
@@ -164,6 +165,53 @@ to_string frame_type =
 
         BattleTextStructFrame ->
             "BattleTextStructFrame"
+
+
+to_data_name : FrameType -> String
+to_data_name frame_type =
+    case frame_type of
+        WeaponFrame ->
+            "weapon"
+
+        ArmorFrame ->
+            "armor"
+
+        ZoneFrame ->
+            "zone"
+
+        WeaponCategoryFrame ->
+            "weapon_category"
+
+        AttributeFrame ->
+            "attribute"
+
+        BattleTextStructFrame ->
+            "battle_text_struct"
+
+
+from_data_name : String -> Maybe FrameType
+from_data_name frame_type_str =
+    case frame_type_str of
+        "weapon" ->
+            Just WeaponFrame
+
+        "armor" ->
+            Just ArmorFrame
+
+        "zone" ->
+            Just ZoneFrame
+
+        "weapon_category" ->
+            Just WeaponCategoryFrame
+
+        "attribute" ->
+            Just AttributeFrame
+
+        "battle_text_struct" ->
+            Just BattleTextStructFrame
+
+        _ ->
+            Nothing
 
 
 type alias FrameEditDatas =
@@ -350,6 +398,7 @@ init hash =
                     , saved_frame_data = saved_weapon_frame_data
                     , table_view_page_info = Table.new_page_info (GotPageMsg WeaponFrame)
                     , frame_type = WeaponFrame
+                    , frame_type_str = to_data_name WeaponFrame
                     }
                 , armor =
                     { form_definition = Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditArmorFormUpdate)
@@ -358,6 +407,7 @@ init hash =
                     , saved_frame_data = saved_armor_frame_data
                     , table_view_page_info = Table.new_page_info (GotPageMsg ArmorFrame)
                     , frame_type = ArmorFrame
+                    , frame_type_str = to_data_name ArmorFrame
                     }
                 , zone =
                     { form_definition = Magnolia.ZoneFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditZoneFormUpdate)
@@ -366,6 +416,7 @@ init hash =
                     , saved_frame_data = saved_zone_frame_data
                     , table_view_page_info = Table.new_page_info (GotPageMsg ZoneFrame)
                     , frame_type = ZoneFrame
+                    , frame_type_str = to_data_name ZoneFrame
                     }
                 , weapon_category =
                     { form_definition = Magnolia.WeaponCategoryFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponCategoryFormUpdate)
@@ -374,6 +425,7 @@ init hash =
                     , saved_frame_data = saved_weapon_category_frame_data
                     , table_view_page_info = Table.new_page_info (GotPageMsg WeaponCategoryFrame)
                     , frame_type = WeaponCategoryFrame
+                    , frame_type_str = to_data_name WeaponCategoryFrame
                     }
                 , attribute =
                     { form_definition = Magnolia.AttributeFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditAttributeFormUpdate)
@@ -382,6 +434,7 @@ init hash =
                     , saved_frame_data = saved_attribute_frame_data
                     , table_view_page_info = Table.new_page_info (GotPageMsg AttributeFrame)
                     , frame_type = AttributeFrame
+                    , frame_type_str = to_data_name AttributeFrame
                     }
                 , battle_text_struct =
                     { form_definition = Magnolia.BattleTextStructFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditBattleTextStructFormUpdate)
@@ -390,6 +443,7 @@ init hash =
                     , saved_frame_data = saved_battle_text_struct_frame_data
                     , table_view_page_info = Table.new_page_info (GotPageMsg BattleTextStructFrame)
                     , frame_type = BattleTextStructFrame
+                    , frame_type_str = to_data_name BattleTextStructFrame
                     }
                 }
             , active_tab = initial_active_tab
@@ -776,10 +830,14 @@ update model msg =
         SubmitFrameEditForm ->
             -- TODO: make request to clojure server to update frame
             let
+                active_frame_type =
+                    WeaponFrame
+
+                -- TODO: use the currently active one
                 cmd =
                     Debug.log "submitting"
                         Http.get
-                        { url = clojure_json_server ++ "api/frames/weapon"
+                        { url = clojure_json_server ++ "api/frames/" ++ to_data_name active_frame_type
                         , expect = Http.expectString GotSubmittedFrameEditForm
                         }
             in

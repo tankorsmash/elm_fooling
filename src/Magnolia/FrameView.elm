@@ -72,7 +72,7 @@ import Table exposing (ColumnDef, ColumnType(..), PageInfoMsg, TableDefinition, 
 import Task
 import Time
 import Url
-import Utils exposing (add_class, root_json_server_url)
+import Utils exposing (add_class, clojure_json_server, root_json_server_url)
 import Weather
 
 
@@ -108,6 +108,7 @@ type Msg
     | SetFrameViewMode FrameViewMode
     | GotFrameEditFormUpdate GotFrameEditFormUpdateMsg
     | SubmitFrameEditForm
+    | GotSubmittedFrameEditForm (Result Http.Error String)
     | DoDownloadAllFrames FrameType
       -- | DoDownloadWeaponFrames
     | GotDownloadedAllFrames AllFramesDownloaded
@@ -401,7 +402,7 @@ init hash =
         -- init_cmds = Cmd.none
         init_cmds =
             Cmd.batch
-                [ -- Task.perform (\_ -> DoDownloadAllFrames initial_active_tab_frame_type) Time.now
+                [-- Task.perform (\_ -> DoDownloadAllFrames initial_active_tab_frame_type) Time.now
                 ]
     in
     ( init_model, init_cmds )
@@ -773,6 +774,28 @@ update model msg =
             ( model_, cmd, Noop )
 
         SubmitFrameEditForm ->
+            -- TODO: make request to clojure server to update frame
+            let
+                cmd =
+                    Debug.log "submitting"
+                        Http.get
+                        { url = clojure_json_server ++ "api/frames/weapon"
+                        , expect = Http.expectString GotSubmittedFrameEditForm
+                        }
+            in
+            ( model, cmd, Noop )
+
+        GotSubmittedFrameEditForm resp ->
+            let
+                val =
+                    Debug.log "resp came through" <|
+                        case resp of
+                            Ok str_ ->
+                                str_
+
+                            Err err ->
+                                ""
+            in
             ( model, Cmd.none, Noop )
 
         -- DoDownloadWeaponFrames ->
@@ -1095,7 +1118,11 @@ form_data_view frame_edit_data =
         [ Grid.col [ Col.sm11, Col.md8 ]
             [ Form.form []
                 [ FormData.render_fields form_definition.fields frame_data
-                , button_primary SubmitFrameEditForm "Submit"
+                , Button.button
+                    [ Button.onClick SubmitFrameEditForm
+                    , Button.primary
+                    ]
+                    [ text "Submit" ]
                 ]
             ]
         ]

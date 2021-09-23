@@ -10,3 +10,6 @@ add_class cls =
 
 root_json_server_url =
     "http://localhost:5021/"
+
+clojure_json_server =
+    "http://localhost:9500/"

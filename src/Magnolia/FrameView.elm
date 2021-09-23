@@ -132,7 +132,8 @@ type alias FrameEditData f msg =
     , saved_frame_data : Maybe f
     , table_view_page_info : Table.PageInfo msg
     , frame_type : FrameType
-    , frame_type_str : String -- "weapon", "zone", "weapon_category" etc
+    , frame_type_str : String -- "weapon", "zone", "weapon_category", etc
+    , frame_id_getter : f -> String -- "frame_id", "id", etc. Zones use data_names pretty sure so this'll get hairy
     }
 
 
@@ -399,6 +400,7 @@ init hash =
                     , table_view_page_info = Table.new_page_info (GotPageMsg WeaponFrame)
                     , frame_type = WeaponFrame
                     , frame_type_str = to_data_name WeaponFrame
+                    , frame_id_getter = String.fromInt << .frame_id
                     }
                 , armor =
                     { form_definition = Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditArmorFormUpdate)
@@ -408,6 +410,7 @@ init hash =
                     , table_view_page_info = Table.new_page_info (GotPageMsg ArmorFrame)
                     , frame_type = ArmorFrame
                     , frame_type_str = to_data_name ArmorFrame
+                    , frame_id_getter = String.fromInt << .frame_id
                     }
                 , zone =
                     { form_definition = Magnolia.ZoneFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditZoneFormUpdate)
@@ -417,6 +420,7 @@ init hash =
                     , table_view_page_info = Table.new_page_info (GotPageMsg ZoneFrame)
                     , frame_type = ZoneFrame
                     , frame_type_str = to_data_name ZoneFrame
+                    , frame_id_getter = .data_name
                     }
                 , weapon_category =
                     { form_definition = Magnolia.WeaponCategoryFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponCategoryFormUpdate)
@@ -426,6 +430,7 @@ init hash =
                     , table_view_page_info = Table.new_page_info (GotPageMsg WeaponCategoryFrame)
                     , frame_type = WeaponCategoryFrame
                     , frame_type_str = to_data_name WeaponCategoryFrame
+                    , frame_id_getter = String.fromInt << .frame_id
                     }
                 , attribute =
                     { form_definition = Magnolia.AttributeFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditAttributeFormUpdate)
@@ -435,6 +440,7 @@ init hash =
                     , table_view_page_info = Table.new_page_info (GotPageMsg AttributeFrame)
                     , frame_type = AttributeFrame
                     , frame_type_str = to_data_name AttributeFrame
+                    , frame_id_getter = String.fromInt << .frame_id
                     }
                 , battle_text_struct =
                     { form_definition = Magnolia.BattleTextStructFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditBattleTextStructFormUpdate)
@@ -444,6 +450,7 @@ init hash =
                     , table_view_page_info = Table.new_page_info (GotPageMsg BattleTextStructFrame)
                     , frame_type = BattleTextStructFrame
                     , frame_type_str = to_data_name BattleTextStructFrame
+                    , frame_id_getter = String.fromInt << .frame_id
                     }
                 }
             , active_tab = initial_active_tab
@@ -833,10 +840,14 @@ update model msg =
                 active_frame_type =
                     model.active_tab_frame_type
 
+                url_suffix =
+                    "api/frames/"
+                        ++ to_data_name active_frame_type
+
                 cmd =
                     Debug.log "submitting"
                         Http.get
-                        { url = clojure_json_server ++ "api/frames/" ++ to_data_name active_frame_type
+                        { url = clojure_json_server ++ url_suffix
                         , expect = Http.expectString GotSubmittedFrameEditForm
                         }
             in

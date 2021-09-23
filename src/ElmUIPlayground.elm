@@ -162,7 +162,7 @@ left_card model =
             , paragraph []
                 [ text "This is the main body of card. "
                 , text "More text too. "
-                , el [ Font.color (rgb 0.6 0 0) ] <| text "Red text is nice."
+                , el [ Font.color (rgb 0.6 0 0) ] <| text "Red text is nice. "
                 , el [ Font.bold ] <| text "But bold is better."
                 ]
             ]

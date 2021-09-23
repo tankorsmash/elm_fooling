@@ -831,9 +831,8 @@ update model msg =
             -- TODO: make request to clojure server to update frame
             let
                 active_frame_type =
-                    WeaponFrame
+                    model.active_tab_frame_type
 
-                -- TODO: use the currently active one
                 cmd =
                     Debug.log "submitting"
                         Http.get

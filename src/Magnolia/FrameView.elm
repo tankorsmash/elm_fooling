@@ -427,8 +427,8 @@ init hash =
         temp_handler : Table.PageInfoMsg -> Msg
         temp_handler _ = Debug.todo "Implement this once init_model is initialized" ToggleFrameViewMode
 
-        init_weapon_frame_type : FrameType
-        init_weapon_frame_type = WeaponFrameType
+        weapon_frame_type : FrameType
+        weapon_frame_type = WeaponFrameType
                     { form_definition = Magnolia.WeaponFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponFormUpdate)
                     , frame_data = weapon_frame_data
                     , all_frames = []
@@ -437,17 +437,27 @@ init hash =
                     , frame_id_getter = String.fromInt << .frame_id
                     }
 
-        weapon_frame_type : FrameType
-        weapon_frame_type = case get_weapon_fed init_weapon_frame_type of
-            Just fed -> WeaponFrameType { fed | table_view_page_info = (Table.new_page_info (GotPageMsg init_weapon_frame_type)) }
-            Nothing -> init_weapon_frame_type
+        -- hack to replace the page info, since it requires a full frame_type
+        replace_page_info : FrameType -> FrameType
+        replace_page_info frame_type =
+                let
+                    new_page_info = Table.new_page_info (GotPageMsg frame_type)
+                in
+                    case frame_type of
+                        WeaponFrameType fed -> WeaponFrameType {fed | table_view_page_info = new_page_info }
+                        ArmorFrameType fed -> ArmorFrameType {fed | table_view_page_info = new_page_info }
+                        ZoneFrameType fed -> ZoneFrameType {fed | table_view_page_info = new_page_info }
+                        WeaponCategoryFrameType fed -> WeaponCategoryFrameType {fed | table_view_page_info = new_page_info }
+                        AttributeFrameType fed -> AttributeFrameType {fed | table_view_page_info = new_page_info }
+                        BattleTextStructFrameType fed -> BattleTextStructFrameType {fed | table_view_page_info = new_page_info }
+                        _ -> Debug.todo "remove NOFRAMETYPE" frame_type
 
 
         init_model : Model
         init_model =
             { frame_edit_datas =
-                { weapon = weapon_frame_type
-                , armor = ArmorFrameType
+                { weapon = replace_page_info weapon_frame_type
+                , armor = replace_page_info <| ArmorFrameType
                     { form_definition = Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditArmorFormUpdate)
                     , frame_data = armor_frame_data
                     , all_frames = []
@@ -455,7 +465,7 @@ init hash =
                     , table_view_page_info = Table.new_page_info temp_handler
                     , frame_id_getter = String.fromInt << .frame_id
                     }
-                , zone = ZoneFrameType
+                , zone = replace_page_info <| ZoneFrameType
                     { form_definition = Magnolia.ZoneFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditZoneFormUpdate)
                     , frame_data = zone_frame_data
                     , all_frames = []
@@ -463,7 +473,7 @@ init hash =
                     , table_view_page_info = Table.new_page_info temp_handler
                     , frame_id_getter = .data_name
                     }
-                , weapon_category = WeaponCategoryFrameType
+                , weapon_category = replace_page_info <| WeaponCategoryFrameType
                     { form_definition = Magnolia.WeaponCategoryFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponCategoryFormUpdate)
                     , frame_data = weapon_category_frame_data
                     , all_frames = []
@@ -471,7 +481,7 @@ init hash =
                     , table_view_page_info = Table.new_page_info temp_handler
                     , frame_id_getter = String.fromInt << .frame_id
                     }
-                , attribute = AttributeFrameType
+                , attribute = replace_page_info <| AttributeFrameType
                     { form_definition = Magnolia.AttributeFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditAttributeFormUpdate)
                     , frame_data = attribute_frame_data
                     , all_frames = []
@@ -479,7 +489,7 @@ init hash =
                     , table_view_page_info = Table.new_page_info temp_handler
                     , frame_id_getter = String.fromInt << .frame_id
                     }
-                , battle_text_struct = BattleTextStructFrameType
+                , battle_text_struct = replace_page_info <| BattleTextStructFrameType
                     { form_definition = Magnolia.BattleTextStructFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditBattleTextStructFormUpdate)
                     , frame_data = battle_text_struct_frame_data
                     , all_frames = []

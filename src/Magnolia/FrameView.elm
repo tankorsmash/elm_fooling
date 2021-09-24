@@ -138,55 +138,55 @@ type alias FrameEditData f msg =
 
 
 type FrameType
-    = WeaponFrame
-    | ArmorFrame
-    | ZoneFrame
-    | WeaponCategoryFrame
-    | AttributeFrame
-    | BattleTextStructFrame
+    = WeaponFrameType (FrameEditData WeaponFrame Msg)
+    | ArmorFrameType (FrameEditData ArmorFrame Msg)
+    | ZoneFrameType (FrameEditData ZoneFrame Msg)
+    | WeaponCategoryFrameType (FrameEditData WeaponCategoryFrame Msg)
+    | AttributeFrameType (FrameEditData AttributeFrame Msg)
+    | BattleTextStructFrameType (FrameEditData BattleTextStructFrame Msg)
 
 
 to_string : FrameType -> String
 to_string frame_type =
     case frame_type of
-        WeaponFrame ->
+        WeaponFrameType fed ->
             "WeaponFrame"
 
-        ArmorFrame ->
+        ArmorFrameType fed ->
             "ArmorFrame"
 
-        ZoneFrame ->
+        ZoneFrameType fed ->
             "ZoneFrame"
 
-        WeaponCategoryFrame ->
+        WeaponCategoryFrameType fed ->
             "WeaponCategoryFrame"
 
-        AttributeFrame ->
+        AttributeFrameType fed ->
             "AttributeFrame"
 
-        BattleTextStructFrame ->
+        BattleTextStructFrameType fed ->
             "BattleTextStructFrame"
 
 
 to_data_name : FrameType -> String
 to_data_name frame_type =
     case frame_type of
-        WeaponFrame ->
+        WeaponFrameType fed ->
             "weapon"
 
-        ArmorFrame ->
+        ArmorFrameType fed ->
             "armor"
 
-        ZoneFrame ->
+        ZoneFrameType fed ->
             "zone"
 
-        WeaponCategoryFrame ->
+        WeaponCategoryFrameType fed ->
             "weapon_category"
 
-        AttributeFrame ->
+        AttributeFrameType fed ->
             "attribute"
 
-        BattleTextStructFrame ->
+        BattleTextStructFrameType fed ->
             "battle_text_struct"
 
 
@@ -216,12 +216,18 @@ from_data_name frame_type_str =
 
 
 type alias FrameEditDatas =
-    { weapon : FrameEditData WeaponFrame Msg
-    , armor : FrameEditData ArmorFrame Msg
-    , zone : FrameEditData ZoneFrame Msg
-    , weapon_category : FrameEditData WeaponCategoryFrame Msg
-    , attribute : FrameEditData AttributeFrame Msg
-    , battle_text_struct : FrameEditData BattleTextStructFrame Msg
+    { weapon : FrameType
+    , armor : FrameType
+    , zone : FrameType
+    , weapon_category : FrameType
+    , attribute : FrameType
+    , battle_text_struct : FrameType
+    -- { weapon : WeaponFrameType
+    -- , armor : ArmorFrameType
+    -- , zone : ZoneFrameType
+    -- , weapon_category : WeaponCategoryFrameType
+    -- , attribute : AttributeFrameType
+    -- , battle_text_struct : BattleTextStructFrameType
     }
 
 
@@ -660,22 +666,22 @@ handle_feds_download existing_feds fed_getter feds_updater maybe_all_frames =
 update_do_download_all_frames : Model -> FrameType -> ( Model, Cmd Msg )
 update_do_download_all_frames model frame_type =
     case frame_type of
-        WeaponFrame ->
+        WeaponFrameType fed ->
             ( model, Magnolia.WeaponFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllWeaponFrames) )
 
-        ArmorFrame ->
+        ArmorFrameType fed ->
             ( model, Magnolia.ArmorFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllArmorFrames) )
 
-        ZoneFrame ->
+        ZoneFrameType fed ->
             ( model, Magnolia.ZoneFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllZoneFrames) )
 
-        WeaponCategoryFrame ->
+        WeaponCategoryFrameType fed ->
             ( model, Magnolia.WeaponCategoryFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllWeaponCategoryFrames) )
 
-        AttributeFrame ->
+        AttributeFrameType fed ->
             ( model, Magnolia.AttributeFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllAttributeFrames) )
 
-        BattleTextStructFrame ->
+        BattleTextStructFrameType fed ->
             ( model, Magnolia.BattleTextStructFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllBattleTextStructFrames) )
 
 
@@ -924,23 +930,23 @@ update model msg =
 get_page_info : FrameEditDatas -> FrameType -> Table.PageInfo Msg
 get_page_info feds frame_type =
     case frame_type of
-        WeaponFrame ->
-            feds.weapon.table_view_page_info
+        WeaponFrameType fed ->
+            fed.table_view_page_info
 
-        ArmorFrame ->
-            feds.armor.table_view_page_info
+        ArmorFrameType fed ->
+            fed.table_view_page_info
 
-        ZoneFrame ->
-            feds.zone.table_view_page_info
+        ZoneFrameType fed ->
+            fed.table_view_page_info
 
-        WeaponCategoryFrame ->
-            feds.weapon_category.table_view_page_info
+        WeaponCategoryFrameType fed ->
+            fed.table_view_page_info
 
-        AttributeFrame ->
-            feds.attribute.table_view_page_info
+        AttributeFrameType fed ->
+            fed.table_view_page_info
 
-        BattleTextStructFrame ->
-            feds.battle_text_struct.table_view_page_info
+        BattleTextStructFrameType fed ->
+            fed.table_view_page_info
 
 
 update_only_page_info : FrameEditData frameData Msg -> Table.PageInfo Msg -> FrameEditData frameData Msg
@@ -951,23 +957,23 @@ update_only_page_info old_fed new_page_info =
 set_page_info : FrameEditDatas -> FrameType -> Table.PageInfo Msg -> FrameEditDatas
 set_page_info feds frame_type new_page_info =
     case frame_type of
-        WeaponFrame ->
-            update_fed_weapon feds <| update_only_page_info feds.weapon new_page_info
+        WeaponFrameType fed ->
+            update_fed_weapon feds <| update_only_page_info fed new_page_info
 
-        ArmorFrame ->
-            update_fed_armor feds <| update_only_page_info feds.armor new_page_info
+        ArmorFrameType fed ->
+            update_fed_armor feds <| update_only_page_info fed new_page_info
 
-        ZoneFrame ->
-            update_fed_zone feds <| update_only_page_info feds.zone new_page_info
+        ZoneFrameType fed ->
+            update_fed_zone feds <| update_only_page_info fed new_page_info
 
-        WeaponCategoryFrame ->
-            update_fed_weapon_category feds <| update_only_page_info feds.weapon_category new_page_info
+        WeaponCategoryFrameType fed ->
+            update_fed_weapon_category feds <| update_only_page_info fed new_page_info
 
-        AttributeFrame ->
-            update_fed_attribute feds <| update_only_page_info feds.attribute new_page_info
+        AttributeFrameType fed ->
+            update_fed_attribute feds <| update_only_page_info fed new_page_info
 
-        BattleTextStructFrame ->
-            update_fed_battle_text_struct feds <| update_only_page_info feds.battle_text_struct new_page_info
+        BattleTextStructFrameType fed ->
+            update_fed_battle_text_struct feds <| update_only_page_info fed new_page_info
 
 
 bootstrap_button type_ on_click text_ =
@@ -1091,71 +1097,81 @@ render_tab_item model config frame_edit_data form_definition on_row_click =
 do_render_tab : Model -> TabItemConfig -> Tab.Item Msg
 do_render_tab model config =
     case config.frame_type of
-        WeaponFrame ->
+        WeaponFrameType fed ->
             render_tab_item model
                 config
-                model.frame_edit_datas.weapon
+                fed
                 (Magnolia.WeaponFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponFormUpdate))
-                (TableRowClicked << ClickedTableRowWeaponFrame WeaponFrame)
+                (TableRowClicked << ClickedTableRowWeaponFrame (WeaponFrameType fed ))
 
-        ArmorFrame ->
+        ArmorFrameType fed ->
             render_tab_item model
                 config
-                model.frame_edit_datas.armor
+                fed
                 (Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditArmorFormUpdate))
-                (TableRowClicked << ClickedTableRowArmorFrame ArmorFrame)
+                (TableRowClicked << ClickedTableRowArmorFrame (ArmorFrameType fed ))
 
-        ZoneFrame ->
+        ZoneFrameType fed ->
             render_tab_item model
                 config
-                model.frame_edit_datas.zone
+                fed
                 (Magnolia.ZoneFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditZoneFormUpdate))
-                (TableRowClicked << ClickedTableRowZoneFrame ZoneFrame)
+                (TableRowClicked << ClickedTableRowZoneFrame (ZoneFrameType fed ))
 
-        WeaponCategoryFrame ->
+        WeaponCategoryFrameType fed ->
             render_tab_item model
                 config
-                model.frame_edit_datas.weapon_category
+                fed
                 (Magnolia.WeaponCategoryFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponCategoryFormUpdate))
-                (TableRowClicked << ClickedTableRowWeaponCategoryFrame WeaponCategoryFrame)
+                (TableRowClicked << ClickedTableRowWeaponCategoryFrame (WeaponCategoryFrameType fed))
 
-        AttributeFrame ->
+        AttributeFrameType fed ->
             render_tab_item model
                 config
-                model.frame_edit_datas.attribute
+                fed
                 (Magnolia.AttributeFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditAttributeFormUpdate))
-                (TableRowClicked << ClickedTableRowAttributeFrame AttributeFrame)
+                (TableRowClicked << ClickedTableRowAttributeFrame (AttributeFrameType fed))
 
-        BattleTextStructFrame ->
+        BattleTextStructFrameType fed ->
             render_tab_item model
                 config
-                model.frame_edit_datas.battle_text_struct
+                fed
                 (Magnolia.BattleTextStructFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditBattleTextStructFormUpdate))
-                (TableRowClicked << ClickedTableRowBattleTextStructFrame BattleTextStructFrame)
+                (TableRowClicked << ClickedTableRowBattleTextStructFrame (BattleTextStructFrameType fed))
 
+
+wrap_form_data_view : FrameType -> Html Msg
+wrap_form_data_view frame_type =
+    case frame_type of
+        WeaponFrameType fed -> form_data_view fed
+        ArmorFrameType fed -> form_data_view fed
+        ZoneFrameType fed -> form_data_view fed
+        WeaponCategoryFrameType fed -> form_data_view fed
+        AttributeFrameType fed -> form_data_view fed
+        BattleTextStructFrameType fed -> form_data_view fed
 
 tabs_view : Model -> Html Msg
 tabs_view model =
     let
         tab_configs : List TabItemConfig
         tab_configs =
-            [ { form_edit_view = form_data_view model.frame_edit_datas.weapon
-              , frame_type = WeaponFrame
+            [ { form_edit_view = wrap_form_data_view model.frame_edit_datas.weapon
+              , frame_type = model.frame_edit_datas.weapon
               }
-            , { form_edit_view = form_data_view model.frame_edit_datas.armor
-              , frame_type = ArmorFrame
+            , { form_edit_view = wrap_form_data_view model.frame_edit_datas.armor
+              , frame_type = model.frame_edit_datas.armor
               }
-            , { form_edit_view = form_data_view model.frame_edit_datas.zone
-              , frame_type = ZoneFrame
+            , { form_edit_view = wrap_form_data_view model.frame_edit_datas.zone
+              , frame_type = model.frame_edit_datas.zone
               }
-            , { form_edit_view = form_data_view model.frame_edit_datas.weapon_category
-              , frame_type = WeaponCategoryFrame
+            , { form_edit_view = wrap_form_data_view model.frame_edit_datas.weapon_category
+              , frame_type = model.frame_edit_datas.weapon_category
               }
-            , { form_edit_view = form_data_view model.frame_edit_datas.attribute
-              , frame_type = AttributeFrame
+            , { form_edit_view = wrap_form_data_view model.frame_edit_datas.attribute
+              , frame_type = model.frame_edit_datas.attribute
               }
-            , { form_edit_view = form_data_view model.frame_edit_datas.battle_text_struct
-              , frame_type = BattleTextStructFrame
+            , { form_edit_view = wrap_form_data_view model.frame_edit_datas.battle_text_struct
+              , frame_type = model.frame_edit_datas.battle_text_struct
               }
             ]
 
@@ -1178,7 +1194,18 @@ view model =
 
 form_data_view : FrameEditData obj Msg -> Html Msg
 form_data_view frame_edit_data =
+-- form_data_view : FrameType -> Html Msg
+-- form_data_view frame_type =
     let
+        -- frame_edit_data : FrameEditData f msg
+        -- frame_edit_data = case frame_type of
+        --     WeaponFrameType fed -> fed
+        --     ArmorFrameType fed -> fed
+        --     ZoneFrameType fed -> fed
+        --     WeaponCategoryFrameType fed -> fed
+        --     AttributeFrameType fed -> fed
+        --     BattleTextStructFrameType fed -> fed
+
         { frame_data, form_definition, saved_frame_data } =
             frame_edit_data
     in

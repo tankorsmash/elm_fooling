@@ -106,7 +106,7 @@ type TableRowClickedFrameType
 type Msg
     = ToggleFrameViewMode
     | SetFrameViewMode FrameViewMode
-    | GotFrameEditFormUpdate GotFrameEditFormUpdateMsg
+    | GotFrameEditFormUpdate FrameType GotFrameEditFormUpdateMsg
     | SubmitFrameEditForm
     | GotSubmittedFrameEditForm (Result Http.Error String)
     | DoDownloadAllFrames FrameType
@@ -427,9 +427,13 @@ init hash =
         temp_handler : Table.PageInfoMsg -> Msg
         temp_handler _ = Debug.todo "Implement this once init_model is initialized" ToggleFrameViewMode
 
+        temp_fields : FormData.FormDefinition f msg
+        temp_fields = {fields = []}
+
         weapon_frame_type : FrameType
         weapon_frame_type = WeaponFrameType
-                    { form_definition = Magnolia.WeaponFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponFormUpdate)
+                    -- { form_definition = Magnolia.WeaponFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponFormUpdate)
+                    { form_definition = temp_fields
                     , frame_data = weapon_frame_data
                     , all_frames = []
                     , saved_frame_data = saved_weapon_frame_data
@@ -452,13 +456,33 @@ init hash =
                         BattleTextStructFrameType fed -> BattleTextStructFrameType {fed | table_view_page_info = new_page_info }
                         _ -> Debug.todo "remove NOFRAMETYPE" frame_type
 
+        -- hack to replace the form definitions, since it requires a full frame_type
+        replace_form_def :
+                        (msg -> FormData.FormDefinition fd msg)
+                        -> FrameType
+                        -> FrameType
+        replace_form_def edit_form frame_type =
+                let
+                      -- new_form_def = edit_form (GotFrameEditFormUpdate frame_type)
+                      the_msg = (\sub_msg -> GotFrameEditFormUpdate frame_type sub_msg)
+                      _ = 1
+                in
+                    case frame_type of
+                        WeaponFrameType fed -> WeaponFrameType {fed | form_definition = Magnolia.WeaponFrame.edit_form_definition (the_msg << GotEditWeaponFormUpdate) }
+                        ArmorFrameType fed -> ArmorFrameType {fed | form_definition = Magnolia.ArmorFrame.edit_form_definition (the_msg << GotEditArmorFormUpdate) }
+                        ZoneFrameType fed -> ZoneFrameType {fed | form_definition = Magnolia.ZoneFrame.edit_form_definition (the_msg << GotEditZoneFormUpdate) }
+                        WeaponCategoryFrameType fed -> WeaponCategoryFrameType {fed | form_definition = Magnolia.WeaponCategoryFrame.edit_form_definition (the_msg << GotEditWeaponCategoryFormUpdate) }
+                        AttributeFrameType fed -> AttributeFrameType {fed | form_definition = Magnolia.AttributeFrame.edit_form_definition (the_msg << GotEditAttributeFormUpdate) }
+                        BattleTextStructFrameType fed -> BattleTextStructFrameType {fed | form_definition = Magnolia.BattleTextStructFrame.edit_form_definition (the_msg << GotEditBattleTextStructFormUpdate) }
+                        _ -> Debug.todo "remove NOFRAMETYPE" frame_type
+
 
         init_model : Model
         init_model =
             { frame_edit_datas =
-                { weapon = replace_page_info weapon_frame_type
+                { weapon = replace_form_def Magnolia.WeaponFrame.edit_form_definition <| replace_page_info weapon_frame_type
                 , armor = replace_page_info <| ArmorFrameType
-                    { form_definition = Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditArmorFormUpdate)
+                    { form_definition = Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate NoFrameTypeDEBUG << GotEditArmorFormUpdate)
                     , frame_data = armor_frame_data
                     , all_frames = []
                     , saved_frame_data = saved_armor_frame_data
@@ -466,7 +490,7 @@ init hash =
                     , frame_id_getter = String.fromInt << .frame_id
                     }
                 , zone = replace_page_info <| ZoneFrameType
-                    { form_definition = Magnolia.ZoneFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditZoneFormUpdate)
+                    { form_definition = Magnolia.ZoneFrame.edit_form_definition (GotFrameEditFormUpdate NoFrameTypeDEBUG << GotEditZoneFormUpdate)
                     , frame_data = zone_frame_data
                     , all_frames = []
                     , saved_frame_data = saved_zone_frame_data
@@ -474,7 +498,7 @@ init hash =
                     , frame_id_getter = .data_name
                     }
                 , weapon_category = replace_page_info <| WeaponCategoryFrameType
-                    { form_definition = Magnolia.WeaponCategoryFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponCategoryFormUpdate)
+                    { form_definition = Magnolia.WeaponCategoryFrame.edit_form_definition (GotFrameEditFormUpdate NoFrameTypeDEBUG << GotEditWeaponCategoryFormUpdate)
                     , frame_data = weapon_category_frame_data
                     , all_frames = []
                     , saved_frame_data = saved_weapon_category_frame_data
@@ -482,7 +506,7 @@ init hash =
                     , frame_id_getter = String.fromInt << .frame_id
                     }
                 , attribute = replace_page_info <| AttributeFrameType
-                    { form_definition = Magnolia.AttributeFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditAttributeFormUpdate)
+                    { form_definition = Magnolia.AttributeFrame.edit_form_definition (GotFrameEditFormUpdate NoFrameTypeDEBUG << GotEditAttributeFormUpdate)
                     , frame_data = attribute_frame_data
                     , all_frames = []
                     , saved_frame_data = saved_attribute_frame_data
@@ -490,7 +514,7 @@ init hash =
                     , frame_id_getter = String.fromInt << .frame_id
                     }
                 , battle_text_struct = replace_page_info <| BattleTextStructFrameType
-                    { form_definition = Magnolia.BattleTextStructFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditBattleTextStructFormUpdate)
+                    { form_definition = Magnolia.BattleTextStructFrame.edit_form_definition (GotFrameEditFormUpdate NoFrameTypeDEBUG << GotEditBattleTextStructFormUpdate)
                     , frame_data = battle_text_struct_frame_data
                     , all_frames = []
                     , saved_frame_data = saved_battle_text_struct_frame_data
@@ -608,8 +632,8 @@ update_got_frame_download_all_frames_update model sub_msg =
     ( model, Cmd.none )
 
 
-update_got_frame_edit_form_update : Model -> GotFrameEditFormUpdateMsg -> ( Model, Cmd Msg )
-update_got_frame_edit_form_update model sub_msg =
+update_got_frame_edit_form_update : Model -> FrameType -> GotFrameEditFormUpdateMsg -> ( Model, Cmd Msg )
+update_got_frame_edit_form_update model frame_type sub_msg =
     case sub_msg of
         GotEditWeaponFormUpdate form_update_type ->
             -- ( update_frame_edit_datas
@@ -623,6 +647,10 @@ update_got_frame_edit_form_update model sub_msg =
 
             let
                 feds = Debug.todo "finish this" model.frame_edit_datas
+                existing_frame_type = feds.weapon
+                frame_data = case get_weapon_fed feds.weapon of
+                    Just fed -> Just fed.frame_data
+                    Nothing -> Nothing
 
             in
 
@@ -969,10 +997,10 @@ update model msg =
         SetFrameViewMode new_frame_view_mode ->
             ( { model | frame_view_mode = new_frame_view_mode }, Cmd.none, Noop )
 
-        GotFrameEditFormUpdate sub_msg ->
+        GotFrameEditFormUpdate frame_type sub_msg ->
             let
                 ( model_, cmd ) =
-                    update_got_frame_edit_form_update model sub_msg
+                    update_got_frame_edit_form_update model frame_type sub_msg
             in
             ( model_, cmd, Noop )
 
@@ -1241,42 +1269,42 @@ do_render_tab model config =
             render_tab_item model
                 config
                 fed
-                (Magnolia.WeaponFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponFormUpdate))
+                (Magnolia.WeaponFrame.edit_form_definition (GotFrameEditFormUpdate config.frame_type << GotEditWeaponFormUpdate))
                 (TableRowClicked << ClickedTableRowWeaponFrame (WeaponFrameType fed ))
 
         ArmorFrameType fed ->
             render_tab_item model
                 config
                 fed
-                (Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditArmorFormUpdate))
+                (Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate config.frame_type << GotEditArmorFormUpdate))
                 (TableRowClicked << ClickedTableRowArmorFrame (ArmorFrameType fed ))
 
         ZoneFrameType fed ->
             render_tab_item model
                 config
                 fed
-                (Magnolia.ZoneFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditZoneFormUpdate))
+                (Magnolia.ZoneFrame.edit_form_definition (GotFrameEditFormUpdate config.frame_type << GotEditZoneFormUpdate))
                 (TableRowClicked << ClickedTableRowZoneFrame (ZoneFrameType fed ))
 
         WeaponCategoryFrameType fed ->
             render_tab_item model
                 config
                 fed
-                (Magnolia.WeaponCategoryFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponCategoryFormUpdate))
+                (Magnolia.WeaponCategoryFrame.edit_form_definition (GotFrameEditFormUpdate config.frame_type << GotEditWeaponCategoryFormUpdate))
                 (TableRowClicked << ClickedTableRowWeaponCategoryFrame (WeaponCategoryFrameType fed))
 
         AttributeFrameType fed ->
             render_tab_item model
                 config
                 fed
-                (Magnolia.AttributeFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditAttributeFormUpdate))
+                (Magnolia.AttributeFrame.edit_form_definition (GotFrameEditFormUpdate config.frame_type << GotEditAttributeFormUpdate))
                 (TableRowClicked << ClickedTableRowAttributeFrame (AttributeFrameType fed))
 
         BattleTextStructFrameType fed ->
             render_tab_item model
                 config
                 fed
-                (Magnolia.BattleTextStructFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditBattleTextStructFormUpdate))
+                (Magnolia.BattleTextStructFrame.edit_form_definition (GotFrameEditFormUpdate config.frame_type << GotEditBattleTextStructFormUpdate))
                 (TableRowClicked << ClickedTableRowBattleTextStructFrame (BattleTextStructFrameType fed))
 
         NoFrameTypeDEBUG -> Debug.todo "oh no" "NO FRAME TYPE DEBUG"

@@ -285,36 +285,6 @@ frame_type_from_hash model hash =
         model.frame_edit_datas.weapon
 
 
-get_weapon_fed : FrameType -> Maybe (FrameEditData WeaponFrame Msg)
-get_weapon_fed frame_type = case frame_type of
-    WeaponFrameType fed -> Just fed
-    _ -> Nothing
-
-get_armor_fed : FrameType -> Maybe (FrameEditData ArmorFrame Msg)
-get_armor_fed frame_type = case frame_type of
-    ArmorFrameType fed -> Just fed
-    _ -> Nothing
-
-get_zone_fed : FrameType -> Maybe (FrameEditData ZoneFrame Msg)
-get_zone_fed frame_type = case frame_type of
-    ZoneFrameType fed -> Just fed
-    _ -> Nothing
-
-get_weapon_category_fed : FrameType -> Maybe (FrameEditData WeaponCategoryFrame Msg)
-get_weapon_category_fed frame_type = case frame_type of
-    WeaponCategoryFrameType fed -> Just fed
-    _ -> Nothing
-
-get_attribute_fed : FrameType -> Maybe (FrameEditData AttributeFrame Msg)
-get_attribute_fed frame_type = case frame_type of
-    AttributeFrameType fed -> Just fed
-    _ -> Nothing
-
-get_battle_text_struct_fed : FrameType -> Maybe (FrameEditData BattleTextStructFrame Msg)
-get_battle_text_struct_fed frame_type = case frame_type of
-    BattleTextStructFrameType fed -> Just fed
-    _ -> Nothing
-
 init : String -> ( Model, Cmd Msg )
 init hash =
     let
@@ -427,8 +397,8 @@ init hash =
         temp_handler : Table.PageInfoMsg -> Msg
         temp_handler _ = Debug.todo "Implement this once init_model is initialized" ToggleFrameViewMode
 
-        init_weapon_frame_type : FrameType
-        init_weapon_frame_type = WeaponFrameType
+        weapon_frame_type : FrameType
+        weapon_frame_type = WeaponFrameType
                     { form_definition = Magnolia.WeaponFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponFormUpdate)
                     , frame_data = weapon_frame_data
                     , all_frames = []
@@ -436,11 +406,6 @@ init hash =
                     , table_view_page_info = Table.new_page_info temp_handler
                     , frame_id_getter = String.fromInt << .frame_id
                     }
-
-        weapon_frame_type : FrameType
-        weapon_frame_type = case get_weapon_fed init_weapon_frame_type of
-            Just fed -> WeaponFrameType { fed | table_view_page_info = (Table.new_page_info (GotPageMsg init_weapon_frame_type)) }
-            Nothing -> init_weapon_frame_type
 
 
         init_model : Model

@@ -724,35 +724,40 @@ update_got_frame_download_all_frames_update model sub_msg =
     ( model, Cmd.none )
 
 
-
--- update_frame_data : FrameEditData f msg -> FrameEditData f msg
-
-
-update_frame_data existing_fed form_update_type updater =
-    { existing_fed | frame_data = updater existing_fed.frame_data form_update_type }
-
-
 update_got_frame_edit_form_update : Model -> FrameType -> GotFrameEditFormUpdateMsg -> ( Model, Cmd Msg )
 update_got_frame_edit_form_update model frame_type sub_msg =
-    let
-        feds =
-            model.frame_edit_datas
-    in
     case sub_msg of
         GotEditWeaponFormUpdate form_update_type ->
-            case get_weapon_fed feds.weapon of
-                Just fed ->
-                    ( { model
-                        | frame_edit_datas =
-                            { feds
-                                | weapon = WeaponFrameType <| update_frame_data fed form_update_type Magnolia.WeaponFrame.update_edit_form_data
-                            }
-                      }
-                    , Cmd.none
-                    )
+            let
+                feds =
+                    model.frame_edit_datas
 
-                Nothing ->
-                    ( model, Cmd.none )
+                existing_frame_type =
+                    feds.weapon
+
+                updated_frame_type =
+                    case get_weapon_fed feds.weapon of
+                        Just fed_ ->
+                            let
+                                frame_data =
+                                    fed_.frame_data
+                            in
+                            Just <| WeaponFrameType { fed_ | frame_data = Magnolia.WeaponFrame.update_edit_form_data frame_data form_update_type }
+
+                        Nothing ->
+                            Nothing
+
+                new_feds =
+                    case updated_frame_type of
+                        Just new_frame_type ->
+                            { feds | weapon = new_frame_type }
+
+                        Nothing ->
+                            feds
+            in
+            ( { model | frame_edit_datas = new_feds }
+            , Cmd.none
+            )
 
         _ ->
             Debug.todo "handle all GotEditFRAMEFormUpdate" ( model, Cmd.none )

@@ -502,8 +502,8 @@ init hash =
             , active_tab_frame_type = weapon_frame_type
             -- , active_tab_frame_type = initial_active_tab_frame_type
 
-            , frame_view_mode = List
-            -- , frame_view_mode = Edit
+            -- , frame_view_mode = List
+            , frame_view_mode = Edit
             }
 
         initial_active_tab_frame_type : FrameType
@@ -817,60 +817,53 @@ update_got_downloaded_all_frames model sub_msg =
         new_feds =
             case sub_msg of
                 DownloadedAllWeaponFrames response ->
-                    let
-                        maybe_all_frames = unpack_response response
-                        new_frame_type = case feds.weapon of
-                            WeaponFrameType existing_fed -> WeaponFrameType {existing_fed | all_frames = Maybe.withDefault existing_fed.all_frames maybe_all_frames}
-                            _ -> feds.weapon
-                    in
-                    {feds | weapon =  new_frame_type}
+                    Debug.todo "implement this for all frame types and make sure to use maybe_all_frames" {feds
+                        | weapon =  case feds.weapon of
+                                WeaponFrameType fed -> WeaponFrameType fed
+                                _ -> NoFrameTypeDEBUG}
+                        --<| feds (unpack_response response)) }
 
-                DownloadedAllArmorFrames response ->
-                    let
-                        maybe_all_frames = unpack_response response
-                        new_frame_type = case feds.armor of
-                            ArmorFrameType existing_fed -> ArmorFrameType {existing_fed | all_frames = Maybe.withDefault existing_fed.all_frames maybe_all_frames}
-                            _ -> feds.armor
-                    in
-                    {feds | armor =  new_frame_type}
+                        -- feds
+                        -- .weapon
+                        -- update_fed_weapon
+                        -- (unpack_response response)
 
-                DownloadedAllZoneFrames response ->
-                    let
-                        maybe_all_frames = unpack_response response
-                        new_frame_type = case feds.zone of
-                            ZoneFrameType existing_fed -> ZoneFrameType {existing_fed | all_frames = Maybe.withDefault existing_fed.all_frames maybe_all_frames}
-                            _ -> feds.zone
-                    in
-                    {feds | zone =  new_frame_type}
+                -- DownloadedAllArmorFrames response ->
+                --     handle_feds_download
+                --         feds
+                --         .armor
+                --         update_fed_armor
+                --         (unpack_response response)
 
-                DownloadedAllWeaponCategoryFrames response ->
-                    let
-                        maybe_all_frames = unpack_response response
-                        new_frame_type = case feds.weapon_category of
-                            WeaponCategoryFrameType existing_fed -> WeaponCategoryFrameType {existing_fed | all_frames = Maybe.withDefault existing_fed.all_frames maybe_all_frames}
-                            _ -> feds.weapon_category
-                    in
-                    {feds | weapon_category =  new_frame_type}
+                _ -> feds
 
-                DownloadedAllAttributeFrames response ->
-                    let
-                        maybe_all_frames = unpack_response response
-                        new_frame_type = case feds.attribute of
-                            AttributeFrameType existing_fed -> AttributeFrameType {existing_fed | all_frames = Maybe.withDefault existing_fed.all_frames maybe_all_frames}
-                            _ -> feds.attribute
-                    in
-                    {feds | attribute =  new_frame_type}
-
-                DownloadedAllBattleTextStructFrames response ->
-                    let
-                        maybe_all_frames = unpack_response response
-                        new_frame_type = case feds.battle_text_struct of
-                            BattleTextStructFrameType existing_fed -> BattleTextStructFrameType {existing_fed | all_frames = Maybe.withDefault existing_fed.all_frames maybe_all_frames}
-                            _ -> feds.battle_text_struct
-                    in
-                    {feds | battle_text_struct =  new_frame_type}
-
-
+                -- DownloadedAllZoneFrames response ->
+                --     handle_feds_download
+                --         feds
+                --         .zone
+                --         update_fed_zone
+                --         (unpack_response response)
+                --
+                -- DownloadedAllWeaponCategoryFrames response ->
+                --     handle_feds_download
+                --         feds
+                --         .weapon_category
+                --         update_fed_weapon_category
+                --         (unpack_response response)
+                --
+                -- DownloadedAllAttributeFrames response ->
+                --     handle_feds_download
+                --         feds
+                --         .attribute
+                --         update_fed_attribute
+                --         (unpack_response response)
+                --
+                -- DownloadedAllBattleTextStructFrames response ->
+                --     handle_feds_download
+                --         feds
+                --         .battle_text_struct
+                --         update_fed_battle_text_struct
+                --         (unpack_response response)
     in
     ( { model | frame_edit_datas = new_feds }, cmd )
 

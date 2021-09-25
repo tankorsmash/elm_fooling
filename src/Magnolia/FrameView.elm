@@ -131,7 +131,7 @@ type alias FrameEditData f msg =
     , frame_data : f
     , saved_frame_data : Maybe f
     , table_view_page_info : Table.PageInfo msg
-    -- , frame_type_str : String -- "weapon", "zone", "weapon_category", etc
+    , frame_type_str : String -- "weapon", "zone", "weapon_category", etc
     , frame_id_getter : f -> String -- "frame_id", "id", etc. Zones use data_names pretty sure so this'll get hairy
     }
 
@@ -189,30 +189,30 @@ to_data_name frame_type =
             "battle_text_struct"
 
 
--- from_data_name : String -> Maybe FrameType
--- from_data_name frame_type_str =
---     case frame_type_str of
---         "weapon" ->
---             Just WeaponFrame
---
---         "armor" ->
---             Just ArmorFrame
---
---         "zone" ->
---             Just ZoneFrame
---
---         "weapon_category" ->
---             Just WeaponCategoryFrame
---
---         "attribute" ->
---             Just AttributeFrame
---
---         "battle_text_struct" ->
---             Just BattleTextStructFrame
---
---         _ ->
---             Nothing
---
+from_data_name : String -> Maybe FrameType
+from_data_name frame_type_str =
+    case frame_type_str of
+        "weapon" ->
+            Just WeaponFrame
+
+        "armor" ->
+            Just ArmorFrame
+
+        "zone" ->
+            Just ZoneFrame
+
+        "weapon_category" ->
+            Just WeaponCategoryFrame
+
+        "attribute" ->
+            Just AttributeFrame
+
+        "battle_text_struct" ->
+            Just BattleTextStructFrame
+
+        _ ->
+            Nothing
+
 
 type alias FrameEditDatas =
     { weapon : FrameType
@@ -248,8 +248,8 @@ tab_prefix =
     "frame_view_tab__"
 
 
-frame_type_from_hash : Model -> String -> FrameType
-frame_type_from_hash model hash =
+frame_type_from_hash : String -> FrameType
+frame_type_from_hash hash =
     if String.startsWith tab_prefix hash then
         let
             suffix =
@@ -257,28 +257,28 @@ frame_type_from_hash model hash =
         in
         case suffix of
             "weapon_frame" ->
-                model.frame_edit_datas.weapon
+                WeaponFrame
 
             "armor_frame" ->
-                model.frame_edit_datas.armor
+                ArmorFrame
 
             "zone_frame" ->
-                model.frame_edit_datas.zone
+                ZoneFrame
 
             "weapon_category_frame" ->
-                model.frame_edit_datas.weapon_category
+                WeaponCategoryFrame
 
             "attribute_frame" ->
-                model.frame_edit_datas.attribute
+                AttributeFrame
 
             "battle_text_struct_frame" ->
-                model.frame_edit_datas.battle_text_struct
+                BattleTextStructFrame
 
             _ ->
-                Debug.log ("error: unknown frame type suffix: " ++ suffix) model.frame_edit_datas.weapon
+                Debug.log ("error: unknown frame type suffix: " ++ suffix) WeaponFrame
 
     else
-        model.frame_edit_datas.weapon
+        WeaponFrame
 
 
 init : String -> ( Model, Cmd Msg )
@@ -382,6 +382,10 @@ init hash =
         saved_battle_text_struct_frame_data =
             Nothing
 
+        initial_active_tab_frame_type : FrameType
+        initial_active_tab_frame_type =
+            frame_type_from_hash hash
+
         initial_active_tab =
             case hash of
                 "" ->
@@ -393,27 +397,25 @@ init hash =
         temp_handler : Table.PageInfoMsg -> Msg
         temp_handler _ = Debug.todo "Implement this once init_model is initialized" ToggleFrameViewMode
 
-        weapon_frame_type : FrameType
-        weapon_frame_type = WeaponFrameType
+        init_model : Model
+        init_model =
+            { frame_edit_datas =
+                { weapon = WeaponFrameType
                     { form_definition = Magnolia.WeaponFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponFormUpdate)
                     , frame_data = weapon_frame_data
                     , all_frames = []
                     , saved_frame_data = saved_weapon_frame_data
                     , table_view_page_info = Table.new_page_info temp_handler
+                    , frame_type_str = to_data_name WeaponFrameType
                     , frame_id_getter = String.fromInt << .frame_id
                     }
-
-
-        init_model : Model
-        init_model =
-            { frame_edit_datas =
-                { weapon = weapon_frame_type
                 , armor = ArmorFrameType
                     { form_definition = Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditArmorFormUpdate)
                     , frame_data = armor_frame_data
                     , all_frames = []
                     , saved_frame_data = saved_armor_frame_data
                     , table_view_page_info = Table.new_page_info temp_handler
+                    , frame_type_str = to_data_name ArmorFrameType
                     , frame_id_getter = String.fromInt << .frame_id
                     }
                 , zone = ZoneFrameType
@@ -422,6 +424,7 @@ init hash =
                     , all_frames = []
                     , saved_frame_data = saved_zone_frame_data
                     , table_view_page_info = Table.new_page_info temp_handler
+                    , frame_type_str = to_data_name ZoneFrameType
                     , frame_id_getter = .data_name
                     }
                 , weapon_category = WeaponCategoryFrameType
@@ -430,6 +433,7 @@ init hash =
                     , all_frames = []
                     , saved_frame_data = saved_weapon_category_frame_data
                     , table_view_page_info = Table.new_page_info temp_handler
+                    , frame_type_str = to_data_name WeaponCategoryFrameType
                     , frame_id_getter = String.fromInt << .frame_id
                     }
                 , attribute = AttributeFrameType
@@ -438,6 +442,7 @@ init hash =
                     , all_frames = []
                     , saved_frame_data = saved_attribute_frame_data
                     , table_view_page_info = Table.new_page_info temp_handler
+                    , frame_type_str = to_data_name AttributeFrameType
                     , frame_id_getter = String.fromInt << .frame_id
                     }
                 , battle_text_struct = BattleTextStructFrameType
@@ -446,24 +451,16 @@ init hash =
                     , all_frames = []
                     , saved_frame_data = saved_battle_text_struct_frame_data
                     , table_view_page_info = Table.new_page_info temp_handler
+                    , frame_type_str = to_data_name BattleTextStructFrameType
                     , frame_id_getter = String.fromInt << .frame_id
                     }
                 }
             , active_tab = initial_active_tab
-            , active_tab_frame_type = weapon_frame_type
-            -- , active_tab_frame_type = initial_active_tab_frame_type
+            , active_tab_frame_type = initial_active_tab_frame_type
 
             -- , frame_view_mode = List
             , frame_view_mode = Edit
             }
-
-        initial_active_tab_frame_type : FrameType
-        initial_active_tab_frame_type =
-            frame_type_from_hash init_model hash
-
-        finalized_model : Model
-        finalized_model = { init_model |
-            active_tab_frame_type = initial_active_tab_frame_type }
 
         -- init_cmds = Cmd.none
         init_cmds =
@@ -471,7 +468,7 @@ init hash =
                 [-- Task.perform (\_ -> DoDownloadAllFrames initial_active_tab_frame_type) Time.now
                 ]
     in
-    ( finalized_model, init_cmds )
+    ( init_model, init_cmds )
 
 
 update_frame_edit_data :
@@ -495,8 +492,8 @@ type alias FedsUpdater frameData msg =
 
 {-| returns a single Fed from a FrameEditDatas
 -}
-type alias FedGetter =
-    FrameEditDatas -> FrameType
+type alias FedGetter frameData msg =
+    FrameEditDatas -> FrameEditData frameData msg
 
 
 {-| takes a FrameData and a field update type (Name, Description) and returns the updated frame data
@@ -527,7 +524,7 @@ update_feds feds feds_updater new_fed =
 -}
 update_frame_edit_datas :
     Model
-    -> FedGetter
+    -> FedGetter frameData msg
     -> FedsUpdater frameData msg
     -> UpdateEditFormFunc frameData updateType
     -> updateType
@@ -638,13 +635,13 @@ unpack_response response =
 
 handle_feds_download :
     FrameEditDatas
-    -> FedGetter
+    -> FedGetter frameData msg
     -> FedsUpdater frameData msg
     -> Maybe (List frameData)
     -> FrameEditDatas
 handle_feds_download existing_feds fed_getter feds_updater maybe_all_frames =
     let
-        existing_fed : FrameType
+        existing_fed : FrameEditData frameData msg
         existing_fed =
             fed_getter existing_feds
 
@@ -911,7 +908,7 @@ update model msg =
         HashUpdated hash ->
             let
                 new_frame_type =
-                    frame_type_from_hash model hash
+                    frame_type_from_hash hash
             in
             ( { model | active_tab_frame_type = new_frame_type }, Task.perform (\_ -> DoDownloadAllFrames new_frame_type) Time.now, Noop )
 

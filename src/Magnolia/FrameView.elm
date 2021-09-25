@@ -732,42 +732,30 @@ update_frame_data existing_fed form_update_type updater =
     { existing_fed | frame_data = updater existing_fed.frame_data form_update_type }
 
 
-update_weapon_fed feds frame_type callback =
-    case get_weapon_fed frame_type of
-        Just fed ->
-            { feds | weapon = callback fed }
-
-        Nothing ->
-            feds
-
-update_armor_fed feds frame_type callback =
-    case get_armor_fed frame_type of
-        Just fed ->
-            { feds | armor = callback fed }
-
-        Nothing ->
-            feds
-
-
 update_got_frame_edit_form_update : Model -> FrameType -> GotFrameEditFormUpdateMsg -> ( Model, Cmd Msg )
 update_got_frame_edit_form_update model frame_type sub_msg =
     let
         feds =
             model.frame_edit_datas
-
-        new_feds : FrameEditDatas
-        new_feds =
-            case sub_msg of
-                GotEditWeaponFormUpdate form_update_type ->
-                    update_weapon_fed feds frame_type <| \fed -> WeaponFrameType <| update_frame_data (Debug.log "fed" fed) form_update_type Magnolia.WeaponFrame.update_edit_form_data
-
-                GotEditArmorFormUpdate form_update_type ->
-                    update_armor_fed feds frame_type <| \fed -> ArmorFrameType <| update_frame_data fed form_update_type Magnolia.ArmorFrame.update_edit_form_data
-
-                _ ->
-                    Debug.todo "handle all GotEditFRAMEFormUpdate" ( model, Cmd.none )
     in
-    ( { model | frame_edit_datas = new_feds} , Cmd.none )
+    case sub_msg of
+        GotEditWeaponFormUpdate form_update_type ->
+            case get_weapon_fed feds.weapon of
+                Just fed ->
+                    ( { model
+                        | frame_edit_datas =
+                            { feds
+                                | weapon = WeaponFrameType <| update_frame_data fed form_update_type Magnolia.WeaponFrame.update_edit_form_data
+                            }
+                      }
+                    , Cmd.none
+                    )
+
+                Nothing ->
+                    ( model, Cmd.none )
+
+        _ ->
+            Debug.todo "handle all GotEditFRAMEFormUpdate" ( model, Cmd.none )
 
 
 

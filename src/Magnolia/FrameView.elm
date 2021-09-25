@@ -489,9 +489,8 @@ update_frame_edit_data frame_edit_data update_edit_form_data form_update_type =
 
 {-| takes a FrameEditDatas and a single FrameEditData and updates the Feds with the single one
 -}
--- type alias FedsUpdater frameData msg =
-type alias FedsUpdater =
-    FrameEditDatas -> FrameType -> FrameEditDatas
+type alias FedsUpdater frameData msg =
+    FrameEditDatas -> FrameEditData frameData msg -> FrameEditDatas
 
 
 {-| returns a single Fed from a FrameEditDatas
@@ -519,7 +518,7 @@ update_single_fed_frame_data frame_type new_frame_data =
         BattleTextStructFrameType old_fed -> BattleTextStructFrameType new_frame_data
 
 
-update_feds : FrameEditDatas -> FedsUpdater -> FrameEditData frameData msg -> FrameEditDatas
+update_feds : FrameEditDatas -> FedsUpdater frameData msg -> FrameEditData frameData msg -> FrameEditDatas
 update_feds feds feds_updater new_fed =
     feds_updater feds new_fed
 
@@ -529,7 +528,7 @@ update_feds feds feds_updater new_fed =
 update_frame_edit_datas :
     Model
     -> FedGetter
-    -> FedsUpdater
+    -> FedsUpdater frameData msg
     -> UpdateEditFormFunc frameData updateType
     -> updateType
     -> Model
@@ -637,48 +636,16 @@ unpack_response response =
             Nothing
 
 
-create_weapon_frame_type : FrameEditData WeaponFrame Msg -> FrameType
-create_weapon_frame_type new_fed = WeaponFrameType new_fed
-
-generate_new_frame_type : FrameType -> FrameEditData frameData msg -> FrameType
-generate_new_frame_type old_frame_type new_fed =
-    case old_frame_type of
-        -- WeaponFrameType fed -> WeaponFrameType new_fed
-        WeaponFrameType fed -> create_weapon_frame_type new_fed
-        ArmorFrameType fed -> ArmorFrameType new_fed
-        ZoneFrameType fed -> ZoneFrameType new_fed
-        WeaponCategoryFrameType fed -> WeaponCategoryFrameType new_fed
-        AttributeFrameType fed -> AttributeFrameType new_fed
-        BattleTextStructFrameType fed -> BattleTextStructFrameType new_fed
-
-
-get_frame_data : FrameType -> FrameEditData frameData msg
-get_frame_data frame_type =
-    case frame_type of
-        WeaponFrameType fed -> fed
-        ArmorFrameType fed -> fed
-        ZoneFrameType fed -> fed
-        WeaponCategoryFrameType fed -> fed
-        AttributeFrameType fed -> fed
-        BattleTextStructFrameType fed -> fed
-
-update_existing_fed existing_fed all_frames new_page_info =
-    { existing_fed
-        | all_frames = all_frames
-        , table_view_page_info = new_page_info
-    }
-
-
 handle_feds_download :
     FrameEditDatas
     -> FedGetter
-    -> FedsUpdater
+    -> FedsUpdater frameData msg
     -> Maybe (List frameData)
     -> FrameEditDatas
 handle_feds_download existing_feds fed_getter feds_updater maybe_all_frames =
     let
-        existing_frame_type : FrameType
-        existing_frame_type =
+        existing_fed : FrameType
+        existing_fed =
             fed_getter existing_feds
 
         all_frames : List frameData
@@ -688,24 +655,19 @@ handle_feds_download existing_feds fed_getter feds_updater maybe_all_frames =
                     new_all_frames
 
                 Nothing ->
-                    -- existing_fed.all_frames
-                    [] --TODO reuse existing all_frames from existing_fed now that they're FrameType
+                    existing_fed.all_frames
 
         new_page_info =
-            Table.initialize_page_info (get_page_info existing_frame_type) all_frames
+            Table.initialize_page_info existing_fed.table_view_page_info all_frames
 
-
-        -- existing_fed : FrameEditData frameData Msg
-        existing_fed = get_frame_data existing_frame_type
-
-        -- new_fed : FrameEditData frameData msg
+        new_fed : FrameEditData frameData msg
         new_fed =
-            update_existing_fed existing_fed all_frames new_page_info
-
-        new_frame_type : FrameType
-        new_frame_type = generate_new_frame_type existing_frame_type new_fed
+            { existing_fed
+                | all_frames = all_frames
+                , table_view_page_info = new_page_info
+            }
     in
-    feds_updater existing_feds new_frame_type
+    feds_updater existing_feds new_fed
 
 
 update_do_download_all_frames : Model -> FrameType -> ( Model, Cmd Msg )

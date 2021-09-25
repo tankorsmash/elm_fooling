@@ -138,55 +138,55 @@ type alias FrameEditData f msg =
 
 
 type FrameType
-    = WeaponFrame
-    | ArmorFrame
-    | ZoneFrame
-    | WeaponCategoryFrame
-    | AttributeFrame
-    | BattleTextStructFrame
+    = WeaponFrameType
+    | ArmorFrameType
+    | ZoneFrameType
+    | WeaponCategoryFrameType
+    | AttributeFrameType
+    | BattleTextStructFrameType
 
 
 to_string : FrameType -> String
 to_string frame_type =
     case frame_type of
-        WeaponFrame ->
+        WeaponFrameType ->
             "WeaponFrame"
 
-        ArmorFrame ->
+        ArmorFrameType ->
             "ArmorFrame"
 
-        ZoneFrame ->
+        ZoneFrameType ->
             "ZoneFrame"
 
-        WeaponCategoryFrame ->
+        WeaponCategoryFrameType ->
             "WeaponCategoryFrame"
 
-        AttributeFrame ->
+        AttributeFrameType ->
             "AttributeFrame"
 
-        BattleTextStructFrame ->
+        BattleTextStructFrameType ->
             "BattleTextStructFrame"
 
 
 to_data_name : FrameType -> String
 to_data_name frame_type =
     case frame_type of
-        WeaponFrame ->
+        WeaponFrameType ->
             "weapon"
 
-        ArmorFrame ->
+        ArmorFrameType ->
             "armor"
 
-        ZoneFrame ->
+        ZoneFrameType ->
             "zone"
 
-        WeaponCategoryFrame ->
+        WeaponCategoryFrameType ->
             "weapon_category"
 
-        AttributeFrame ->
+        AttributeFrameType ->
             "attribute"
 
-        BattleTextStructFrame ->
+        BattleTextStructFrameType ->
             "battle_text_struct"
 
 
@@ -194,22 +194,22 @@ from_data_name : String -> Maybe FrameType
 from_data_name frame_type_str =
     case frame_type_str of
         "weapon" ->
-            Just WeaponFrame
+            Just WeaponFrameType
 
         "armor" ->
-            Just ArmorFrame
+            Just ArmorFrameType
 
         "zone" ->
-            Just ZoneFrame
+            Just ZoneFrameType
 
         "weapon_category" ->
-            Just WeaponCategoryFrame
+            Just WeaponCategoryFrameType
 
         "attribute" ->
-            Just AttributeFrame
+            Just AttributeFrameType
 
         "battle_text_struct" ->
-            Just BattleTextStructFrame
+            Just BattleTextStructFrameType
 
         _ ->
             Nothing
@@ -252,28 +252,28 @@ frame_type_from_hash hash =
         in
         case suffix of
             "weapon_frame" ->
-                WeaponFrame
+                WeaponFrameType
 
             "armor_frame" ->
-                ArmorFrame
+                ArmorFrameType
 
             "zone_frame" ->
-                ZoneFrame
+                ZoneFrameType
 
             "weapon_category_frame" ->
-                WeaponCategoryFrame
+                WeaponCategoryFrameType
 
             "attribute_frame" ->
-                AttributeFrame
+                AttributeFrameType
 
             "battle_text_struct_frame" ->
-                BattleTextStructFrame
+                BattleTextStructFrameType
 
             _ ->
-                Debug.log ("error: unknown frame type suffix: " ++ suffix) WeaponFrame
+                Debug.log ("error: unknown frame type suffix: " ++ suffix) WeaponFrameType
 
     else
-        WeaponFrame
+        WeaponFrameType
 
 
 init : String -> ( Model, Cmd Msg )
@@ -397,9 +397,9 @@ init hash =
                     , frame_data = weapon_frame_data
                     , all_frames = []
                     , saved_frame_data = saved_weapon_frame_data
-                    , table_view_page_info = Table.new_page_info (GotPageMsg WeaponFrame)
-                    , frame_type = WeaponFrame
-                    , frame_type_str = to_data_name WeaponFrame
+                    , table_view_page_info = Table.new_page_info (GotPageMsg WeaponFrameType)
+                    , frame_type = WeaponFrameType
+                    , frame_type_str = to_data_name WeaponFrameType
                     , frame_id_getter = String.fromInt << .frame_id
                     }
                 , armor =
@@ -407,9 +407,9 @@ init hash =
                     , frame_data = armor_frame_data
                     , all_frames = []
                     , saved_frame_data = saved_armor_frame_data
-                    , table_view_page_info = Table.new_page_info (GotPageMsg ArmorFrame)
-                    , frame_type = ArmorFrame
-                    , frame_type_str = to_data_name ArmorFrame
+                    , table_view_page_info = Table.new_page_info (GotPageMsg ArmorFrameType)
+                    , frame_type = ArmorFrameType
+                    , frame_type_str = to_data_name ArmorFrameType
                     , frame_id_getter = String.fromInt << .frame_id
                     }
                 , zone =
@@ -417,9 +417,9 @@ init hash =
                     , frame_data = zone_frame_data
                     , all_frames = []
                     , saved_frame_data = saved_zone_frame_data
-                    , table_view_page_info = Table.new_page_info (GotPageMsg ZoneFrame)
-                    , frame_type = ZoneFrame
-                    , frame_type_str = to_data_name ZoneFrame
+                    , table_view_page_info = Table.new_page_info (GotPageMsg ZoneFrameType)
+                    , frame_type = ZoneFrameType
+                    , frame_type_str = to_data_name ZoneFrameType
                     , frame_id_getter = .data_name
                     }
                 , weapon_category =
@@ -427,9 +427,9 @@ init hash =
                     , frame_data = weapon_category_frame_data
                     , all_frames = []
                     , saved_frame_data = saved_weapon_category_frame_data
-                    , table_view_page_info = Table.new_page_info (GotPageMsg WeaponCategoryFrame)
-                    , frame_type = WeaponCategoryFrame
-                    , frame_type_str = to_data_name WeaponCategoryFrame
+                    , table_view_page_info = Table.new_page_info (GotPageMsg WeaponCategoryFrameType)
+                    , frame_type = WeaponCategoryFrameType
+                    , frame_type_str = to_data_name WeaponCategoryFrameType
                     , frame_id_getter = String.fromInt << .frame_id
                     }
                 , attribute =
@@ -437,9 +437,9 @@ init hash =
                     , frame_data = attribute_frame_data
                     , all_frames = []
                     , saved_frame_data = saved_attribute_frame_data
-                    , table_view_page_info = Table.new_page_info (GotPageMsg AttributeFrame)
-                    , frame_type = AttributeFrame
-                    , frame_type_str = to_data_name AttributeFrame
+                    , table_view_page_info = Table.new_page_info (GotPageMsg AttributeFrameType)
+                    , frame_type = AttributeFrameType
+                    , frame_type_str = to_data_name AttributeFrameType
                     , frame_id_getter = String.fromInt << .frame_id
                     }
                 , battle_text_struct =
@@ -447,9 +447,9 @@ init hash =
                     , frame_data = battle_text_struct_frame_data
                     , all_frames = []
                     , saved_frame_data = saved_battle_text_struct_frame_data
-                    , table_view_page_info = Table.new_page_info (GotPageMsg BattleTextStructFrame)
-                    , frame_type = BattleTextStructFrame
-                    , frame_type_str = to_data_name BattleTextStructFrame
+                    , table_view_page_info = Table.new_page_info (GotPageMsg BattleTextStructFrameType)
+                    , frame_type = BattleTextStructFrameType
+                    , frame_type_str = to_data_name BattleTextStructFrameType
                     , frame_id_getter = String.fromInt << .frame_id
                     }
                 }
@@ -660,22 +660,22 @@ handle_feds_download existing_feds fed_getter feds_updater maybe_all_frames =
 update_do_download_all_frames : Model -> FrameType -> ( Model, Cmd Msg )
 update_do_download_all_frames model frame_type =
     case frame_type of
-        WeaponFrame ->
+        WeaponFrameType ->
             ( model, Magnolia.WeaponFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllWeaponFrames) )
 
-        ArmorFrame ->
+        ArmorFrameType ->
             ( model, Magnolia.ArmorFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllArmorFrames) )
 
-        ZoneFrame ->
+        ZoneFrameType ->
             ( model, Magnolia.ZoneFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllZoneFrames) )
 
-        WeaponCategoryFrame ->
+        WeaponCategoryFrameType ->
             ( model, Magnolia.WeaponCategoryFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllWeaponCategoryFrames) )
 
-        AttributeFrame ->
+        AttributeFrameType ->
             ( model, Magnolia.AttributeFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllAttributeFrames) )
 
-        BattleTextStructFrame ->
+        BattleTextStructFrameType ->
             ( model, Magnolia.BattleTextStructFrame.download_all_frames (GotDownloadedAllFrames << DownloadedAllBattleTextStructFrames) )
 
 
@@ -924,22 +924,22 @@ update model msg =
 get_page_info : FrameEditDatas -> FrameType -> Table.PageInfo Msg
 get_page_info feds frame_type =
     case frame_type of
-        WeaponFrame ->
+        WeaponFrameType ->
             feds.weapon.table_view_page_info
 
-        ArmorFrame ->
+        ArmorFrameType ->
             feds.armor.table_view_page_info
 
-        ZoneFrame ->
+        ZoneFrameType ->
             feds.zone.table_view_page_info
 
-        WeaponCategoryFrame ->
+        WeaponCategoryFrameType ->
             feds.weapon_category.table_view_page_info
 
-        AttributeFrame ->
+        AttributeFrameType ->
             feds.attribute.table_view_page_info
 
-        BattleTextStructFrame ->
+        BattleTextStructFrameType ->
             feds.battle_text_struct.table_view_page_info
 
 
@@ -951,22 +951,22 @@ update_only_page_info old_fed new_page_info =
 set_page_info : FrameEditDatas -> FrameType -> Table.PageInfo Msg -> FrameEditDatas
 set_page_info feds frame_type new_page_info =
     case frame_type of
-        WeaponFrame ->
+        WeaponFrameType ->
             update_fed_weapon feds <| update_only_page_info feds.weapon new_page_info
 
-        ArmorFrame ->
+        ArmorFrameType ->
             update_fed_armor feds <| update_only_page_info feds.armor new_page_info
 
-        ZoneFrame ->
+        ZoneFrameType ->
             update_fed_zone feds <| update_only_page_info feds.zone new_page_info
 
-        WeaponCategoryFrame ->
+        WeaponCategoryFrameType ->
             update_fed_weapon_category feds <| update_only_page_info feds.weapon_category new_page_info
 
-        AttributeFrame ->
+        AttributeFrameType ->
             update_fed_attribute feds <| update_only_page_info feds.attribute new_page_info
 
-        BattleTextStructFrame ->
+        BattleTextStructFrameType ->
             update_fed_battle_text_struct feds <| update_only_page_info feds.battle_text_struct new_page_info
 
 
@@ -1091,47 +1091,47 @@ render_tab_item model config frame_edit_data form_definition on_row_click =
 do_render_tab : Model -> TabItemConfig -> Tab.Item Msg
 do_render_tab model config =
     case config.frame_type of
-        WeaponFrame ->
+        WeaponFrameType ->
             render_tab_item model
                 config
                 model.frame_edit_datas.weapon
                 (Magnolia.WeaponFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponFormUpdate))
-                (TableRowClicked << ClickedTableRowWeaponFrame WeaponFrame)
+                (TableRowClicked << ClickedTableRowWeaponFrame WeaponFrameType)
 
-        ArmorFrame ->
+        ArmorFrameType ->
             render_tab_item model
                 config
                 model.frame_edit_datas.armor
                 (Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditArmorFormUpdate))
-                (TableRowClicked << ClickedTableRowArmorFrame ArmorFrame)
+                (TableRowClicked << ClickedTableRowArmorFrame ArmorFrameType)
 
-        ZoneFrame ->
+        ZoneFrameType ->
             render_tab_item model
                 config
                 model.frame_edit_datas.zone
                 (Magnolia.ZoneFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditZoneFormUpdate))
-                (TableRowClicked << ClickedTableRowZoneFrame ZoneFrame)
+                (TableRowClicked << ClickedTableRowZoneFrame ZoneFrameType)
 
-        WeaponCategoryFrame ->
+        WeaponCategoryFrameType ->
             render_tab_item model
                 config
                 model.frame_edit_datas.weapon_category
                 (Magnolia.WeaponCategoryFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponCategoryFormUpdate))
-                (TableRowClicked << ClickedTableRowWeaponCategoryFrame WeaponCategoryFrame)
+                (TableRowClicked << ClickedTableRowWeaponCategoryFrame WeaponCategoryFrameType)
 
-        AttributeFrame ->
+        AttributeFrameType ->
             render_tab_item model
                 config
                 model.frame_edit_datas.attribute
                 (Magnolia.AttributeFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditAttributeFormUpdate))
-                (TableRowClicked << ClickedTableRowAttributeFrame AttributeFrame)
+                (TableRowClicked << ClickedTableRowAttributeFrame AttributeFrameType)
 
-        BattleTextStructFrame ->
+        BattleTextStructFrameType ->
             render_tab_item model
                 config
                 model.frame_edit_datas.battle_text_struct
                 (Magnolia.BattleTextStructFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditBattleTextStructFormUpdate))
-                (TableRowClicked << ClickedTableRowBattleTextStructFrame BattleTextStructFrame)
+                (TableRowClicked << ClickedTableRowBattleTextStructFrame BattleTextStructFrameType)
 
 
 tabs_view : Model -> Html Msg
@@ -1140,22 +1140,22 @@ tabs_view model =
         tab_configs : List TabItemConfig
         tab_configs =
             [ { form_edit_view = form_data_view model.frame_edit_datas.weapon
-              , frame_type = WeaponFrame
+              , frame_type = WeaponFrameType
               }
             , { form_edit_view = form_data_view model.frame_edit_datas.armor
-              , frame_type = ArmorFrame
+              , frame_type = ArmorFrameType
               }
             , { form_edit_view = form_data_view model.frame_edit_datas.zone
-              , frame_type = ZoneFrame
+              , frame_type = ZoneFrameType
               }
             , { form_edit_view = form_data_view model.frame_edit_datas.weapon_category
-              , frame_type = WeaponCategoryFrame
+              , frame_type = WeaponCategoryFrameType
               }
             , { form_edit_view = form_data_view model.frame_edit_datas.attribute
-              , frame_type = AttributeFrame
+              , frame_type = AttributeFrameType
               }
             , { form_edit_view = form_data_view model.frame_edit_datas.battle_text_struct
-              , frame_type = BattleTextStructFrame
+              , frame_type = BattleTextStructFrameType
               }
             ]
 

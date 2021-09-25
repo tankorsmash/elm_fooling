@@ -646,26 +646,19 @@ update_got_frame_edit_form_update model frame_type sub_msg =
             -- )
 
             let
-                feds = model.frame_edit_datas
+                feds = Debug.todo "finish this" model.frame_edit_datas
                 existing_frame_type = feds.weapon
-                updated_frame_type = case get_weapon_fed feds.weapon of
-                    Just fed_ ->
-                                    let
-                                        frame_data = fed_.frame_data
-                                    in
-                                        Just <| WeaponFrameType {fed_ | frame_data = Magnolia.WeaponFrame.update_edit_form_data frame_data form_update_type}
+                frame_data = case get_weapon_fed feds.weapon of
+                    Just fed -> Just fed.frame_data
                     Nothing -> Nothing
 
-                new_feds = case updated_frame_type of
-                    Just new_frame_type -> {feds | weapon = new_frame_type}
-                    Nothing -> feds
             in
 
-            ( {model | frame_edit_datas = new_feds}
+            ( {model | frame_edit_datas = feds}
 
             , Cmd.none)
 
-        _ -> Debug.todo "handle all GotEditFRAMEFormUpdate" (model, Cmd.none)
+        _ -> (model, Cmd.none)
 
         -- GotEditArmorFormUpdate form_update_type ->
         --     ( update_frame_edit_datas

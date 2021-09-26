@@ -835,6 +835,30 @@ get_frame_id_from_feds_frame_data feds frame_type =
             feds.battle_text_struct.frame_id_getter feds.battle_text_struct.frame_data
 
 
+{-| uses frame\_type to figure out which FED's frame\_data exists in its all\_frames
+-}
+frame_matches_from_feds_frame_data : FrameEditDatas -> FrameType -> Bool
+frame_matches_from_feds_frame_data feds frame_type =
+    case frame_type of
+        WeaponFrameType ->
+            frame_matches feds.weapon.all_frames feds.weapon.frame_data
+
+        ArmorFrameType ->
+            frame_matches feds.armor.all_frames feds.armor.frame_data
+
+        ZoneFrameType ->
+            frame_matches feds.zone.all_frames feds.zone.frame_data
+
+        WeaponCategoryFrameType ->
+            frame_matches feds.weapon_category.all_frames feds.weapon_category.frame_data
+
+        AttributeFrameType ->
+            frame_matches feds.attribute.all_frames feds.attribute.frame_data
+
+        BattleTextStructFrameType ->
+            frame_matches feds.battle_text_struct.all_frames feds.battle_text_struct.frame_data
+
+
 update : Model -> Msg -> ( Model, Cmd Msg, OutMsg )
 update model msg =
     case msg of
@@ -866,8 +890,16 @@ update model msg =
                 active_frame_type =
                     model.active_tab_frame_type
 
+                have_matches =
+                    frame_matches_from_feds_frame_data model.frame_edit_datas active_frame_type
+
                 url_root =
-                    "api/frames/" ++ to_data_name active_frame_type
+                    case have_matches of
+                        True ->
+                            "api/frames/" ++ to_data_name active_frame_type
+
+                        False ->
+                            "api/create_frames/" ++ to_data_name active_frame_type
 
                 url_suffix =
                     url_root

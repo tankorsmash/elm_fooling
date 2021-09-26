@@ -866,9 +866,11 @@ update model msg =
                 active_frame_type =
                     model.active_tab_frame_type
 
+                url_root =
+                    "api/frames/" ++ to_data_name active_frame_type
+
                 url_suffix =
-                    "api/frames/"
-                        ++ to_data_name active_frame_type
+                    url_root
                         ++ "/"
                         ++ get_frame_id_from_feds_frame_data
                             model.frame_edit_datas
@@ -1206,11 +1208,20 @@ view model =
         ]
 
 
+frame_matches : List f -> f -> Bool
+frame_matches all_frames frame =
+    List.any (\f -> frame == f) all_frames
+
+
 form_data_view : FrameEditData obj Msg -> Html Msg
 form_data_view frame_edit_data =
     let
-        { frame_data, form_definition, saved_frame_data } =
+        { frame_data, form_definition, saved_frame_data, all_frames } =
             frame_edit_data
+
+        frame_data_exists_in_all_frames : Bool
+        frame_data_exists_in_all_frames =
+            frame_matches all_frames frame_data
     in
     Grid.row [ Row.centerMd ]
         [ Grid.col [ Col.sm11, Col.md8 ]
@@ -1220,7 +1231,14 @@ form_data_view frame_edit_data =
                     [ Button.onClick SubmitFrameEditForm
                     , Button.primary
                     ]
-                    [ text "Submit" ]
+                    [ text <|
+                        case frame_data_exists_in_all_frames of
+                            True ->
+                                "Update"
+
+                            False ->
+                                "Create (todo!)"
+                    ]
                 ]
             ]
         ]

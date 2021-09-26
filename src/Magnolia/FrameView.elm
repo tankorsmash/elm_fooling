@@ -133,7 +133,9 @@ type alias FrameEditData f msg =
     , table_view_page_info : Table.PageInfo msg
     , frame_type : FrameType
     , frame_type_str : String -- "weapon", "zone", "weapon_category", etc
-    , frame_id_getter : f -> String -- "frame_id", "id", etc. Zones use data_names pretty sure so this'll get hairy
+    , frame_id_getter :
+        f
+        -> String -- "frame_id", "id", etc. Zones use data_names pretty sure so this'll get hairy
     }
 
 
@@ -809,6 +811,30 @@ update_table_row_clicked_frame_type model sub_msg =
     ( new_model, new_cmd )
 
 
+{-| uses frame\_type to figure out which FED's frame\_data to look up
+-}
+get_frame_id_from_feds_frame_data : FrameEditDatas -> FrameType -> String
+get_frame_id_from_feds_frame_data feds frame_type =
+    case frame_type of
+        WeaponFrameType ->
+            feds.weapon.frame_id_getter feds.weapon.frame_data
+
+        ArmorFrameType ->
+            feds.armor.frame_id_getter feds.armor.frame_data
+
+        ZoneFrameType ->
+            feds.zone.frame_id_getter feds.zone.frame_data
+
+        WeaponCategoryFrameType ->
+            feds.weapon_category.frame_id_getter feds.weapon_category.frame_data
+
+        AttributeFrameType ->
+            feds.attribute.frame_id_getter feds.attribute.frame_data
+
+        BattleTextStructFrameType ->
+            feds.battle_text_struct.frame_id_getter feds.battle_text_struct.frame_data
+
+
 update : Model -> Msg -> ( Model, Cmd Msg, OutMsg )
 update model msg =
     case msg of
@@ -843,6 +869,10 @@ update model msg =
                 url_suffix =
                     "api/frames/"
                         ++ to_data_name active_frame_type
+                        ++ "/"
+                        ++ get_frame_id_from_feds_frame_data
+                            model.frame_edit_datas
+                            active_frame_type
 
                 cmd =
                     Debug.log "submitting"

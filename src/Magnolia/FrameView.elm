@@ -808,12 +808,14 @@ update_table_row_clicked_frame_type model sub_msg =
                 WeaponFrameData raw_frame_data ->
                     update_fed_weapon feds <|
                         (update_single_fed_frame_data feds.weapon <|
-                            WeaponFrameData raw_frame_data)
+                            WeaponFrameData raw_frame_data
+                        )
 
                 ArmorFrameData raw_frame_data ->
                     update_fed_armor feds <|
                         (update_single_fed_frame_data feds.armor <|
-                            ArmorFrameData raw_frame_data)
+                            ArmorFrameData raw_frame_data
+                        )
 
                 ZoneFrameData raw_frame_data ->
                     update_fed_zone feds <|

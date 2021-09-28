@@ -95,12 +95,12 @@ type AllFramesDownloaded
 
 
 type TableRowClickedFrameType
-    = ClickedTableRowWeaponFrame FrameType WeaponFrame
-    | ClickedTableRowArmorFrame FrameType ArmorFrame
-    | ClickedTableRowZoneFrame FrameType ZoneFrame
-    | ClickedTableRowWeaponCategoryFrame FrameType WeaponCategoryFrame
-    | ClickedTableRowAttributeFrame FrameType AttributeFrame
-    | ClickedTableRowBattleTextStructFrame FrameType BattleTextStructFrame
+    = ClickedTableRowWeaponFrame WeaponFrame
+    | ClickedTableRowArmorFrame ArmorFrame
+    | ClickedTableRowZoneFrame ZoneFrame
+    | ClickedTableRowWeaponCategoryFrame WeaponCategoryFrame
+    | ClickedTableRowAttributeFrame AttributeFrame
+    | ClickedTableRowBattleTextStructFrame BattleTextStructFrame
 
 
 type Msg
@@ -117,7 +117,7 @@ type Msg
     | GotTabMsg Tab.State
     | ClickChangeTab FrameType
     | HashUpdated String --hash
-    | TableRowClicked TableRowClickedFrameType
+    | TableRowClicked FrameData
 
 
 type OutMsg
@@ -125,20 +125,22 @@ type OutMsg
     | ToVisualOutput String
 
 
-type alias FrameEditData f msg =
-    { form_definition : FormData.FormDefinition f msg
-    , all_frames : List f
-    , frame_data : f
-    , saved_frame_data : Maybe f
+type alias FrameEditData msg =
+    { form_definition : FormData.FormDefinition FrameData msg
+    , all_frames : List FrameData
+    , frame_data : FrameData
+    , saved_frame_data : Maybe FrameData
     , table_view_page_info : Table.PageInfo msg
     , frame_type : FrameType
     , frame_type_str : String -- "weapon", "zone", "weapon_category", etc
     , frame_id_getter :
-        f
+        FrameData
         -> String -- "frame_id", "id", etc. Zones use data_names pretty sure so this'll get hairy
     }
 
 
+{-| simple enum to determine which is what
+-}
 type FrameType
     = WeaponFrameType
     | ArmorFrameType
@@ -146,6 +148,17 @@ type FrameType
     | WeaponCategoryFrameType
     | AttributeFrameType
     | BattleTextStructFrameType
+
+
+{-| the actual frame data i'd get from jsonm
+-}
+type FrameData
+    = WeaponFrameData WeaponFrame
+    | ArmorFrameData ArmorFrame
+    | ZoneFrameData ZoneFrame
+    | WeaponCategoryFrameData WeaponCategoryFrame
+    | AttributeFrameData AttributeFrame
+    | BattleTextStructFrameData BattleTextStructFrame
 
 
 to_string : FrameType -> String
@@ -218,12 +231,12 @@ from_data_name frame_type_str =
 
 
 type alias FrameEditDatas =
-    { weapon : FrameEditData WeaponFrame Msg
-    , armor : FrameEditData ArmorFrame Msg
-    , zone : FrameEditData ZoneFrame Msg
-    , weapon_category : FrameEditData WeaponCategoryFrame Msg
-    , attribute : FrameEditData AttributeFrame Msg
-    , battle_text_struct : FrameEditData BattleTextStructFrame Msg
+    { weapon : FrameEditData Msg
+    , armor : FrameEditData Msg
+    , zone : FrameEditData Msg
+    , weapon_category : FrameEditData Msg
+    , attribute : FrameEditData Msg
+    , battle_text_struct : FrameEditData Msg
     }
 
 
@@ -472,10 +485,10 @@ init hash =
 
 
 update_frame_edit_data :
-    FrameEditData frameData msg
-    -> UpdateEditFormFunc frameData updateMsg
+    FrameEditData msg
+    -> UpdateEditFormFunc updateMsg
     -> updateMsg
-    -> FrameEditData frameData msg
+    -> FrameEditData msg
 update_frame_edit_data frame_edit_data update_edit_form_data form_update_type =
     let
         frame_data =
@@ -486,28 +499,28 @@ update_frame_edit_data frame_edit_data update_edit_form_data form_update_type =
 
 {-| takes a FrameEditDatas and a single FrameEditData and updates the Feds with the single one
 -}
-type alias FedsUpdater frameData msg =
-    FrameEditDatas -> FrameEditData frameData msg -> FrameEditDatas
+type alias FedsUpdater msg =
+    FrameEditDatas -> FrameEditData msg -> FrameEditDatas
 
 
 {-| returns a single Fed from a FrameEditDatas
 -}
-type alias FedGetter frameData msg =
-    FrameEditDatas -> FrameEditData frameData msg
+type alias FedGetter msg =
+    FrameEditDatas -> FrameEditData msg
 
 
 {-| takes a FrameData and a field update type (Name, Description) and returns the updated frame data
 -}
-type alias UpdateEditFormFunc frameData updateType =
-    frameData -> updateType -> frameData
+type alias UpdateEditFormFunc updateType =
+    FrameData -> updateType -> FrameData
 
 
-update_single_fed_frame_data : FrameEditData frameData msg -> frameData -> FrameEditData frameData msg
+update_single_fed_frame_data : FrameEditData msg -> FrameData -> FrameEditData msg
 update_single_fed_frame_data fed new_frame_data =
     { fed | frame_data = new_frame_data }
 
 
-update_feds : FrameEditDatas -> FedsUpdater frameData msg -> FrameEditData frameData msg -> FrameEditDatas
+update_feds : FrameEditDatas -> FedsUpdater msg -> FrameEditData msg -> FrameEditDatas
 update_feds feds feds_updater new_fed =
     feds_updater feds new_fed
 
@@ -516,9 +529,9 @@ update_feds feds feds_updater new_fed =
 -}
 update_frame_edit_datas :
     Model
-    -> FedGetter frameData msg
-    -> FedsUpdater frameData msg
-    -> UpdateEditFormFunc frameData updateType
+    -> FedGetter msg
+    -> FedsUpdater msg
+    -> UpdateEditFormFunc updateType
     -> updateType
     -> Model
 update_frame_edit_datas model fed_getter feds_updater update_edit_form_data form_update_type =
@@ -527,15 +540,15 @@ update_frame_edit_datas model fed_getter feds_updater update_edit_form_data form
         existing_feds =
             model.frame_edit_datas
 
-        existing_fed : FrameEditData frameData msg
+        existing_fed : FrameEditData msg
         existing_fed =
             fed_getter existing_feds
 
-        new_frame_data : frameData
+        new_frame_data : FrameData
         new_frame_data =
             update_edit_form_data existing_fed.frame_data form_update_type
 
-        new_fed : FrameEditData frameData msg
+        new_fed : FrameEditData msg
         new_fed =
             update_single_fed_frame_data existing_fed new_frame_data
     in
@@ -627,17 +640,17 @@ unpack_response response =
 
 handle_feds_download :
     FrameEditDatas
-    -> FedGetter frameData msg
-    -> FedsUpdater frameData msg
-    -> Maybe (List frameData)
+    -> FedGetter msg
+    -> FedsUpdater msg
+    -> Maybe (List FrameData)
     -> FrameEditDatas
 handle_feds_download existing_feds fed_getter feds_updater maybe_all_frames =
     let
-        existing_fed : FrameEditData frameData msg
+        existing_fed : FrameEditData msg
         existing_fed =
             fed_getter existing_feds
 
-        all_frames : List frameData
+        all_frames : List FrameData
         all_frames =
             case maybe_all_frames of
                 Just new_all_frames ->
@@ -649,7 +662,7 @@ handle_feds_download existing_feds fed_getter feds_updater maybe_all_frames =
         new_page_info =
             Table.initialize_page_info existing_fed.table_view_page_info all_frames
 
-        new_fed : FrameEditData frameData msg
+        new_fed : FrameEditData msg
         new_fed =
             { existing_fed
                 | all_frames = all_frames
@@ -742,32 +755,32 @@ update_got_downloaded_all_frames model sub_msg =
     ( { model | frame_edit_datas = new_feds }, cmd )
 
 
-update_fed_weapon : FrameEditDatas -> FrameEditData WeaponFrame Msg -> FrameEditDatas
+update_fed_weapon : FrameEditDatas -> FrameEditData Msg -> FrameEditDatas
 update_fed_weapon feds new_fed =
     { feds | weapon = new_fed }
 
 
-update_fed_armor : FrameEditDatas -> FrameEditData ArmorFrame Msg -> FrameEditDatas
+update_fed_armor : FrameEditDatas -> FrameEditData Msg -> FrameEditDatas
 update_fed_armor feds new_fed =
     { feds | armor = new_fed }
 
 
-update_fed_zone : FrameEditDatas -> FrameEditData ZoneFrame Msg -> FrameEditDatas
+update_fed_zone : FrameEditDatas -> FrameEditData Msg -> FrameEditDatas
 update_fed_zone feds new_fed =
     { feds | zone = new_fed }
 
 
-update_fed_weapon_category : FrameEditDatas -> FrameEditData WeaponCategoryFrame Msg -> FrameEditDatas
+update_fed_weapon_category : FrameEditDatas -> FrameEditData Msg -> FrameEditDatas
 update_fed_weapon_category feds new_fed =
     { feds | weapon_category = new_fed }
 
 
-update_fed_attribute : FrameEditDatas -> FrameEditData AttributeFrame Msg -> FrameEditDatas
+update_fed_attribute : FrameEditDatas -> FrameEditData Msg -> FrameEditDatas
 update_fed_attribute feds new_fed =
     { feds | attribute = new_fed }
 
 
-update_fed_battle_text_struct : FrameEditDatas -> FrameEditData BattleTextStructFrame Msg -> FrameEditDatas
+update_fed_battle_text_struct : FrameEditDatas -> FrameEditData Msg -> FrameEditDatas
 update_fed_battle_text_struct feds new_fed =
     { feds | battle_text_struct = new_fed }
 
@@ -780,27 +793,27 @@ update_table_row_clicked_frame_type model sub_msg =
 
         new_feds =
             case sub_msg of
-                ClickedTableRowWeaponFrame frame_type frame_data ->
+                ClickedTableRowWeaponFrame frame_data ->
                     update_fed_weapon feds <|
                         update_single_fed_frame_data feds.weapon frame_data
 
-                ClickedTableRowArmorFrame frame_type frame_data ->
+                ClickedTableRowArmorFrame frame_data ->
                     update_fed_armor feds <|
                         update_single_fed_frame_data feds.armor frame_data
 
-                ClickedTableRowZoneFrame frame_type frame_data ->
+                ClickedTableRowZoneFrame frame_data ->
                     update_fed_zone feds <|
                         update_single_fed_frame_data feds.zone frame_data
 
-                ClickedTableRowWeaponCategoryFrame frame_type frame_data ->
+                ClickedTableRowWeaponCategoryFrame frame_data ->
                     update_fed_weapon_category feds <|
                         update_single_fed_frame_data feds.weapon_category frame_data
 
-                ClickedTableRowAttributeFrame frame_type frame_data ->
+                ClickedTableRowAttributeFrame frame_data ->
                     update_fed_attribute feds <|
                         update_single_fed_frame_data feds.attribute frame_data
 
-                ClickedTableRowBattleTextStructFrame frame_type frame_data ->
+                ClickedTableRowBattleTextStructFrame frame_data ->
                     update_fed_battle_text_struct feds <|
                         update_single_fed_frame_data feds.battle_text_struct frame_data
 
@@ -1007,7 +1020,7 @@ get_page_info feds frame_type =
             feds.battle_text_struct.table_view_page_info
 
 
-update_only_page_info : FrameEditData frameData Msg -> Table.PageInfo Msg -> FrameEditData frameData Msg
+update_only_page_info : FrameEditData Msg -> Table.PageInfo Msg -> FrameEditData Msg
 update_only_page_info old_fed new_page_info =
     { old_fed | table_view_page_info = new_page_info }
 
@@ -1051,7 +1064,7 @@ type alias TabItemConfig =
     { form_edit_view : Html Msg, frame_type : FrameType }
 
 
-build_table_definition : FrameType -> List (FormData.FormField fd Msg) -> (fd -> Msg) -> TableDefinition fd Msg
+build_table_definition : FrameType -> List (FormData.FormField FrameData Msg) -> (FrameData -> Msg) -> TableDefinition FrameData Msg
 build_table_definition frame_type form_fields on_row_click =
     { title = Just <| to_string frame_type
     , columns = List.indexedMap form_field_to_column form_fields
@@ -1061,7 +1074,7 @@ build_table_definition frame_type form_fields on_row_click =
 
 {-| Looks up a FrameData's field and renders to a string
 -}
-field_lookup : FormData.FormField fd msg -> fd -> String
+field_lookup : FormData.FormField FrameData msg -> FrameData -> String
 field_lookup field obj =
     case field.data_type of
         IntType getter ->
@@ -1083,7 +1096,7 @@ field_lookup field obj =
             String.join ", " <| List.map String.fromInt <| getter obj
 
 
-form_field_to_column : Int -> FormData.FormField fd msg -> ColumnDef fd
+form_field_to_column : Int -> FormData.FormField FrameData msg -> ColumnDef FrameData
 form_field_to_column idx form_field =
     { column_id = form_field.field_name
     , idx = idx
@@ -1097,25 +1110,24 @@ form_field_to_column idx form_field =
 render_tab_item :
     Model
     -> TabItemConfig
-    -> FrameEditData fd Msg
-    -> FormData.FormDefinition fd Msg
-    -> (fd -> Msg)
+    -> FrameEditData Msg
+    -> FormData.FormDefinition FrameData Msg
     -> Tab.Item Msg
-render_tab_item model config frame_edit_data form_definition on_row_click =
+render_tab_item model config frame_edit_data form_definition =
     let
         frame_type : FrameType
         frame_type =
             config.frame_type
 
-        form_fields : List (FormData.FormField fd Msg)
+        form_fields : List (FormData.FormField FrameData Msg)
         form_fields =
             form_definition.fields
 
-        table_definition : TableDefinition fd Msg
+        table_definition : TableDefinition FrameData Msg
         table_definition =
-            build_table_definition frame_type form_fields on_row_click
+            build_table_definition frame_type form_fields TableRowClicked
 
-        row_data : List fd
+        row_data : List FrameData
         row_data =
             frame_edit_data.all_frames
 
@@ -1160,42 +1172,36 @@ do_render_tab model config =
                 config
                 model.frame_edit_datas.weapon
                 (Magnolia.WeaponFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponFormUpdate))
-                (TableRowClicked << ClickedTableRowWeaponFrame WeaponFrameType)
 
         ArmorFrameType ->
             render_tab_item model
                 config
                 model.frame_edit_datas.armor
                 (Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditArmorFormUpdate))
-                (TableRowClicked << ClickedTableRowArmorFrame ArmorFrameType)
 
         ZoneFrameType ->
             render_tab_item model
                 config
                 model.frame_edit_datas.zone
                 (Magnolia.ZoneFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditZoneFormUpdate))
-                (TableRowClicked << ClickedTableRowZoneFrame ZoneFrameType)
 
         WeaponCategoryFrameType ->
             render_tab_item model
                 config
                 model.frame_edit_datas.weapon_category
                 (Magnolia.WeaponCategoryFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponCategoryFormUpdate))
-                (TableRowClicked << ClickedTableRowWeaponCategoryFrame WeaponCategoryFrameType)
 
         AttributeFrameType ->
             render_tab_item model
                 config
                 model.frame_edit_datas.attribute
                 (Magnolia.AttributeFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditAttributeFormUpdate))
-                (TableRowClicked << ClickedTableRowAttributeFrame AttributeFrameType)
 
         BattleTextStructFrameType ->
             render_tab_item model
                 config
                 model.frame_edit_datas.battle_text_struct
                 (Magnolia.BattleTextStructFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditBattleTextStructFormUpdate))
-                (TableRowClicked << ClickedTableRowBattleTextStructFrame BattleTextStructFrameType)
 
 
 tabs_view : Model -> Html Msg
@@ -1245,7 +1251,7 @@ frame_matches all_frames frame =
     List.any (\f -> frame == f) all_frames
 
 
-form_data_view : FrameEditData obj Msg -> Html Msg
+form_data_view : FrameEditData Msg -> Html Msg
 form_data_view frame_edit_data =
     let
         { frame_data, form_definition, saved_frame_data, all_frames } =

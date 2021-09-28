@@ -1064,7 +1064,11 @@ type alias TabItemConfig =
     { form_edit_view : Html Msg, frame_type : FrameType }
 
 
-build_table_definition : FrameType -> List (FormData.FormField FrameData Msg) -> (FrameData -> Msg) -> TableDefinition FrameData Msg
+build_table_definition :
+    FrameType
+    -> List (FormData.FormField fd Msg)
+    -> (fd -> Msg)
+    -> TableDefinition fd Msg
 build_table_definition frame_type form_fields on_row_click =
     { title = Just <| to_string frame_type
     , columns = List.indexedMap form_field_to_column form_fields
@@ -1074,7 +1078,7 @@ build_table_definition frame_type form_fields on_row_click =
 
 {-| Looks up a FrameData's field and renders to a string
 -}
-field_lookup : FormData.FormField FrameData msg -> FrameData -> String
+field_lookup : FormData.FormField fd msg -> fd -> String
 field_lookup field obj =
     case field.data_type of
         IntType getter ->
@@ -1096,7 +1100,7 @@ field_lookup field obj =
             String.join ", " <| List.map String.fromInt <| getter obj
 
 
-form_field_to_column : Int -> FormData.FormField FrameData msg -> ColumnDef FrameData
+form_field_to_column : Int -> FormData.FormField fd msg -> ColumnDef fd
 form_field_to_column idx form_field =
     { column_id = form_field.field_name
     , idx = idx
@@ -1110,26 +1114,23 @@ form_field_to_column idx form_field =
 render_tab_item :
     Model
     -> TabItemConfig
-    -> FrameEditData Msg
-    -> FormData.FormDefinition FrameData Msg
+    -> List fd
+    -> FormData.FormDefinition fd Msg
+    -> (fd -> FrameData)
     -> Tab.Item Msg
-render_tab_item model config frame_edit_data form_definition =
+render_tab_item model config row_data form_definition partial_frame_data =
     let
         frame_type : FrameType
         frame_type =
             config.frame_type
 
-        form_fields : List (FormData.FormField FrameData Msg)
+        form_fields : List (FormData.FormField fd Msg)
         form_fields =
             form_definition.fields
 
-        table_definition : TableDefinition FrameData Msg
+        table_definition : TableDefinition fd Msg
         table_definition =
-            build_table_definition frame_type form_fields TableRowClicked
-
-        row_data : List FrameData
-        row_data =
-            frame_edit_data.all_frames
+            build_table_definition frame_type form_fields ( TableRowClicked << partial_frame_data)
 
         page_info : Table.PageInfo Msg
         page_info =
@@ -1142,7 +1143,11 @@ render_tab_item model config frame_edit_data form_definition =
                     config.form_edit_view
 
                 List ->
-                    Table.view table_definition row_data frame_edit_data.table_view_page_info
+                    Table.view
+                        table_definition
+                        row_data
+                        -- frame_edit_data.table_view_page_info
+                        page_info
 
         tab_id =
             tab_prefix ++ (recase ToSnake <| to_string frame_type)
@@ -1164,44 +1169,54 @@ render_tab_item model config frame_edit_data form_definition =
         }
 
 
+get_all_frames : List FrameData -> List fd
+get_all_frames frame_data =
+    case frame_data of
+        WeaponFrameData data ->
+            data
+
+        _ ->
+            []
+
+
 do_render_tab : Model -> TabItemConfig -> Tab.Item Msg
 do_render_tab model config =
     case config.frame_type of
         WeaponFrameType ->
             render_tab_item model
                 config
-                model.frame_edit_datas.weapon
-                (Magnolia.WeaponFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponFormUpdate))
+                (get_all_frames model.frame_edit_datas.weapon.all_frames)
+                (Magnolia.WeaponFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponFormUpdate)) WeaponFrameData
 
         ArmorFrameType ->
             render_tab_item model
                 config
-                model.frame_edit_datas.armor
-                (Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditArmorFormUpdate))
+                (get_all_frames model.frame_edit_datas.armor.all_frames)
+                (Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditArmorFormUpdate)) ArmorFrameData
 
         ZoneFrameType ->
             render_tab_item model
                 config
-                model.frame_edit_datas.zone
-                (Magnolia.ZoneFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditZoneFormUpdate))
+                (get_all_frames model.frame_edit_datas.zone.all_frames)
+                (Magnolia.ZoneFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditZoneFormUpdate)) ZoneFrameData
 
         WeaponCategoryFrameType ->
             render_tab_item model
                 config
-                model.frame_edit_datas.weapon_category
-                (Magnolia.WeaponCategoryFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponCategoryFormUpdate))
+                (get_all_frames model.frame_edit_datas.weapon_category.all_frames)
+                (Magnolia.WeaponCategoryFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponCategoryFormUpdate)) WeaponCategoryFrameData
 
         AttributeFrameType ->
             render_tab_item model
                 config
-                model.frame_edit_datas.attribute
-                (Magnolia.AttributeFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditAttributeFormUpdate))
+                (get_all_frames model.frame_edit_datas.attribute.all_frames)
+                (Magnolia.AttributeFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditAttributeFormUpdate)) AttributeFrameData
 
         BattleTextStructFrameType ->
             render_tab_item model
                 config
-                model.frame_edit_datas.battle_text_struct
-                (Magnolia.BattleTextStructFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditBattleTextStructFormUpdate))
+                (get_all_frames model.frame_edit_datas.battle_text_struct.all_frames)
+                (Magnolia.BattleTextStructFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditBattleTextStructFormUpdate)) BattleTextStructFrameData
 
 
 tabs_view : Model -> Html Msg

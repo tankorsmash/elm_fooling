@@ -43,11 +43,11 @@ decode_battle_text_struct_frames =
     list decode_battle_text_struct_frame
 
 
-download_all_frames : (Result Http.Error (List BattleTextStructFrame) -> msg) -> Cmd msg
+download_all_frames : (Utils.JsonHttpResult (List BattleTextStructFrame) -> msg) -> Cmd msg
 download_all_frames callback =
     Http.get
-        { url = root_json_server_url ++ "api/frames/battle_text_struct"
-        , expect = Http.expectJson callback decode_battle_text_struct_frames
+        { url = clojure_json_server_url ++ "api/frames/battle_text_struct"
+        , expect = Http.expectJson callback (Utils.json_server_resp_decoder decode_battle_text_struct_frames)
         }
 
 

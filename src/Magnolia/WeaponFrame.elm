@@ -26,7 +26,7 @@ import FormData
 import Http
 import Json.Decode as Decode exposing (Decoder, andThen, field, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
-import Utils exposing (root_json_server_url, clojure_json_server_url, json_server_resp_decoder, JsonServerResp)
+import Utils exposing (JsonServerResp, clojure_json_server_url, json_server_resp_decoder, root_json_server_url, JsonHttpResult)
 
 
 {-| All these are strings because they get the msg from Html
@@ -283,7 +283,7 @@ decode_weapon_frames =
     list decode_weapon_frame
 
 
-download_all_frames : (Result Http.Error (JsonServerResp (List WeaponFrame)) -> msg) -> Cmd msg
+download_all_frames : (JsonHttpResult (List WeaponFrame) -> msg) -> Cmd msg
 download_all_frames callback =
     Http.get
         { url = clojure_json_server_url ++ "api/frames/weapon"

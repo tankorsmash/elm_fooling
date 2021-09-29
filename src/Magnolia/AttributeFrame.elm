@@ -45,11 +45,11 @@ decode_attribute_frames =
     list decode_attribute_frame
 
 
-download_all_frames : (Result Http.Error (List AttributeFrame) -> msg) -> Cmd msg
+download_all_frames : (Utils.JsonHttpResult (List AttributeFrame) -> msg) -> Cmd msg
 download_all_frames callback =
     Http.get
-        { url = root_json_server_url ++ "api/frames/attribute"
-        , expect = Http.expectJson callback decode_attribute_frames
+        { url = clojure_json_server_url ++ "api/frames/attribute"
+        , expect = Http.expectJson callback (Utils.json_server_resp_decoder decode_attribute_frames)
         }
 
 

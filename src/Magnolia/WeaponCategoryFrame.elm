@@ -45,11 +45,11 @@ decode_weapon_category_frames =
     list decode_weapon_category_frame
 
 
-download_all_frames : (Result Http.Error (List WeaponCategoryFrame) -> msg) -> Cmd msg
+download_all_frames : (Utils.JsonHttpResult (List WeaponCategoryFrame) -> msg) -> Cmd msg
 download_all_frames callback =
     Http.get
-        { url = root_json_server_url ++ "api/frames/weapon_category"
-        , expect = Http.expectJson callback decode_weapon_category_frames
+        { url = clojure_json_server_url ++ "api/frames/weapon_category"
+        , expect = Http.expectJson callback (Utils.json_server_resp_decoder decode_weapon_category_frames)
         }
 
 

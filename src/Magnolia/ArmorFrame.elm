@@ -115,11 +115,11 @@ decode_armor_frames =
     list decode_armor_frame
 
 
-download_all_frames : (Result Http.Error (List ArmorFrame) -> msg) -> Cmd msg
+download_all_frames : (Utils.JsonHttpResult (List ArmorFrame) -> msg) -> Cmd msg
 download_all_frames callback =
     Http.get
-        { url = root_json_server_url ++ "api/frames/armor"
-        , expect = Http.expectJson callback decode_armor_frames
+        { url = clojure_json_server_url ++ "api/frames/armor"
+        , expect = Http.expectJson callback (Utils.json_server_resp_decoder decode_armor_frames)
         }
 
 

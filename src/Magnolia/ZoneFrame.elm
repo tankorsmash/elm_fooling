@@ -40,11 +40,11 @@ decode_zone_frames =
     list decode_zone_frame
 
 
-download_all_frames : (Result Http.Error (List ZoneFrame) -> msg) -> Cmd msg
+download_all_frames : (Utils.JsonHttpResult (List ZoneFrame) -> msg) -> Cmd msg
 download_all_frames callback =
     Http.get
-        { url = root_json_server_url ++ "api/frames/zone"
-        , expect = Http.expectJson callback decode_zone_frames
+        { url = clojure_json_server_url ++ "api/frames/zone"
+        , expect = Http.expectJson callback (Utils.json_server_resp_decoder decode_zone_frames)
         }
 
 

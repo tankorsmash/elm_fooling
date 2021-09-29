@@ -72,7 +72,7 @@ import Table exposing (ColumnDef, ColumnType(..), PageInfoMsg, TableDefinition, 
 import Task
 import Time
 import Url
-import Utils exposing (add_class, clojure_json_server_url, root_json_server_url, JsonServerResp)
+import Utils exposing (add_class, clojure_json_server_url, root_json_server_url, JsonServerResp, JsonHttpResult)
 import Weather
 
 
@@ -85,16 +85,13 @@ type GotFrameEditFormUpdateMsg
     | GotEditArmorFormUpdate Magnolia.ArmorFrame.EditFormUpdateType
 
 
-type alias JsonHttpResult a =
-    (Result Http.Error (JsonServerResp a))
-
 type AllFramesDownloaded
     = DownloadedAllWeaponFrames (JsonHttpResult (List WeaponFrame))
-    | DownloadedAllArmorFrames (Result Http.Error (List ArmorFrame))
-    | DownloadedAllZoneFrames (Result Http.Error (List ZoneFrame))
-    | DownloadedAllWeaponCategoryFrames (Result Http.Error (List WeaponCategoryFrame))
-    | DownloadedAllAttributeFrames (Result Http.Error (List AttributeFrame))
-    | DownloadedAllBattleTextStructFrames (Result Http.Error (List BattleTextStructFrame))
+    | DownloadedAllArmorFrames (JsonHttpResult (List ArmorFrame))
+    | DownloadedAllZoneFrames (JsonHttpResult (List ZoneFrame))
+    | DownloadedAllWeaponCategoryFrames (JsonHttpResult (List WeaponCategoryFrame))
+    | DownloadedAllAttributeFrames (JsonHttpResult (List AttributeFrame))
+    | DownloadedAllBattleTextStructFrames (JsonHttpResult (List BattleTextStructFrame))
 
 
 type TableRowClickedFrameType
@@ -825,7 +822,7 @@ update_got_downloaded_all_frames model sub_msg =
                     <|
                         case unpack_response response of
                             Just all_armor_frames ->
-                                Just <| List.map ArmorFrameData all_armor_frames
+                                Just <| List.map ArmorFrameData all_armor_frames.data
 
                             Nothing ->
                                 Nothing
@@ -838,7 +835,7 @@ update_got_downloaded_all_frames model sub_msg =
                     <|
                         case unpack_response response of
                             Just all_zone_frames ->
-                                Just <| List.map ZoneFrameData all_zone_frames
+                                Just <| List.map ZoneFrameData all_zone_frames.data
 
                             Nothing ->
                                 Nothing
@@ -851,7 +848,7 @@ update_got_downloaded_all_frames model sub_msg =
                     <|
                         case unpack_response response of
                             Just all_weapon_category_frames ->
-                                Just <| List.map WeaponCategoryFrameData all_weapon_category_frames
+                                Just <| List.map WeaponCategoryFrameData all_weapon_category_frames.data
 
                             Nothing ->
                                 Nothing
@@ -864,7 +861,7 @@ update_got_downloaded_all_frames model sub_msg =
                     <|
                         case unpack_response response of
                             Just all_attribute_frames ->
-                                Just <| List.map AttributeFrameData all_attribute_frames
+                                Just <| List.map AttributeFrameData all_attribute_frames.data
 
                             Nothing ->
                                 Nothing
@@ -877,7 +874,7 @@ update_got_downloaded_all_frames model sub_msg =
                     <|
                         case unpack_response response of
                             Just all_battle_text_struct_frames ->
-                                Just <| List.map BattleTextStructFrameData all_battle_text_struct_frames
+                                Just <| List.map BattleTextStructFrameData all_battle_text_struct_frames.data
 
                             Nothing ->
                                 Nothing

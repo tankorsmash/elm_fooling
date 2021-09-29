@@ -1,5 +1,6 @@
 module Utils exposing (..)
 
+import Http
 import Html.Attributes exposing (attribute, href, property, style)
 import Json.Decode as Decode
 import Json.Encode
@@ -15,6 +16,12 @@ root_json_server_url =
 
 clojure_json_server_url =
     "http://localhost:9500/"
+
+
+{-| Helper around Http results
+-}
+type alias JsonHttpResult a =
+    Result Http.Error (JsonServerResp a)
 
 
 type alias JsonServerResp a =

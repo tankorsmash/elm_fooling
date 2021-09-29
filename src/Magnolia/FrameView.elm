@@ -1517,6 +1517,136 @@ form_data_view frame_edit_data =
             in
             inner_form_data_view maybe_frame_data maybe_form_definition maybe_all_weapon_frames
 
+        ArmorFrameType ->
+            let
+                maybe_frame_data : Maybe ArmorFrame
+                maybe_frame_data =
+                    case frame_edit_data.frame_data of
+                        ArmorFrameData raw_frame_data_ ->
+                            Just raw_frame_data_
+
+                        _ ->
+                            Nothing
+
+                maybe_form_definition : Maybe (FormData.FormDefinition ArmorFrame Msg)
+                maybe_form_definition =
+                    case frame_edit_data.form_definition of
+                        ArmorFrameForm form_def ->
+                            Just form_def
+
+                        _ ->
+                            Nothing
+
+                maybe_all_armor_frames : List (Maybe ArmorFrame)
+                maybe_all_armor_frames =
+                    get_all_armor_frames frame_edit_data.all_frames
+            in
+            inner_form_data_view maybe_frame_data maybe_form_definition maybe_all_armor_frames
+
+        ZoneFrameType ->
+            let
+                maybe_frame_data : Maybe ZoneFrame
+                maybe_frame_data =
+                    case frame_edit_data.frame_data of
+                        ZoneFrameData raw_frame_data_ ->
+                            Just raw_frame_data_
+
+                        _ ->
+                            Nothing
+
+                maybe_form_definition : Maybe (FormData.FormDefinition ZoneFrame Msg)
+                maybe_form_definition =
+                    case frame_edit_data.form_definition of
+                        ZoneFrameForm form_def ->
+                            Just form_def
+
+                        _ ->
+                            Nothing
+
+                maybe_all_zone_frames : List (Maybe ZoneFrame)
+                maybe_all_zone_frames =
+                    get_all_zone_frames frame_edit_data.all_frames
+            in
+            inner_form_data_view maybe_frame_data maybe_form_definition maybe_all_zone_frames
+
+        WeaponCategoryFrameType ->
+            let
+                maybe_frame_data : Maybe WeaponCategoryFrame
+                maybe_frame_data =
+                    case frame_edit_data.frame_data of
+                        WeaponCategoryFrameData raw_frame_data_ ->
+                            Just raw_frame_data_
+
+                        _ ->
+                            Nothing
+
+                maybe_form_definition : Maybe (FormData.FormDefinition WeaponCategoryFrame Msg)
+                maybe_form_definition =
+                    case frame_edit_data.form_definition of
+                        WeaponCategoryFrameForm form_def ->
+                            Just form_def
+
+                        _ ->
+                            Nothing
+
+                maybe_all_weapon_category_frames : List (Maybe WeaponCategoryFrame)
+                maybe_all_weapon_category_frames =
+                    get_all_weapon_category_frames frame_edit_data.all_frames
+            in
+            inner_form_data_view maybe_frame_data maybe_form_definition maybe_all_weapon_category_frames
+
+        AttributeFrameType ->
+            let
+                maybe_frame_data : Maybe AttributeFrame
+                maybe_frame_data =
+                    case frame_edit_data.frame_data of
+                        AttributeFrameData raw_frame_data_ ->
+                            Just raw_frame_data_
+
+                        _ ->
+                            Nothing
+
+                maybe_form_definition : Maybe (FormData.FormDefinition AttributeFrame Msg)
+                maybe_form_definition =
+                    case frame_edit_data.form_definition of
+                        AttributeFrameForm form_def ->
+                            Just form_def
+
+                        _ ->
+                            Nothing
+
+                maybe_all_attribute_frames : List (Maybe AttributeFrame)
+                maybe_all_attribute_frames =
+                    get_all_attribute_frames frame_edit_data.all_frames
+            in
+            inner_form_data_view maybe_frame_data maybe_form_definition maybe_all_attribute_frames
+
+        BattleTextStructFrameType ->
+            let
+                maybe_frame_data : Maybe BattleTextStructFrame
+                maybe_frame_data =
+                    case frame_edit_data.frame_data of
+                        BattleTextStructFrameData raw_frame_data_ ->
+                            Just raw_frame_data_
+
+                        _ ->
+                            Nothing
+
+                maybe_form_definition : Maybe (FormData.FormDefinition BattleTextStructFrame Msg)
+                maybe_form_definition =
+                    case frame_edit_data.form_definition of
+                        BattleTextStructFrameForm form_def ->
+                            Just form_def
+
+                        _ ->
+                            Nothing
+
+                maybe_all_battle_text_struct_frames : List (Maybe BattleTextStructFrame)
+                maybe_all_battle_text_struct_frames =
+                    get_all_battle_text_struct_frames frame_edit_data.all_frames
+            in
+            inner_form_data_view maybe_frame_data maybe_form_definition maybe_all_battle_text_struct_frames
+
 
 inner_form_data_view : Maybe fd -> Maybe (FormData.FormDefinition fd Msg) -> List (Maybe fd) -> Html Msg
 inner_form_data_view maybe_frame_data maybe_form_definition all_frames =

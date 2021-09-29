@@ -26,7 +26,7 @@ import FormData
 import Http
 import Json.Decode as Decode exposing (Decoder, andThen, field, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
-import Utils exposing (JsonServerResp, clojure_json_server_url, json_server_resp_decoder, root_json_server_url, JsonHttpResult)
+import Utils exposing (JsonHttpResult, JsonServerResp, clojure_json_server_url, json_server_resp_decoder, root_json_server_url)
 
 
 {-| All these are strings because they get the msg from Html

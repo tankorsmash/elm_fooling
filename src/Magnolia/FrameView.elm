@@ -72,7 +72,7 @@ import Table exposing (ColumnDef, ColumnType(..), PageInfoMsg, TableDefinition, 
 import Task
 import Time
 import Url
-import Utils exposing (add_class, clojure_json_server_url, root_json_server_url, JsonServerResp, JsonHttpResult)
+import Utils exposing (JsonHttpResult, JsonServerResp, add_class, clojure_json_server_url, root_json_server_url)
 import Weather
 
 

@@ -20,7 +20,7 @@ import FormData
 import Http
 import Json.Decode as Decode exposing (Decoder, andThen, field, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
-import Utils exposing (root_json_server_url, clojure_json_server_url)
+import Utils exposing (clojure_json_server_url, root_json_server_url)
 
 
 {-| Need to be strings because it comes from html forms

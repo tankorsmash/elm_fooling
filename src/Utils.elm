@@ -1,7 +1,7 @@
 module Utils exposing (..)
 
-import Http
 import Html.Attributes exposing (attribute, href, property, style)
+import Http
 import Json.Decode as Decode
 import Json.Encode
 

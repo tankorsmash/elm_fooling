@@ -1,6 +1,7 @@
 module Utils exposing (..)
 
 import Html.Attributes exposing (attribute, href, property, style)
+import Json.Decode as Decode
 import Json.Encode
 
 
@@ -11,5 +12,21 @@ add_class cls =
 root_json_server_url =
     "http://localhost:5021/"
 
-clojure_json_server =
+
+clojure_json_server_url =
     "http://localhost:9500/"
+
+
+type alias JsonServerResp a =
+    { success : Bool
+    , message : String
+    , data : a
+    }
+
+
+json_server_resp_decoder : Decode.Decoder a -> Decode.Decoder (JsonServerResp a)
+json_server_resp_decoder data_decoder =
+    Decode.map3 JsonServerResp
+        (Decode.field "success" Decode.bool)
+        (Decode.field "message" Decode.string)
+        (Decode.field "data" data_decoder)

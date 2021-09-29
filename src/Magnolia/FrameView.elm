@@ -760,42 +760,54 @@ update_got_downloaded_all_frames model sub_msg =
                         feds
                         .weapon
                         update_fed_weapon
-                        (unpack_response response)
+                        <| case (unpack_response response) of
+                            Just all_weapon_frames -> Just <| List.map WeaponFrameData all_weapon_frames
+                            Nothing -> Nothing
 
                 DownloadedAllArmorFrames response ->
                     handle_feds_download
                         feds
                         .armor
                         update_fed_armor
-                        (unpack_response response)
+                        <| case (unpack_response response) of
+                            Just all_armor_frames -> Just <| List.map ArmorFrameData all_armor_frames
+                            Nothing -> Nothing
 
                 DownloadedAllZoneFrames response ->
                     handle_feds_download
                         feds
                         .zone
                         update_fed_zone
-                        (unpack_response response)
+                        <| case (unpack_response response) of
+                            Just all_zone_frames -> Just <| List.map ZoneFrameData all_zone_frames
+                            Nothing -> Nothing
 
                 DownloadedAllWeaponCategoryFrames response ->
                     handle_feds_download
                         feds
                         .weapon_category
                         update_fed_weapon_category
-                        (unpack_response response)
+                        <| case (unpack_response response) of
+                            Just all_weapon_category_frames -> Just <| List.map WeaponCategoryFrameData all_weapon_category_frames
+                            Nothing -> Nothing
 
                 DownloadedAllAttributeFrames response ->
                     handle_feds_download
                         feds
                         .attribute
                         update_fed_attribute
-                        (unpack_response response)
+                        <| case (unpack_response response) of
+                            Just all_attribute_frames -> Just <| List.map AttributeFrameData all_attribute_frames
+                            Nothing -> Nothing
 
                 DownloadedAllBattleTextStructFrames response ->
                     handle_feds_download
                         feds
                         .battle_text_struct
                         update_fed_battle_text_struct
-                        (unpack_response response)
+                        <| case (unpack_response response) of
+                            Just all_battle_text_struct_frames -> Just <| List.map BattleTextStructFrameData all_battle_text_struct_frames
+                            Nothing -> Nothing
     in
     ( { model | frame_edit_datas = new_feds }, cmd )
 

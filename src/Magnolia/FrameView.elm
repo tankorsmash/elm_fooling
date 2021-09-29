@@ -760,54 +760,78 @@ update_got_downloaded_all_frames model sub_msg =
                         feds
                         .weapon
                         update_fed_weapon
-                        <| case (unpack_response response) of
-                            Just all_weapon_frames -> Just <| List.map WeaponFrameData all_weapon_frames
-                            Nothing -> Nothing
+                    <|
+                        case unpack_response response of
+                            Just all_weapon_frames ->
+                                Just <| List.map WeaponFrameData all_weapon_frames
+
+                            Nothing ->
+                                Nothing
 
                 DownloadedAllArmorFrames response ->
                     handle_feds_download
                         feds
                         .armor
                         update_fed_armor
-                        <| case (unpack_response response) of
-                            Just all_armor_frames -> Just <| List.map ArmorFrameData all_armor_frames
-                            Nothing -> Nothing
+                    <|
+                        case unpack_response response of
+                            Just all_armor_frames ->
+                                Just <| List.map ArmorFrameData all_armor_frames
+
+                            Nothing ->
+                                Nothing
 
                 DownloadedAllZoneFrames response ->
                     handle_feds_download
                         feds
                         .zone
                         update_fed_zone
-                        <| case (unpack_response response) of
-                            Just all_zone_frames -> Just <| List.map ZoneFrameData all_zone_frames
-                            Nothing -> Nothing
+                    <|
+                        case unpack_response response of
+                            Just all_zone_frames ->
+                                Just <| List.map ZoneFrameData all_zone_frames
+
+                            Nothing ->
+                                Nothing
 
                 DownloadedAllWeaponCategoryFrames response ->
                     handle_feds_download
                         feds
                         .weapon_category
                         update_fed_weapon_category
-                        <| case (unpack_response response) of
-                            Just all_weapon_category_frames -> Just <| List.map WeaponCategoryFrameData all_weapon_category_frames
-                            Nothing -> Nothing
+                    <|
+                        case unpack_response response of
+                            Just all_weapon_category_frames ->
+                                Just <| List.map WeaponCategoryFrameData all_weapon_category_frames
+
+                            Nothing ->
+                                Nothing
 
                 DownloadedAllAttributeFrames response ->
                     handle_feds_download
                         feds
                         .attribute
                         update_fed_attribute
-                        <| case (unpack_response response) of
-                            Just all_attribute_frames -> Just <| List.map AttributeFrameData all_attribute_frames
-                            Nothing -> Nothing
+                    <|
+                        case unpack_response response of
+                            Just all_attribute_frames ->
+                                Just <| List.map AttributeFrameData all_attribute_frames
+
+                            Nothing ->
+                                Nothing
 
                 DownloadedAllBattleTextStructFrames response ->
                     handle_feds_download
                         feds
                         .battle_text_struct
                         update_fed_battle_text_struct
-                        <| case (unpack_response response) of
-                            Just all_battle_text_struct_frames -> Just <| List.map BattleTextStructFrameData all_battle_text_struct_frames
-                            Nothing -> Nothing
+                    <|
+                        case unpack_response response of
+                            Just all_battle_text_struct_frames ->
+                                Just <| List.map BattleTextStructFrameData all_battle_text_struct_frames
+
+                            Nothing ->
+                                Nothing
     in
     ( { model | frame_edit_datas = new_feds }, cmd )
 
@@ -1201,7 +1225,8 @@ render_tab_item model config maybe_row_data form_definition partial_frame_data =
             build_table_definition frame_type form_fields (TableRowClicked << partial_frame_data)
 
         row_data : List fd
-        row_data = List.filterMap identity maybe_row_data
+        row_data =
+            List.filterMap identity maybe_row_data
 
         page_info : Table.PageInfo Msg
         page_info =
@@ -1253,6 +1278,7 @@ get_all_weapon_frames frame_data =
         )
         frame_data
 
+
 get_all_armor_frames : List FrameData -> List (Maybe ArmorFrame)
 get_all_armor_frames frame_data =
     List.map
@@ -1265,6 +1291,7 @@ get_all_armor_frames frame_data =
                     Nothing
         )
         frame_data
+
 
 get_all_zone_frames : List FrameData -> List (Maybe ZoneFrame)
 get_all_zone_frames frame_data =
@@ -1279,6 +1306,7 @@ get_all_zone_frames frame_data =
         )
         frame_data
 
+
 get_all_weapon_category_frames : List FrameData -> List (Maybe WeaponCategoryFrame)
 get_all_weapon_category_frames frame_data =
     List.map
@@ -1292,6 +1320,7 @@ get_all_weapon_category_frames frame_data =
         )
         frame_data
 
+
 get_all_attribute_frames : List FrameData -> List (Maybe AttributeFrame)
 get_all_attribute_frames frame_data =
     List.map
@@ -1304,6 +1333,7 @@ get_all_attribute_frames frame_data =
                     Nothing
         )
         frame_data
+
 
 get_all_battle_text_struct_frames : List FrameData -> List (Maybe BattleTextStructFrame)
 get_all_battle_text_struct_frames frame_data =

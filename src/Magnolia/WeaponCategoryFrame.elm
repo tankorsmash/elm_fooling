@@ -23,7 +23,7 @@ import FormData
 import Http
 import Json.Decode as Decode exposing (Decoder, andThen, field, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
-import Utils exposing (root_json_server_url)
+import Utils exposing (root_json_server_url, clojure_json_server_url)
 
 
 decode_weapon_category_frame : Decoder WeaponCategoryFrame
@@ -48,7 +48,7 @@ decode_weapon_category_frames =
 download_all_frames : (Result Http.Error (List WeaponCategoryFrame) -> msg) -> Cmd msg
 download_all_frames callback =
     Http.get
-        { url = root_json_server_url ++ "all_weapon_category_frames"
+        { url = root_json_server_url ++ "api/frames/weapon_category"
         , expect = Http.expectJson callback decode_weapon_category_frames
         }
 

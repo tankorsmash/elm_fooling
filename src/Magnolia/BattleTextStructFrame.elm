@@ -24,7 +24,7 @@ import FormData
 import Http
 import Json.Decode as Decode exposing (Decoder, andThen, field, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
-import Utils exposing (root_json_server_url)
+import Utils exposing (root_json_server_url, clojure_json_server_url)
 
 
 decode_battle_text_struct_frame : Decoder BattleTextStructFrame
@@ -46,7 +46,7 @@ decode_battle_text_struct_frames =
 download_all_frames : (Result Http.Error (List BattleTextStructFrame) -> msg) -> Cmd msg
 download_all_frames callback =
     Http.get
-        { url = root_json_server_url ++ "all_battle_text_struct_frames"
+        { url = root_json_server_url ++ "api/frames/battle_text_struct"
         , expect = Http.expectJson callback decode_battle_text_struct_frames
         }
 

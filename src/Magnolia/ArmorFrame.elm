@@ -20,7 +20,7 @@ import FormData
 import Http
 import Json.Decode as Decode exposing (Decoder, andThen, field, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
-import Utils exposing (root_json_server_url)
+import Utils exposing (root_json_server_url, clojure_json_server_url)
 
 
 {-| Need to be strings because it comes from html forms
@@ -118,7 +118,7 @@ decode_armor_frames =
 download_all_frames : (Result Http.Error (List ArmorFrame) -> msg) -> Cmd msg
 download_all_frames callback =
     Http.get
-        { url = root_json_server_url ++ "all_armor_frames"
+        { url = root_json_server_url ++ "api/frames/armor"
         , expect = Http.expectJson callback decode_armor_frames
         }
 

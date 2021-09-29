@@ -72,7 +72,7 @@ import Table exposing (ColumnDef, ColumnType(..), PageInfoMsg, TableDefinition, 
 import Task
 import Time
 import Url
-import Utils exposing (add_class, clojure_json_server, root_json_server_url)
+import Utils exposing (add_class, clojure_json_server_url, root_json_server_url, JsonServerResp)
 import Weather
 
 
@@ -85,8 +85,11 @@ type GotFrameEditFormUpdateMsg
     | GotEditArmorFormUpdate Magnolia.ArmorFrame.EditFormUpdateType
 
 
+type alias JsonHttpResult a =
+    (Result Http.Error (JsonServerResp a))
+
 type AllFramesDownloaded
-    = DownloadedAllWeaponFrames (Result Http.Error (List WeaponFrame))
+    = DownloadedAllWeaponFrames (JsonHttpResult (List WeaponFrame))
     | DownloadedAllArmorFrames (Result Http.Error (List ArmorFrame))
     | DownloadedAllZoneFrames (Result Http.Error (List ZoneFrame))
     | DownloadedAllWeaponCategoryFrames (Result Http.Error (List WeaponCategoryFrame))
@@ -809,7 +812,7 @@ update_got_downloaded_all_frames model sub_msg =
                     <|
                         case unpack_response response of
                             Just all_weapon_frames ->
-                                Just <| List.map WeaponFrameData all_weapon_frames
+                                Just <| List.map WeaponFrameData all_weapon_frames.data
 
                             Nothing ->
                                 Nothing
@@ -1062,7 +1065,7 @@ update model msg =
                 cmd =
                     Debug.log "submitting"
                         Http.get
-                        { url = clojure_json_server ++ url_suffix
+                        { url = clojure_json_server_url ++ url_suffix
                         , expect = Http.expectString GotSubmittedFrameEditForm
                         }
             in

@@ -1487,31 +1487,50 @@ frame_matches : List f -> f -> Bool
 frame_matches all_frames frame =
     List.any (\f -> frame == f) all_frames
 
-
 form_data_view : FrameEditData Msg -> Html Msg
 form_data_view frame_edit_data =
+    case frame_edit_data.frame_type of
+        WeaponFrameType ->
+            let
+                maybe_frame_data : Maybe WeaponFrame
+                maybe_frame_data = case frame_edit_data.frame_data of
+                    WeaponFrameData raw_frame_data_ -> Just raw_frame_data_
+                    _ -> Nothing
+
+                maybe_form_definition : Maybe (FormData.FormDefinition WeaponFrame Msg)
+                maybe_form_definition = case frame_edit_data.form_definition of
+                    WeaponFrameForm form_def -> Just form_def
+                    _ -> Nothing
+
+                maybe_all_weapon_frames : List (Maybe WeaponFrame)
+                maybe_all_weapon_frames = get_all_weapon_frames frame_edit_data.all_frames
+            in
+            inner_form_data_view maybe_frame_data maybe_form_definition maybe_all_weapon_frames
+
+inner_form_data_view : Maybe fd -> Maybe (FormData.FormDefinition fd Msg) -> List (Maybe fd) -> Html Msg
+inner_form_data_view maybe_frame_data maybe_form_definition all_frames =
     let
-        { frame_data, form_definition, saved_frame_data, all_frames } =
-            frame_edit_data
 
         frame_data_exists_in_all_frames : Bool
         frame_data_exists_in_all_frames =
-            frame_matches all_frames frame_data
+            case maybe_frame_data of
+                Just frame_data -> frame_matches all_frames maybe_frame_data
+                Nothing -> False
 
-        fields =
-            case form_definition of
-                WeaponFrameForm form_def ->
-                    form_def.fields
+        fields : List (FormData.FormField fd Msg)
+        fields = case maybe_form_definition of
+            Just form_definition_ -> form_definition_.fields
+            Nothing -> []
 
-        raw_frame_data =
-            case frame_data of
-                WeaponFrameData raw_frame_data_ ->
-                    raw_frame_data_
+        rendered_fields =
+            case maybe_frame_data of
+                Just raw_frame_data_ -> FormData.render_fields fields raw_frame_data_
+                Nothing -> span [] []
     in
     Grid.row [ Row.centerMd ]
         [ Grid.col [ Col.sm11, Col.md8 ]
             [ Form.form []
-                [ FormData.render_fields fields raw_frame_data
+                [ rendered_fields
                 , Button.button
                     [ Button.onClick SubmitFrameEditForm
                     , Button.primary

@@ -267,6 +267,28 @@ tab_prefix =
     "frame_view_tab__"
 
 
+frame_id_getter : FrameData -> String
+frame_id_getter frame_data =
+    case frame_data of
+        WeaponFrameData raw_frame_data ->
+            String.fromInt raw_frame_data.frame_id
+
+        ArmorFrameData raw_frame_data ->
+            String.fromInt raw_frame_data.frame_id
+
+        ZoneFrameData raw_frame_data ->
+            raw_frame_data.data_name
+
+        WeaponCategoryFrameData raw_frame_data ->
+            String.fromInt raw_frame_data.frame_id
+
+        AttributeFrameData raw_frame_data ->
+            String.fromInt raw_frame_data.frame_id
+
+        BattleTextStructFrameData raw_frame_data ->
+            String.fromInt raw_frame_data.frame_id
+
+
 frame_type_from_hash : String -> FrameType
 frame_type_from_hash hash =
     if String.startsWith tab_prefix hash then
@@ -413,42 +435,6 @@ init hash =
                 _ ->
                     Tab.customInitialState <| hash
 
-        weapon_frame_id_getter : FrameData -> String
-        weapon_frame_id_getter frame_data =
-            case frame_data of
-                WeaponFrameData raw_frame_data ->
-                    String.fromInt raw_frame_data.frame_id
-
-        armor_frame_id_getter : FrameData -> String
-        armor_frame_id_getter frame_data =
-            case frame_data of
-                ArmorFrameData raw_frame_data ->
-                    String.fromInt raw_frame_data.frame_id
-
-        zone_frame_id_getter : FrameData -> String
-        zone_frame_id_getter frame_data =
-            case frame_data of
-                ZoneFrameData raw_frame_data ->
-                    raw_frame_data.data_name
-
-        weapon_category_frame_id_getter : FrameData -> String
-        weapon_category_frame_id_getter frame_data =
-            case frame_data of
-                WeaponCategoryFrameData raw_frame_data ->
-                    String.fromInt raw_frame_data.frame_id
-
-        attribute_frame_id_getter : FrameData -> String
-        attribute_frame_id_getter frame_data =
-            case frame_data of
-                AttributeFrameData raw_frame_data ->
-                    String.fromInt raw_frame_data.frame_id
-
-        battle_text_struct_frame_id_getter : FrameData -> String
-        battle_text_struct_frame_id_getter frame_data =
-            case frame_data of
-                BattleTextStructFrameData raw_frame_data ->
-                    String.fromInt raw_frame_data.frame_id
-
         init_model : Model
         init_model =
             { frame_edit_datas =
@@ -460,7 +446,7 @@ init hash =
                     , table_view_page_info = Table.new_page_info (GotPageMsg WeaponFrameType)
                     , frame_type = WeaponFrameType
                     , frame_type_str = to_data_name WeaponFrameType
-                    , frame_id_getter = weapon_frame_id_getter
+                    , frame_id_getter = frame_id_getter
                     }
                 , armor =
                     { form_definition = ArmorFrameForm <| Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditArmorFormUpdate)
@@ -470,7 +456,7 @@ init hash =
                     , table_view_page_info = Table.new_page_info (GotPageMsg ArmorFrameType)
                     , frame_type = ArmorFrameType
                     , frame_type_str = to_data_name ArmorFrameType
-                    , frame_id_getter = armor_frame_id_getter
+                    , frame_id_getter = frame_id_getter
                     }
                 , zone =
                     { form_definition = ZoneFrameForm <| Magnolia.ZoneFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditZoneFormUpdate)
@@ -480,7 +466,7 @@ init hash =
                     , table_view_page_info = Table.new_page_info (GotPageMsg ZoneFrameType)
                     , frame_type = ZoneFrameType
                     , frame_type_str = to_data_name ZoneFrameType
-                    , frame_id_getter = zone_frame_id_getter
+                    , frame_id_getter = frame_id_getter
                     }
                 , weapon_category =
                     { form_definition = WeaponCategoryFrameForm <| Magnolia.WeaponCategoryFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponCategoryFormUpdate)
@@ -490,7 +476,7 @@ init hash =
                     , table_view_page_info = Table.new_page_info (GotPageMsg WeaponCategoryFrameType)
                     , frame_type = WeaponCategoryFrameType
                     , frame_type_str = to_data_name WeaponCategoryFrameType
-                    , frame_id_getter = weapon_category_frame_id_getter
+                    , frame_id_getter = frame_id_getter
                     }
                 , attribute =
                     { form_definition = AttributeFrameForm <| Magnolia.AttributeFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditAttributeFormUpdate)
@@ -500,7 +486,7 @@ init hash =
                     , table_view_page_info = Table.new_page_info (GotPageMsg AttributeFrameType)
                     , frame_type = AttributeFrameType
                     , frame_type_str = to_data_name AttributeFrameType
-                    , frame_id_getter = attribute_frame_id_getter
+                    , frame_id_getter = frame_id_getter
                     }
                 , battle_text_struct =
                     { form_definition = BattleTextStructFrameForm <| Magnolia.BattleTextStructFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditBattleTextStructFormUpdate)
@@ -510,7 +496,7 @@ init hash =
                     , table_view_page_info = Table.new_page_info (GotPageMsg BattleTextStructFrameType)
                     , frame_type = BattleTextStructFrameType
                     , frame_type_str = to_data_name BattleTextStructFrameType
-                    , frame_id_getter = battle_text_struct_frame_id_getter
+                    , frame_id_getter = frame_id_getter
                     }
                 }
             , active_tab = initial_active_tab
@@ -613,7 +599,17 @@ update_got_frame_edit_form_update model sub_msg =
                 model
                 .weapon
                 update_fed_weapon
-                Magnolia.WeaponFrame.update_edit_form_data
+                (\frame_data_ update_type ->
+                    case frame_data_ of
+                        WeaponFrameData raw_frame_data ->
+                            WeaponFrameData <|
+                                Magnolia.WeaponFrame.update_edit_form_data
+                                    raw_frame_data
+                                    update_type
+
+                        _ ->
+                            Debug.todo "handle non weapon frame updates"
+                )
                 form_update_type
             , Cmd.none
             )
@@ -623,7 +619,17 @@ update_got_frame_edit_form_update model sub_msg =
                 model
                 .armor
                 update_fed_armor
-                Magnolia.ArmorFrame.update_edit_form_data
+                (\frame_data_ update_type ->
+                    case frame_data_ of
+                        ArmorFrameData raw_frame_data ->
+                            ArmorFrameData <|
+                                Magnolia.ArmorFrame.update_edit_form_data
+                                    raw_frame_data
+                                    update_type
+
+                        _ ->
+                            Debug.todo "handle non armor frame updates"
+                )
                 form_update_type
             , Cmd.none
             )
@@ -633,7 +639,17 @@ update_got_frame_edit_form_update model sub_msg =
                 model
                 .zone
                 update_fed_zone
-                Magnolia.ZoneFrame.update_edit_form_data
+                (\frame_data_ update_type ->
+                    case frame_data_ of
+                        ZoneFrameData raw_frame_data ->
+                            ZoneFrameData <|
+                                Magnolia.ZoneFrame.update_edit_form_data
+                                    raw_frame_data
+                                    update_type
+
+                        _ ->
+                            Debug.todo "handle non zone frame updates"
+                )
                 form_update_type
             , Cmd.none
             )
@@ -643,7 +659,17 @@ update_got_frame_edit_form_update model sub_msg =
                 model
                 .weapon_category
                 update_fed_weapon_category
-                Magnolia.WeaponCategoryFrame.update_edit_form_data
+                (\frame_data_ update_type ->
+                    case frame_data_ of
+                        WeaponCategoryFrameData raw_frame_data ->
+                            WeaponCategoryFrameData <|
+                                Magnolia.WeaponCategoryFrame.update_edit_form_data
+                                    raw_frame_data
+                                    update_type
+
+                        _ ->
+                            Debug.todo "handle non weapon category frame updates"
+                )
                 form_update_type
             , Cmd.none
             )
@@ -653,7 +679,17 @@ update_got_frame_edit_form_update model sub_msg =
                 model
                 .attribute
                 update_fed_attribute
-                Magnolia.AttributeFrame.update_edit_form_data
+                (\frame_data_ update_type ->
+                    case frame_data_ of
+                        AttributeFrameData raw_frame_data ->
+                            AttributeFrameData <|
+                                Magnolia.AttributeFrame.update_edit_form_data
+                                    raw_frame_data
+                                    update_type
+
+                        _ ->
+                            Debug.todo "handle non attribute frame updates"
+                )
                 form_update_type
             , Cmd.none
             )
@@ -663,7 +699,17 @@ update_got_frame_edit_form_update model sub_msg =
                 model
                 .battle_text_struct
                 update_fed_battle_text_struct
-                Magnolia.BattleTextStructFrame.update_edit_form_data
+                (\frame_data_ update_type ->
+                    case frame_data_ of
+                        BattleTextStructFrameData raw_frame_data ->
+                            BattleTextStructFrameData <|
+                                Magnolia.BattleTextStructFrame.update_edit_form_data
+                                    raw_frame_data
+                                    form_update_type
+
+                        _ ->
+                            Debug.todo "handle non battle text struct frame updates"
+                )
                 form_update_type
             , Cmd.none
             )

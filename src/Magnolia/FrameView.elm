@@ -1050,7 +1050,7 @@ update model msg =
                             "api/frames/" ++ to_data_name active_frame_type
 
                         False ->
-                            "api/create_frames/" ++ to_data_name active_frame_type
+                            "api/create_frame/" ++ to_data_name active_frame_type
 
                 url_suffix =
                     url_root

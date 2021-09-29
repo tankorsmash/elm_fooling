@@ -417,13 +417,13 @@ init hash =
         weapon_frame_id_getter frame_data =
             case frame_data of
                 WeaponFrameData raw_frame_data ->
-                    String.fromInt  raw_frame_data.frame_id
+                    String.fromInt raw_frame_data.frame_id
 
         armor_frame_id_getter : FrameData -> String
         armor_frame_id_getter frame_data =
             case frame_data of
                 ArmorFrameData raw_frame_data ->
-                    String.fromInt  raw_frame_data.frame_id
+                    String.fromInt raw_frame_data.frame_id
 
         zone_frame_id_getter : FrameData -> String
         zone_frame_id_getter frame_data =
@@ -1170,11 +1170,11 @@ form_field_to_column idx form_field =
 render_tab_item :
     Model
     -> TabItemConfig
-    -> List fd
+    -> List (Maybe fd)
     -> FormData.FormDefinition fd Msg
     -> (fd -> FrameData)
     -> Tab.Item Msg
-render_tab_item model config row_data form_definition partial_frame_data =
+render_tab_item model config maybe_row_data form_definition partial_frame_data =
     let
         frame_type : FrameType
         frame_type =
@@ -1187,6 +1187,9 @@ render_tab_item model config row_data form_definition partial_frame_data =
         table_definition : TableDefinition fd Msg
         table_definition =
             build_table_definition frame_type form_fields (TableRowClicked << partial_frame_data)
+
+        row_data : List fd
+        row_data = List.filterMap identity maybe_row_data
 
         page_info : Table.PageInfo Msg
         page_info =
@@ -1225,17 +1228,83 @@ render_tab_item model config row_data form_definition partial_frame_data =
         }
 
 
-get_all_frames : List FrameData -> List fd
-get_all_frames frame_data =
-    case frame_data of
-        WeaponFrameData data ->
-            data
+get_all_weapon_frames : List FrameData -> List (Maybe WeaponFrame)
+get_all_weapon_frames frame_data =
+    List.map
+        (\frame_data_ ->
+            case frame_data_ of
+                WeaponFrameData data ->
+                    Just data
 
-        ArmorFrameData data ->
-            data
+                _ ->
+                    Nothing
+        )
+        frame_data
 
-        _ ->
-            []
+get_all_armor_frames : List FrameData -> List (Maybe ArmorFrame)
+get_all_armor_frames frame_data =
+    List.map
+        (\frame_data_ ->
+            case frame_data_ of
+                ArmorFrameData data ->
+                    Just data
+
+                _ ->
+                    Nothing
+        )
+        frame_data
+
+get_all_zone_frames : List FrameData -> List (Maybe ZoneFrame)
+get_all_zone_frames frame_data =
+    List.map
+        (\frame_data_ ->
+            case frame_data_ of
+                ZoneFrameData data ->
+                    Just data
+
+                _ ->
+                    Nothing
+        )
+        frame_data
+
+get_all_weapon_category_frames : List FrameData -> List (Maybe WeaponCategoryFrame)
+get_all_weapon_category_frames frame_data =
+    List.map
+        (\frame_data_ ->
+            case frame_data_ of
+                WeaponCategoryFrameData data ->
+                    Just data
+
+                _ ->
+                    Nothing
+        )
+        frame_data
+
+get_all_attribute_frames : List FrameData -> List (Maybe AttributeFrame)
+get_all_attribute_frames frame_data =
+    List.map
+        (\frame_data_ ->
+            case frame_data_ of
+                AttributeFrameData data ->
+                    Just data
+
+                _ ->
+                    Nothing
+        )
+        frame_data
+
+get_all_battle_text_struct_frames : List FrameData -> List (Maybe BattleTextStructFrame)
+get_all_battle_text_struct_frames frame_data =
+    List.map
+        (\frame_data_ ->
+            case frame_data_ of
+                BattleTextStructFrameData data ->
+                    Just data
+
+                _ ->
+                    Nothing
+        )
+        frame_data
 
 
 do_render_tab : Model -> TabItemConfig -> Tab.Item Msg
@@ -1244,42 +1313,42 @@ do_render_tab model config =
         WeaponFrameType ->
             render_tab_item model
                 config
-                (get_all_frames model.frame_edit_datas.weapon.all_frames)
+                (get_all_weapon_frames model.frame_edit_datas.weapon.all_frames)
                 (Magnolia.WeaponFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponFormUpdate))
                 WeaponFrameData
 
         ArmorFrameType ->
             render_tab_item model
                 config
-                (get_all_frames model.frame_edit_datas.armor.all_frames)
+                (get_all_armor_frames model.frame_edit_datas.armor.all_frames)
                 (Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditArmorFormUpdate))
                 ArmorFrameData
 
         ZoneFrameType ->
             render_tab_item model
                 config
-                (get_all_frames model.frame_edit_datas.zone.all_frames)
+                (get_all_zone_frames model.frame_edit_datas.zone.all_frames)
                 (Magnolia.ZoneFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditZoneFormUpdate))
                 ZoneFrameData
 
         WeaponCategoryFrameType ->
             render_tab_item model
                 config
-                (get_all_frames model.frame_edit_datas.weapon_category.all_frames)
+                (get_all_weapon_category_frames model.frame_edit_datas.weapon_category.all_frames)
                 (Magnolia.WeaponCategoryFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponCategoryFormUpdate))
                 WeaponCategoryFrameData
 
         AttributeFrameType ->
             render_tab_item model
                 config
-                (get_all_frames model.frame_edit_datas.attribute.all_frames)
+                (get_all_attribute_frames model.frame_edit_datas.attribute.all_frames)
                 (Magnolia.AttributeFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditAttributeFormUpdate))
                 AttributeFrameData
 
         BattleTextStructFrameType ->
             render_tab_item model
                 config
-                (get_all_frames model.frame_edit_datas.battle_text_struct.all_frames)
+                (get_all_battle_text_struct_frames model.frame_edit_datas.battle_text_struct.all_frames)
                 (Magnolia.BattleTextStructFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditBattleTextStructFormUpdate))
                 BattleTextStructFrameData
 

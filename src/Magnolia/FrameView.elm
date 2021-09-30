@@ -1197,20 +1197,19 @@ update model msg =
                 just_frame_id_matches =
                     frame_matches_from_feds_frame_data_frame_id model.frame_edit_datas active_frame_type
 
-                url_root =
+                full_url =
                     case just_frame_id_matches of
                         True ->
-                            "api/frames/" ++ to_data_name active_frame_type
+                            clojure_json_server_url
+                                ++ "api/frames/"
+                                ++ to_data_name active_frame_type
+                                ++ "/"
+                                ++ get_frame_id_from_feds_frame_data
+                                    model.frame_edit_datas
+                                    active_frame_type
 
                         False ->
-                            "api/create_frame/" ++ to_data_name active_frame_type
-
-                url_suffix =
-                    url_root
-                        ++ "/"
-                        ++ get_frame_id_from_feds_frame_data
-                            model.frame_edit_datas
-                            active_frame_type
+                            clojure_json_server_url ++ "api/create_frame/" ++ to_data_name active_frame_type
 
                 maybe_encoded_frame =
                     encode_frame_by_frame_type model.frame_edit_datas active_frame_type
@@ -1220,7 +1219,7 @@ update model msg =
                         Just encoded_frame ->
                             Debug.log "submitting"
                                 Http.post
-                                { url = clojure_json_server_url ++ url_suffix
+                                { url = full_url
                                 , expect = Http.expectString GotSubmittedFrameEditForm
                                 , body = Http.jsonBody encoded_frame
                                 }

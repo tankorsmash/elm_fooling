@@ -5,7 +5,9 @@ module Magnolia.WeaponFrame exposing
     , WeaponFrame
     , battle_row_type_from_int
     , download_all_frames
+    , dummy_frame
     , edit_form_definition
+    , encode_weapon_frame
     , update_edit_form_data
     , weapon_damage_type_from_int
     )
@@ -26,6 +28,7 @@ import FormData
 import Http
 import Json.Decode as Decode exposing (Decoder, andThen, field, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
+import Json.Encode as Encode
 import Utils exposing (JsonHttpResult, JsonServerResp, clojure_json_server_url, json_server_resp_decoder, root_json_server_url)
 
 
@@ -142,6 +145,19 @@ battle_row_type_from_int int =
             Melee
 
 
+battle_row_type_to_int : BattleRow -> Int
+battle_row_type_to_int battle_row =
+    case battle_row of
+        Melee ->
+            0
+
+        Ranged ->
+            1
+
+        Rear ->
+            2
+
+
 battle_row_type_values : List ( String, String )
 battle_row_type_values =
     let
@@ -203,6 +219,22 @@ weapon_damage_type_from_int int =
 
         _ ->
             Unset
+
+
+weapon_damage_type_to_int : WeaponDamageType -> Int
+weapon_damage_type_to_int damage_type =
+    case damage_type of
+        Unset ->
+            0
+
+        Piercing ->
+            1
+
+        Blunt ->
+            2
+
+        Slashing ->
+            3
 
 
 weapon_damage_type_to_string : WeaponDamageType -> String
@@ -283,6 +315,23 @@ decode_weapon_frames =
     list decode_weapon_frame
 
 
+encode_weapon_frame : WeaponFrame -> Encode.Value
+encode_weapon_frame frame_data =
+    Encode.object
+        [ ( "frame_id", Encode.int frame_data.frame_id )
+        , ( "pretty_name", Encode.string frame_data.pretty_name )
+        , ( "description", Encode.string frame_data.description )
+        , ( "frame_image_path", Encode.string frame_data.frame_image_path )
+        , ( "battle_row_type", Encode.int <| battle_row_type_to_int frame_data.battle_row_type )
+        , ( "damage_type", Encode.int <| weapon_damage_type_to_int frame_data.damage_type )
+        , ( "bonus_attack", Encode.int <| frame_data.bonus_attack )
+        , ( "bonus_power", Encode.int <| frame_data.bonus_power )
+        , ( "bonus_encumbrance", Encode.int <| frame_data.bonus_encumbrance )
+        , ( "rarity_type", Encode.int <| frame_data.rarity_type )
+        , ( "carry_weight", Encode.int <| frame_data.carry_weight )
+        ]
+
+
 download_all_frames : (JsonHttpResult (List WeaponFrame) -> msg) -> Cmd msg
 download_all_frames callback =
     Http.get
@@ -305,4 +354,22 @@ type alias WeaponFrame =
     , bonus_encumbrance : Int
     , rarity_type : Int
     , carry_weight : Int
+    }
+
+
+dummy_frame : WeaponFrame
+dummy_frame =
+    { frame_id = 123
+    , pretty_name = "ASDASD"
+    , description = "ASDASD"
+
+    -- , affects_morale', prettyName: "Affects Morale (0, 1)", type: 'hidden'},
+    , frame_image_path = "ASDASD"
+    , battle_row_type = Rear
+    , damage_type = Blunt
+    , bonus_attack = 1
+    , bonus_power = 2
+    , bonus_encumbrance = 3
+    , rarity_type = 0
+    , carry_weight = 2
     }

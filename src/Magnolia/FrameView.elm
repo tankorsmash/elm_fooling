@@ -56,6 +56,7 @@ import Html.Lazy
 import Http
 import Json.Decode exposing (Decoder, at, field, int, list, string)
 import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
+import Json.Encode as Encode
 import List
 import Magnolia.ArmorFrame exposing (ArmorFrame)
 import Magnolia.AttributeFrame exposing (AttributeFrame)
@@ -1045,6 +1046,110 @@ frame_matches_from_feds_frame_data_frame_id feds frame_type =
     frame_id_matches > 0
 
 
+get_weapon_frame_from_frame_data : FrameData -> Maybe WeaponFrame
+get_weapon_frame_from_frame_data frame_data =
+    case frame_data of
+        WeaponFrameData raw_frame_data ->
+            Just raw_frame_data
+
+        _ ->
+            Nothing
+
+
+get_armor_frame_from_frame_data : FrameData -> Maybe ArmorFrame
+get_armor_frame_from_frame_data frame_data =
+    case frame_data of
+        ArmorFrameData raw_frame_data ->
+            Just raw_frame_data
+
+        _ ->
+            Nothing
+
+
+get_zone_frame_from_frame_data : FrameData -> Maybe ZoneFrame
+get_zone_frame_from_frame_data frame_data =
+    case frame_data of
+        ZoneFrameData raw_frame_data ->
+            Just raw_frame_data
+
+        _ ->
+            Nothing
+
+
+get_weapon_category_frame_from_frame_data : FrameData -> Maybe WeaponCategoryFrame
+get_weapon_category_frame_from_frame_data frame_data =
+    case frame_data of
+        WeaponCategoryFrameData raw_frame_data ->
+            Just raw_frame_data
+
+        _ ->
+            Nothing
+
+
+get_attribute_frame_from_frame_data : FrameData -> Maybe AttributeFrame
+get_attribute_frame_from_frame_data frame_data =
+    case frame_data of
+        AttributeFrameData raw_frame_data ->
+            Just raw_frame_data
+
+        _ ->
+            Nothing
+
+
+get_battle_text_struct_frame_from_frame_data : FrameData -> Maybe BattleTextStructFrame
+get_battle_text_struct_frame_from_frame_data frame_data =
+    case frame_data of
+        BattleTextStructFrameData raw_frame_data ->
+            Just raw_frame_data
+
+        _ ->
+            Nothing
+
+
+encode_frame_by_frame_type : FrameEditDatas -> FrameType -> Maybe Encode.Value
+encode_frame_by_frame_type feds frame_type =
+    let
+        fed =
+            get_fed_by_frame_type feds frame_type
+    in
+    case frame_type of
+        WeaponFrameType ->
+            Maybe.map
+                Magnolia.WeaponFrame.encode_weapon_frame
+            <|
+                get_weapon_frame_from_frame_data fed.frame_data
+
+        ArmorFrameType ->
+            Maybe.map
+                Magnolia.ArmorFrame.encode_armor_frame
+            <|
+                get_armor_frame_from_frame_data fed.frame_data
+
+        ZoneFrameType ->
+            Maybe.map
+                Magnolia.ZoneFrame.encode_zone_frame
+            <|
+                get_zone_frame_from_frame_data fed.frame_data
+
+        WeaponCategoryFrameType ->
+            Maybe.map
+                Magnolia.WeaponCategoryFrame.encode_weapon_category_frame
+            <|
+                get_weapon_category_frame_from_frame_data fed.frame_data
+
+        AttributeFrameType ->
+            Maybe.map
+                Magnolia.AttributeFrame.encode_attribute_frame
+            <|
+                get_attribute_frame_from_frame_data fed.frame_data
+
+        BattleTextStructFrameType ->
+            Maybe.map
+                Magnolia.BattleTextStructFrame.encode_battle_text_struct_frame
+            <|
+                get_battle_text_struct_frame_from_frame_data fed.frame_data
+
+
 {-| uses frame\_type to figure out which FED's frame\_data exists in its all\_frames
 -}
 frame_matches_from_feds_frame_data : FrameEditDatas -> FrameType -> Bool
@@ -1107,12 +1212,21 @@ update model msg =
                             model.frame_edit_datas
                             active_frame_type
 
+                maybe_encoded_frame =
+                    encode_frame_by_frame_type model.frame_edit_datas active_frame_type
+
                 cmd =
-                    Debug.log "submitting"
-                        Http.get
-                        { url = clojure_json_server_url ++ url_suffix
-                        , expect = Http.expectString GotSubmittedFrameEditForm
-                        }
+                    case maybe_encoded_frame of
+                        Just encoded_frame ->
+                            Debug.log "submitting"
+                                Http.post
+                                { url = clojure_json_server_url ++ url_suffix
+                                , expect = Http.expectString GotSubmittedFrameEditForm
+                                , body = Http.jsonBody encoded_frame
+                                }
+
+                        Nothing ->
+                            Cmd.none
             in
             ( model, cmd, Noop )
 

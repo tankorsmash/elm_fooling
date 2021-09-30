@@ -109,7 +109,7 @@ type Msg
     | SetFrameViewMode FrameViewMode
     | GotFrameEditFormUpdate GotFrameEditFormUpdateMsg
     | SubmitFrameEditForm
-    | GotSubmittedFrameEditForm (Result Http.Error String)
+    | GotSubmittedFrameEditForm (Result Http.Error (Utils.JsonServerResp String))
     | DoDownloadAllFrames FrameType
       -- | DoDownloadWeaponFrames
     | GotDownloadedAllFrames AllFramesDownloaded
@@ -1164,6 +1164,46 @@ frame_matches_from_feds_frame_data feds frame_type =
     frame_matches all_frames frame_data
 
 
+custom_expectJson : (Result Http.Error a -> msg) -> Decoder a -> Http.Expect msg
+custom_expectJson toMsg decoder =
+    Http.expectStringResponse toMsg <|
+        \response ->
+            case response of
+                Http.BadUrl_ url ->
+                    Err (Http.BadUrl url)
+
+                Http.Timeout_ ->
+                    Err Http.Timeout
+
+                Http.NetworkError_ ->
+                    Err Http.NetworkError
+
+                Http.BadStatus_ metadata body ->
+                    let
+                        _ =
+                            Debug.log "bad status in custom_expectJson" body
+                    in
+                        case Json.Decode.decodeString decoder body of
+                            Ok value ->
+                                Ok value
+
+                            Err err ->
+                                -- Err (Http.BadStatus metadata.statusCode)
+                                Err (Http.BadBody (Json.Decode.errorToString err))
+
+                Http.GoodStatus_ metadata body ->
+                    let
+                        _ =
+                            Debug.log "good status in custom_expectJson" body
+                    in
+                    case Json.Decode.decodeString decoder body of
+                        Ok value ->
+                            Ok value
+
+                        Err err ->
+                            Err (Http.BadBody (Json.Decode.errorToString err))
+
+
 update : Model -> Msg -> ( Model, Cmd Msg, OutMsg )
 update model msg =
     case msg of
@@ -1217,10 +1257,14 @@ update model msg =
                 cmd =
                     case maybe_encoded_frame of
                         Just encoded_frame ->
-                            Debug.log "submitting"
-                                Http.post
+                            Http.post
                                 { url = full_url
-                                , expect = Http.expectString GotSubmittedFrameEditForm
+
+                                -- , expect = Http.expectString GotSubmittedFrameEditForm
+                                , expect =
+                                    custom_expectJson
+                                        GotSubmittedFrameEditForm
+                                        Utils.json_server_resp_decoder_string
                                 , body = Http.jsonBody encoded_frame
                                 }
 
@@ -1234,16 +1278,15 @@ update model msg =
                 val =
                     Debug.log "resp came through" <|
                         case resp of
-                            Ok str_ ->
-                                str_
+                            Ok json_server_resp ->
+                                case json_server_resp.success of
+                                    True -> json_server_resp.data
+                                    False -> "ERROR"
 
                             Err (Http.BadStatus status_code) ->
                                 let
                                     _ =
                                         Debug.log "submit bad status" status_code
-
-                                    _ =
-                                        Debug.log "resp" resp
                                 in
                                 ""
 
@@ -1253,6 +1296,7 @@ update model msg =
                                         Debug.log "submit error:" err
                                 in
                                 ""
+                _ = Debug.log "val" val
             in
             ( model, Cmd.none, Noop )
 

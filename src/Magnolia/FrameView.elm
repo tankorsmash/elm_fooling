@@ -1237,7 +1237,21 @@ update model msg =
                             Ok str_ ->
                                 str_
 
+                            Err (Http.BadStatus status_code) ->
+                                let
+                                    _ =
+                                        Debug.log "submit bad status" status_code
+
+                                    _ =
+                                        Debug.log "resp" resp
+                                in
+                                ""
+
                             Err err ->
+                                let
+                                    _ =
+                                        Debug.log "submit error:" err
+                                in
                                 ""
             in
             ( model, Cmd.none, Noop )

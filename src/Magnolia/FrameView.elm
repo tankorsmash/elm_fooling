@@ -986,28 +986,60 @@ get_frame_id_from_feds_frame_data feds frame_type =
             feds.battle_text_struct.frame_id_getter feds.battle_text_struct.frame_data
 
 
+get_fed_by_frame_type : FrameEditDatas -> FrameType -> FrameEditData Msg
+get_fed_by_frame_type feds frame_type =
+    case frame_type of
+        WeaponFrameType ->
+            feds.weapon
+
+        ArmorFrameType ->
+            feds.armor
+
+        ZoneFrameType ->
+            feds.zone
+
+        WeaponCategoryFrameType ->
+            feds.weapon_category
+
+        AttributeFrameType ->
+            feds.attribute
+
+        BattleTextStructFrameType ->
+            feds.battle_text_struct
+
+
+frame_matches_from_feds_frame_data_frame_id : FrameEditDatas -> FrameType -> Bool
+frame_matches_from_feds_frame_data_frame_id feds frame_type =
+    let
+        fed =
+            get_fed_by_frame_type feds frame_type
+
+        fid_getter =
+            fed.frame_id_getter
+
+        frame_id_matches =
+            List.length <|
+                List.filter
+                    (\fd ->
+                        fid_getter fd == fid_getter fed.frame_data
+                    )
+                    feds.weapon.all_frames
+    in
+    frame_id_matches > 0
+
+
 {-| uses frame\_type to figure out which FED's frame\_data exists in its all\_frames
 -}
 frame_matches_from_feds_frame_data : FrameEditDatas -> FrameType -> Bool
 frame_matches_from_feds_frame_data feds frame_type =
-    case frame_type of
-        WeaponFrameType ->
-            frame_matches feds.weapon.all_frames feds.weapon.frame_data
+    let
+        fed =
+            get_fed_by_frame_type feds frame_type
 
-        ArmorFrameType ->
-            frame_matches feds.armor.all_frames feds.armor.frame_data
-
-        ZoneFrameType ->
-            frame_matches feds.zone.all_frames feds.zone.frame_data
-
-        WeaponCategoryFrameType ->
-            frame_matches feds.weapon_category.all_frames feds.weapon_category.frame_data
-
-        AttributeFrameType ->
-            frame_matches feds.attribute.all_frames feds.attribute.frame_data
-
-        BattleTextStructFrameType ->
-            frame_matches feds.battle_text_struct.all_frames feds.battle_text_struct.frame_data
+        { all_frames, frame_data } =
+            fed
+    in
+    frame_matches all_frames frame_data
 
 
 update : Model -> Msg -> ( Model, Cmd Msg, OutMsg )

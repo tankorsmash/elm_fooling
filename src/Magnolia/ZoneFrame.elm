@@ -3,6 +3,7 @@ module Magnolia.ZoneFrame exposing
     , ZoneFrame
     , download_all_frames
     , edit_form_definition
+    , encode_zone_frame
     , update_edit_form_data
     )
 
@@ -23,6 +24,7 @@ import FormData
 import Http
 import Json.Decode as Decode exposing (Decoder, andThen, field, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
+import Json.Encode as Encode
 import Utils exposing (clojure_json_server_url, root_json_server_url)
 
 
@@ -38,6 +40,16 @@ decode_zone_frame =
 decode_zone_frames : Decoder (List ZoneFrame)
 decode_zone_frames =
     list decode_zone_frame
+
+
+encode_zone_frame : ZoneFrame -> Encode.Value
+encode_zone_frame frame_data =
+    Encode.object
+        [ ( "name", Encode.string frame_data.name )
+        , ( "data_name", Encode.string frame_data.data_name )
+        , ( "required_zone_data_name_to_unlock", Encode.string frame_data.required_zone_data_name_to_unlock )
+        , ( "location_data_names_in_the_zone", Encode.list Encode.string frame_data.location_data_names_in_the_zone )
+        ]
 
 
 download_all_frames : (Utils.JsonHttpResult (List ZoneFrame) -> msg) -> Cmd msg

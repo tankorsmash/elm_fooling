@@ -3,6 +3,7 @@ module Magnolia.ArmorFrame exposing
     , EditFormUpdateType
     , download_all_frames
     , edit_form_definition
+    , encode_armor_frame
     , update_edit_form_data
     )
 
@@ -18,6 +19,7 @@ import FormData
         , update_int_field
         )
 import Http
+import Json.Encode as Encode
 import Json.Decode as Decode exposing (Decoder, andThen, field, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
 import Utils exposing (clojure_json_server_url, root_json_server_url)
@@ -113,6 +115,23 @@ decode_armor_frame =
 decode_armor_frames : Decoder (List ArmorFrame)
 decode_armor_frames =
     list decode_armor_frame
+
+encode_armor_frame : ArmorFrame -> Encode.Value
+encode_armor_frame frame_data =
+    Encode.object
+        [ ( "frame_id", Encode.int frame_data.frame_id )
+        , ( "pretty_name", Encode.string frame_data.pretty_name )
+        , ( "description", Encode.string frame_data.description )
+        , ( "frame_image_path", Encode.string frame_data.frame_image_path )
+        , ( "bonus_defense", Encode.int frame_data.bonus_defense )
+        , ( "bonus_protection", Encode.int <| frame_data.bonus_protection )
+        , ( "bonus_protection_piercing", Encode.int <| frame_data.bonus_protection_piercing )
+        , ( "bonus_protection_blunt", Encode.int <| frame_data.bonus_protection_blunt )
+        , ( "bonus_protection_slashing", Encode.int <| frame_data.bonus_protection_slashing )
+        , ( "bonus_encumbrance", Encode.int <| frame_data.bonus_encumbrance )
+        , ( "rarity_type", Encode.int <| frame_data.rarity_type )
+        , ( "carry_weight", Encode.int <| frame_data.carry_weight )
+        ]
 
 
 download_all_frames : (Utils.JsonHttpResult (List ArmorFrame) -> msg) -> Cmd msg

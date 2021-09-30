@@ -3,6 +3,7 @@ module Magnolia.BattleTextStructFrame exposing
     , EditFormUpdateType
     , download_all_frames
     , edit_form_definition
+    , encode_battle_text_struct_frame
     , update_edit_form_data
     )
 
@@ -24,6 +25,7 @@ import FormData
 import Http
 import Json.Decode as Decode exposing (Decoder, andThen, field, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
+import Json.Encode as Encode
 import Utils exposing (clojure_json_server_url, root_json_server_url)
 
 
@@ -49,6 +51,18 @@ download_all_frames callback =
         { url = clojure_json_server_url ++ "api/frames/battle_text_struct"
         , expect = Http.expectJson callback (Utils.json_server_resp_decoder decode_battle_text_struct_frames)
         }
+
+
+encode_battle_text_struct_frame : BattleTextStructFrame -> Encode.Value
+encode_battle_text_struct_frame frame_data =
+    Encode.object
+        [ ( "frame_id", Encode.int frame_data.frame_id )
+        , ( "pretty_name", Encode.string frame_data.pretty_name )
+        , ( "description", Encode.string frame_data.description )
+        , ( "battle_won_text_fid", Encode.int frame_data.battle_won_text_fid )
+        , ( "battle_tied_text_fid", Encode.int frame_data.battle_tied_text_fid )
+        , ( "battle_lost_text_fid", Encode.int frame_data.battle_lost_text_fid )
+        ]
 
 
 {-| All these are strings because they get the msg from Html

@@ -3,6 +3,7 @@ module Magnolia.AttributeFrame exposing
     , EditFormUpdateType
     , download_all_frames
     , edit_form_definition
+    , encode_attribute_frame
     , update_edit_form_data
     )
 
@@ -24,6 +25,7 @@ import FormData
 import Http
 import Json.Decode as Decode exposing (Decoder, andThen, field, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
+import Json.Encode as Encode
 import Utils exposing (clojure_json_server_url, root_json_server_url)
 
 
@@ -51,6 +53,20 @@ download_all_frames callback =
         { url = clojure_json_server_url ++ "api/frames/attribute"
         , expect = Http.expectJson callback (Utils.json_server_resp_decoder decode_attribute_frames)
         }
+
+
+encode_attribute_frame : AttributeFrame -> Encode.Value
+encode_attribute_frame frame_data =
+    Encode.object
+        [ ( "frame_id", Encode.int frame_data.frame_id )
+        , ( "pretty_name", Encode.string frame_data.pretty_name )
+        , ( "description", Encode.string frame_data.description )
+        , ( "frame_image_path", Encode.string frame_data.frame_image_path )
+        , ( "state_names", Encode.list Encode.string frame_data.state_names )
+        , ( "state_names_pretty_funcs", Encode.list Encode.string frame_data.state_names_pretty_funcs )
+        , ( "pretty_name_template", Encode.string frame_data.pretty_name_template )
+        , ( "pretty_func_name", Encode.string frame_data.pretty_func_name )
+        ]
 
 
 {-| All these are strings because they get the msg from Html

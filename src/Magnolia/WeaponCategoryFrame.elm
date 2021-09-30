@@ -3,6 +3,7 @@ module Magnolia.WeaponCategoryFrame exposing
     , WeaponCategoryFrame
     , download_all_frames
     , edit_form_definition
+    , encode_weapon_category_frame
     , update_edit_form_data
     )
 
@@ -23,6 +24,7 @@ import FormData
 import Http
 import Json.Decode as Decode exposing (Decoder, andThen, field, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
+import Json.Encode as Encode
 import Utils exposing (clojure_json_server_url, root_json_server_url)
 
 
@@ -51,6 +53,21 @@ download_all_frames callback =
         { url = clojure_json_server_url ++ "api/frames/weapon_category"
         , expect = Http.expectJson callback (Utils.json_server_resp_decoder decode_weapon_category_frames)
         }
+
+
+encode_weapon_category_frame : WeaponCategoryFrame -> Encode.Value
+encode_weapon_category_frame frame_data =
+    Encode.object
+        [ ( "frame_id", Encode.int frame_data.frame_id )
+        , ( "pretty_name", Encode.string frame_data.pretty_name )
+        , ( "description", Encode.string frame_data.description )
+        , ( "frame_image_path", Encode.string frame_data.frame_image_path )
+        , ( "rarity_type", Encode.int <| frame_data.rarity_type )
+        , ( "weapon_frame_ids", Encode.list Encode.int <| frame_data.weapon_frame_ids )
+        , ( "rank_1_attr_frame_ids", Encode.list Encode.int <| frame_data.rank_1_attr_frame_ids )
+        , ( "rank_2_attr_frame_ids", Encode.list Encode.int <| frame_data.rank_2_attr_frame_ids )
+        , ( "rank_3_attr_frame_ids", Encode.list Encode.int <| frame_data.rank_3_attr_frame_ids )
+        ]
 
 
 {-| All these are strings because they get the msg from Html

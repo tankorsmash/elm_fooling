@@ -1008,6 +1008,23 @@ get_fed_by_frame_type feds frame_type =
             feds.battle_text_struct
 
 
+frame_matches_from_fed_frame_data_frame_id : FrameEditData Msg -> Bool
+frame_matches_from_fed_frame_data_frame_id fed =
+    let
+        fid_getter =
+            fed.frame_id_getter
+
+        frame_id_matches =
+            List.length <|
+                List.filter
+                    (\fd ->
+                        fid_getter fd == fid_getter fed.frame_data
+                    )
+                    fed.all_frames
+    in
+    frame_id_matches > 0
+
+
 frame_matches_from_feds_frame_data_frame_id : FrameEditDatas -> FrameType -> Bool
 frame_matches_from_feds_frame_data_frame_id feds frame_type =
     let
@@ -1023,7 +1040,7 @@ frame_matches_from_feds_frame_data_frame_id feds frame_type =
                     (\fd ->
                         fid_getter fd == fid_getter fed.frame_data
                     )
-                    feds.weapon.all_frames
+                    fed.all_frames
     in
     frame_id_matches > 0
 
@@ -1068,16 +1085,15 @@ update model msg =
             ( model_, cmd, Noop )
 
         SubmitFrameEditForm ->
-            -- TODO: make request to clojure server to update frame
             let
                 active_frame_type =
                     model.active_tab_frame_type
 
-                whole_frame_data_matches =
-                    frame_matches_from_feds_frame_data model.frame_edit_datas active_frame_type
+                just_frame_id_matches =
+                    frame_matches_from_feds_frame_data_frame_id model.frame_edit_datas active_frame_type
 
                 url_root =
-                    case whole_frame_data_matches of
+                    case just_frame_id_matches of
                         True ->
                             "api/frames/" ++ to_data_name active_frame_type
 
@@ -1547,7 +1563,7 @@ form_data_view frame_edit_data =
                 maybe_all_weapon_frames =
                     get_all_weapon_frames frame_edit_data.all_frames
             in
-            inner_form_data_view maybe_frame_data maybe_form_definition maybe_all_weapon_frames
+            inner_form_data_view maybe_frame_data maybe_form_definition maybe_all_weapon_frames <| frame_matches_from_fed_frame_data_frame_id frame_edit_data
 
         ArmorFrameType ->
             let
@@ -1573,7 +1589,7 @@ form_data_view frame_edit_data =
                 maybe_all_armor_frames =
                     get_all_armor_frames frame_edit_data.all_frames
             in
-            inner_form_data_view maybe_frame_data maybe_form_definition maybe_all_armor_frames
+            inner_form_data_view maybe_frame_data maybe_form_definition maybe_all_armor_frames <| frame_matches_from_fed_frame_data_frame_id frame_edit_data
 
         ZoneFrameType ->
             let
@@ -1599,7 +1615,7 @@ form_data_view frame_edit_data =
                 maybe_all_zone_frames =
                     get_all_zone_frames frame_edit_data.all_frames
             in
-            inner_form_data_view maybe_frame_data maybe_form_definition maybe_all_zone_frames
+            inner_form_data_view maybe_frame_data maybe_form_definition maybe_all_zone_frames <| frame_matches_from_fed_frame_data_frame_id frame_edit_data
 
         WeaponCategoryFrameType ->
             let
@@ -1625,7 +1641,7 @@ form_data_view frame_edit_data =
                 maybe_all_weapon_category_frames =
                     get_all_weapon_category_frames frame_edit_data.all_frames
             in
-            inner_form_data_view maybe_frame_data maybe_form_definition maybe_all_weapon_category_frames
+            inner_form_data_view maybe_frame_data maybe_form_definition maybe_all_weapon_category_frames <| frame_matches_from_fed_frame_data_frame_id frame_edit_data
 
         AttributeFrameType ->
             let
@@ -1651,7 +1667,7 @@ form_data_view frame_edit_data =
                 maybe_all_attribute_frames =
                     get_all_attribute_frames frame_edit_data.all_frames
             in
-            inner_form_data_view maybe_frame_data maybe_form_definition maybe_all_attribute_frames
+            inner_form_data_view maybe_frame_data maybe_form_definition maybe_all_attribute_frames <| frame_matches_from_fed_frame_data_frame_id frame_edit_data
 
         BattleTextStructFrameType ->
             let
@@ -1677,21 +1693,17 @@ form_data_view frame_edit_data =
                 maybe_all_battle_text_struct_frames =
                     get_all_battle_text_struct_frames frame_edit_data.all_frames
             in
-            inner_form_data_view maybe_frame_data maybe_form_definition maybe_all_battle_text_struct_frames
+            inner_form_data_view maybe_frame_data maybe_form_definition maybe_all_battle_text_struct_frames <| frame_matches_from_fed_frame_data_frame_id frame_edit_data
 
 
-inner_form_data_view : Maybe fd -> Maybe (FormData.FormDefinition fd Msg) -> List (Maybe fd) -> Html Msg
-inner_form_data_view maybe_frame_data maybe_form_definition all_frames =
+inner_form_data_view :
+    Maybe fd
+    -> Maybe (FormData.FormDefinition fd Msg)
+    -> List (Maybe fd)
+    -> Bool
+    -> Html Msg
+inner_form_data_view maybe_frame_data maybe_form_definition all_frames frame_id_matches =
     let
-        frame_data_exists_in_all_frames : Bool
-        frame_data_exists_in_all_frames =
-            case maybe_frame_data of
-                Just frame_data ->
-                    frame_matches all_frames maybe_frame_data
-
-                Nothing ->
-                    False
-
         fields : List (FormData.FormField fd Msg)
         fields =
             case maybe_form_definition of
@@ -1718,12 +1730,12 @@ inner_form_data_view maybe_frame_data maybe_form_definition all_frames =
                     , Button.primary
                     ]
                     [ text <|
-                        case frame_data_exists_in_all_frames of
+                        case frame_id_matches of
                             True ->
                                 "Update"
 
                             False ->
-                                "Create (todo!)"
+                                "Create"
                     ]
                 ]
             ]

@@ -1293,7 +1293,7 @@ update model msg =
                             Err err ->
                                 let
                                     _ =
-                                        Debug.log "submit error:" err
+                                        Debug.log "submit error" err
                                 in
                                 ("", (ToVisualOutput ("Error: " ++ (Debug.toString err))))
                 _ = Debug.log "val" val

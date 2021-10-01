@@ -329,6 +329,7 @@ encode_weapon_frame frame_data =
         , ( "bonus_encumbrance", Encode.int <| frame_data.bonus_encumbrance )
         , ( "rarity_type", Encode.int <| frame_data.rarity_type )
         , ( "carry_weight", Encode.int <| frame_data.carry_weight )
+        , ( "affects_morale", Encode.bool <| False ) --this doesn't exist in game yet, so we'll have to make sure this is handled whenever it is
         ]
 
 

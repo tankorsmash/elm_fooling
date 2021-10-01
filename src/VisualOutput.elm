@@ -76,7 +76,15 @@ modal maybe_entries =
                     [ "IN FRONT" ]
 
         build_paras =
-            \entry -> Element.paragraph [] [ text entry ]
+            \entry -> text entry
+
+        replace_escaped_quotes : String -> String
+        replace_escaped_quotes str =
+            String.replace "\\\"" "\"" str
+
+        split_on_newlines : String -> List String
+        split_on_newlines str =
+            String.split "\\n" str
     in
     row
         [ width fill
@@ -93,5 +101,9 @@ modal maybe_entries =
             , Font.family [ Font.monospace ]
             ]
           <|
-            List.map build_paras entries
+            List.map build_paras <|
+                List.concat <|
+                    List.map
+                        (split_on_newlines << replace_escaped_quotes)
+                        entries
         ]

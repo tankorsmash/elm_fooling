@@ -1313,12 +1313,19 @@ update model msg =
                                 in
                                 ( "", ToVisualOutput ("Bad Status: " ++ String.fromInt status_code) )
 
+                            Err (Http.BadBody err_str) ->
+                                let
+                                    _ =
+                                        Debug.log "submit error" err_str
+                                in
+                                ( "", ToVisualOutput ("Body Error:\n" ++ err_str) )
+
                             Err err ->
                                 let
                                     _ =
                                         Debug.log "submit error" err
                                 in
-                                ( "", ToVisualOutput ("Error: " ++ Debug.toString err) )
+                                ( "", ToVisualOutput ("Any Error:\n" ++ Debug.toString err) )
 
                 _ =
                     Debug.log "val" val

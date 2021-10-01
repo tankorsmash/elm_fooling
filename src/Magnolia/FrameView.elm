@@ -1201,7 +1201,11 @@ custom_expectJson toMsg decoder =
                             Ok value
 
                         Err err ->
-                            Err (Http.BadBody (Json.Decode.errorToString err))
+                            Err
+                                (Http.BadBody <|
+                                    "Elm couldn't parse this JSON: "
+                                        ++ Json.Decode.errorToString err
+                                )
 
 
 update : Model -> Msg -> ( Model, Cmd Msg, OutMsg )

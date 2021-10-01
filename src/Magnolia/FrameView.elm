@@ -1171,13 +1171,13 @@ decode_good_json_status resp_body decoder =
 
         Err err ->
             case decodeString Utils.json_server_resp_decoder_value resp_body of
-                Ok valid_str_resp ->
+                Ok json_server_resp ->
                     let
                         { message } =
-                            valid_str_resp
+                            json_server_resp
 
                         data_str =
-                            Encode.encode 4 valid_str_resp.data
+                            Encode.encode 4 json_server_resp.data
                     in
                     Err
                         (Http.BadBody

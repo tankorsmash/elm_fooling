@@ -501,7 +501,7 @@ processOutMsg outMsg model =
                 ( new_model, new_cmd ) =
                     update
                         (GotVisualOutputMsg <|
-                            VisualOutput.ShowModal (Just <| "Received a Magnolia.FrameView.ToVisualOutput msg:\n" ++ str)
+                            VisualOutput.ShowModal (Just <| str)
                         )
                         model
             in

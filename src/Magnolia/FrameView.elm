@@ -1183,13 +1183,13 @@ custom_expectJson toMsg decoder =
                         _ =
                             Debug.log "bad status in custom_expectJson" body
                     in
-                        case Json.Decode.decodeString decoder body of
-                            Ok value ->
-                                Ok value
+                    case Json.Decode.decodeString decoder body of
+                        Ok value ->
+                            Ok value
 
-                            Err err ->
-                                -- Err (Http.BadStatus metadata.statusCode)
-                                Err (Http.BadBody (Json.Decode.errorToString err))
+                        Err err ->
+                            -- Err (Http.BadStatus metadata.statusCode)
+                            Err (Http.BadBody (Json.Decode.errorToString err))
 
                 Http.GoodStatus_ metadata body ->
                     let
@@ -1275,28 +1275,33 @@ update model msg =
 
         GotSubmittedFrameEditForm json_http_result ->
             let
-                (val, output_msg) =
+                ( val, output_msg ) =
                     Debug.log "resp came through" <|
                         case json_http_result of
                             Ok json_server_resp_ ->
                                 case json_server_resp_.success of
-                                    True -> (json_server_resp_.data, Noop)
-                                    False -> ("ERROR", ToVisualOutput json_server_resp_.data)
+                                    True ->
+                                        ( json_server_resp_.data, Noop )
+
+                                    False ->
+                                        ( "ERROR", ToVisualOutput json_server_resp_.data )
 
                             Err (Http.BadStatus status_code) ->
                                 let
                                     _ =
                                         Debug.log "submit bad status" status_code
                                 in
-                                ("", ToVisualOutput ("Bad Status: " ++ (String.fromInt status_code)))
+                                ( "", ToVisualOutput ("Bad Status: " ++ String.fromInt status_code) )
 
                             Err err ->
                                 let
                                     _ =
                                         Debug.log "submit error" err
                                 in
-                                ("", (ToVisualOutput ("Error: " ++ (Debug.toString err))))
-                _ = Debug.log "val" val
+                                ( "", ToVisualOutput ("Error: " ++ Debug.toString err) )
+
+                _ =
+                    Debug.log "val" val
             in
             ( model, Cmd.none, output_msg )
 

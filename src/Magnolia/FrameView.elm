@@ -143,6 +143,7 @@ type alias FrameEditData msg =
     , frame_id_getter :
         FrameData
         -> String -- "frame_id", "id", etc. Zones use data_names pretty sure so this'll get hairy
+    , form_memo : FormMemo
     }
 
 
@@ -166,6 +167,15 @@ type FrameData
     | WeaponCategoryFrameData WeaponCategoryFrame
     | AttributeFrameData AttributeFrame
     | BattleTextStructFrameData BattleTextStructFrame
+
+
+{-| for form text messages, maybe it'll be like good and bad types or something
+-}
+type FormMemo
+    = NoFormMemo
+    | SuccessfulMemo String
+    | FailureMemo String
+    | ErrorMemo String
 
 
 to_string : FrameType -> String
@@ -445,6 +455,7 @@ init hash =
                     , frame_type = WeaponFrameType
                     , frame_type_str = to_data_name WeaponFrameType
                     , frame_id_getter = frame_id_getter
+                    , form_memo = NoFormMemo
                     }
                 , armor =
                     { form_definition = ArmorFrameForm <| Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditArmorFormUpdate)
@@ -455,6 +466,7 @@ init hash =
                     , frame_type = ArmorFrameType
                     , frame_type_str = to_data_name ArmorFrameType
                     , frame_id_getter = frame_id_getter
+                    , form_memo = NoFormMemo
                     }
                 , zone =
                     { form_definition = ZoneFrameForm <| Magnolia.ZoneFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditZoneFormUpdate)
@@ -465,6 +477,7 @@ init hash =
                     , frame_type = ZoneFrameType
                     , frame_type_str = to_data_name ZoneFrameType
                     , frame_id_getter = frame_id_getter
+                    , form_memo = NoFormMemo
                     }
                 , weapon_category =
                     { form_definition = WeaponCategoryFrameForm <| Magnolia.WeaponCategoryFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponCategoryFormUpdate)
@@ -475,6 +488,7 @@ init hash =
                     , frame_type = WeaponCategoryFrameType
                     , frame_type_str = to_data_name WeaponCategoryFrameType
                     , frame_id_getter = frame_id_getter
+                    , form_memo = NoFormMemo
                     }
                 , attribute =
                     { form_definition = AttributeFrameForm <| Magnolia.AttributeFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditAttributeFormUpdate)
@@ -485,6 +499,7 @@ init hash =
                     , frame_type = AttributeFrameType
                     , frame_type_str = to_data_name AttributeFrameType
                     , frame_id_getter = frame_id_getter
+                    , form_memo = NoFormMemo
                     }
                 , battle_text_struct =
                     { form_definition = BattleTextStructFrameForm <| Magnolia.BattleTextStructFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditBattleTextStructFormUpdate)
@@ -495,6 +510,7 @@ init hash =
                     , frame_type = BattleTextStructFrameType
                     , frame_type_str = to_data_name BattleTextStructFrameType
                     , frame_id_getter = frame_id_getter
+                    , form_memo = NoFormMemo
                     }
                 }
             , active_tab = initial_active_tab
@@ -1748,6 +1764,10 @@ frame_matches all_frames frame =
 
 form_data_view : FrameEditData Msg -> Html Msg
 form_data_view frame_edit_data =
+    let
+        { form_memo } =
+            frame_edit_data
+    in
     case frame_edit_data.frame_type of
         WeaponFrameType ->
             let
@@ -1773,7 +1793,12 @@ form_data_view frame_edit_data =
                 maybe_all_weapon_frames =
                     get_all_weapon_frames frame_edit_data.all_frames
             in
-            inner_form_data_view maybe_frame_data maybe_form_definition maybe_all_weapon_frames <| frame_matches_from_fed_frame_data_frame_id frame_edit_data
+            inner_form_data_view
+                maybe_frame_data
+                maybe_form_definition
+                maybe_all_weapon_frames
+                (frame_matches_from_fed_frame_data_frame_id frame_edit_data)
+                form_memo
 
         ArmorFrameType ->
             let
@@ -1799,7 +1824,12 @@ form_data_view frame_edit_data =
                 maybe_all_armor_frames =
                     get_all_armor_frames frame_edit_data.all_frames
             in
-            inner_form_data_view maybe_frame_data maybe_form_definition maybe_all_armor_frames <| frame_matches_from_fed_frame_data_frame_id frame_edit_data
+            inner_form_data_view
+                maybe_frame_data
+                maybe_form_definition
+                maybe_all_armor_frames
+                (frame_matches_from_fed_frame_data_frame_id frame_edit_data)
+                form_memo
 
         ZoneFrameType ->
             let
@@ -1825,7 +1855,12 @@ form_data_view frame_edit_data =
                 maybe_all_zone_frames =
                     get_all_zone_frames frame_edit_data.all_frames
             in
-            inner_form_data_view maybe_frame_data maybe_form_definition maybe_all_zone_frames <| frame_matches_from_fed_frame_data_frame_id frame_edit_data
+            inner_form_data_view
+                maybe_frame_data
+                maybe_form_definition
+                maybe_all_zone_frames
+                (frame_matches_from_fed_frame_data_frame_id frame_edit_data)
+                form_memo
 
         WeaponCategoryFrameType ->
             let
@@ -1851,7 +1886,12 @@ form_data_view frame_edit_data =
                 maybe_all_weapon_category_frames =
                     get_all_weapon_category_frames frame_edit_data.all_frames
             in
-            inner_form_data_view maybe_frame_data maybe_form_definition maybe_all_weapon_category_frames <| frame_matches_from_fed_frame_data_frame_id frame_edit_data
+            inner_form_data_view
+                maybe_frame_data
+                maybe_form_definition
+                maybe_all_weapon_category_frames
+                (frame_matches_from_fed_frame_data_frame_id frame_edit_data)
+                form_memo
 
         AttributeFrameType ->
             let
@@ -1877,7 +1917,12 @@ form_data_view frame_edit_data =
                 maybe_all_attribute_frames =
                     get_all_attribute_frames frame_edit_data.all_frames
             in
-            inner_form_data_view maybe_frame_data maybe_form_definition maybe_all_attribute_frames <| frame_matches_from_fed_frame_data_frame_id frame_edit_data
+            inner_form_data_view
+                maybe_frame_data
+                maybe_form_definition
+                maybe_all_attribute_frames
+                (frame_matches_from_fed_frame_data_frame_id frame_edit_data)
+                form_memo
 
         BattleTextStructFrameType ->
             let
@@ -1903,7 +1948,12 @@ form_data_view frame_edit_data =
                 maybe_all_battle_text_struct_frames =
                     get_all_battle_text_struct_frames frame_edit_data.all_frames
             in
-            inner_form_data_view maybe_frame_data maybe_form_definition maybe_all_battle_text_struct_frames <| frame_matches_from_fed_frame_data_frame_id frame_edit_data
+            inner_form_data_view
+                maybe_frame_data
+                maybe_form_definition
+                maybe_all_battle_text_struct_frames
+                (frame_matches_from_fed_frame_data_frame_id frame_edit_data)
+                form_memo
 
 
 inner_form_data_view :
@@ -1911,8 +1961,9 @@ inner_form_data_view :
     -> Maybe (FormData.FormDefinition fd Msg)
     -> List (Maybe fd)
     -> Bool
+    -> FormMemo
     -> Html Msg
-inner_form_data_view maybe_frame_data maybe_form_definition all_frames frame_id_matches =
+inner_form_data_view maybe_frame_data maybe_form_definition all_frames frame_id_matches frame_memo =
     let
         fields : List (FormData.FormField fd Msg)
         fields =

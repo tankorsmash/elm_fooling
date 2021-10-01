@@ -501,7 +501,7 @@ processOutMsg outMsg model =
                 ( new_model, new_cmd ) =
                     update
                         (GotVisualOutputMsg <|
-                            VisualOutput.ShowModal (Just <| str)
+                            VisualOutput.ShowModal (Just str)
                         )
                         model
             in

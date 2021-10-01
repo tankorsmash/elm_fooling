@@ -1281,7 +1281,7 @@ update model msg =
                             Ok json_server_resp_ ->
                                 case json_server_resp_.success of
                                     True -> (json_server_resp_.data, Noop)
-                                    False -> ("ERROR", ToVisualOutput json_server_resp_.message)
+                                    False -> ("ERROR", ToVisualOutput json_server_resp_.data)
 
                             Err (Http.BadStatus status_code) ->
                                 let

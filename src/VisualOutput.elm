@@ -84,4 +84,11 @@ modal maybe_entries =
 
         -- , Element.explain Debug.todo
         ]
-        [ column [ centerX ] [ text entries ] ]
+        [ column
+            [ centerX
+            , width fill
+            , Font.family [ Font.monospace ]
+            ]
+          <|
+            [ Element.paragraph [] [ text entries ] ]
+        ]

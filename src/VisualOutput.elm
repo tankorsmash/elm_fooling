@@ -43,7 +43,7 @@ view model =
     let
         in_front =
             if model.show_modal then
-                Element.inFront <| modal <| Just <| String.join "\n" model.entries
+                Element.inFront <| modal <| Just <| model.entries
 
             else
                 -- TODO come up with a better way to return nothing from this
@@ -61,19 +61,22 @@ view model =
         Element.none
 
 
-modal : Maybe String -> Element.Element Msg
+modal : Maybe (List String) -> Element.Element Msg
 modal maybe_entries =
     let
         entries =
             case maybe_entries of
-                Just "" ->
-                    "No VisualOutput entries found in model"
+                Just [] ->
+                    [ "No VisualOutput entries found in model" ]
 
                 Just entries_ ->
                     entries_
 
                 Nothing ->
-                    "IN FRONT"
+                    [ "IN FRONT" ]
+
+        build_paras =
+            \entry -> Element.paragraph [] [ text entry ]
     in
     row
         [ width fill
@@ -90,5 +93,5 @@ modal maybe_entries =
             , Font.family [ Font.monospace ]
             ]
           <|
-            [ Element.paragraph [] [ text entries ] ]
+            List.map build_paras entries
         ]

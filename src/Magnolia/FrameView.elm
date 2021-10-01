@@ -1273,32 +1273,32 @@ update model msg =
             in
             ( model, cmd, Noop )
 
-        GotSubmittedFrameEditForm resp ->
+        GotSubmittedFrameEditForm json_http_result ->
             let
-                val =
+                (val, output_msg) =
                     Debug.log "resp came through" <|
-                        case resp of
-                            Ok json_server_resp ->
-                                case json_server_resp.success of
-                                    True -> json_server_resp.data
-                                    False -> "ERROR"
+                        case json_http_result of
+                            Ok json_server_resp_ ->
+                                case json_server_resp_.success of
+                                    True -> (json_server_resp_.data, Noop)
+                                    False -> ("ERROR", ToVisualOutput json_server_resp_.message)
 
                             Err (Http.BadStatus status_code) ->
                                 let
                                     _ =
                                         Debug.log "submit bad status" status_code
                                 in
-                                ""
+                                ("", ToVisualOutput ("Bad Status: " ++ (String.fromInt status_code)))
 
                             Err err ->
                                 let
                                     _ =
                                         Debug.log "submit error:" err
                                 in
-                                ""
+                                ("", (ToVisualOutput ("Error: " ++ (Debug.toString err))))
                 _ = Debug.log "val" val
             in
-            ( model, Cmd.none, Noop )
+            ( model, Cmd.none, output_msg )
 
         -- DoDownloadWeaponFrames ->
         DoDownloadAllFrames frame_type ->

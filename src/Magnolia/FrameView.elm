@@ -1930,23 +1930,24 @@ inner_form_data_view maybe_frame_data maybe_form_definition all_frames frame_id_
 
                 Nothing ->
                     span [] []
+
+        submit_btn =
+            Button.button
+                [ Button.onClick SubmitFrameEditForm, Button.primary ]
+                [ text <|
+                    case frame_id_matches of
+                        True ->
+                            "Update"
+
+                        False ->
+                            "Create"
+                ]
     in
     Grid.row [ Row.centerMd ]
         [ Grid.col [ Col.sm11, Col.md8 ]
             [ Form.form []
                 [ rendered_fields
-                , Button.button
-                    [ Button.onClick SubmitFrameEditForm
-                    , Button.primary
-                    ]
-                    [ text <|
-                        case frame_id_matches of
-                            True ->
-                                "Update"
-
-                            False ->
-                                "Create"
-                    ]
+                , submit_btn
                 ]
             ]
         ]

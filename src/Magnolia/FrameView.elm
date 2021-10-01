@@ -1161,6 +1161,41 @@ frame_matches_from_feds_frame_data feds frame_type =
     frame_matches all_frames frame_data
 
 
+{-| Used to decode a HTTP Response's body when it wasn't a bad status (ie was a 200)
+-}
+decode_good_json_status : String -> Decoder a -> Result Http.Error a
+decode_good_json_status resp_body decoder =
+    case decodeString decoder resp_body of
+        Ok value ->
+            Ok value
+
+        Err err ->
+            case decodeString Utils.json_server_resp_decoder_value resp_body of
+                Ok valid_str_resp ->
+                    let
+                        { message } =
+                            valid_str_resp
+
+                        data_str =
+                            Encode.encode 4 valid_str_resp.data
+                    in
+                    Err
+                        (Http.BadBody
+                            ("Message: "
+                                ++ message
+                                ++ "\nGeneric JSON Data: "
+                                ++ data_str
+                            )
+                        )
+
+                Err err2 ->
+                    Err
+                        (Http.BadBody <|
+                            "Elm couldn't parse this JSON:\n"
+                                ++ Json.Decode.errorToString err2
+                        )
+
+
 custom_expectJson : (Result Http.Error a -> msg) -> Decoder a -> Http.Expect msg
 custom_expectJson toMsg decoder =
     Http.expectStringResponse toMsg <|
@@ -1193,35 +1228,7 @@ custom_expectJson toMsg decoder =
                         _ =
                             Debug.log "good status in custom_expectJson" body
                     in
-                    case Json.Decode.decodeString decoder body of
-                        Ok value ->
-                            Ok value
-
-                        Err err ->
-                            case Json.Decode.decodeString Utils.json_server_resp_decoder_value body of
-                                Ok valid_str_resp ->
-                                    let
-                                        { message } =
-                                            valid_str_resp
-
-                                        data_str =
-                                            Encode.encode 4 valid_str_resp.data
-                                    in
-                                    Err
-                                        (Http.BadBody
-                                            ("Message: "
-                                                ++ message
-                                                ++ "\nGeneric JSON Data: "
-                                                ++ data_str
-                                            )
-                                        )
-
-                                Err err2 ->
-                                    Err
-                                        (Http.BadBody <|
-                                            "Elm couldn't parse this JSON:\n"
-                                                ++ Json.Decode.errorToString err2
-                                        )
+                    decode_good_json_status body decoder
 
 
 update : Model -> Msg -> ( Model, Cmd Msg, OutMsg )

@@ -49,14 +49,15 @@ view model =
                 -- TODO come up with a better way to return nothing from this
                 Element.inFront <| Element.none
     in
-    Element.layout
+    -- Element.layout
+    Element.layoutWith
+        { options = [ Element.noStaticStyleSheet ] }
         [ in_front
 
         -- , Element.explain Debug.todo
         , Element.height (Element.fill |> Element.maximum 1)
         ]
     <|
-        -- Element.text "VIEW WITHOUT MODEL"
         Element.none
 
 

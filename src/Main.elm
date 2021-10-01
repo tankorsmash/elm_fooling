@@ -14,6 +14,7 @@ import Bootstrap.Navbar as Navbar
 import Browser
 import Browser.Navigation as Nav
 import Debug
+import Element
 import ElmUIPlayground
 import FormData
     exposing
@@ -1389,14 +1390,19 @@ homeView model =
                 [ Html.map (\msg -> GotVisualOutputMsg msg) <|
                     VisualOutput.view model.visual_output_model
                 ]
+
+        --elm ui needs exactly one layout to exist with the stylesheet, all others
+        -- need the `noStaticStyleSheet` option set
+        elm_ui_hack_layout =
+            Element.layout [] <| Element.none
     in
     div [ add_class "container" ]
-        [ div [ add_class "row" ]
+        [ elm_ui_hack_layout
+        , div [ add_class "row" ]
             [ div [ add_class "col-md-12" ]
                 [ -- site_navigation model
                   bootstrap_stylesheet
                 ]
-            , visual_output_view
             ]
 
         -- , button_primary (RequestJSONP "ASDS") "Port Send"
@@ -1408,6 +1414,7 @@ homeView model =
         , div [ add_class "row" ]
             [ div [ add_class "col-md-12" ] [ tab_content ]
             ]
+        , visual_output_view
         ]
 
 

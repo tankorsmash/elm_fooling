@@ -1,8 +1,5 @@
 module Magnolia.FrameView exposing (Model, Msg(..), OutMsg(..), init, update, view)
 
--- import Json.Encode exposing (string)
--- import Url.Parser exposing ((</>), Parser, int, map, oneOf, parse, s, string)
-
 import Bootstrap.Button as Button
 import Bootstrap.CDN as CDN
 import Bootstrap.Card as Card
@@ -54,7 +51,7 @@ import Html.Attributes exposing (attribute, classList, href, property, src, styl
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Html.Lazy
 import Http
-import Json.Decode exposing (Decoder, at, field, int, list, string)
+import Json.Decode exposing (Decoder, at, decodeString, decodeValue, field, int, list, string)
 import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
 import Json.Encode as Encode
 import List
@@ -1201,11 +1198,30 @@ custom_expectJson toMsg decoder =
                             Ok value
 
                         Err err ->
-                            Err
-                                (Http.BadBody <|
-                                    "Elm couldn't parse this JSON: "
-                                        ++ Json.Decode.errorToString err
-                                )
+                            case Json.Decode.decodeString Utils.json_server_resp_decoder_value body of
+                                Ok valid_str_resp ->
+                                    let
+                                        { message } =
+                                            valid_str_resp
+
+                                        data_str =
+                                            Encode.encode 4 valid_str_resp.data
+                                    in
+                                    Err
+                                        (Http.BadBody
+                                            ("Message: "
+                                                ++ message
+                                                ++ "\nGeneric JSON Data: "
+                                                ++ data_str
+                                            )
+                                        )
+
+                                Err err2 ->
+                                    Err
+                                        (Http.BadBody <|
+                                            "Elm couldn't parse this JSON:\n"
+                                                ++ Json.Decode.errorToString err2
+                                        )
 
 
 update : Model -> Msg -> ( Model, Cmd Msg, OutMsg )

@@ -34,6 +34,13 @@ type alias JsonServerResp a =
     }
 
 
+json_server_resp_decoder_value : Decode.Decoder (JsonServerResp Decode.Value)
+json_server_resp_decoder_value =
+    Decode.map3 JsonServerResp
+        (Decode.field "success" Decode.bool)
+        (Decode.field "message" Decode.string)
+        (Decode.field "data" Decode.value)
+
 json_server_resp_decoder_string : Decode.Decoder (JsonServerResp String)
 json_server_resp_decoder_string =
     Decode.map3 JsonServerResp

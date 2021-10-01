@@ -1,5 +1,6 @@
 module Magnolia.FrameView exposing (Model, Msg(..), OutMsg(..), init, update, view)
 
+import Bootstrap.Alert as Alert
 import Bootstrap.Button as Button
 import Bootstrap.CDN as CDN
 import Bootstrap.Card as Card
@@ -456,6 +457,9 @@ init hash =
                     , frame_type_str = to_data_name WeaponFrameType
                     , frame_id_getter = frame_id_getter
                     , form_memo = NoFormMemo
+                    -- , form_memo = SuccessfulMemo "YAY!!"
+                    -- , form_memo = FailureMemo "Something failed"
+                    -- , form_memo = ErrorMemo "SERVER ERROR"
                     }
                 , armor =
                     { form_definition = ArmorFrameForm <| Magnolia.ArmorFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditArmorFormUpdate)
@@ -1963,7 +1967,7 @@ inner_form_data_view :
     -> Bool
     -> FormMemo
     -> Html Msg
-inner_form_data_view maybe_frame_data maybe_form_definition all_frames frame_id_matches frame_memo =
+inner_form_data_view maybe_frame_data maybe_form_definition all_frames frame_id_matches form_memo =
     let
         fields : List (FormData.FormField fd Msg)
         fields =
@@ -1993,12 +1997,32 @@ inner_form_data_view maybe_frame_data maybe_form_definition all_frames frame_id_
                         False ->
                             "Create"
                 ]
+
+        rendered_form_memo : Grid.Column msg
+        rendered_form_memo =
+            Grid.col []
+                [ case form_memo of
+                    NoFormMemo ->
+                        div [] []
+
+                    SuccessfulMemo memo ->
+                        Alert.simpleSuccess [] [ text memo]
+
+                    FailureMemo memo ->
+                        Alert.simpleDanger [] [ text memo]
+
+                    ErrorMemo memo ->
+                        Alert.simpleDanger [] [ text memo]
+                ]
     in
-    Grid.row [ Row.centerMd ]
-        [ Grid.col [ Col.sm11, Col.md8 ]
-            [ Form.form []
-                [ rendered_fields
-                , submit_btn
+    Grid.container []
+        [ Grid.row [ Row.centerMd ]
+            [ Grid.col [ Col.sm11, Col.md8 ]
+                [ Form.form []
+                    [ rendered_fields
+                    , submit_btn
+                    ]
                 ]
             ]
+        , Grid.row [ Row.centerMd ] [ rendered_form_memo ]
         ]

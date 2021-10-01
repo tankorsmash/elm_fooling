@@ -106,7 +106,7 @@ type Msg
     | SetFrameViewMode FrameViewMode
     | GotFrameEditFormUpdate GotFrameEditFormUpdateMsg
     | SubmitFrameEditForm
-    | GotSubmittedFrameEditForm (Result Http.Error (Utils.JsonServerResp String))
+    | GotSubmittedFrameEditForm (Result Http.Error (Utils.JsonServerResp Json.Decode.Value))
     | DoDownloadAllFrames FrameType
       -- | DoDownloadWeaponFrames
     | GotDownloadedAllFrames AllFramesDownloaded
@@ -1291,7 +1291,7 @@ update model msg =
                                 , expect =
                                     custom_expectJson
                                         GotSubmittedFrameEditForm
-                                        Utils.json_server_resp_decoder_string
+                                        Utils.json_server_resp_decoder_value
                                 , body = Http.jsonBody encoded_frame
                                 }
 
@@ -1302,40 +1302,40 @@ update model msg =
 
         GotSubmittedFrameEditForm json_http_result ->
             let
-                ( val, output_msg ) =
+                ( maybe_val, output_msg ) =
                     Debug.log "resp came through" <|
                         case json_http_result of
                             Ok json_server_resp_ ->
                                 case json_server_resp_.success of
                                     True ->
-                                        ( json_server_resp_.data, Noop )
+                                        ( Just json_server_resp_.data, Noop )
 
                                     False ->
-                                        ( "ERROR", ToVisualOutput json_server_resp_.data )
+                                        ( Nothing, ToVisualOutput json_server_resp_.message )
 
                             Err (Http.BadStatus status_code) ->
                                 let
                                     _ =
                                         Debug.log "submit bad status" status_code
                                 in
-                                ( "", ToVisualOutput ("Bad Status: " ++ String.fromInt status_code) )
+                                ( Nothing, ToVisualOutput ("Bad Status: " ++ String.fromInt status_code) )
 
                             Err (Http.BadBody err_str) ->
                                 let
                                     _ =
                                         Debug.log "submit error" err_str
                                 in
-                                ( "", ToVisualOutput ("Body Error:\n" ++ err_str) )
+                                ( Nothing, ToVisualOutput ("Body Error:\n" ++ err_str) )
 
                             Err err ->
                                 let
                                     _ =
                                         Debug.log "submit error" err
                                 in
-                                ( "", ToVisualOutput ("Any Error:\n" ++ Debug.toString err) )
+                                ( Nothing, ToVisualOutput ("Any Error:\n" ++ Debug.toString err) )
 
                 _ =
-                    Debug.log "val" val
+                    Debug.log "maybe_val" maybe_val
             in
             ( model, Cmd.none, output_msg )
 

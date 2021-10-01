@@ -1392,9 +1392,10 @@ homeView model =
                 ]
 
         --elm ui needs exactly one layout to exist with the stylesheet, all others
-        -- need the `noStaticStyleSheet` option set
+        -- need the `noStaticStyleSheet` option set, and force its height to 0
         elm_ui_hack_layout =
-            Element.layout [] <| Element.none
+            div [ Html.Attributes.style "height" "0" ]
+                [ Element.layout [] <| Element.none ]
     in
     div [ add_class "container" ]
         [ elm_ui_hack_layout

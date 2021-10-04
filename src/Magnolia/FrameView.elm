@@ -107,7 +107,8 @@ type Msg
     | SetFrameViewMode FrameViewMode
     | GotFrameEditFormUpdate GotFrameEditFormUpdateMsg
     | SubmitFrameEditForm
-    | GotSubmittedFrameEditForm (Result Http.Error (Utils.JsonServerResp Json.Decode.Value))
+    | GotSubmittedFrameEditForm FrameType (Result Http.Error (Utils.JsonServerResp Json.Decode.Value))
+    | ToggleFormMemo FrameType Alert.Visibility
     | DoDownloadAllFrames FrameType
       -- | DoDownloadWeaponFrames
     | GotDownloadedAllFrames AllFramesDownloaded
@@ -145,6 +146,7 @@ type alias FrameEditData msg =
         FrameData
         -> String -- "frame_id", "id", etc. Zones use data_names pretty sure so this'll get hairy
     , form_memo : FormMemo
+    , form_memo_visibility : Alert.Visibility
     }
 
 
@@ -457,6 +459,8 @@ init hash =
                     , frame_type_str = to_data_name WeaponFrameType
                     , frame_id_getter = frame_id_getter
                     , form_memo = NoFormMemo
+                    , form_memo_visibility = Alert.closed
+
                     -- , form_memo = SuccessfulMemo "YAY!!"
                     -- , form_memo = FailureMemo "Something failed"
                     -- , form_memo = ErrorMemo "SERVER ERROR"
@@ -471,6 +475,7 @@ init hash =
                     , frame_type_str = to_data_name ArmorFrameType
                     , frame_id_getter = frame_id_getter
                     , form_memo = NoFormMemo
+                    , form_memo_visibility = Alert.closed
                     }
                 , zone =
                     { form_definition = ZoneFrameForm <| Magnolia.ZoneFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditZoneFormUpdate)
@@ -482,6 +487,7 @@ init hash =
                     , frame_type_str = to_data_name ZoneFrameType
                     , frame_id_getter = frame_id_getter
                     , form_memo = NoFormMemo
+                    , form_memo_visibility = Alert.closed
                     }
                 , weapon_category =
                     { form_definition = WeaponCategoryFrameForm <| Magnolia.WeaponCategoryFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditWeaponCategoryFormUpdate)
@@ -493,6 +499,7 @@ init hash =
                     , frame_type_str = to_data_name WeaponCategoryFrameType
                     , frame_id_getter = frame_id_getter
                     , form_memo = NoFormMemo
+                    , form_memo_visibility = Alert.closed
                     }
                 , attribute =
                     { form_definition = AttributeFrameForm <| Magnolia.AttributeFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditAttributeFormUpdate)
@@ -504,6 +511,7 @@ init hash =
                     , frame_type_str = to_data_name AttributeFrameType
                     , frame_id_getter = frame_id_getter
                     , form_memo = NoFormMemo
+                    , form_memo_visibility = Alert.closed
                     }
                 , battle_text_struct =
                     { form_definition = BattleTextStructFrameForm <| Magnolia.BattleTextStructFrame.edit_form_definition (GotFrameEditFormUpdate << GotEditBattleTextStructFormUpdate)
@@ -515,6 +523,7 @@ init hash =
                     , frame_type_str = to_data_name BattleTextStructFrameType
                     , frame_id_getter = frame_id_getter
                     , form_memo = NoFormMemo
+                    , form_memo_visibility = Alert.closed
                     }
                 }
             , active_tab = initial_active_tab
@@ -930,6 +939,28 @@ update_fed_battle_text_struct feds new_fed =
     { feds | battle_text_struct = new_fed }
 
 
+update_fed_by_frame_type : FrameEditDatas -> FrameEditData Msg -> FrameType -> FrameEditDatas
+update_fed_by_frame_type feds new_fed frame_type =
+    case frame_type of
+        WeaponFrameType ->
+            { feds | weapon = new_fed }
+
+        ArmorFrameType ->
+            { feds | armor = new_fed }
+
+        ZoneFrameType ->
+            { feds | zone = new_fed }
+
+        WeaponCategoryFrameType ->
+            { feds | weapon_category = new_fed }
+
+        AttributeFrameType ->
+            { feds | attribute = new_fed }
+
+        BattleTextStructFrameType ->
+            { feds | battle_text_struct = new_fed }
+
+
 update_table_row_clicked_frame_type :
     Model
     -> FrameData
@@ -1310,7 +1341,7 @@ update model msg =
                                 -- , expect = Http.expectString GotSubmittedFrameEditForm
                                 , expect =
                                     custom_expectJson
-                                        GotSubmittedFrameEditForm
+                                        (GotSubmittedFrameEditForm active_frame_type)
                                         Utils.json_server_resp_decoder_value
                                 , body = Http.jsonBody encoded_frame
                                 }
@@ -1320,15 +1351,15 @@ update model msg =
             in
             ( model, cmd, Noop )
 
-        GotSubmittedFrameEditForm json_http_result ->
+        GotSubmittedFrameEditForm active_frame_type json_http_result ->
             let
-                ( maybe_val, output_msg ) =
+                ( maybe_json_value, output_msg ) =
                     Debug.log "resp came through" <|
                         case json_http_result of
                             Ok json_server_resp_ ->
                                 case json_server_resp_.success of
                                     True ->
-                                        ( Just json_server_resp_.data, Noop )
+                                        ( Just ( json_server_resp_.success, json_server_resp_.message, json_server_resp_.data ), Noop )
 
                                     False ->
                                         ( Nothing, ToVisualOutput json_server_resp_.message )
@@ -1355,9 +1386,52 @@ update model msg =
                                 ( Nothing, ToVisualOutput ("Any Error:\n" ++ Debug.toString err) )
 
                 _ =
-                    Debug.log "maybe_val" maybe_val
+                    Debug.log "maybe_json_value" maybe_json_value
+
+                new_memo =
+                    case maybe_json_value of
+                        Nothing ->
+                            ErrorMemo "Failed"
+
+                        Just ( success, message, json_value ) ->
+                            case success of
+                                True ->
+                                    SuccessfulMemo message
+
+                                False ->
+                                    FailureMemo message
+
+                feds =
+                    model.frame_edit_datas
+
+                fed =
+                    get_fed_by_frame_type feds active_frame_type
+
+                new_fed =
+                    { fed | form_memo = new_memo, form_memo_visibility = Alert.shown }
+
+                new_feds =
+                    update_fed_by_frame_type feds new_fed active_frame_type
+
+                -- new_feds =
             in
-            ( model, Cmd.none, output_msg )
+            ( { model | frame_edit_datas = new_feds }, Cmd.none, output_msg )
+
+        ToggleFormMemo frame_type alert_visibility ->
+            let
+                feds =
+                    model.frame_edit_datas
+
+                fed =
+                    get_fed_by_frame_type feds frame_type
+
+                new_fed =
+                    { fed | form_memo_visibility = alert_visibility }
+
+                new_feds =
+                    update_fed_by_frame_type feds new_fed frame_type
+            in
+            ( { model | frame_edit_datas = new_feds }, Cmd.none, Noop )
 
         -- DoDownloadWeaponFrames ->
         DoDownloadAllFrames frame_type ->
@@ -1769,10 +1843,10 @@ frame_matches all_frames frame =
 form_data_view : FrameEditData Msg -> Html Msg
 form_data_view frame_edit_data =
     let
-        { form_memo } =
+        { form_memo, frame_type } =
             frame_edit_data
     in
-    case frame_edit_data.frame_type of
+    case frame_type of
         WeaponFrameType ->
             let
                 maybe_frame_data : Maybe WeaponFrame
@@ -1803,6 +1877,7 @@ form_data_view frame_edit_data =
                 maybe_all_weapon_frames
                 (frame_matches_from_fed_frame_data_frame_id frame_edit_data)
                 form_memo
+                frame_edit_data
 
         ArmorFrameType ->
             let
@@ -1834,6 +1909,7 @@ form_data_view frame_edit_data =
                 maybe_all_armor_frames
                 (frame_matches_from_fed_frame_data_frame_id frame_edit_data)
                 form_memo
+                frame_edit_data
 
         ZoneFrameType ->
             let
@@ -1865,6 +1941,7 @@ form_data_view frame_edit_data =
                 maybe_all_zone_frames
                 (frame_matches_from_fed_frame_data_frame_id frame_edit_data)
                 form_memo
+                frame_edit_data
 
         WeaponCategoryFrameType ->
             let
@@ -1896,6 +1973,7 @@ form_data_view frame_edit_data =
                 maybe_all_weapon_category_frames
                 (frame_matches_from_fed_frame_data_frame_id frame_edit_data)
                 form_memo
+                frame_edit_data
 
         AttributeFrameType ->
             let
@@ -1927,6 +2005,7 @@ form_data_view frame_edit_data =
                 maybe_all_attribute_frames
                 (frame_matches_from_fed_frame_data_frame_id frame_edit_data)
                 form_memo
+                frame_edit_data
 
         BattleTextStructFrameType ->
             let
@@ -1958,6 +2037,7 @@ form_data_view frame_edit_data =
                 maybe_all_battle_text_struct_frames
                 (frame_matches_from_fed_frame_data_frame_id frame_edit_data)
                 form_memo
+                frame_edit_data
 
 
 inner_form_data_view :
@@ -1966,8 +2046,9 @@ inner_form_data_view :
     -> List (Maybe fd)
     -> Bool
     -> FormMemo
+    -> FrameEditData Msg
     -> Html Msg
-inner_form_data_view maybe_frame_data maybe_form_definition all_frames frame_id_matches form_memo =
+inner_form_data_view maybe_frame_data maybe_form_definition all_frames frame_id_matches form_memo fed =
     let
         fields : List (FormData.FormField fd Msg)
         fields =
@@ -1998,7 +2079,15 @@ inner_form_data_view maybe_frame_data maybe_form_definition all_frames frame_id_
                             "Create"
                 ]
 
-        rendered_form_memo : Grid.Column msg
+        alert_body alert_type alert_text is_open =
+            Alert.config
+                |> alert_type
+                |> Alert.dismissable (ToggleFormMemo fed.frame_type)
+                |> Alert.children
+                    [ text alert_text ]
+                |> Alert.view is_open
+
+        rendered_form_memo : Grid.Column Msg
         rendered_form_memo =
             Grid.col []
                 [ case form_memo of
@@ -2006,13 +2095,29 @@ inner_form_data_view maybe_frame_data maybe_form_definition all_frames frame_id_
                         div [] []
 
                     SuccessfulMemo memo ->
-                        Alert.simpleSuccess [] [ text memo]
+                        alert_body Alert.success memo fed.form_memo_visibility
 
                     FailureMemo memo ->
-                        Alert.simpleDanger [] [ text memo]
+                        alert_body Alert.danger memo fed.form_memo_visibility
 
                     ErrorMemo memo ->
-                        Alert.simpleDanger [] [ text memo]
+                        alert_body Alert.danger memo fed.form_memo_visibility
+                ]
+
+        memo_show_hidden =
+            Grid.col [ Col.md1 ]
+                [ case form_memo of
+                    NoFormMemo ->
+                        div [] []
+
+                    _ ->
+                        if fed.form_memo_visibility == Alert.closed then
+                            button_primary
+                                (ToggleFormMemo fed.frame_type Alert.shown)
+                                "Show"
+
+                        else
+                            div [] []
                 ]
     in
     Grid.container []
@@ -2024,5 +2129,8 @@ inner_form_data_view maybe_frame_data maybe_form_definition all_frames frame_id_
                     ]
                 ]
             ]
-        , Grid.row [ Row.centerMd ] [ rendered_form_memo ]
+        , Grid.row [ Row.centerMd ]
+            [ rendered_form_memo
+            , memo_show_hidden
+            ]
         ]

@@ -289,7 +289,7 @@ type Page
 
 
 type Route
-    = Home (Maybe String)
+    = TabRoute TabType (Maybe String)
     | NotFound
     | Profile
       -- | Topic String
@@ -303,7 +303,12 @@ parseUrl : Url.Url -> Route
 parseUrl url =
     case parse matchRoute url of
         Just route ->
-            route
+            case route of
+                TabRoute tab_type hash ->
+                    TabRoute tab_type hash
+
+                _ ->
+                    NotFound
 
         Nothing ->
             NotFound
@@ -312,13 +317,15 @@ parseUrl url =
 matchRoute : Parser (Route -> a) a
 matchRoute =
     oneOf
-        [ map Home (s "home" </> fragment identity)
-        , map Profile (s "profile")
-
-        -- , map Topic   (s "topic" </> string)
-        -- , map Blog    (s "blog" </> int)
-        -- , map User    (s "user" </> string)
-        -- , map Comment (s "user" </> string </> s "comment" </> int)
+        [ map (TabRoute HomeTab ) (s "home" </> fragment identity)
+        , map (TabRoute SinglePostDataTab) (s "single_post_data_tab" </> fragment identity)
+        , map (TabRoute PostDataTableTab) (s "post_data_table_tab" </> fragment identity)
+        , map (TabRoute RedditListingTab) (s "reddit_listing_tab" </> fragment identity)
+        , map (TabRoute WeatherTab) (s "weather_tab" </> fragment identity)
+        , map (TabRoute FrameViewTab) (s "frame_view_tab" </> fragment identity)
+        , map (TabRoute ModalTab) (s "modal_tab" </> fragment identity)
+        , map (TabRoute OpenDotaTab) (s "open_dota_tab" </> fragment identity)
+        , map (TabRoute ElmUIPlaygroundTab) (s "elm_ui_playground_tab" </> fragment identity)
         ]
 
 
@@ -354,6 +361,7 @@ post_to_test_post =
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init _ url navKey =
     let
+        parsedRoute : Route
         parsedRoute =
             parseUrl url
 
@@ -397,7 +405,7 @@ init _ url navKey =
 
         fragment =
             case parsedRoute of
-                Home (Just hash) ->
+                TabRoute tab_type (Just hash) ->
                     hash
 
                 _ ->
@@ -463,7 +471,7 @@ initCurrentPage ( model, existingCmds ) =
     let
         ( currentPage, mappedPageCmds ) =
             case model.page_info.route of
-                Home fragment ->
+                TabRoute tab_type fragment ->
                     ( HomePage, Cmd.none )
 
                 Profile ->
@@ -561,13 +569,16 @@ update msg model =
                 page_info =
                     model.page_info
 
+                newRoute : Route
                 newRoute =
                     parseUrl url
 
                 fragment =
                     case newRoute of
-                        Home (Just hash) ->
-                            Debug.log "filled hash on UrlChanged" hash
+                        -- Home (Just hash) ->
+                        TabRoute tab_type (Just hash) ->
+                            -- Debug.log "url changed" hash
+                            Debug.log "url changed" hash
 
                         _ ->
                             Debug.log "empty hash on UrlChanged" ""

@@ -317,7 +317,7 @@ parseUrl url =
 matchRoute : Parser (Route -> a) a
 matchRoute =
     oneOf
-        [ map (TabRoute HomeTab ) (s "home" </> fragment identity)
+        [ map (TabRoute HomeTab) (s "home" </> fragment identity)
         , map (TabRoute SinglePostDataTab) (s "single_post_data_tab" </> fragment identity)
         , map (TabRoute PostDataTableTab) (s "post_data_table_tab" </> fragment identity)
         , map (TabRoute RedditListingTab) (s "reddit_listing_tab" </> fragment identity)
@@ -363,7 +363,7 @@ init _ url navKey =
     let
         parsedRoute : Route
         parsedRoute =
-            parseUrl url
+            Debug.log "parsedURL in init" <| parseUrl url
 
         page_info =
             UrlPageInfo navKey url parsedRoute UnsetPage
@@ -396,7 +396,12 @@ init _ url navKey =
             Table.new_page_info (GotPageMsg DotaHeroStatsTable)
 
         initial_tab =
-            FrameViewTab
+            case parsedRoute of
+                TabRoute tab_type hash ->
+                    tab_type
+
+                _ ->
+                    FrameViewTab
 
         -- ElmUIPlaygroundTab
         dota_model : DotaModel
@@ -571,7 +576,7 @@ update msg model =
 
                 newRoute : Route
                 newRoute =
-                    parseUrl url
+                    Debug.log "parsed Route" <| parseUrl url
 
                 fragment =
                     case newRoute of

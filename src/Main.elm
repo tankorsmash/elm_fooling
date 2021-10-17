@@ -1117,17 +1117,17 @@ listing_view model =
 navbar : Model -> Html Msg
 navbar model =
     let
-        nav_items : List ( TabType, String )
+        nav_items : List ( TabType, String, String )
         nav_items =
-            [ ( HomeTab, "Home" )
-            , ( PostDataTableTab, "PostData Table" )
-            , ( RedditListingTab, "Reddit Submissions Table" )
-            , ( SinglePostDataTab, "Single PostData" )
-            , ( WeatherTab, "Weather" )
-            , ( FrameViewTab, "Frame View" )
-            , ( ModalTab, "Modal Example" )
-            , ( OpenDotaTab, "OpenDota" )
-            , ( ElmUIPlaygroundTab, "ElmUI Playground" )
+            [ ( HomeTab, "Home", "home" )
+            , ( PostDataTableTab, "PostData Table", "post_data_table_tab" )
+            , ( RedditListingTab, "Reddit Submissions Table", "reddit_listing_tab" )
+            , ( SinglePostDataTab, "Single PostData", "single_post_data_tab" )
+            , ( WeatherTab, "Weather", "weather_tab" )
+            , ( FrameViewTab, "Frame View", "frame_view_tab" )
+            , ( ModalTab, "Modal Example", "modal_tab" )
+            , ( OpenDotaTab, "OpenDota", "open_dota_tab" )
+            , ( ElmUIPlaygroundTab, "ElmUI Playground", "elm_ui_playground_tab" )
             ]
     in
     Navbar.config NavbarMsg
@@ -1135,7 +1135,7 @@ navbar model =
         |> Navbar.brand [ href "#" ] [ text "Home Page" ]
         |> Navbar.customItems
             (List.map
-                (\( tab_type, txt ) ->
+                (\( tab_type, txt, url ) ->
                     Navbar.textItem
                         [ onClick (ChangeTab tab_type)
                         , let
@@ -1149,8 +1149,9 @@ navbar model =
                           style rule val
                         , style "margin-left" "10px"
                         , style "cursor" "pointer"
+                        , href url
                         ]
-                        [ text txt ]
+                        [ a [ href url ] [ text txt ] ]
                 )
                 nav_items
             )

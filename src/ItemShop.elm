@@ -79,14 +79,12 @@ view : Model -> Html.Html Msg
 view model =
     let
         welcome_header =
-            Element.el [ Font.size <| scaled 3 ] <| text "Welcome to the Item Shop!"
+            Element.el [ font_scaled 3 ] <| text "Welcome to the Item Shop!"
 
         items_for_sale =
-            Element.column []
-                [ Element.el [ Font.size <| scaled 2 ] <| text "Items for sale:"
-                , Element.row [] <|
-                    List.map render_single_item_for_sale model.items_for_sale
-                ]
+            Element.column [] <|
+                [ Element.el [] <| text "Items for sale:" ]
+                    ++ List.map render_single_item_for_sale model.items_for_sale
     in
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
         Element.column []
@@ -98,3 +96,8 @@ view model =
 scaled : Int -> Int
 scaled val =
     modular 16 1.25 val |> round
+
+
+font_scaled : Int -> Element.Attribute msg
+font_scaled scale =
+    Font.size <| scaled scale

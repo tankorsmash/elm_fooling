@@ -50,6 +50,7 @@ import Html
 import Html.Attributes exposing (attribute, classList, href, property, src, style, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Http
+import ItemShop
 import Json.Decode exposing (Decoder, at, field, list, string)
 import Json.Encode exposing (string)
 import List
@@ -156,6 +157,7 @@ type Msg
     | GotElmUIPlaygroundMsg ElmUIPlayground.Msg
     | TableRowClicked
     | GotVisualOutputMsg VisualOutput.Msg
+    | GotItemShopMsg ItemShop.Msg
 
 
 
@@ -244,6 +246,7 @@ type TabType
     | ModalTab
     | OpenDotaTab
     | ElmUIPlaygroundTab
+    | ItemShop
 
 
 type alias Model =
@@ -278,6 +281,7 @@ type alias Model =
     , dota_hero_stats_page_info : Table.PageInfo Msg
     , elm_ui_playground_model : ElmUIPlayground.Model
     , visual_output_model : VisualOutput.Model
+    , item_shop_model : ItemShop.Model
     }
 
 
@@ -451,6 +455,7 @@ init _ url navKey =
             , frame_view_model = frame_view_model
             , elm_ui_playground_model = ElmUIPlayground.init
             , visual_output_model = VisualOutput.init
+            , item_shop_model = ItemShop.init
             }
 
         existingCmds : Cmd Msg
@@ -891,6 +896,17 @@ update msg model =
             in
             ( { model | visual_output_model = sub_model }
             , Cmd.map GotVisualOutputMsg sub_cmd
+            )
+
+        GotItemShopMsg item_shop_msg ->
+            let
+                ( sub_model, sub_cmd ) =
+                    ItemShop.update item_shop_msg model.item_shop_model
+            in
+            ( { model
+                | item_shop_model = sub_model
+              }
+            , Cmd.map GotItemShopMsg sub_cmd
             )
 
 
@@ -1398,6 +1414,10 @@ homeView model =
                 ElmUIPlaygroundTab ->
                     Html.map GotElmUIPlaygroundMsg <|
                         ElmUIPlayground.view model.elm_ui_playground_model
+
+                ItemShop ->
+                    Html.map GotItemShopMsg <|
+                        ItemShop.view model.item_shop_model
 
         bootstrap_stylesheet =
             CDN.stylesheet

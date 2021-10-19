@@ -23,6 +23,7 @@ clojure_json_server_url =
 type alias JsonHttpResult a =
     Result Http.Error (JsonServerResp a)
 
+
 type alias JsonHttpResultString =
     Result Http.Error (JsonServerResp String)
 
@@ -41,12 +42,14 @@ json_server_resp_decoder_value =
         (Decode.field "message" Decode.string)
         (Decode.field "data" Decode.value)
 
+
 json_server_resp_decoder_string : Decode.Decoder (JsonServerResp String)
 json_server_resp_decoder_string =
     Decode.map3 JsonServerResp
         (Decode.field "success" Decode.bool)
         (Decode.field "message" Decode.string)
         (Decode.field "data" Decode.string)
+
 
 json_server_resp_decoder : Decode.Decoder a -> Decode.Decoder (JsonServerResp a)
 json_server_resp_decoder data_decoder =

@@ -19,9 +19,9 @@ import FormData
         , update_int_field
         )
 import Http
-import Json.Encode as Encode
 import Json.Decode as Decode exposing (Decoder, andThen, field, int, list, string, succeed)
 import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
+import Json.Encode as Encode
 import Utils exposing (clojure_json_server_url, root_json_server_url)
 
 
@@ -115,6 +115,7 @@ decode_armor_frame =
 decode_armor_frames : Decoder (List ArmorFrame)
 decode_armor_frames =
     list decode_armor_frame
+
 
 encode_armor_frame : ArmorFrame -> Encode.Value
 encode_armor_frame frame_data =

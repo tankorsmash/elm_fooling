@@ -246,7 +246,7 @@ type TabType
     | ModalTab
     | OpenDotaTab
     | ElmUIPlaygroundTab
-    | ItemShop
+    | ItemShopTab
 
 
 type alias Model =
@@ -330,6 +330,7 @@ matchRoute =
         , map (TabRoute ModalTab) (s "modal_tab" </> fragment identity)
         , map (TabRoute OpenDotaTab) (s "open_dota_tab" </> fragment identity)
         , map (TabRoute ElmUIPlaygroundTab) (s "elm_ui_playground_tab" </> fragment identity)
+        , map (TabRoute ItemShopTab) (s "item_shop_tab" </> fragment identity)
         ]
 
 
@@ -1144,6 +1145,7 @@ navbar model =
             , ( ModalTab, "Modal Example", "modal_tab" )
             , ( OpenDotaTab, "OpenDota", "open_dota_tab" )
             , ( ElmUIPlaygroundTab, "ElmUI Playground", "elm_ui_playground_tab" )
+            , ( ItemShopTab, "Item Shop", "item_shop_tab" )
             ]
     in
     Navbar.config NavbarMsg
@@ -1415,7 +1417,7 @@ homeView model =
                     Html.map GotElmUIPlaygroundMsg <|
                         ElmUIPlayground.view model.elm_ui_playground_model
 
-                ItemShop ->
+                ItemShopTab ->
                     Html.map GotItemShopMsg <|
                         ItemShop.view model.item_shop_model
 

@@ -35,8 +35,17 @@ import Element.Input as Input
 import Html
 
 
+type ItemType
+    = Weapon
+    | Armor
+    | Spellbook
+    | Furniture
+    | Food
+
+
 type alias Item =
     { name : String
+    , item_type : ItemType
     }
 
 
@@ -52,9 +61,10 @@ type alias Model =
 
 initial_items_for_sale : List Item
 initial_items_for_sale =
-    [ { name = "Boots" }
-    , { name = "Sword" }
-    , { name = "Dagger" }
+    [ { name = "Boots", item_type = Armor }
+    , { name = "Sword", item_type = Weapon }
+    , { name = "Dagger", item_type = Weapon }
+    , { name = "Book of the Dead", item_type = Spellbook }
     ]
 
 
@@ -72,7 +82,7 @@ update msg model =
 
 render_single_item_for_sale : Item -> Element.Element Msg
 render_single_item_for_sale item =
-    Element.row [] [ text item.name ]
+    Element.row [ font_scaled 1 ] [ text item.name ]
 
 
 view : Model -> Html.Html Msg

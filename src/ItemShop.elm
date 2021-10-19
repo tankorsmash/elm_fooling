@@ -45,23 +45,56 @@ type Msg
 
 
 type alias Model =
-    { items : List Item
+    { owned_items : List Item
+    , items_for_sale : List Item
     }
+
+
+initial_items_for_sale : List Item
+initial_items_for_sale =
+    [ { name = "Boots" }
+    , { name = "Sword" }
+    , { name = "Dagger" }
+    ]
 
 
 init : Model
 init =
-    { items = [] }
+    { owned_items = [], items_for_sale = initial_items_for_sale }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         BootShop ->
-            ( { items = [] }, Cmd.none )
+            ( model, Cmd.none )
+
+
+render_single_item_for_sale : Item -> Element.Element Msg
+render_single_item_for_sale item =
+    Element.row [] [ text item.name ]
 
 
 view : Model -> Html.Html Msg
 view model =
+    let
+        welcome_header =
+            Element.el [ Font.size <| scaled 3 ] <| text "Welcome to the Item Shop!"
+
+        items_for_sale =
+            Element.column []
+                [ Element.el [ Font.size <| scaled 2 ] <| text "Items for sale:"
+                , Element.row [] <|
+                    List.map render_single_item_for_sale model.items_for_sale
+                ]
+    in
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
-        Element.row [] []
+        Element.column []
+            [ welcome_header
+            , items_for_sale
+            ]
+
+
+scaled : Int -> Int
+scaled val =
+    modular 16 1.25 val |> round

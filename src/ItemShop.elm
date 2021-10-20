@@ -123,6 +123,8 @@ clipText str length =
     else
         str
 
+font_grey : Element.Attribute msg
+font_grey = Font.color <| rgb 0.35 0.35 0.35
 
 render_single_item_for_sale : Maybe Item -> ( Item, Int ) -> Element.Element Msg
 render_single_item_for_sale maybe_hovered_item ( item, qty ) =
@@ -165,7 +167,12 @@ render_single_item_for_sale maybe_hovered_item ( item, qty ) =
         , Element.below expanded_display
         ]
         [ column [ portion 2, font_scaled 2 ] [ text <| item.name ]
-        , column [ portion 1 ] [ text <| String.fromInt item.gold_cost ++ "gp" ]
+        , column [ portion 1 ]
+            [ paragraph []
+                [ text <| String.fromInt item.gold_cost
+                , Element.el [ Font.size 12, font_grey ] (text "gp")
+                ]
+            ]
         , column [ portion 2 ] [ render_item_type item.item_type ]
         , column [ portion 1 ]
             [ if qty == 1 then

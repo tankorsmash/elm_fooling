@@ -47,6 +47,7 @@ type alias Item =
     { name : String
     , item_type : ItemType
     , gold_cost : Int
+    , description : String
     }
 
 
@@ -62,10 +63,10 @@ type alias Model =
 
 initial_items_for_sale : List ( Item, Int )
 initial_items_for_sale =
-    [ ( { name = "Boots", item_type = Armor, gold_cost = 5 }, 3 )
-    , ( { name = "Sword", item_type = Weapon, gold_cost = 15 }, 5 )
-    , ( { name = "Dagger", item_type = Weapon, gold_cost = 10 }, 4 )
-    , ( { name = "Book of the Dead", item_type = Spellbook, gold_cost = 20 }, 1 )
+    [ ( { name = "Boots", item_type = Armor, gold_cost = 5, description = "An old pair of boots" }, 3 )
+    , ( { name = "Sword", item_type = Weapon, gold_cost = 15, description = "A rusted sword" }, 5 )
+    , ( { name = "Dagger", item_type = Weapon, gold_cost = 10, description = "A small weapon that fits in your pocket" }, 4 )
+    , ( { name = "Book of the Dead", item_type = Spellbook, gold_cost = 20, description = "Bound in leather, this book has a skull for a cover" }, 1 )
     ]
 
 
@@ -107,17 +108,18 @@ render_item_type item_type =
 
 render_single_item_for_sale : ( Item, Int ) -> Element.Element Msg
 render_single_item_for_sale ( item, qty ) =
-    Element.row [ font_scaled 1, width fill ]
-        [ Element.column [ portion 2, font_scaled 2 ] [ text <| item.name ]
-        , Element.column [ portion 1 ] [ text <| String.fromInt item.gold_cost ++ "gp" ]
-        , Element.column [ portion 2 ] [ render_item_type item.item_type ]
-        , Element.column [ portion 1 ]
+    row [ font_scaled 1, width fill ]
+        [ column [ portion 2, font_scaled 2 ] [ text <| item.name ]
+        , column [ portion 1 ] [ text <| String.fromInt item.gold_cost ++ "gp" ]
+        , column [ portion 2 ] [ render_item_type item.item_type ]
+        , column [ portion 1 ]
             [ if qty == 1 then
-                text ""
+                text " "
 
               else
                 text <| "x" ++ String.fromInt qty
             ]
+        , column [ width <| (fillPortion 3 |> Element.maximum 250) ] [ text item.description ]
         ]
 
 

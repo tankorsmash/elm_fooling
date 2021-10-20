@@ -56,16 +56,16 @@ type Msg
 
 type alias Model =
     { owned_items : List Item
-    , items_for_sale : List Item
+    , items_for_sale : List ( Item, Int )
     }
 
 
-initial_items_for_sale : List Item
+initial_items_for_sale : List ( Item, Int )
 initial_items_for_sale =
-    [ { name = "Boots", item_type = Armor, gold_cost = 5 }
-    , { name = "Sword", item_type = Weapon, gold_cost = 15 }
-    , { name = "Dagger", item_type = Weapon, gold_cost = 10 }
-    , { name = "Book of the Dead", item_type = Spellbook, gold_cost = 20 }
+    [ ( { name = "Boots", item_type = Armor, gold_cost = 5 }, 3 )
+    , ( { name = "Sword", item_type = Weapon, gold_cost = 15 }, 5 )
+    , ( { name = "Dagger", item_type = Weapon, gold_cost = 10 }, 4 )
+    , ( { name = "Book of the Dead", item_type = Spellbook, gold_cost = 20 }, 1 )
     ]
 
 
@@ -105,12 +105,19 @@ render_item_type item_type =
     text <| item_type_to_pretty_string item_type
 
 
-render_single_item_for_sale : Item -> Element.Element Msg
-render_single_item_for_sale item =
+render_single_item_for_sale : ( Item, Int ) -> Element.Element Msg
+render_single_item_for_sale ( item, qty ) =
     Element.row [ font_scaled 1, width fill ]
-        [ Element.column [ width fill, font_scaled 2 ] [ text <| item.name ]
-        , Element.column [ width fill ] [ text <| String.fromInt item.gold_cost ++ "gp" ]
-        , Element.column [ width fill ] [ render_item_type item.item_type ]
+        [ Element.column [ width <| fillPortion 2, font_scaled 2 ] [ text <| item.name ]
+        , Element.column [ width <| fillPortion 1 ] [ text <| String.fromInt item.gold_cost ++ "gp" ]
+        , Element.column [ width <| fillPortion 2 ] [ render_item_type item.item_type ]
+        , Element.column [ width <| fillPortion 1 ]
+            [ if qty == 1 then
+                text ""
+
+              else
+                text <| "x" ++ String.fromInt qty
+            ]
         ]
 
 

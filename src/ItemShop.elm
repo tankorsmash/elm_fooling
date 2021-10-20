@@ -51,16 +51,22 @@ type alias Item =
     }
 
 
+type ListContext
+    = ShopItems
+    | InventoryItems
+
+
 type Msg
     = BootShop
-    | MouseEnterShopItem Item
-    | MouseLeaveShopItem Item
+    | MouseEnterShopItem ListContext Item
+    | MouseLeaveShopItem ListContext Item
 
 
 type alias Model =
-    { owned_items : List Item
+    { owned_items : List ( Item, Int )
     , items_for_sale : List ( Item, Int )
     , hovered_item_for_sale : Maybe Item
+    , hovered_item_in_inventory : Maybe Item
     }
 
 
@@ -70,6 +76,12 @@ initial_items_for_sale =
     , ( { name = "Sword", item_type = Weapon, gold_cost = 15, description = "A rusted sword" }, 5 )
     , ( { name = "Dagger", item_type = Weapon, gold_cost = 10, description = "A small weapon that fits in your pocket" }, 4 )
     , ( { name = "Book of the Dead", item_type = Spellbook, gold_cost = 20, description = "Bound in leather, this book has a skull for a cover" }, 1 )
+    ]
+
+
+initial_owned_items : List ( Item, Int )
+initial_owned_items =
+    [ ( { name = "Boots", item_type = Armor, gold_cost = 5, description = "An old pair of boots" }, 1 )
     ]
 
 
@@ -94,7 +106,11 @@ item_type_to_pretty_string item_type =
 
 init : Model
 init =
-    { owned_items = [], items_for_sale = initial_items_for_sale, hovered_item_for_sale = Nothing }
+    { owned_items = initial_owned_items
+    , items_for_sale = initial_items_for_sale
+    , hovered_item_for_sale = Nothing
+    , hovered_item_in_inventory = Nothing
+    }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -103,11 +119,21 @@ update msg model =
         BootShop ->
             ( model, Cmd.none )
 
-        MouseEnterShopItem item ->
-            ( { model | hovered_item_for_sale = Just item }, Cmd.none )
+        MouseEnterShopItem context item ->
+            case context of
+                ShopItems ->
+                    ( { model | hovered_item_for_sale = Just item }, Cmd.none )
 
-        MouseLeaveShopItem item ->
-            ( { model | hovered_item_for_sale = Nothing }, Cmd.none )
+                InventoryItems ->
+                    ( { model | hovered_item_in_inventory = Just item }, Cmd.none )
+
+        MouseLeaveShopItem context item ->
+            case context of
+                ShopItems ->
+                    ( { model | hovered_item_for_sale = Nothing }, Cmd.none )
+
+                InventoryItems ->
+                    ( { model | hovered_item_in_inventory = Nothing }, Cmd.none )
 
 
 render_item_type : ItemType -> Element.Element Msg
@@ -129,8 +155,8 @@ font_grey =
     Font.color <| rgb 0.35 0.35 0.35
 
 
-render_single_item_for_sale : Maybe Item -> ( Item, Int ) -> Element.Element Msg
-render_single_item_for_sale maybe_hovered_item ( item, qty ) =
+render_single_item_for_sale : Maybe Item -> ( Item, Int ) -> ListContext -> Element.Element Msg
+render_single_item_for_sale maybe_hovered_item ( item, qty ) context =
     let
         is_hovered_item =
             case maybe_hovered_item of
@@ -166,8 +192,8 @@ render_single_item_for_sale maybe_hovered_item ( item, qty ) =
     row
         [ font_scaled 1
         , width fill
-        , Events.onMouseEnter <| MouseEnterShopItem item
-        , Events.onMouseLeave <| MouseLeaveShopItem item
+        , Events.onMouseEnter <| MouseEnterShopItem context item
+        , Events.onMouseLeave <| MouseLeaveShopItem context item
         , Element.below expanded_display
         ]
         [ column [ portion 2, font_scaled 2 ] [ text <| item.name ]
@@ -212,13 +238,31 @@ view model =
             Element.column [ width fill ] <|
                 [ Element.el [] <| text "Items for sale:" ]
                     ++ List.map
-                        (\item -> render_single_item_for_sale model.hovered_item_for_sale item)
+                        (\item ->
+                            render_single_item_for_sale
+                                model.hovered_item_for_sale
+                                item
+                                ShopItems
+                        )
                         model.items_for_sale
+
+        items_in_inventory =
+            Element.column [ width fill ] <|
+                [ Element.el [] <| text "Items in my inventory:" ]
+                    ++ List.map
+                        (\item ->
+                            render_single_item_for_sale
+                                model.hovered_item_in_inventory
+                                item
+                                InventoryItems
+                        )
+                        model.owned_items
     in
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
         Element.column [ width fill ]
             [ welcome_header
             , items_for_sale
+            , Element.el [ paddingXY 0 10, width fill ] items_in_inventory
             ]
 
 

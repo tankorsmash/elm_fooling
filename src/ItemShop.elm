@@ -106,6 +106,15 @@ render_item_type item_type =
     text <| item_type_to_pretty_string item_type
 
 
+clipText : String -> Int -> String
+clipText str length =
+    if String.length str > length then
+        String.left length str ++ "..."
+
+    else
+        str
+
+
 render_single_item_for_sale : ( Item, Int ) -> Element.Element Msg
 render_single_item_for_sale ( item, qty ) =
     row [ font_scaled 1, width fill ]
@@ -119,7 +128,10 @@ render_single_item_for_sale ( item, qty ) =
               else
                 text <| "x" ++ String.fromInt qty
             ]
-        , column [ width <| (fillPortion 3 |> Element.maximum 250) ] [ text item.description ]
+        , column
+            [ width <| (fillPortion 3 |> Element.maximum 300)
+            ]
+            [ text <| clipText item.description 40 ]
         ]
 
 

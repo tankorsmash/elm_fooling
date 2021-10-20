@@ -100,19 +100,17 @@ update msg model =
             ( model, Cmd.none )
 
 
-render_item_type : ItemType -> Element.Element msg
+render_item_type : ItemType -> Element.Element Msg
 render_item_type item_type =
     text <| item_type_to_pretty_string item_type
 
 
 render_single_item_for_sale : Item -> Element.Element Msg
 render_single_item_for_sale item =
-    Element.row [ font_scaled 1 ]
-        [ text item.name
-        , text ": "
-        , text <| String.fromInt item.gold_cost
-        , text "gp -- "
-        , render_item_type item.item_type
+    Element.row [ font_scaled 1, width fill ]
+        [ Element.column [ width fill, font_scaled 2 ] [ text <| item.name ]
+        , Element.column [ width fill ] [ text <| String.fromInt item.gold_cost ++ "gp" ]
+        , Element.column [ width fill ] [ render_item_type item.item_type ]
         ]
 
 
@@ -128,12 +126,12 @@ view model =
             Element.el [ font_scaled 3, padding_bottom 5 ] <| text "Welcome to the Item Shop!"
 
         items_for_sale =
-            Element.column [] <|
+            Element.column [ width fill ] <|
                 [ Element.el [] <| text "Items for sale:" ]
                     ++ List.map render_single_item_for_sale model.items_for_sale
     in
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
-        Element.column []
+        Element.column [ width fill ]
             [ welcome_header
             , items_for_sale
             ]

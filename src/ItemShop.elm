@@ -123,8 +123,11 @@ clipText str length =
     else
         str
 
+
 font_grey : Element.Attribute msg
-font_grey = Font.color <| rgb 0.35 0.35 0.35
+font_grey =
+    Font.color <| rgb 0.35 0.35 0.35
+
 
 render_single_item_for_sale : Maybe Item -> ( Item, Int ) -> Element.Element Msg
 render_single_item_for_sale maybe_hovered_item ( item, qty ) =
@@ -144,7 +147,8 @@ render_single_item_for_sale maybe_hovered_item ( item, qty ) =
                     Element.el
                         [ width fill
                         , Background.color <| rgb 1 1 1
-                        , Border.color <| rgb 1 0 1
+                        , Border.color <| rgb 0.35 0.35 0.35
+                        , Border.rounded 3
                         , Border.width 2
                         , padding 10
                         , Element.moveDown 20

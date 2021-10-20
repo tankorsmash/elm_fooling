@@ -53,11 +53,14 @@ type alias Item =
 
 type Msg
     = BootShop
+    | MouseEnterShopItem Item
+    | MouseLeaveShopItem Item
 
 
 type alias Model =
     { owned_items : List Item
     , items_for_sale : List ( Item, Int )
+    , hovered_item_for_sale : Maybe Item
     }
 
 
@@ -91,7 +94,7 @@ item_type_to_pretty_string item_type =
 
 init : Model
 init =
-    { owned_items = [], items_for_sale = initial_items_for_sale }
+    { owned_items = [], items_for_sale = initial_items_for_sale, hovered_item_for_sale = Nothing }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -99,6 +102,12 @@ update msg model =
     case msg of
         BootShop ->
             ( model, Cmd.none )
+
+        MouseEnterShopItem item ->
+            ( { model | hovered_item_for_sale = Just item }, Cmd.none )
+
+        MouseLeaveShopItem item ->
+            ( { model | hovered_item_for_sale = Nothing }, Cmd.none )
 
 
 render_item_type : ItemType -> Element.Element Msg
@@ -115,9 +124,46 @@ clipText str length =
         str
 
 
-render_single_item_for_sale : ( Item, Int ) -> Element.Element Msg
-render_single_item_for_sale ( item, qty ) =
-    row [ font_scaled 1, width fill ]
+render_single_item_for_sale : Maybe Item -> ( Item, Int ) -> Element.Element Msg
+render_single_item_for_sale maybe_hovered_item ( item, qty ) =
+    let
+        is_hovered_item =
+            case maybe_hovered_item of
+                Just hovered_item ->
+                    item == hovered_item
+
+                Nothing ->
+                    False
+
+        --shown when hovered over item
+        expanded_display =
+            case is_hovered_item of
+                True ->
+                    Element.el
+                        [ width fill
+                        , Background.color <| rgb 1 1 1
+                        , Border.color <| rgb 1 0 1
+                        , Border.width 2
+                        , padding 10
+                        , Element.moveDown 20
+                        ]
+                    <|
+                        paragraph []
+                            [ text item.name
+                            , text ": "
+                            , text item.description
+                            ]
+
+                False ->
+                    Element.none
+    in
+    row
+        [ font_scaled 1
+        , width fill
+        , Events.onMouseEnter <| MouseEnterShopItem item
+        , Events.onMouseLeave <| MouseLeaveShopItem item
+        , Element.below expanded_display
+        ]
         [ column [ portion 2, font_scaled 2 ] [ text <| item.name ]
         , column [ portion 1 ] [ text <| String.fromInt item.gold_cost ++ "gp" ]
         , column [ portion 2 ] [ render_item_type item.item_type ]
@@ -154,7 +200,9 @@ view model =
         items_for_sale =
             Element.column [ width fill ] <|
                 [ Element.el [] <| text "Items for sale:" ]
-                    ++ List.map render_single_item_for_sale model.items_for_sale
+                    ++ List.map
+                        (\item -> render_single_item_for_sale model.hovered_item_for_sale item)
+                        model.items_for_sale
     in
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
         Element.column [ width fill ]

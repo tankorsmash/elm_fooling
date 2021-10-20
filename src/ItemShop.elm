@@ -85,6 +85,45 @@ initial_owned_items =
     ]
 
 
+white_color : Color
+white_color =
+    rgb 1 1 1
+
+
+primary_color : Color
+primary_color =
+    case Convert.hexToColor "#007bff" of
+        Ok color ->
+            let
+                -- convert to a Color lib Color record
+                rgba =
+                    Color.toRgba color
+            in
+            -- from the Color record, call the ElmUI `rgb` func
+            rgb rgba.red rgba.green rgba.blue
+
+        Err err ->
+            rgb255 255 0 0
+
+
+primary_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
+primary_button attrs on_press label =
+    Input.button
+        (attrs
+            ++ [ -- bs4-like values
+                 Font.color white_color
+               , Font.size 16
+               , Font.center
+               , padding 6
+               , Background.color primary_color
+               , Border.rounded 5
+               , Border.width 5
+               , Border.color primary_color
+               ]
+        )
+        { onPress = Just on_press, label = text label }
+
+
 item_type_to_pretty_string : ItemType -> String
 item_type_to_pretty_string item_type =
     case item_type of
@@ -188,6 +227,14 @@ render_single_item_for_sale maybe_hovered_item ( item, qty ) context =
 
                 False ->
                     Element.none
+
+        controls_column =
+            case context of
+                ShopItems ->
+                    primary_button [] BootShop "buy me"
+
+                InventoryItems ->
+                    primary_button [] BootShop "sell me"
     in
     row
         [ font_scaled 1
@@ -215,6 +262,7 @@ render_single_item_for_sale maybe_hovered_item ( item, qty ) context =
             [ width <| (fillPortion 3 |> Element.maximum 300)
             ]
             [ text <| clipText item.description 40 ]
+        , column [ portion 1 ] [ controls_column ]
         ]
 
 

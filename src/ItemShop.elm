@@ -108,10 +108,10 @@ render_item_type item_type =
 render_single_item_for_sale : ( Item, Int ) -> Element.Element Msg
 render_single_item_for_sale ( item, qty ) =
     Element.row [ font_scaled 1, width fill ]
-        [ Element.column [ width <| fillPortion 2, font_scaled 2 ] [ text <| item.name ]
-        , Element.column [ width <| fillPortion 1 ] [ text <| String.fromInt item.gold_cost ++ "gp" ]
-        , Element.column [ width <| fillPortion 2 ] [ render_item_type item.item_type ]
-        , Element.column [ width <| fillPortion 1 ]
+        [ Element.column [ portion 2, font_scaled 2 ] [ text <| item.name ]
+        , Element.column [ portion 1 ] [ text <| String.fromInt item.gold_cost ++ "gp" ]
+        , Element.column [ portion 2 ] [ render_item_type item.item_type ]
+        , Element.column [ portion 1 ]
             [ if qty == 1 then
                 text ""
 
@@ -119,6 +119,11 @@ render_single_item_for_sale ( item, qty ) =
                 text <| "x" ++ String.fromInt qty
             ]
         ]
+
+
+portion : Int -> Element.Attribute msg
+portion =
+    width << fillPortion
 
 
 padding_bottom : Int -> Element.Attribute msg

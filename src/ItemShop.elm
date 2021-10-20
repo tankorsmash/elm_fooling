@@ -46,6 +46,7 @@ type ItemType
 type alias Item =
     { name : String
     , item_type : ItemType
+    , gold_cost : Int
     }
 
 
@@ -61,11 +62,30 @@ type alias Model =
 
 initial_items_for_sale : List Item
 initial_items_for_sale =
-    [ { name = "Boots", item_type = Armor }
-    , { name = "Sword", item_type = Weapon }
-    , { name = "Dagger", item_type = Weapon }
-    , { name = "Book of the Dead", item_type = Spellbook }
+    [ { name = "Boots", item_type = Armor, gold_cost = 5 }
+    , { name = "Sword", item_type = Weapon, gold_cost = 15 }
+    , { name = "Dagger", item_type = Weapon, gold_cost = 10 }
+    , { name = "Book of the Dead", item_type = Spellbook, gold_cost = 20 }
     ]
+
+
+item_type_to_pretty_string : ItemType -> String
+item_type_to_pretty_string item_type =
+    case item_type of
+        Weapon ->
+            "Weapon"
+
+        Armor ->
+            "Armor"
+
+        Spellbook ->
+            "Spellbook"
+
+        Furniture ->
+            "Furniture"
+
+        Food ->
+            "Food"
 
 
 init : Model
@@ -80,16 +100,32 @@ update msg model =
             ( model, Cmd.none )
 
 
+render_item_type : ItemType -> Element.Element msg
+render_item_type item_type =
+    text <| item_type_to_pretty_string item_type
+
+
 render_single_item_for_sale : Item -> Element.Element Msg
 render_single_item_for_sale item =
-    Element.row [ font_scaled 1 ] [ text item.name ]
+    Element.row [ font_scaled 1 ]
+        [ text item.name
+        , text ": "
+        , text <| String.fromInt item.gold_cost
+        , text "gp -- "
+        , render_item_type item.item_type
+        ]
+
+
+padding_bottom : Int -> Element.Attribute msg
+padding_bottom pad =
+    Element.paddingEach { bottom = pad, left = 0, right = 0, top = 0 }
 
 
 view : Model -> Html.Html Msg
 view model =
     let
         welcome_header =
-            Element.el [ font_scaled 3 ] <| text "Welcome to the Item Shop!"
+            Element.el [ font_scaled 3, padding_bottom 5 ] <| text "Welcome to the Item Shop!"
 
         items_for_sale =
             Element.column [] <|

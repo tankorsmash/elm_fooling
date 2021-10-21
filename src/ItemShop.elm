@@ -65,6 +65,14 @@ type Msg
     | SellItem Item Int
 
 
+type alias InventoryRecord =
+    ( Item, Int )
+
+
+type alias InventoryRecords =
+    List InventoryRecord
+
+
 type alias Model =
     { owned_items : List ( Item, Int )
     , items_for_sale : List ( Item, Int )
@@ -84,7 +92,7 @@ initial_items_for_sale =
 
 initial_owned_items : List ( Item, Int )
 initial_owned_items =
-    [ ( { name = "Boots", item_type = Armor, gold_cost = 5, description = "An old pair of boots" }, 1 )
+    [ ( { name = "Boots", item_type = Armor, gold_cost = 5, description = "An old pair of boots" }, 10 )
     ]
 
 
@@ -155,6 +163,11 @@ init =
     }
 
 
+find_matching_records : Item -> InventoryRecord -> Bool
+find_matching_records to_match ( recorded_item, _ ) =
+    to_match == recorded_item
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -183,17 +196,32 @@ update msg model =
         SellItem item qty ->
             let
                 reduce_if_matched ( i, iq ) =
-                    if i == item && iq > 0 then
-                        ( i, iq - 1 )
+                    if i == item && iq >= qty then
+                        ( i, iq - qty )
                         --TODO get gp for selling
 
                     else
                         ( i, iq )
 
+                updated_shop_items =
+                    List.map (\( i, q ) -> ( i, q + qty )) <|
+                        List.filter (find_matching_records item) model.items_for_sale
+
+                non_matching_shop_items =
+                    List.filter (not << find_matching_records item) model.items_for_sale
+
+                new_shop_items =
+                    case List.length updated_shop_items of
+                        0 ->
+                            model.items_for_sale ++ [ ( item, qty ) ]
+
+                        _ ->
+                            non_matching_shop_items ++ updated_shop_items
+
                 new_inventory =
                     List.map reduce_if_matched model.owned_items
             in
-            ( { model | owned_items = new_inventory }, Cmd.none )
+            ( { model | owned_items = new_inventory, items_for_sale = new_shop_items }, Cmd.none )
 
 
 render_item_type : ItemType -> Element.Element Msg

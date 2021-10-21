@@ -333,7 +333,13 @@ render_single_item_for_sale maybe_hovered_item ( item, qty ) context =
                 text " "
 
               else if qty == 0 then
-                text "SOLD OUT"
+                text <|
+                    case context of
+                        ShopItems ->
+                            "SOLD OUT"
+
+                        InventoryItems ->
+                            "NONE LEFT"
 
               else
                 text <| "x" ++ String.fromInt qty

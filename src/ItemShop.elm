@@ -308,9 +308,9 @@ render_single_item_for_sale maybe_hovered_item ( item, qty ) context =
                 text <| "x" ++ String.fromInt qty
             ]
         , column
-            [ width <| (fillPortion 3 |> Element.maximum 300)
+            [ width <| (fillPortion 3 |> Element.maximum 200)
             ]
-            [ text <| clipText item.description 40 ]
+            [ text <| clipText item.description 24 ]
         , column [ portion 1 ] [ controls_column ]
         ]
 

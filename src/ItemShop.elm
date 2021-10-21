@@ -24,6 +24,7 @@ import Element
         , rgb255
         , row
         , spacing
+        , spacingXY
         , text
         , width
         )
@@ -332,7 +333,7 @@ view model =
             Element.el [ font_scaled 3, padding_bottom 5 ] <| text "Welcome to the Item Shop!"
 
         items_for_sale =
-            Element.column [ width fill ] <|
+            Element.column [ width fill, spacingXY 0 5 ] <|
                 [ Element.el [] <| text "Items for sale:" ]
                     ++ List.map
                         (\item ->
@@ -344,7 +345,7 @@ view model =
                         model.items_for_sale
 
         items_in_inventory =
-            Element.column [ width fill ] <|
+            Element.column [ width fill, spacingXY 0 5 ] <|
                 [ Element.el [] <| text "Items in my inventory:" ]
                     ++ List.map
                         (\item ->

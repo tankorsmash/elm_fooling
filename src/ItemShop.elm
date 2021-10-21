@@ -462,7 +462,7 @@ render_single_item_for_sale gold_in_pocket maybe_hovered_item ( item, qty ) cont
                                 secondary_button
                     in
                     button_type
-                        [ Element.transparent <| qty < 1 ]
+                        [ Element.transparent <| qty < 1, width fill ]
                         (BuyItem item 1)
                     <|
                         if can_afford then
@@ -509,7 +509,7 @@ render_single_item_for_sale gold_in_pocket maybe_hovered_item ( item, qty ) cont
             [ width <| (fillPortion 3 |> Element.maximum 200)
             ]
             [ text <| clipText item.description 24 ]
-        , column [ portion 1 ] [ controls_column ]
+        , column [ portion 1, width fill ] [ controls_column ]
         ]
 
 
@@ -537,9 +537,9 @@ view model =
         sort_func =
             Tuple.first >> .name
 
-        items_for_sale =
+        items_for_sale_table =
             Element.table [ width fill, font_scaled 1, spacing 5, paddingXY 0 10 ]
-                { data = model.items_for_sale
+                { data = List.sortBy sort_func model.items_for_sale
                 , columns =
                     [ { header = Element.none
                       , view = Tuple.first >> .name >> text >> el [ font_scaled 2 ]
@@ -551,7 +551,7 @@ view model =
                       }
                     , { header = Element.none
                       , view = Tuple.first >> .item_type >> render_item_type
-                      , width = fillPortion 1
+                      , width = fillPortion 2
                       }
                     , { header = Element.none
                       , view =
@@ -577,22 +577,23 @@ view model =
                     ]
                 }
 
-        -- Element.column [ width fill, spacingXY 0 5 ] <|
-        --     (++)
-        --         [ Element.el [ border_bottom 2 ] <| text "Items For Sale"
-        --         ]
-        --         (List.map
-        --             (\item ->
-        --                 render_single_item_for_sale
-        --                     model.gold_in_pocket
-        --                     model.hovered_item_for_sale
-        --                     item
-        --                     ShopItems
-        --             )
-        --          <|
-        --             List.sortBy sort_func model.items_for_sale
-        --         )
-        --
+        items_for_sale_grid =
+            Element.column [ width fill, spacingXY 0 5 ] <|
+                (++)
+                    [ Element.el [ border_bottom 2 ] <| text "Items For Sale"
+                    ]
+                    (List.map
+                        (\item ->
+                            render_single_item_for_sale
+                                model.gold_in_pocket
+                                model.hovered_item_for_sale
+                                item
+                                ShopItems
+                        )
+                     <|
+                        List.sortBy sort_func model.items_for_sale
+                    )
+
         items_in_inventory =
             Element.column [ width fill, spacingXY 0 5 ] <|
                 (++)
@@ -618,8 +619,9 @@ view model =
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
         Element.column [ width fill ]
             [ welcome_header
-            , el [font_scaled 2, border_bottom 2] <| text "Items for Sale"
-            , items_for_sale
+            , el [ font_scaled 2, border_bottom 2 ] <| text "Items for Sale"
+            , items_for_sale_table
+            , items_for_sale_grid
             , Element.el [ paddingXY 0 10, width fill ] items_in_inventory
             ]
 

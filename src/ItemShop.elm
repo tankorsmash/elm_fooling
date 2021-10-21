@@ -233,6 +233,16 @@ update msg model =
                     else
                         ( i, iq )
 
+                has_items_to_sell =
+                    List.length
+                        (List.filter
+                            (\( i, q ) ->
+                                q >= qty && find_matching_records item ( i, q )
+                            )
+                            model.owned_items
+                        )
+                        > 0
+
                 updated_shop_items =
                     List.map (\( i, q ) -> ( i, q + qty )) <|
                         List.filter (find_matching_records item) model.items_for_sale
@@ -250,8 +260,19 @@ update msg model =
 
                 new_inventory =
                     List.map reduce_if_matched model.owned_items
+
+                new_model =
+                    if has_items_to_sell then
+                        { model
+                            | owned_items = new_inventory
+                            , items_for_sale = new_shop_items
+                            , gold_in_pocket = model.gold_in_pocket + (item.gold_cost * qty)
+                        }
+
+                    else
+                        model
             in
-            ( { model | owned_items = new_inventory, items_for_sale = new_shop_items }, Cmd.none )
+            ( new_model, Cmd.none )
 
 
 render_item_type : ItemType -> Element.Element Msg

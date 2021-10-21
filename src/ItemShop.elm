@@ -485,9 +485,7 @@ render_single_item_for_sale gold_in_pocket maybe_hovered_item ( item, qty ) cont
         , Element.below expanded_display
         ]
         [ column [ portion 2, font_scaled 2 ] [ text <| item.name ]
-        , column [ portion 1 ]
-            [ render_gp item.gold_cost
-            ]
+        , column [ portion 1 ] [ render_gp item.gold_cost ]
         , column [ portion 2 ] [ render_item_type item.item_type ]
         , column [ portion 1 ]
             [ if qty == 1 then
@@ -506,8 +504,7 @@ render_single_item_for_sale gold_in_pocket maybe_hovered_item ( item, qty ) cont
                 text <| "x" ++ String.fromInt qty
             ]
         , column
-            [ width <| (fillPortion 3 |> Element.maximum 200)
-            ]
+            [ width <| (fillPortion 3 |> Element.maximum 200) ]
             [ text <| clipText item.description 24 ]
         , column [ portion 1, width fill ] [ controls_column ]
         ]
@@ -567,7 +564,7 @@ view model =
                       , width = fillPortion 1
                       }
                     , { header = Element.none
-                      , view = Tuple.first >> .description >> (\desc -> clipText desc 24) >> text >> el [alignLeft]
+                      , view = Tuple.first >> .description >> (\desc -> clipText desc 24) >> text >> el [ alignLeft ]
                       , width = fillPortion 2
                       }
                     , { header = Element.none

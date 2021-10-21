@@ -192,7 +192,34 @@ update msg model =
                     ( { model | hovered_item_in_inventory = Nothing }, Cmd.none )
 
         BuyItem item qty ->
-            ( model, Cmd.none )
+            let
+                reduce_if_matched ( i, iq ) =
+                    if i == item && iq >= qty then
+                        ( i, iq - qty )
+                        --TODO spend gp for buying
+
+                    else
+                        ( i, iq )
+
+                updated_inv_items =
+                    List.map (\( i, q ) -> ( i, q + qty )) <|
+                        List.filter (find_matching_records item) model.owned_items
+
+                non_matching_inv_items =
+                    List.filter (not << find_matching_records item) model.owned_items
+
+                new_inventory =
+                    case List.length updated_inv_items of
+                        0 ->
+                            model.owned_items ++ [ ( item, qty ) ]
+
+                        _ ->
+                            non_matching_inv_items ++ updated_inv_items
+
+                new_shop_items =
+                    List.map reduce_if_matched model.items_for_sale
+            in
+            ( { model | owned_items = new_inventory, items_for_sale = new_shop_items }, Cmd.none )
 
         SellItem item qty ->
             let

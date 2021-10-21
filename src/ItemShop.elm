@@ -79,6 +79,7 @@ type alias Model =
     , items_for_sale : List ( Item, Int )
     , hovered_item_for_sale : Maybe Item
     , hovered_item_in_inventory : Maybe Item
+    , gold_in_pocket : Int
     }
 
 
@@ -161,6 +162,7 @@ init =
     , items_for_sale = initial_items_for_sale
     , hovered_item_for_sale = Nothing
     , hovered_item_in_inventory = Nothing
+    , gold_in_pocket = 0
     }
 
 
@@ -271,6 +273,13 @@ font_grey =
     Font.color <| rgb 0.35 0.35 0.35
 
 
+render_gp count font_size =
+    paragraph []
+        [ text <| String.fromInt count
+        , Element.el [ Font.size font_size, font_grey ] (text "gp")
+        ]
+
+
 render_single_item_for_sale : Maybe Item -> ( Item, Int ) -> ListContext -> Element.Element Msg
 render_single_item_for_sale maybe_hovered_item ( item, qty ) context =
     let
@@ -322,10 +331,7 @@ render_single_item_for_sale maybe_hovered_item ( item, qty ) context =
         ]
         [ column [ portion 2, font_scaled 2 ] [ text <| item.name ]
         , column [ portion 1 ]
-            [ paragraph []
-                [ text <| String.fromInt item.gold_cost
-                , Element.el [ Font.size 12, font_grey ] (text "gp")
-                ]
+            [ render_gp item.gold_cost 12
             ]
         , column [ portion 2 ] [ render_item_type item.item_type ]
         , column [ portion 1 ]
@@ -395,7 +401,12 @@ view model =
         items_in_inventory =
             Element.column [ width fill, spacingXY 0 5 ] <|
                 (++)
-                    [ Element.el [ border_bottom 2 ] <| text "Items In Inventory"
+                    [ Element.row [ width fill ]
+                        [ Element.el [ border_bottom 2 ] <| text "Items In Inventory"
+                        , text "   "
+                        , row [ font_scaled 1, centerX ] <|
+                            [ text "Held: ", render_gp model.gold_in_pocket 12 ]
+                        ]
                     ]
                     (List.map
                         (\item ->

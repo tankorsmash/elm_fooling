@@ -103,6 +103,38 @@ white_color =
     rgb 1 1 1
 
 
+secondary_color : Color
+secondary_color =
+    case Convert.hexToColor "#6c757d" of
+        Ok color ->
+            let
+                -- convert to a Color lib Color record
+                rgba =
+                    Color.toRgba color
+            in
+            -- from the Color record, call the ElmUI `rgb` func
+            rgb rgba.red rgba.green rgba.blue
+
+        Err err ->
+            rgb255 255 0 0
+
+
+danger_color : Color
+danger_color =
+    case Convert.hexToColor "#dc3545" of
+        Ok color ->
+            let
+                -- convert to a Color lib Color record
+                rgba =
+                    Color.toRgba color
+            in
+            -- from the Color record, call the ElmUI `rgb` func
+            rgb rgba.red rgba.green rgba.blue
+
+        Err err ->
+            rgb255 255 0 0
+
+
 primary_color : Color
 primary_color =
     case Convert.hexToColor "#007bff" of
@@ -122,17 +154,53 @@ primary_color =
 primary_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
 primary_button attrs on_press label =
     Input.button
-        (attrs
-            ++ [ -- bs4-like values
-                 Font.color white_color
-               , Font.size 16
-               , Font.center
-               , padding 6
-               , Background.color primary_color
-               , Border.rounded 5
-               , Border.width 5
-               , Border.color primary_color
-               ]
+        ([ -- bs4-like values
+           Font.color white_color
+         , Font.size 16
+         , Font.center
+         , padding 6
+         , Background.color primary_color
+         , Border.rounded 5
+         , Border.width 5
+         , Border.color primary_color
+         ]
+            ++ attrs
+        )
+        { onPress = Just on_press, label = text label }
+
+
+secondary_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
+secondary_button attrs on_press label =
+    Input.button
+        ([ -- bs4-like values
+           Font.color white_color
+         , Font.size 16
+         , Font.center
+         , padding 6
+         , Background.color secondary_color
+         , Border.rounded 5
+         , Border.width 5
+         , Border.color secondary_color
+         ]
+            ++ attrs
+        )
+        { onPress = Just on_press, label = text label }
+
+
+danger_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
+danger_button attrs on_press label =
+    Input.button
+        ([ -- bs4-like values
+           Font.color white_color
+         , Font.size 16
+         , Font.center
+         , padding 6
+         , Background.color danger_color
+         , Border.rounded 5
+         , Border.width 5
+         , Border.color danger_color
+         ]
+            ++ attrs
         )
         { onPress = Just on_press, label = text label }
 
@@ -318,8 +386,8 @@ render_gp count font_size =
         ]
 
 
-render_single_item_for_sale : Maybe Item -> ( Item, Int ) -> ListContext -> Element.Element Msg
-render_single_item_for_sale maybe_hovered_item ( item, qty ) context =
+render_single_item_for_sale : Int -> Maybe Item -> ( Item, Int ) -> ListContext -> Element.Element Msg
+render_single_item_for_sale gold_in_pocket maybe_hovered_item ( item, qty ) context =
     let
         is_hovered_item =
             case maybe_hovered_item of
@@ -355,10 +423,32 @@ render_single_item_for_sale maybe_hovered_item ( item, qty ) context =
         controls_column =
             case context of
                 ShopItems ->
-                    primary_button [ Element.transparent <| qty < 1 ] (BuyItem item 1) "buy me"
+                    let
+                        can_afford =
+                            gold_in_pocket >= item.gold_cost * 1
+
+                        button_type =
+                            if can_afford then
+                                primary_button
+
+                            else
+                                secondary_button
+                    in
+                    button_type
+                        [ Element.transparent <| qty < 1 ]
+                        (BuyItem item 1)
+                    <|
+                        if can_afford then
+                            "buy me"
+
+                        else
+                            "can't afford"
 
                 InventoryItems ->
-                    primary_button [ Element.transparent <| qty < 1 ] (SellItem item 1) "sell me"
+                    primary_button
+                        [ Element.transparent <| qty < 1 ]
+                        (SellItem item 1)
+                        "sell me"
     in
     row
         [ font_scaled 1
@@ -428,6 +518,7 @@ view model =
                     (List.map
                         (\item ->
                             render_single_item_for_sale
+                                model.gold_in_pocket
                                 model.hovered_item_for_sale
                                 item
                                 ShopItems
@@ -449,6 +540,7 @@ view model =
                     (List.map
                         (\item ->
                             render_single_item_for_sale
+                                model.gold_in_pocket
                                 model.hovered_item_in_inventory
                                 item
                                 InventoryItems

@@ -195,6 +195,12 @@ update msg model =
 
         BuyItem item qty ->
             let
+                total_cost =
+                    item.gold_cost * qty
+
+                can_afford_item =
+                    total_cost <= model.gold_in_pocket
+
                 reduce_if_matched ( i, iq ) =
                     if i == item && iq >= qty then
                         ( i, iq - qty )
@@ -220,8 +226,19 @@ update msg model =
 
                 new_shop_items =
                     List.map reduce_if_matched model.items_for_sale
+
+                new_model =
+                    if can_afford_item then
+                        { model
+                            | owned_items = new_inventory
+                            , items_for_sale = new_shop_items
+                            , gold_in_pocket = model.gold_in_pocket - total_cost
+                        }
+
+                    else
+                        model
             in
-            ( { model | owned_items = new_inventory, items_for_sale = new_shop_items }, Cmd.none )
+            ( new_model, Cmd.none )
 
         SellItem item qty ->
             let

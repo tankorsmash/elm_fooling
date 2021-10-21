@@ -379,11 +379,38 @@ font_grey =
     Font.color <| rgb 0.35 0.35 0.35
 
 
-render_gp count font_size =
+render_gp count =
+    render_gp_sized count 12
+
+
+render_gp_sized count font_size =
     paragraph []
         [ text <| String.fromInt count
         , Element.el [ Font.size font_size, font_grey ] (text "gp")
         ]
+
+
+shop_buy_button gold_in_pocket ( item, qty ) =
+    let
+        can_afford =
+            gold_in_pocket >= item.gold_cost * 1
+
+        button_type =
+            if can_afford then
+                primary_button
+
+            else
+                secondary_button
+    in
+    button_type
+        [ Element.transparent <| qty < 1 ]
+        (BuyItem item 1)
+    <|
+        if can_afford then
+            "buy me"
+
+        else
+            "can't afford"
 
 
 render_single_item_for_sale : Int -> Maybe Item -> ( Item, Int ) -> ListContext -> Element.Element Msg
@@ -459,7 +486,7 @@ render_single_item_for_sale gold_in_pocket maybe_hovered_item ( item, qty ) cont
         ]
         [ column [ portion 2, font_scaled 2 ] [ text <| item.name ]
         , column [ portion 1 ]
-            [ render_gp item.gold_cost 12
+            [ render_gp item.gold_cost
             ]
         , column [ portion 2 ] [ render_item_type item.item_type ]
         , column [ portion 1 ]
@@ -511,22 +538,61 @@ view model =
             Tuple.first >> .name
 
         items_for_sale =
-            Element.column [ width fill, spacingXY 0 5 ] <|
-                (++)
-                    [ Element.el [ border_bottom 2 ] <| text "Items For Sale"
-                    ]
-                    (List.map
-                        (\item ->
-                            render_single_item_for_sale
-                                model.gold_in_pocket
-                                model.hovered_item_for_sale
-                                item
-                                ShopItems
-                        )
-                     <|
-                        List.sortBy sort_func model.items_for_sale
-                    )
+            Element.table [ width fill, font_scaled 1, spacing 5, paddingXY 0 10 ]
+                { data = model.items_for_sale
+                , columns =
+                    [ { header = Element.none
+                      , view = Tuple.first >> .name >> text >> el [ font_scaled 2 ]
+                      , width = fillPortion 2
+                      }
+                    , { header = Element.none
+                      , view = Tuple.first >> .gold_cost >> render_gp
+                      , width = fillPortion 1
+                      }
+                    , { header = Element.none
+                      , view = Tuple.first >> .item_type >> render_item_type
+                      , width = fillPortion 1
+                      }
+                    , { header = Element.none
+                      , view =
+                            \( i, qty ) ->
+                                if qty == 1 then
+                                    text ""
 
+                                else if qty == 0 then
+                                    text "SOLD OUT"
+
+                                else
+                                    text <| "x" ++ String.fromInt qty
+                      , width = fillPortion 1
+                      }
+                    , { header = Element.none
+                      , view = Tuple.first >> .description >> (\desc -> clipText desc 24) >> text >> el [alignLeft]
+                      , width = fillPortion 2
+                      }
+                    , { header = Element.none
+                      , view = shop_buy_button model.gold_in_pocket
+                      , width = fillPortion 1
+                      }
+                    ]
+                }
+
+        -- Element.column [ width fill, spacingXY 0 5 ] <|
+        --     (++)
+        --         [ Element.el [ border_bottom 2 ] <| text "Items For Sale"
+        --         ]
+        --         (List.map
+        --             (\item ->
+        --                 render_single_item_for_sale
+        --                     model.gold_in_pocket
+        --                     model.hovered_item_for_sale
+        --                     item
+        --                     ShopItems
+        --             )
+        --          <|
+        --             List.sortBy sort_func model.items_for_sale
+        --         )
+        --
         items_in_inventory =
             Element.column [ width fill, spacingXY 0 5 ] <|
                 (++)
@@ -534,7 +600,7 @@ view model =
                         [ Element.el [ border_bottom 2 ] <| text "Items In Inventory"
                         , text "   "
                         , row [ font_scaled 1, centerX ] <|
-                            [ text "Held: ", render_gp model.gold_in_pocket 12 ]
+                            [ text "Held: ", render_gp model.gold_in_pocket ]
                         ]
                     ]
                     (List.map
@@ -552,6 +618,7 @@ view model =
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
         Element.column [ width fill ]
             [ welcome_header
+            , el [font_scaled 2, border_bottom 2] <| text "Items for Sale"
             , items_for_sale
             , Element.el [ paddingXY 0 10, width fill ] items_in_inventory
             ]

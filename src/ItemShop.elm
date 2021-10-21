@@ -332,6 +332,9 @@ render_single_item_for_sale maybe_hovered_item ( item, qty ) context =
             [ if qty == 1 then
                 text " "
 
+              else if qty == 0 then
+                text "SOLD OUT"
+
               else
                 text <| "x" ++ String.fromInt qty
             ]

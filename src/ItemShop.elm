@@ -33,6 +33,7 @@ import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Html
+import Html.Attributes
 
 
 type ItemType
@@ -57,9 +58,11 @@ type ListContext
 
 
 type Msg
-    = BootShop
+    = Noop
     | MouseEnterShopItem ListContext Item
     | MouseLeaveShopItem ListContext Item
+    | BuyItem Item Int
+    | SellItem Item Int
 
 
 type alias Model =
@@ -155,7 +158,7 @@ init =
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
-        BootShop ->
+        Noop ->
             ( model, Cmd.none )
 
         MouseEnterShopItem context item ->
@@ -173,6 +176,24 @@ update msg model =
 
                 InventoryItems ->
                     ( { model | hovered_item_in_inventory = Nothing }, Cmd.none )
+
+        BuyItem item qty ->
+            ( model, Cmd.none )
+
+        SellItem item qty ->
+            let
+                reduce_if_matched ( i, iq ) =
+                    if i == item && iq > 0 then
+                        ( i, iq - 1 )
+                        --TODO get gp for selling
+
+                    else
+                        ( i, iq )
+
+                new_inventory =
+                    List.map reduce_if_matched model.owned_items
+            in
+            ( { model | owned_items = new_inventory }, Cmd.none )
 
 
 render_item_type : ItemType -> Element.Element Msg
@@ -231,10 +252,10 @@ render_single_item_for_sale maybe_hovered_item ( item, qty ) context =
         controls_column =
             case context of
                 ShopItems ->
-                    primary_button [] BootShop "buy me"
+                    primary_button [] (BuyItem item 1) "buy me"
 
                 InventoryItems ->
-                    primary_button [] BootShop "sell me"
+                    primary_button [ Element.transparent <| qty < 1 ] (SellItem item 1) "sell me"
     in
     row
         [ font_scaled 1

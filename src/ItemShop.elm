@@ -367,29 +367,40 @@ view model =
         welcome_header =
             Element.el [ font_scaled 3, padding_bottom 10 ] <| text "Welcome to the Item Shop!"
 
+        sort_func =
+            Tuple.first >> .name
+
         items_for_sale =
             Element.column [ width fill, spacingXY 0 5 ] <|
-                [ Element.el [ border_bottom 2 ] <| text "Items For Sale" ]
-                    ++ List.map
+                (++)
+                    [ Element.el [ border_bottom 2 ] <| text "Items For Sale"
+                    ]
+                    (List.map
                         (\item ->
                             render_single_item_for_sale
                                 model.hovered_item_for_sale
                                 item
                                 ShopItems
                         )
-                        model.items_for_sale
+                     <|
+                        List.sortBy sort_func model.items_for_sale
+                    )
 
         items_in_inventory =
             Element.column [ width fill, spacingXY 0 5 ] <|
-                [ Element.el [ border_bottom 2 ] <| text "Items In Inventory" ]
-                    ++ List.map
+                (++)
+                    [ Element.el [ border_bottom 2 ] <| text "Items In Inventory"
+                    ]
+                    (List.map
                         (\item ->
                             render_single_item_for_sale
                                 model.hovered_item_in_inventory
                                 item
                                 InventoryItems
                         )
-                        model.owned_items
+                     <|
+                        List.sortBy sort_func model.owned_items
+                    )
     in
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
         Element.column [ width fill ]

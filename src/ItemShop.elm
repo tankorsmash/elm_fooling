@@ -281,7 +281,7 @@ render_single_item_for_sale maybe_hovered_item ( item, qty ) context =
         controls_column =
             case context of
                 ShopItems ->
-                    primary_button [] (BuyItem item 1) "buy me"
+                    primary_button [ Element.transparent <| qty < 1 ] (BuyItem item 1) "buy me"
 
                 InventoryItems ->
                     primary_button [ Element.transparent <| qty < 1 ] (SellItem item 1) "sell me"

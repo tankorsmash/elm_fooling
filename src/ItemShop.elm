@@ -326,15 +326,20 @@ padding_bottom pad =
     Element.paddingEach { bottom = pad, left = 0, right = 0, top = 0 }
 
 
+border_bottom : Int -> Element.Attribute msg
+border_bottom bord =
+    Border.widthEach { bottom = bord, left = 0, right = 0, top = 0 }
+
+
 view : Model -> Html.Html Msg
 view model =
     let
         welcome_header =
-            Element.el [ font_scaled 3, padding_bottom 5 ] <| text "Welcome to the Item Shop!"
+            Element.el [ font_scaled 3, padding_bottom 10 ] <| text "Welcome to the Item Shop!"
 
         items_for_sale =
             Element.column [ width fill, spacingXY 0 5 ] <|
-                [ Element.el [] <| text "Items for sale:" ]
+                [ Element.el [ border_bottom 2 ] <| text "Items For Sale" ]
                     ++ List.map
                         (\item ->
                             render_single_item_for_sale
@@ -346,7 +351,7 @@ view model =
 
         items_in_inventory =
             Element.column [ width fill, spacingXY 0 5 ] <|
-                [ Element.el [] <| text "Items in my inventory:" ]
+                [ Element.el [ border_bottom 2 ] <| text "Items In Inventory" ]
                     ++ List.map
                         (\item ->
                             render_single_item_for_sale

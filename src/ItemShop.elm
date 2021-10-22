@@ -164,9 +164,28 @@ initial_owned_items =
     ]
 
 
-get_adjusted_item_cost : Item -> Int -> Int
-get_adjusted_item_cost item qty =
-    item.raw_gold_cost * qty
+get_adjusted_item_cost : ShopTrends -> Item -> Int -> Int
+get_adjusted_item_cost shop_trends item qty =
+    let
+        { item_type } =
+            item
+
+        item_sentiment =
+            case
+                Dict.get
+                    (item_type_to_id item_type)
+                    shop_trends.item_type_sentiment
+            of
+                Just pop ->
+                    pop
+
+                Nothing ->
+                    1.0
+
+        scaled_raw_cost =
+            toFloat <| item.raw_gold_cost * qty
+    in
+    round <| scaled_raw_cost * item_sentiment
 
 
 white_color : Color
@@ -336,7 +355,7 @@ update msg model =
         BuyItem item qty ->
             let
                 total_cost =
-                    get_adjusted_item_cost item qty
+                    get_adjusted_item_cost model.shop_trends item qty
 
                 can_afford_item =
                     total_cost <= model.gold_in_pocket
@@ -418,8 +437,11 @@ update msg model =
                 new_inventory =
                     List.map reduce_if_matched model.owned_items
 
-                { shop_trends } = model
-                { item_type_sentiment } = shop_trends
+                { shop_trends } =
+                    model
+
+                { item_type_sentiment } =
+                    shop_trends
 
                 new_its =
                     Dict.update
@@ -434,14 +456,15 @@ update msg model =
                         )
                         item_type_sentiment
 
-                new_shop_trends = { shop_trends | item_type_sentiment = new_its }
+                new_shop_trends =
+                    { shop_trends | item_type_sentiment = new_its }
 
                 new_model =
                     if has_items_to_sell then
                         { model
                             | owned_items = new_inventory
                             , items_for_sale = new_shop_items
-                            , gold_in_pocket = model.gold_in_pocket + get_adjusted_item_cost item qty
+                            , gold_in_pocket = model.gold_in_pocket + get_adjusted_item_cost model.shop_trends item qty
                             , shop_trends = new_shop_trends
                         }
 
@@ -483,11 +506,11 @@ render_gp_sized count font_size =
         ]
 
 
-shop_buy_button : Int -> InventoryRecord -> Element Msg
-shop_buy_button gold_in_pocket ( item, qty ) =
+shop_buy_button : Int -> Int -> InventoryRecord -> Element Msg
+shop_buy_button gold_cost gold_in_pocket ( item, qty ) =
     let
         can_afford =
-            gold_in_pocket >= get_adjusted_item_cost item 1
+            gold_in_pocket >= gold_cost
 
         button_type =
             if can_afford then
@@ -519,8 +542,8 @@ debug_explain =
         Element.scale 1.0
 
 
-render_single_item_for_sale : Int -> Maybe Item -> ( Item, Int ) -> ListContext -> Element.Element Msg
-render_single_item_for_sale gold_in_pocket maybe_hovered_item ( item, qty ) context =
+render_single_item_for_sale : ShopTrends -> Int -> Maybe Item -> ( Item, Int ) -> ListContext -> Element.Element Msg
+render_single_item_for_sale shop_trends gold_in_pocket maybe_hovered_item ( item, qty ) context =
     let
         is_hovered_item =
             case maybe_hovered_item of
@@ -556,7 +579,7 @@ render_single_item_for_sale gold_in_pocket maybe_hovered_item ( item, qty ) cont
         controls_column =
             case context of
                 ShopItems ->
-                    shop_buy_button gold_in_pocket ( item, qty )
+                    shop_buy_button (get_adjusted_item_cost shop_trends item 1) gold_in_pocket ( item, qty )
 
                 InventoryItems ->
                     primary_button
@@ -575,7 +598,7 @@ render_single_item_for_sale gold_in_pocket maybe_hovered_item ( item, qty ) cont
         , Element.below expanded_display
         ]
         [ column [ width (fillPortion 2 |> Element.maximum 200), font_scaled 2, debug_explain ] [ text <| clipText item.name 15 ]
-        , column [ portion 1, debug_explain ] [ render_gp <| get_adjusted_item_cost item 1 ]
+        , column [ portion 1, debug_explain ] [ render_gp <| get_adjusted_item_cost shop_trends item 1 ]
         , column [ portion 2, debug_explain ] [ render_item_type item.item_type ]
         , column [ portion 1, debug_explain ]
             [ el [] <|
@@ -708,6 +731,7 @@ view model =
                     (List.map
                         (\item ->
                             render_single_item_for_sale
+                                model.shop_trends
                                 model.gold_in_pocket
                                 model.hovered_item_for_sale
                                 item
@@ -730,6 +754,7 @@ view model =
                     (List.map
                         (\item ->
                             render_single_item_for_sale
+                                model.shop_trends
                                 model.gold_in_pocket
                                 model.hovered_item_in_inventory
                                 item

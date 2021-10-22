@@ -386,12 +386,35 @@ update msg model =
                 new_shop_items =
                     List.map reduce_if_matched model.items_for_sale
 
+                { shop_trends } =
+                    model
+
+                { item_type_sentiment } =
+                    shop_trends
+
+                new_its =
+                    Dict.update
+                        (item_type_to_id item.item_type)
+                        (\maybe_sent ->
+                            case maybe_sent of
+                                Just existing_sent ->
+                                    Just (existing_sent + 0.1)
+
+                                Nothing ->
+                                    Just (1.0 + 0.1)
+                        )
+                        item_type_sentiment
+
+                new_shop_trends =
+                    { shop_trends | item_type_sentiment = new_its }
+
                 new_model =
                     if can_afford_item then
                         { model
                             | owned_items = new_inventory
                             , items_for_sale = new_shop_items
                             , gold_in_pocket = model.gold_in_pocket - total_cost
+                            , shop_trends = new_shop_trends
                         }
 
                     else

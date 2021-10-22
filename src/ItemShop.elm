@@ -121,7 +121,7 @@ type alias InventoryRecords =
 
 
 type alias ShopTrends =
-    { type_popularity : Dict.Dict ItemTypeId Float
+    { item_popularity : Dict.Dict ItemTypeId Float
     }
 
 
@@ -137,7 +137,7 @@ type alias Model =
 
 initial_shop_trends : ShopTrends
 initial_shop_trends =
-    { type_popularity =
+    { item_popularity =
         Dict.fromList <|
             List.map (\it -> ( item_type_to_id it, 1.0 ))
                 [ Weapon
@@ -418,6 +418,8 @@ update msg model =
                 new_inventory =
                     List.map reduce_if_matched model.owned_items
 
+                {item_popularity} = model.shop_trends
+
                 new_model =
                     if has_items_to_sell then
                         { model
@@ -621,7 +623,7 @@ trends_display shop_trends =
             row [ spacing 15, paddingXY 0 10 ]
                 (summarized
                     :: (List.map render_single_popularity <|
-                            Dict.toList shop_trends.type_popularity
+                            Dict.toList shop_trends.item_popularity
                        )
                 )
     in

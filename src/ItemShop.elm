@@ -120,8 +120,12 @@ type alias InventoryRecords =
     List InventoryRecord
 
 
+type alias ItemSentiments =
+    Dict.Dict ItemTypeId Float
+
+
 type alias ShopTrends =
-    { item_type_sentiment : Dict.Dict ItemTypeId Float
+    { item_type_sentiment : ItemSentiments
     }
 
 
@@ -312,6 +316,7 @@ item_type_to_pretty_string item_type =
 
         Food ->
             "Food"
+
 
 item_type_to_pretty_string_plural : ItemType -> String
 item_type_to_pretty_string_plural item_type =
@@ -583,6 +588,16 @@ debug_explain =
         Element.scale 1.0
 
 
+is_item_trending : ItemSentiments -> Item -> Bool
+is_item_trending item_type_sentiments item =
+    case Dict.get (item_type_to_id item.item_type) item_type_sentiments of
+        Just existing_sent ->
+            existing_sent /= 1.0
+
+        Nothing ->
+            False
+
+
 render_single_item_for_sale : ShopTrends -> Int -> Maybe Item -> ( Item, Int ) -> ListContext -> Element.Element Msg
 render_single_item_for_sale shop_trends gold_in_pocket maybe_hovered_item ( item, qty ) context =
     let
@@ -608,19 +623,43 @@ render_single_item_for_sale shop_trends gold_in_pocket maybe_hovered_item ( item
                         , Element.moveDown 20
                         ]
                     <|
-                        paragraph []
-                            [ text item.name
-                            , text ": "
-                            , text item.description
+                        column [ spacing 5 ]
+                            [ paragraph []
+                                [ text item.name
+                                , text ": "
+                                , text item.description
+                                ]
+                            , paragraph [] <|
+                                [ text "Current Price: "
+                                , render_gp current_price
+                                ]
+                                    ++ (if
+                                            is_item_trending
+                                                shop_trends.item_type_sentiment
+                                                item
+                                                && item.raw_gold_cost
+                                                /= current_price
+                                        then
+                                            [ text " (originally "
+                                            , render_gp item.raw_gold_cost
+                                            , text ")"
+                                            ]
+
+                                        else
+                                            []
+                                       )
                             ]
 
                 False ->
                     Element.none
 
+        current_price =
+            get_adjusted_item_cost shop_trends item 1
+
         controls_column =
             case context of
                 ShopItems ->
-                    shop_buy_button (get_adjusted_item_cost shop_trends item 1) gold_in_pocket ( item, qty )
+                    shop_buy_button current_price gold_in_pocket ( item, qty )
 
                 InventoryItems ->
                     primary_button

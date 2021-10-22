@@ -693,7 +693,8 @@ trends_display shop_trends =
             row [ spacing 15, paddingXY 0 10 ]
                 (summarized
                     :: (List.map render_single_popularity <|
-                            Dict.toList shop_trends.item_type_sentiment
+                            List.filter (Tuple.second >> (/=) 1) <|
+                                Dict.toList shop_trends.item_type_sentiment
                        )
                 )
     in

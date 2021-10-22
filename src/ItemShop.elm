@@ -99,7 +99,8 @@ initial_owned_items =
 
 
 get_adjusted_item_cost : Item -> Int -> Int
-get_adjusted_item_cost item qty = item.gold_cost * qty
+get_adjusted_item_cost item qty =
+    item.gold_cost * qty
 
 
 white_color : Color
@@ -355,7 +356,7 @@ update msg model =
                         { model
                             | owned_items = new_inventory
                             , items_for_sale = new_shop_items
-                            , gold_in_pocket = model.gold_in_pocket + (get_adjusted_item_cost item qty)
+                            , gold_in_pocket = model.gold_in_pocket + get_adjusted_item_cost item qty
                         }
 
                     else
@@ -399,7 +400,6 @@ shop_buy_button gold_in_pocket ( item, qty ) =
         can_afford =
             gold_in_pocket >= get_adjusted_item_cost item 1
 
-
         button_type =
             if can_afford then
                 primary_button
@@ -420,10 +420,15 @@ shop_buy_button gold_in_pocket ( item, qty ) =
 
 debug_explain =
     let
-        do_explain = False
+        do_explain =
+            False
     in
-        if do_explain then explain Debug.todo
-        else Element.scale 1.0
+    if do_explain then
+        explain Debug.todo
+
+    else
+        Element.scale 1.0
+
 
 render_single_item_for_sale : Int -> Maybe Item -> ( Item, Int ) -> ListContext -> Element.Element Msg
 render_single_item_for_sale gold_in_pocket maybe_hovered_item ( item, qty ) context =
@@ -474,15 +479,16 @@ render_single_item_for_sale gold_in_pocket maybe_hovered_item ( item, qty ) cont
         [ font_scaled 1
         , width fill
         , spacingXY 5 0
+
         -- , Element.spaceEvenly
         , Events.onMouseEnter <| MouseEnterShopItem context item
         , Events.onMouseLeave <| MouseLeaveShopItem context item
         , Element.below expanded_display
         ]
-        [ column [ width (fillPortion 2 |> Element.maximum 200), font_scaled 2, debug_explain] [  text <| clipText item.name 15 ]
-        , column [ portion 1, debug_explain] [ render_gp item.gold_cost ]
-        , column [ portion 2, debug_explain] [ render_item_type item.item_type ]
-        , column [ portion 1, debug_explain]
+        [ column [ width (fillPortion 2 |> Element.maximum 200), font_scaled 2, debug_explain ] [ text <| clipText item.name 15 ]
+        , column [ portion 1, debug_explain ] [ render_gp <| get_adjusted_item_cost item 1 ]
+        , column [ portion 2, debug_explain ] [ render_item_type item.item_type ]
+        , column [ portion 1, debug_explain ]
             [ el [] <|
                 if qty == 1 then
                     text " "
@@ -501,7 +507,7 @@ render_single_item_for_sale gold_in_pocket maybe_hovered_item ( item, qty ) cont
             ]
         , column [ width <| (fillPortion 3 |> Element.maximum 200), debug_explain ]
             [ el [] <| text <| clipText item.description 24 ]
-        , column [ portion 1, debug_explain] [ controls_column ]
+        , column [ portion 1, debug_explain ] [ controls_column ]
         ]
 
 
@@ -570,7 +576,6 @@ view model =
         --               }
         --             ]
         --         }
-
         items_for_sale_grid =
             Element.column [ width fill, spacingXY 0 5 ] <|
                 (++)
@@ -613,6 +618,7 @@ view model =
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
         Element.column [ width fill ]
             [ welcome_header
+
             -- , el [ font_scaled 2, border_bottom 2 ] <| text "Items for Sale"
             -- , items_for_sale_table
             , items_for_sale_grid

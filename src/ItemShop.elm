@@ -98,6 +98,10 @@ initial_owned_items =
     ]
 
 
+get_adjusted_item_cost : Item -> Int -> Int
+get_adjusted_item_cost item qty = item.gold_cost * qty
+
+
 white_color : Color
 white_color =
     rgb 1 1 1
@@ -264,7 +268,7 @@ update msg model =
         BuyItem item qty ->
             let
                 total_cost =
-                    item.gold_cost * qty
+                    get_adjusted_item_cost item qty
 
                 can_afford_item =
                     total_cost <= model.gold_in_pocket
@@ -351,7 +355,7 @@ update msg model =
                         { model
                             | owned_items = new_inventory
                             , items_for_sale = new_shop_items
-                            , gold_in_pocket = model.gold_in_pocket + (item.gold_cost * qty)
+                            , gold_in_pocket = model.gold_in_pocket + (get_adjusted_item_cost item qty)
                         }
 
                     else
@@ -393,7 +397,8 @@ render_gp_sized count font_size =
 shop_buy_button gold_in_pocket ( item, qty ) =
     let
         can_afford =
-            gold_in_pocket >= item.gold_cost * 1
+            gold_in_pocket >= get_adjusted_item_cost item 1
+
 
         button_type =
             if can_afford then

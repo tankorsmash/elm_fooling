@@ -72,7 +72,7 @@ item_type_to_id item_type =
 type alias Item =
     { name : String
     , item_type : ItemType
-    , gold_cost : Int
+    , raw_gold_cost : Int
     , description : String
     }
 
@@ -129,22 +129,22 @@ initial_shop_trends =
 
 initial_items_for_sale : List ( Item, Int )
 initial_items_for_sale =
-    [ ( { name = "Boots", item_type = Armor, gold_cost = 5, description = "An old pair of boots" }, 3 )
-    , ( { name = "Sword", item_type = Weapon, gold_cost = 15, description = "A rusted sword" }, 5 )
-    , ( { name = "Dagger", item_type = Weapon, gold_cost = 10, description = "A small weapon that fits in your pocket" }, 4 )
-    , ( { name = "Book of the Dead with a real", item_type = Spellbook, gold_cost = 20, description = "Bound in leather, this book has a skull for a cover" }, 1 )
+    [ ( { name = "Boots", item_type = Armor, raw_gold_cost = 5, description = "An old pair of boots" }, 3 )
+    , ( { name = "Sword", item_type = Weapon, raw_gold_cost = 15, description = "A rusted sword" }, 5 )
+    , ( { name = "Dagger", item_type = Weapon, raw_gold_cost = 10, description = "A small weapon that fits in your pocket" }, 4 )
+    , ( { name = "Book of the Dead with a real", item_type = Spellbook, raw_gold_cost = 20, description = "Bound in leather, this book has a skull for a cover" }, 1 )
     ]
 
 
 initial_owned_items : List ( Item, Int )
 initial_owned_items =
-    [ ( { name = "Boots", item_type = Armor, gold_cost = 5, description = "An old pair of boots" }, 10 )
+    [ ( { name = "Boots", item_type = Armor, raw_gold_cost = 5, description = "An old pair of boots" }, 10 )
     ]
 
 
 get_adjusted_item_cost : Item -> Int -> Int
 get_adjusted_item_cost item qty =
-    item.gold_cost * qty
+    item.raw_gold_cost * qty
 
 
 white_color : Color
@@ -589,7 +589,7 @@ view model =
         --               , width = fillPortion 2
         --               }
         --             , { header = Element.none
-        --               , view = Tuple.first >> .gold_cost >> render_gp >> el [ debug_explain ]
+        --               , view = Tuple.first >> .raw_gold_cost >> render_gp >> el [ debug_explain ]
         --               , width = fillPortion 1
         --               }
         --             , { header = Element.none

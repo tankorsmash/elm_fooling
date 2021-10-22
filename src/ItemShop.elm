@@ -69,6 +69,28 @@ item_type_to_id item_type =
             5
 
 
+id_to_item_type : ItemTypeId -> Maybe ItemType
+id_to_item_type type_id =
+    case type_id of
+        1 ->
+            Just Weapon
+
+        2 ->
+            Just Armor
+
+        3 ->
+            Just Spellbook
+
+        4 ->
+            Just Furniture
+
+        5 ->
+            Just Food
+
+        _ ->
+            Nothing
+
+
 type alias Item =
     { name : String
     , item_type : ItemType
@@ -573,10 +595,38 @@ border_bottom bord =
 
 trends_display : ShopTrends -> Element.Element msg
 trends_display shop_trends =
-    column [] [
-        el [ border_bottom 2 ] <| text "Shop Trends"
-        , text "No trends at the moment..."
-    ]
+    let
+        render_single_popularity : ( Int, Float ) -> Element.Element msg
+        render_single_popularity ( type_id, popularity ) =
+            let
+                pretty_type : String
+                pretty_type =
+                    case id_to_item_type type_id of
+                        Just prettied ->
+                            item_type_to_pretty_string prettied
+
+                        Nothing ->
+                            "Unknown Type (" ++ String.fromInt type_id ++ ")"
+            in
+            text <| pretty_type ++ ": " ++ String.fromFloat (popularity * 100) ++ "%"
+
+        summarized =
+            text "No trends at the moment."
+
+        rendered_popularity : Element.Element msg
+        rendered_popularity =
+            row [ spacing 15, paddingXY 0 10 ]
+                (summarized
+                    :: (List.map render_single_popularity <|
+                            Dict.toList shop_trends.type_popularity
+                       )
+                )
+    in
+    column [ paddingXY 0 5 ] <|
+        [ el [ font_scaled 2, border_bottom 2 ] <| text "Shop Trends"
+        , rendered_popularity
+        ]
+
 
 view : Model -> Html.Html Msg
 view model =
@@ -631,7 +681,7 @@ view model =
         items_for_sale_grid =
             Element.column [ width fill, spacingXY 0 5 ] <|
                 (++)
-                    [ Element.el [ border_bottom 2 ] <| text "Items For Sale"
+                    [ Element.el [ font_scaled 2, border_bottom 2 ] <| text "Items For Sale"
                     ]
                     (List.map
                         (\item ->
@@ -648,7 +698,7 @@ view model =
         items_in_inventory =
             Element.column [ width fill, spacingXY 0 5 ] <|
                 (++)
-                    [ Element.row [ width fill ]
+                    [ Element.row [ font_scaled 2, width fill ]
                         [ Element.el [ border_bottom 2 ] <| text "Items In Inventory"
                         , text "   "
                         , row [ font_scaled 1, centerX ] <|
@@ -666,10 +716,9 @@ view model =
                      <|
                         List.sortBy sort_func model.owned_items
                     )
-
     in
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
-        Element.column [ width fill ]
+        Element.column [ width fill, font_scaled 1 ]
             [ welcome_header
             , trends_display model.shop_trends
 

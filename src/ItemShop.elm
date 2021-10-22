@@ -2,6 +2,7 @@ module ItemShop exposing (Model, Msg, init, update, view)
 
 import Color
 import Color.Convert as Convert
+import Dict
 import Element
     exposing
         ( Color
@@ -45,6 +46,29 @@ type ItemType
     | Food
 
 
+type alias ItemTypeId =
+    Int
+
+
+item_type_to_id : ItemType -> ItemTypeId
+item_type_to_id item_type =
+    case item_type of
+        Weapon ->
+            1
+
+        Armor ->
+            2
+
+        Spellbook ->
+            3
+
+        Furniture ->
+            4
+
+        Food ->
+            5
+
+
 type alias Item =
     { name : String
     , item_type : ItemType
@@ -74,12 +98,32 @@ type alias InventoryRecords =
     List InventoryRecord
 
 
+type alias ShopTrends =
+    { type_popularity : Dict.Dict ItemTypeId Float
+    }
+
+
 type alias Model =
     { owned_items : List ( Item, Int )
     , items_for_sale : List ( Item, Int )
     , hovered_item_for_sale : Maybe Item
     , hovered_item_in_inventory : Maybe Item
     , gold_in_pocket : Int
+    , shop_trends : ShopTrends
+    }
+
+
+initial_shop_trends : ShopTrends
+initial_shop_trends =
+    { type_popularity =
+        Dict.fromList <|
+            List.map (\it -> ( item_type_to_id it, 1.0 ))
+                [ Weapon
+                , Armor
+                , Spellbook
+                , Furniture
+                , Food
+                ]
     }
 
 
@@ -236,6 +280,7 @@ init =
     , hovered_item_for_sale = Nothing
     , hovered_item_in_inventory = Nothing
     , gold_in_pocket = 0
+    , shop_trends = initial_shop_trends
     }
 
 

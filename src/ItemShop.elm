@@ -676,10 +676,17 @@ trends_display shop_trends =
                         Nothing ->
                             "Unknown Type (" ++ String.fromInt type_id ++ ")"
             in
-            text <| pretty_type ++ ": " ++ String.fromFloat (popularity * 100) ++ "%"
+            text <| pretty_type ++ ": " ++ String.fromInt (round (popularity * 100)) ++ "%"
+
+        has_active_trends =
+            List.any (Tuple.second >> (/=) 1) <| Dict.toList shop_trends.item_type_sentiment
 
         summarized =
-            text "No trends at the moment."
+            if not has_active_trends then
+                text "No trends at the moment."
+
+            else
+                text "Something is trending!"
 
         rendered_popularity : Element.Element msg
         rendered_popularity =

@@ -121,7 +121,7 @@ type alias InventoryRecords =
 
 
 type alias ShopTrends =
-    { item_popularity : Dict.Dict ItemTypeId Float
+    { item_type_sentiment : Dict.Dict ItemTypeId Float
     }
 
 
@@ -137,7 +137,7 @@ type alias Model =
 
 initial_shop_trends : ShopTrends
 initial_shop_trends =
-    { item_popularity =
+    { item_type_sentiment =
         Dict.fromList <|
             List.map (\it -> ( item_type_to_id it, 1.0 ))
                 [ Weapon
@@ -418,7 +418,23 @@ update msg model =
                 new_inventory =
                     List.map reduce_if_matched model.owned_items
 
-                {item_popularity} = model.shop_trends
+                { shop_trends } = model
+                { item_type_sentiment } = shop_trends
+
+                new_its =
+                    Dict.update
+                        (item_type_to_id item.item_type)
+                        (\maybe_sent ->
+                            case maybe_sent of
+                                Just existing_sent ->
+                                    Just (existing_sent - 0.1)
+
+                                Nothing ->
+                                    Just (1.0 - 0.1)
+                        )
+                        item_type_sentiment
+
+                new_shop_trends = { shop_trends | item_type_sentiment = new_its }
 
                 new_model =
                     if has_items_to_sell then
@@ -426,6 +442,7 @@ update msg model =
                             | owned_items = new_inventory
                             , items_for_sale = new_shop_items
                             , gold_in_pocket = model.gold_in_pocket + get_adjusted_item_cost item qty
+                            , shop_trends = new_shop_trends
                         }
 
                     else
@@ -623,7 +640,7 @@ trends_display shop_trends =
             row [ spacing 15, paddingXY 0 10 ]
                 (summarized
                     :: (List.map render_single_popularity <|
-                            Dict.toList shop_trends.item_popularity
+                            Dict.toList shop_trends.item_type_sentiment
                        )
                 )
     in

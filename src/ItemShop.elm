@@ -313,6 +313,24 @@ item_type_to_pretty_string item_type =
         Food ->
             "Food"
 
+item_type_to_pretty_string_plural : ItemType -> String
+item_type_to_pretty_string_plural item_type =
+    case item_type of
+        Weapon ->
+            "Weapons"
+
+        Armor ->
+            "Armors"
+
+        Spellbook ->
+            "Spellbooks"
+
+        Furniture ->
+            "Furniture"
+
+        Food ->
+            "Food"
+
 
 init : Model
 init =
@@ -671,7 +689,7 @@ trends_display shop_trends =
                 pretty_type =
                     case id_to_item_type type_id of
                         Just prettied ->
-                            item_type_to_pretty_string prettied
+                            item_type_to_pretty_string_plural prettied
 
                         Nothing ->
                             "Unknown Type (" ++ String.fromInt type_id ++ ")"

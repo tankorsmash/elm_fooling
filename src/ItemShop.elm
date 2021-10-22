@@ -571,6 +571,13 @@ border_bottom bord =
     Border.widthEach { bottom = bord, left = 0, right = 0, top = 0 }
 
 
+trends_display : ShopTrends -> Element.Element msg
+trends_display shop_trends =
+    column [] [
+        el [ border_bottom 2 ] <| text "Shop Trends"
+        , text "No trends at the moment..."
+    ]
+
 view : Model -> Html.Html Msg
 view model =
     let
@@ -659,10 +666,12 @@ view model =
                      <|
                         List.sortBy sort_func model.owned_items
                     )
+
     in
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
         Element.column [ width fill ]
             [ welcome_header
+            , trends_display model.shop_trends
 
             -- , el [ font_scaled 2, border_bottom 2 ] <| text "Items for Sale"
             -- , items_for_sale_table

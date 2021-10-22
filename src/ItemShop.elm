@@ -88,7 +88,7 @@ initial_items_for_sale =
     [ ( { name = "Boots", item_type = Armor, gold_cost = 5, description = "An old pair of boots" }, 3 )
     , ( { name = "Sword", item_type = Weapon, gold_cost = 15, description = "A rusted sword" }, 5 )
     , ( { name = "Dagger", item_type = Weapon, gold_cost = 10, description = "A small weapon that fits in your pocket" }, 4 )
-    , ( { name = "Book of the Dead", item_type = Spellbook, gold_cost = 20, description = "Bound in leather, this book has a skull for a cover" }, 1 )
+    , ( { name = "Book of the Dead with a real", item_type = Spellbook, gold_cost = 20, description = "Bound in leather, this book has a skull for a cover" }, 1 )
     ]
 
 
@@ -403,7 +403,7 @@ shop_buy_button gold_in_pocket ( item, qty ) =
                 secondary_button
     in
     button_type
-        [ Element.transparent <| qty < 1 ]
+        [ Element.transparent <| qty < 1, width (fill |> Element.minimum 120) ]
         (BuyItem item 1)
     <|
         if can_afford then
@@ -412,6 +412,13 @@ shop_buy_button gold_in_pocket ( item, qty ) =
         else
             "can't afford"
 
+
+debug_explain =
+    let
+        do_explain = False
+    in
+        if do_explain then explain Debug.todo
+        else Element.scale 1.0
 
 render_single_item_for_sale : Int -> Maybe Item -> ( Item, Int ) -> ListContext -> Element.Element Msg
 render_single_item_for_sale gold_in_pocket maybe_hovered_item ( item, qty ) context =
@@ -450,26 +457,7 @@ render_single_item_for_sale gold_in_pocket maybe_hovered_item ( item, qty ) cont
         controls_column =
             case context of
                 ShopItems ->
-                    let
-                        can_afford =
-                            gold_in_pocket >= item.gold_cost * 1
-
-                        button_type =
-                            if can_afford then
-                                primary_button
-
-                            else
-                                secondary_button
-                    in
-                    button_type
-                        [ Element.transparent <| qty < 1, width fill ]
-                        (BuyItem item 1)
-                    <|
-                        if can_afford then
-                            "buy me"
-
-                        else
-                            "can't afford"
+                    shop_buy_button gold_in_pocket ( item, qty )
 
                 InventoryItems ->
                     primary_button
@@ -480,33 +468,35 @@ render_single_item_for_sale gold_in_pocket maybe_hovered_item ( item, qty ) cont
     row
         [ font_scaled 1
         , width fill
+        , spacingXY 5 0
+        -- , Element.spaceEvenly
         , Events.onMouseEnter <| MouseEnterShopItem context item
         , Events.onMouseLeave <| MouseLeaveShopItem context item
         , Element.below expanded_display
         ]
-        [ column [ portion 2, font_scaled 2 ] [ text <| item.name ]
-        , column [ portion 1 ] [ render_gp item.gold_cost ]
-        , column [ portion 2 ] [ render_item_type item.item_type ]
-        , column [ portion 1 ]
-            [ if qty == 1 then
-                text " "
+        [ column [ width (fillPortion 2 |> Element.maximum 200), font_scaled 2, debug_explain] [  text <| clipText item.name 15 ]
+        , column [ portion 1, debug_explain] [ render_gp item.gold_cost ]
+        , column [ portion 2, debug_explain] [ render_item_type item.item_type ]
+        , column [ portion 1, debug_explain]
+            [ el [] <|
+                if qty == 1 then
+                    text " "
 
-              else if qty == 0 then
-                text <|
-                    case context of
-                        ShopItems ->
-                            "SOLD OUT"
+                else if qty == 0 then
+                    text <|
+                        case context of
+                            ShopItems ->
+                                "SOLD OUT"
 
-                        InventoryItems ->
-                            "NONE LEFT"
+                            InventoryItems ->
+                                "NONE LEFT"
 
-              else
-                text <| "x" ++ String.fromInt qty
+                else
+                    text <| "x" ++ String.fromInt qty
             ]
-        , column
-            [ width <| (fillPortion 3 |> Element.maximum 200) ]
-            [ text <| clipText item.description 24 ]
-        , column [ portion 1, width fill ] [ controls_column ]
+        , column [ width <| (fillPortion 3 |> Element.maximum 200), debug_explain ]
+            [ el [] <| text <| clipText item.description 24 ]
+        , column [ portion 1, debug_explain] [ controls_column ]
         ]
 
 
@@ -534,45 +524,47 @@ view model =
         sort_func =
             Tuple.first >> .name
 
-        items_for_sale_table =
-            Element.table [ width fill, font_scaled 1, spacing 5, paddingXY 0 10 ]
-                { data = List.sortBy sort_func model.items_for_sale
-                , columns =
-                    [ { header = Element.none
-                      , view = Tuple.first >> .name >> text >> el [ font_scaled 2 ]
-                      , width = fillPortion 2
-                      }
-                    , { header = Element.none
-                      , view = Tuple.first >> .gold_cost >> render_gp
-                      , width = fillPortion 1
-                      }
-                    , { header = Element.none
-                      , view = Tuple.first >> .item_type >> render_item_type
-                      , width = fillPortion 2
-                      }
-                    , { header = Element.none
-                      , view =
-                            \( i, qty ) ->
-                                if qty == 1 then
-                                    text ""
-
-                                else if qty == 0 then
-                                    text "SOLD OUT"
-
-                                else
-                                    text <| "x" ++ String.fromInt qty
-                      , width = fillPortion 1
-                      }
-                    , { header = Element.none
-                      , view = Tuple.first >> .description >> (\desc -> clipText desc 24) >> text >> el [ alignLeft ]
-                      , width = fillPortion 2
-                      }
-                    , { header = Element.none
-                      , view = shop_buy_button model.gold_in_pocket
-                      , width = fillPortion 1
-                      }
-                    ]
-                }
+        -- items_for_sale_table =
+        --     Element.table [ width fill, font_scaled 1, spacing 5, paddingXY 0 10 ]
+        --         { data = List.sortBy sort_func model.items_for_sale
+        --         , columns =
+        --             [ { header = Element.none
+        --               , view = Tuple.first >> .name >> text >> el [ font_scaled 2, debug_explain ]
+        --               , width = fillPortion 2
+        --               }
+        --             , { header = Element.none
+        --               , view = Tuple.first >> .gold_cost >> render_gp >> el [ debug_explain ]
+        --               , width = fillPortion 1
+        --               }
+        --             , { header = Element.none
+        --               , view = Tuple.first >> .item_type >> render_item_type >> el [ debug_explain ]
+        --               , width = fillPortion 2
+        --               }
+        --             , { header = Element.none
+        --               , view =
+        --                     (\( i, qty ) ->
+        --                         if qty == 1 then
+        --                             text ""
+        --
+        --                         else if qty == 0 then
+        --                             text "SOLD OUT"
+        --
+        --                         else
+        --                             text <| "x" ++ String.fromInt qty
+        --                     )
+        --                         >> el [ debug_explain ]
+        --               , width = fillPortion 1
+        --               }
+        --             , { header = Element.none
+        --               , view = Tuple.first >> .description >> (\desc -> clipText desc 24) >> text >> el [ alignLeft, debug_explain ]
+        --               , width = fillPortion 2
+        --               }
+        --             , { header = Element.none
+        --               , view = \( i, q ) -> el [ debug_explain ] <| shop_buy_button model.gold_in_pocket ( i, q )
+        --               , width = fillPortion 1
+        --               }
+        --             ]
+        --         }
 
         items_for_sale_grid =
             Element.column [ width fill, spacingXY 0 5 ] <|
@@ -616,8 +608,8 @@ view model =
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
         Element.column [ width fill ]
             [ welcome_header
-            , el [ font_scaled 2, border_bottom 2 ] <| text "Items for Sale"
-            , items_for_sale_table
+            -- , el [ font_scaled 2, border_bottom 2 ] <| text "Items for Sale"
+            -- , items_for_sale_table
             , items_for_sale_grid
             , Element.el [ paddingXY 0 10, width fill ] items_in_inventory
             ]

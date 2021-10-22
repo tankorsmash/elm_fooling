@@ -451,10 +451,12 @@ font_grey =
     Font.color <| rgb 0.35 0.35 0.35
 
 
+render_gp : Int -> Element msg
 render_gp count =
     render_gp_sized count 12
 
 
+render_gp_sized : Int -> Int -> Element msg
 render_gp_sized count font_size =
     paragraph []
         [ text <| String.fromInt count
@@ -462,6 +464,7 @@ render_gp_sized count font_size =
         ]
 
 
+shop_buy_button : Int -> InventoryRecord -> Element Msg
 shop_buy_button gold_in_pocket ( item, qty ) =
     let
         can_afford =

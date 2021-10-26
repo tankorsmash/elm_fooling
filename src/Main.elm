@@ -321,7 +321,8 @@ parseUrl url =
 matchRoute : Parser (Route -> a) a
 matchRoute =
     oneOf
-        [ map (TabRoute HomeTab) (s "home" </> fragment identity)
+        [ map (TabRoute HomeTab) (fragment identity)
+        , map (TabRoute HomeTab) (s "home" </> fragment identity)
         , map (TabRoute SinglePostDataTab) (s "single_post_data_tab" </> fragment identity)
         , map (TabRoute PostDataTableTab) (s "post_data_table_tab" </> fragment identity)
         , map (TabRoute RedditListingTab) (s "reddit_listing_tab" </> fragment identity)
@@ -1312,7 +1313,7 @@ homeView model =
         tab_content =
             case model.current_tab of
                 HomeTab ->
-                    div [] []
+                    div [] [text "Click upper nav to continue."]
 
                 SinglePostDataTab ->
                     div []

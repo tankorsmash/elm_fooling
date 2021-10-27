@@ -1,5 +1,6 @@
 module ItemShop exposing (Model, Msg, init, update, view)
 
+import Array
 import Color
 import Color.Convert as Convert
 import Dict
@@ -36,6 +37,8 @@ import Element.Font as Font
 import Element.Input as Input
 import Html
 import Html.Attributes
+import Random
+import UUID exposing (UUID)
 
 
 type ItemType
@@ -96,6 +99,7 @@ type alias Item =
     , item_type : ItemType
     , raw_gold_cost : Int
     , description : String
+    , id : UUID
     }
 
 
@@ -153,18 +157,94 @@ initial_shop_trends =
     }
 
 
+unset_item_frame : Item
+unset_item_frame =
+    { name = "UNSET ITEM"
+    , item_type = Armor
+    , raw_gold_cost = 5
+    , description = "An unset item description for debugging"
+    , id = UUID.forName "unset item " UUID.dnsNamespace
+    }
+
+
+item_frames =
+    Dict.fromList
+        [ ( "boots"
+          , { name = "Boots"
+            , item_type = Armor
+            , raw_gold_cost = 5
+            , description = "An old pair of boots"
+            , id = UUID.forName "boots" UUID.dnsNamespace
+            }
+          )
+        , ( "sword"
+          , { name = "Sword"
+            , item_type = Weapon
+            , raw_gold_cost = 15
+            , description = "A rusted sword"
+            , id = UUID.forName "rusted sword" UUID.dnsNamespace
+            }
+          )
+        , ( "dagger"
+          , { name = "Dagger"
+            , item_type = Weapon
+            , raw_gold_cost = 10
+            , description = "A small weapon that fits in your pocket"
+            , id = UUID.forName "small dagger" UUID.dnsNamespace
+            }
+          )
+        , ( "book"
+          , { name = "Book of the Dead with a real"
+            , item_type = Spellbook
+            , raw_gold_cost = 20
+            , description = "Bound in leather, this book has a skull for a cover"
+            , id = UUID.forName "book of the dead" UUID.dnsNamespace
+            }
+          )
+        ]
+
+
 initial_items_for_sale : List ( Item, Int )
 initial_items_for_sale =
-    [ ( { name = "Boots", item_type = Armor, raw_gold_cost = 5, description = "An old pair of boots" }, 3 )
-    , ( { name = "Sword", item_type = Weapon, raw_gold_cost = 15, description = "A rusted sword" }, 5 )
-    , ( { name = "Dagger", item_type = Weapon, raw_gold_cost = 10, description = "A small weapon that fits in your pocket" }, 4 )
-    , ( { name = "Book of the Dead with a real", item_type = Spellbook, raw_gold_cost = 20, description = "Bound in leather, this book has a skull for a cover" }, 1 )
-    ]
+    let
+        seed =
+            Random.initialSeed 12345
+
+        maybe_items : List ( String, Int )
+        maybe_items =
+            [ ( "boots", 3 )
+            , ( "sword", 5 )
+            , ( "dagger", 4 )
+            , ( "book", 1 )
+            ]
+
+        just_items : List ( Item, Int )
+        just_items =
+            List.filterMap
+                (\( item_str, qty ) ->
+                    case Dict.get item_str item_frames of
+                        Just item ->
+                            Just ( item, qty )
+
+                        Nothing ->
+                            Nothing
+                )
+                maybe_items
+
+        debug =
+            if List.length just_items == List.length maybe_items then
+                Ok ""
+
+            else
+                --TODO: handling this better, because this isn't elmy at all
+                Debug.log "THERE WAS AN ERROR IN INITIAL ITEM SETUP!!!!" <| Err ""
+    in
+    just_items
 
 
 initial_owned_items : List ( Item, Int )
 initial_owned_items =
-    [ ( { name = "Boots", item_type = Armor, raw_gold_cost = 5, description = "An old pair of boots" }, 10 )
+    [ ( Maybe.withDefault unset_item_frame <| Dict.get "boots" item_frames, 12 )
     ]
 
 

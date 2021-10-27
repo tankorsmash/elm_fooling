@@ -112,6 +112,11 @@ type ListContext
     | InventoryItems
 
 
+type TradeParty
+    = ShopParty
+    | PlayerParty
+
+
 type Msg
     = Noop
     | MouseEnterShopItem ListContext Item
@@ -142,6 +147,8 @@ type alias ItemTradeLog =
     { item_id : ItemId
     , quantity : Int
     , gold_cost : Int
+    , from_party : TradeParty
+    , to_party : TradeParty
     }
 
 
@@ -521,8 +528,35 @@ update msg model =
                         )
                         item_type_sentiment
 
+                from_party : TradeParty
+                from_party =
+                    ShopParty
+
+                to_party : TradeParty
+                to_party =
+                    PlayerParty
+
+                old_trade_logs =
+                    shop_trends.item_trade_logs
+
+                new_trade_log_entry : ItemTradeLog
+                new_trade_log_entry =
+                    { item_id = item.id
+                    , quantity = qty
+                    , gold_cost = total_cost
+                    , from_party = from_party
+                    , to_party = to_party
+                    }
+
+                new_item_trade_logs =
+                    old_trade_logs
+                        ++ [ new_trade_log_entry ]
+
                 new_shop_trends =
-                    { shop_trends | item_type_sentiment = new_its }
+                    { shop_trends
+                        | item_type_sentiment = new_its
+                        , item_trade_logs = new_item_trade_logs
+                    }
 
                 new_model =
                     if can_afford_item then
@@ -595,15 +629,45 @@ update msg model =
                         )
                         item_type_sentiment
 
+                from_party : TradeParty
+                from_party =
+                    PlayerParty
+
+                to_party : TradeParty
+                to_party =
+                    ShopParty
+
+                old_trade_logs =
+                    shop_trends.item_trade_logs
+
+                new_trade_log_entry : ItemTradeLog
+                new_trade_log_entry =
+                    { item_id = item.id
+                    , quantity = qty
+                    , gold_cost = total_cost
+                    , from_party = from_party
+                    , to_party = to_party
+                    }
+
+                new_item_trade_logs =
+                    old_trade_logs
+                        ++ [ new_trade_log_entry ]
+
                 new_shop_trends =
-                    { shop_trends | item_type_sentiment = new_its }
+                    { shop_trends
+                        | item_type_sentiment = new_its
+                        , item_trade_logs = new_item_trade_logs
+                    }
+
+                total_cost =
+                    get_adjusted_item_cost model.shop_trends item qty
 
                 new_model =
                     if has_items_to_sell then
                         { model
                             | owned_items = new_inventory
                             , items_for_sale = new_shop_items
-                            , gold_in_pocket = model.gold_in_pocket + get_adjusted_item_cost model.shop_trends item qty
+                            , gold_in_pocket = model.gold_in_pocket + total_cost
                             , shop_trends = new_shop_trends
                         }
 

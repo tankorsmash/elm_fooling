@@ -123,6 +123,8 @@ type Msg
     | MouseLeaveShopItem ListContext Item
     | BuyItem Item Int
     | SellItem Item Int
+    | StartTrendsHover
+    | EndTrendsHover
 
 
 type alias InventoryRecord =
@@ -159,6 +161,7 @@ type alias Model =
     , hovered_item_in_inventory : Maybe Item
     , gold_in_pocket : Int
     , shop_trends : ShopTrends
+    , shop_trends_hovered : Bool
     }
 
 
@@ -445,6 +448,7 @@ init =
     , hovered_item_in_inventory = Nothing
     , gold_in_pocket = 0
     , shop_trends = initial_shop_trends
+    , shop_trends_hovered = False
     }
 
 
@@ -676,6 +680,12 @@ update msg model =
             in
             ( new_model, Cmd.none )
 
+        StartTrendsHover ->
+            ( { model | shop_trends_hovered = True }, Cmd.none )
+
+        EndTrendsHover ->
+            ( { model | shop_trends_hovered = False }, Cmd.none )
+
 
 render_item_type : ItemType -> Element.Element Msg
 render_item_type item_type =
@@ -875,8 +885,8 @@ border_bottom bord =
     Border.widthEach { bottom = bord, left = 0, right = 0, top = 0 }
 
 
-trends_display : ShopTrends -> Element.Element msg
-trends_display shop_trends =
+trends_display : ShopTrends -> Bool -> Element.Element Msg
+trends_display shop_trends is_expanded =
     let
         render_single_popularity : ( Int, Float ) -> Element.Element msg
         render_single_popularity ( type_id, popularity ) =
@@ -923,8 +933,42 @@ trends_display shop_trends =
                 summarized
                     :: specific_trends
                     ++ rendered_item_trade_logs
+
+        expanded_trade_logs =
+            Element.below <|
+                el
+                    [ width fill
+                    , Background.color <| rgb 1 1 1
+                    , Border.color <| rgb 0.35 0.35 0.35
+                    , Border.rounded 3
+                    , Border.width 2
+                    , padding 10
+                    , Element.moveDown 20
+                    ]
+                <|
+                    text "There have been some trades"
+
+        has_trades =
+            List.length shop_trends.item_trade_logs > 0
     in
-    column [ paddingXY 0 5 ] <|
+    column
+        ([ paddingXY 0 5 ]
+            ++ (if has_trades then
+                    [ Events.onMouseEnter <| StartTrendsHover
+                    , Events.onMouseLeave <| EndTrendsHover
+                    ]
+
+                else
+                    []
+               )
+            ++ (if is_expanded then
+                    [ expanded_trade_logs ]
+
+                else
+                    []
+               )
+        )
+    <|
         [ el [ font_scaled 2, border_bottom 2 ] <| text "Shop Trends"
         , rendered_popularity
         ]
@@ -1024,7 +1068,7 @@ view model =
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
         Element.column [ width fill, font_scaled 1 ]
             [ welcome_header
-            , trends_display model.shop_trends
+            , trends_display model.shop_trends model.shop_trends_hovered
 
             -- , el [ font_scaled 2, border_bottom 2 ] <| text "Items for Sale"
             -- , items_for_sale_table

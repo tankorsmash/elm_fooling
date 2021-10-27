@@ -53,6 +53,10 @@ type alias ItemTypeId =
     Int
 
 
+type alias ItemId =
+    UUID
+
+
 item_type_to_id : ItemType -> ItemTypeId
 item_type_to_id item_type =
     case item_type of
@@ -99,7 +103,7 @@ type alias Item =
     , item_type : ItemType
     , raw_gold_cost : Int
     , description : String
-    , id : UUID
+    , id : ItemId
     }
 
 

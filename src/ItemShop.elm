@@ -134,6 +134,14 @@ type alias ItemSentiments =
 
 type alias ShopTrends =
     { item_type_sentiment : ItemSentiments
+    , item_trade_logs : List ItemTradeLog
+    }
+
+
+type alias ItemTradeLog =
+    { item_id : ItemId
+    , quantity : Int
+    , gold_cost : Int
     }
 
 
@@ -158,6 +166,7 @@ initial_shop_trends =
                 , Furniture
                 , Food
                 ]
+    , item_trade_logs = []
     }
 
 
@@ -822,6 +831,7 @@ trends_display shop_trends =
         has_active_trends =
             List.any (Tuple.second >> (/=) 1) <| Dict.toList shop_trends.item_type_sentiment
 
+        summarized : Element msg
         summarized =
             if not has_active_trends then
                 text "No trends at the moment."
@@ -829,15 +839,26 @@ trends_display shop_trends =
             else
                 text "Something is trending!"
 
+        specific_trends : List (Element msg)
+        specific_trends =
+            List.map render_single_popularity <|
+                List.filter (Tuple.second >> (/=) 1) <|
+                    Dict.toList shop_trends.item_type_sentiment
+
+        rendered_item_trade_logs : List (Element msg)
+        rendered_item_trade_logs =
+            [ text <|
+                "Trade logs go here, and there have been "
+                    ++ (String.fromInt <| List.length shop_trends.item_trade_logs)
+                    ++ " trades"
+            ]
+
         rendered_popularity : Element.Element msg
         rendered_popularity =
-            row [ spacing 15, paddingXY 0 10 ]
-                (summarized
-                    :: (List.map render_single_popularity <|
-                            List.filter (Tuple.second >> (/=) 1) <|
-                                Dict.toList shop_trends.item_type_sentiment
-                       )
-                )
+            row [ spacing 15, paddingXY 0 10 ] <|
+                summarized
+                    :: specific_trends
+                    ++ rendered_item_trade_logs
     in
     column [ paddingXY 0 5 ] <|
         [ el [ font_scaled 2, border_bottom 2 ] <| text "Shop Trends"

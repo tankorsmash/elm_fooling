@@ -117,6 +117,16 @@ type TradeParty
     | PlayerParty
 
 
+trade_party_to_str : TradeParty -> String
+trade_party_to_str party =
+    case party of
+        ShopParty ->
+            "Shop"
+
+        PlayerParty ->
+            "Player"
+
+
 type Msg
     = Noop
     | MouseEnterShopItem ListContext Item
@@ -934,9 +944,17 @@ trends_display shop_trends is_expanded =
                     :: specific_trends
                     ++ rendered_item_trade_logs
 
+        render_single_trade_log_entry : ItemTradeLog -> Element msg
+        render_single_trade_log_entry trade_log =
+            text <|
+                "an item was traded from "
+                    ++ trade_party_to_str trade_log.from_party
+                    ++ " to "
+                    ++ trade_party_to_str trade_log.to_party
+
         expanded_trade_logs =
             Element.below <|
-                el
+                column
                     [ width fill
                     , Background.color <| rgb 1 1 1
                     , Border.color <| rgb 0.35 0.35 0.35
@@ -946,7 +964,7 @@ trends_display shop_trends is_expanded =
                     , Element.moveDown 20
                     ]
                 <|
-                    text "There have been some trades"
+                    List.map render_single_trade_log_entry shop_trends.item_trade_logs
 
         has_trades =
             List.length shop_trends.item_trade_logs > 0

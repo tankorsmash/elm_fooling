@@ -524,6 +524,10 @@ find_matching_records to_match ( recorded_item, _ ) =
     to_match == recorded_item
 
 
+can_afford_item : ShopTrends -> Int -> Item -> Int -> Bool
+can_afford_item shop_trends held_gold item qty =
+    held_gold >= get_adjusted_item_cost shop_trends item qty
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -557,8 +561,8 @@ update msg model =
                 total_cost =
                     get_adjusted_item_cost model.shop_trends item qty
 
-                can_afford_item =
-                    total_cost <= model.gold_in_pocket
+                can_afford_item_ =
+                    can_afford_item model.shop_trends model.gold_in_pocket item qty
 
                 reduce_if_matched ( i, iq ) =
                     if i == item && iq >= qty then
@@ -636,7 +640,7 @@ update msg model =
                     }
 
                 new_model =
-                    if can_afford_item then
+                    if can_afford_item_ then
                         { model
                             | owned_items = new_inventory
                             , items_for_sale = new_shop_items

@@ -116,6 +116,7 @@ type alias Item =
 type ListContext
     = ShopItems
     | InventoryItems
+    | CharacterItems
 
 
 type TradeParty
@@ -175,11 +176,21 @@ type alias ItemTradeLog =
     }
 
 
+type alias Character =
+    { held_items : InventoryRecords
+    , held_gold : Int
+    , char_id : CharacterId
+    , name : String
+    }
+
+
 type alias Model =
     { owned_items : InventoryRecords
     , items_for_sale : InventoryRecords
+    , character : Character
     , hovered_item_for_sale : Maybe Item
     , hovered_item_in_inventory : Maybe Item
+    , hovered_item_in_character : Maybe Item
     , gold_in_pocket : Int
     , shop_trends : ShopTrends
     , shop_trends_hovered : Bool
@@ -305,6 +316,17 @@ initial_owned_items : List ( Item, Int )
 initial_owned_items =
     [ ( Maybe.withDefault unset_item_frame <| Dict.get "boots" item_frames, 12 )
     ]
+
+
+initial_character : Character
+initial_character =
+    { held_items =
+        [ ( Maybe.withDefault unset_item_frame <| Dict.get "dagger" item_frames, 8 )
+        ]
+    , held_gold = 100
+    , char_id = UUID.forName "character 1" UUID.dnsNamespace
+    , name = "Billy"
+    }
 
 
 get_adjusted_item_cost : ShopTrends -> Item -> Int -> Int
@@ -480,8 +502,10 @@ init : ( Model, Cmd Msg )
 init =
     ( { owned_items = initial_owned_items
       , items_for_sale = initial_items_for_sale
+      , character = initial_character
       , hovered_item_for_sale = Nothing
       , hovered_item_in_inventory = Nothing
+      , hovered_item_in_character = Nothing
       , gold_in_pocket = 0
       , shop_trends = initial_shop_trends
       , shop_trends_hovered = False
@@ -514,6 +538,9 @@ update msg model =
                 InventoryItems ->
                     ( { model | hovered_item_in_inventory = Just item }, Cmd.none )
 
+                CharacterItems ->
+                    ( { model | hovered_item_in_character = Just item }, Cmd.none )
+
         MouseLeaveShopItem context item ->
             case context of
                 ShopItems ->
@@ -521,6 +548,9 @@ update msg model =
 
                 InventoryItems ->
                     ( { model | hovered_item_in_inventory = Nothing }, Cmd.none )
+
+                CharacterItems ->
+                    ( { model | hovered_item_in_character = Nothing }, Cmd.none )
 
         BuyItem item qty ->
             let
@@ -883,6 +913,9 @@ render_single_item_for_sale shop_trends gold_in_pocket maybe_hovered_item ( item
                         [ Element.transparent <| qty < 1 ]
                         (SellItem item 1)
                         "sell me"
+
+                CharacterItems ->
+                    Element.none
     in
     row
         [ font_scaled 1
@@ -903,13 +936,15 @@ render_single_item_for_sale shop_trends gold_in_pocket maybe_hovered_item ( item
                     text " "
 
                 else if qty == 0 then
-                    text <|
-                        case context of
-                            ShopItems ->
-                                "SOLD OUT"
+                    case context of
+                        ShopItems ->
+                            text "SOLD OUT"
 
-                            InventoryItems ->
-                                "NONE LEFT"
+                        InventoryItems ->
+                            text "NONE LEFT"
+
+                        CharacterItems ->
+                            Element.none
 
                 else
                     text <| "x" ++ String.fromInt qty
@@ -1094,7 +1129,7 @@ render_inventory header held_items gold_held shop_trends hovered_item context =
     Element.column [ width fill, spacingXY 0 5 ] <|
         (++)
             [ Element.row [ font_scaled 2, width fill ]
-                [ Element.el [ border_bottom 2 ] <| text "Character's Inventory"
+                [ Element.el [ border_bottom 2 ] <| text header
                 , text "   "
                 , row [ font_scaled 1, centerX ] <|
                     [ text "Held: ", render_gp gold_held ]
@@ -1165,28 +1200,8 @@ view model =
                         List.sortBy sort_func model.owned_items
                     )
 
-        items_in_character =
-            Element.column [ width fill, spacingXY 0 5 ] <|
-                (++)
-                    [ Element.row [ font_scaled 2, width fill ]
-                        [ Element.el [ border_bottom 2 ] <| text "Character's Inventory"
-                        , text "   "
-                        , row [ font_scaled 1, centerX ] <|
-                            [ text "Held: ", render_gp model.gold_in_pocket ]
-                        ]
-                    ]
-                    (List.map
-                        (\item ->
-                            render_single_item_for_sale
-                                model.shop_trends
-                                model.gold_in_pocket
-                                model.hovered_item_in_inventory
-                                item
-                                InventoryItems
-                        )
-                     <|
-                        List.sortBy sort_func model.owned_items
-                    )
+        character =
+            model.character
     in
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
         Element.column [ width fill, font_scaled 1 ]
@@ -1199,12 +1214,12 @@ view model =
             , Element.el [ paddingXY 0 10, width fill ] items_in_inventory
             , Element.el [ paddingXY 0 10, width fill ]
                 (render_inventory
-                    "CHARACTER"
-                    model.owned_items
-                    model.gold_in_pocket
+                    (character.name ++ "'s Inventory")
+                    model.character.held_items
+                    model.character.held_gold
                     model.shop_trends
-                    model.hovered_item_in_inventory
-                    InventoryItems
+                    model.hovered_item_in_character
+                    CharacterItems
                 )
             ]
 

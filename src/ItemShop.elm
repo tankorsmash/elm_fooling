@@ -552,6 +552,20 @@ remove_item_from_inventory_records records item qty =
     List.map (reduce_if_matched item qty) records
 
 
+update_item_type_sentiment item_type_sentiment item_type sentiment_delta =
+    Dict.update
+        (item_type_to_id item_type)
+        (\maybe_sent ->
+            case maybe_sent of
+                Just existing_sent ->
+                    Just (existing_sent + sentiment_delta)
+
+                Nothing ->
+                    Just (1.0 + sentiment_delta)
+        )
+        item_type_sentiment
+
+
 reduce_if_matched item qty ( i, iq ) =
     if i == item && iq >= qty then
         ( i, iq - qty )
@@ -610,17 +624,7 @@ update msg model =
                     shop_trends
 
                 new_its =
-                    Dict.update
-                        (item_type_to_id item.item_type)
-                        (\maybe_sent ->
-                            case maybe_sent of
-                                Just existing_sent ->
-                                    Just (existing_sent + 0.1)
-
-                                Nothing ->
-                                    Just (1.0 + 0.1)
-                        )
-                        item_type_sentiment
+                    update_item_type_sentiment item_type_sentiment item.item_type 0.1
 
                 from_party : TradeParty
                 from_party =
@@ -703,17 +707,7 @@ update msg model =
                     shop_trends
 
                 new_its =
-                    Dict.update
-                        (item_type_to_id item.item_type)
-                        (\maybe_sent ->
-                            case maybe_sent of
-                                Just existing_sent ->
-                                    Just (existing_sent - 0.1)
-
-                                Nothing ->
-                                    Just (1.0 - 0.1)
-                        )
-                        item_type_sentiment
+                    update_item_type_sentiment item_type_sentiment item.item_type -0.1
 
                 from_party : TradeParty
                 from_party =

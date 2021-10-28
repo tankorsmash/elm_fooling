@@ -635,9 +635,6 @@ update msg model =
                 new_its =
                     update_item_type_sentiment item_type_sentiment item.item_type 0.1
 
-                old_trade_logs =
-                    shop_trends.item_trade_logs
-
                 new_trade_log_entry : ItemTradeLog
                 new_trade_log_entry =
                     { item_id = item.id
@@ -648,7 +645,7 @@ update msg model =
                     }
 
                 new_item_trade_logs =
-                    old_trade_logs
+                    shop_trends.item_trade_logs
                         ++ [ new_trade_log_entry ]
 
                 new_shop_trends =
@@ -691,9 +688,6 @@ update msg model =
                 new_its =
                     update_item_type_sentiment item_type_sentiment item.item_type -0.1
 
-                old_trade_logs =
-                    shop_trends.item_trade_logs
-
                 new_trade_log_entry : ItemTradeLog
                 new_trade_log_entry =
                     { item_id = item.id
@@ -704,7 +698,7 @@ update msg model =
                     }
 
                 new_item_trade_logs =
-                    old_trade_logs
+                    shop_trends.item_trade_logs
                         ++ [ new_trade_log_entry ]
 
                 new_shop_trends =

@@ -58,6 +58,9 @@ type alias ItemTypeId =
 type alias ItemId =
     UUID
 
+type alias CharacterId =
+    UUID
+
 
 item_type_to_id : ItemType -> ItemTypeId
 item_type_to_id item_type =
@@ -117,6 +120,7 @@ type ListContext
 type TradeParty
     = ShopParty
     | PlayerParty
+    | CharacterParty CharacterId
 
 
 trade_party_to_str : TradeParty -> String
@@ -127,6 +131,9 @@ trade_party_to_str party =
 
         PlayerParty ->
             "Player"
+
+        CharacterParty char_id ->
+            "CharacterId"
 
 
 type Msg

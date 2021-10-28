@@ -574,6 +574,15 @@ reduce_if_matched item qty ( i, iq ) =
     else
         ( i, iq )
 
+has_items_to_sell inventory_records item qty =
+    List.length
+        (List.filter
+            (\( i, q ) ->
+                q >= qty && find_matching_records item ( i, q )
+            )
+            inventory_records
+        )
+        > 0
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -626,14 +635,6 @@ update msg model =
                 new_its =
                     update_item_type_sentiment item_type_sentiment item.item_type 0.1
 
-                from_party : TradeParty
-                from_party =
-                    ShopParty
-
-                to_party : TradeParty
-                to_party =
-                    PlayerParty
-
                 old_trade_logs =
                     shop_trends.item_trade_logs
 
@@ -642,8 +643,8 @@ update msg model =
                     { item_id = item.id
                     , quantity = qty
                     , gold_cost = total_cost
-                    , from_party = from_party
-                    , to_party = to_party
+                    , from_party = ShopParty
+                    , to_party = PlayerParty
                     }
 
                 new_item_trade_logs =
@@ -672,33 +673,14 @@ update msg model =
 
         SellItem item qty ->
             let
-                has_items_to_sell =
-                    List.length
-                        (List.filter
-                            (\( i, q ) ->
-                                q >= qty && find_matching_records item ( i, q )
-                            )
-                            model.owned_items
-                        )
-                        > 0
-
-                updated_shop_items =
-                    List.map (\( i, q ) -> ( i, q + qty )) <|
-                        List.filter (find_matching_records item) model.items_for_sale
-
-                non_matching_shop_items =
-                    List.filter (not << find_matching_records item) model.items_for_sale
+                has_items_to_sell_ =
+                    has_items_to_sell model.owned_items item qty
 
                 new_shop_items =
-                    case List.length updated_shop_items of
-                        0 ->
-                            model.items_for_sale ++ [ ( item, qty ) ]
-
-                        _ ->
-                            non_matching_shop_items ++ updated_shop_items
+                    add_item_to_inventory_records model.owned_items item qty
 
                 new_inventory =
-                    List.map (reduce_if_matched item qty) model.owned_items
+                    remove_item_from_inventory_records model.items_for_sale item qty
 
                 { shop_trends } =
                     model
@@ -709,14 +691,6 @@ update msg model =
                 new_its =
                     update_item_type_sentiment item_type_sentiment item.item_type -0.1
 
-                from_party : TradeParty
-                from_party =
-                    PlayerParty
-
-                to_party : TradeParty
-                to_party =
-                    ShopParty
-
                 old_trade_logs =
                     shop_trends.item_trade_logs
 
@@ -725,8 +699,8 @@ update msg model =
                     { item_id = item.id
                     , quantity = qty
                     , gold_cost = total_cost
-                    , from_party = from_party
-                    , to_party = to_party
+                    , from_party = PlayerParty
+                    , to_party = ShopParty
                     }
 
                 new_item_trade_logs =
@@ -743,7 +717,7 @@ update msg model =
                     get_adjusted_item_cost model.shop_trends item qty
 
                 new_model =
-                    if has_items_to_sell then
+                    if has_items_to_sell_ then
                         { model
                             | owned_items = new_inventory
                             , items_for_sale = new_shop_items

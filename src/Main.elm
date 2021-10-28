@@ -221,6 +221,7 @@ subscriptions model =
           Navbar.subscriptions model.current_navbar_state NavbarMsg
         , test_port_receiving RecvFromPort
         , recv_reddit_listing DownloadedRedditPostsJSONP
+        , Sub.map GotItemShopMsg <| ItemShop.subscriptions model.item_shop_model
         ]
 
 
@@ -425,6 +426,9 @@ init _ url navKey =
         ( frame_view_model, frame_view_cmds ) =
             Magnolia.FrameView.init fragment
 
+        ( item_shop_model, item_shop_cmds ) =
+            ItemShop.init
+
         initial_model : Model
         initial_model =
             { count = 0
@@ -457,7 +461,7 @@ init _ url navKey =
             , frame_view_model = frame_view_model
             , elm_ui_playground_model = ElmUIPlayground.init
             , visual_output_model = VisualOutput.init
-            , item_shop_model = ItemShop.init
+            , item_shop_model = item_shop_model
             }
 
         existingCmds : Cmd Msg
@@ -465,6 +469,7 @@ init _ url navKey =
             Cmd.batch
                 [ --Task.perform AdjustTimeZone Time.here,
                   Cmd.map GotFrameViewMsg frame_view_cmds
+                , Cmd.map GotItemShopMsg item_shop_cmds
 
                 -- , post_to_test_post
                 -- frame_view_cmds
@@ -1313,7 +1318,7 @@ homeView model =
         tab_content =
             case model.current_tab of
                 HomeTab ->
-                    div [] [text "Click upper nav to continue."]
+                    div [] [ text "Click upper nav to continue." ]
 
                 SinglePostDataTab ->
                     div []

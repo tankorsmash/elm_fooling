@@ -1,4 +1,4 @@
-module ItemShop exposing (Model, Msg, init, update, view)
+module ItemShop exposing (Model, Msg, init, subscriptions, update, view)
 
 import Array
 import Color
@@ -38,6 +38,8 @@ import Element.Input as Input
 import Html
 import Html.Attributes
 import Random
+import Task
+import Time
 import UUID exposing (UUID)
 
 
@@ -135,6 +137,7 @@ type Msg
     | SellItem Item Int
     | StartTrendsHover
     | EndTrendsHover
+    | UpdateTick Time.Posix
 
 
 type alias InventoryRecord =
@@ -465,16 +468,23 @@ item_type_to_pretty_string_plural item_type =
             "Food"
 
 
-init : Model
+init : ( Model, Cmd Msg )
 init =
-    { owned_items = initial_owned_items
-    , items_for_sale = initial_items_for_sale
-    , hovered_item_for_sale = Nothing
-    , hovered_item_in_inventory = Nothing
-    , gold_in_pocket = 0
-    , shop_trends = initial_shop_trends
-    , shop_trends_hovered = False
-    }
+    ( { owned_items = initial_owned_items
+      , items_for_sale = initial_items_for_sale
+      , hovered_item_for_sale = Nothing
+      , hovered_item_in_inventory = Nothing
+      , gold_in_pocket = 0
+      , shop_trends = initial_shop_trends
+      , shop_trends_hovered = False
+      }
+    , Cmd.none
+    )
+
+
+subscriptions : Model -> Sub Msg
+subscriptions model =
+    Time.every 1000 UpdateTick
 
 
 find_matching_records : Item -> InventoryRecord -> Bool
@@ -710,6 +720,13 @@ update msg model =
 
         EndTrendsHover ->
             ( { model | shop_trends_hovered = False }, Cmd.none )
+
+        UpdateTick time ->
+            let
+                _ =
+                    Debug.log "tick" time
+            in
+            ( model, Cmd.none )
 
 
 render_item_type : ItemType -> Element.Element Msg

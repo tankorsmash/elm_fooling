@@ -528,6 +528,34 @@ can_afford_item : ShopTrends -> Int -> Item -> Int -> Bool
 can_afford_item shop_trends held_gold item qty =
     held_gold >= get_adjusted_item_cost shop_trends item qty
 
+
+add_item_to_inventory_records : InventoryRecords -> Item -> Int -> InventoryRecords
+add_item_to_inventory_records records item qty =
+    let
+        updated_inv_items =
+            List.map (\( i, q ) -> ( i, q + qty )) <|
+                List.filter (find_matching_records item) records
+
+        non_matching_inv_items =
+            List.filter (not << find_matching_records item) records
+    in
+    case List.length updated_inv_items of
+        0 ->
+            records ++ [ ( item, qty ) ]
+
+        _ ->
+            non_matching_inv_items ++ updated_inv_items
+
+
+reduce_if_matched item qty ( i, iq ) =
+    if i == item && iq >= qty then
+        ( i, iq - qty )
+        --TODO spend gp for buying
+
+    else
+        ( i, iq )
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -564,31 +592,11 @@ update msg model =
                 can_afford_item_ =
                     can_afford_item model.shop_trends model.gold_in_pocket item qty
 
-                reduce_if_matched ( i, iq ) =
-                    if i == item && iq >= qty then
-                        ( i, iq - qty )
-                        --TODO spend gp for buying
-
-                    else
-                        ( i, iq )
-
-                updated_inv_items =
-                    List.map (\( i, q ) -> ( i, q + qty )) <|
-                        List.filter (find_matching_records item) model.owned_items
-
-                non_matching_inv_items =
-                    List.filter (not << find_matching_records item) model.owned_items
-
                 new_inventory =
-                    case List.length updated_inv_items of
-                        0 ->
-                            model.owned_items ++ [ ( item, qty ) ]
-
-                        _ ->
-                            non_matching_inv_items ++ updated_inv_items
+                    add_item_to_inventory_records model.owned_items item qty
 
                 new_shop_items =
-                    List.map reduce_if_matched model.items_for_sale
+                    List.map  (reduce_if_matched item qty) model.items_for_sale
 
                 { shop_trends } =
                     model
@@ -655,14 +663,6 @@ update msg model =
 
         SellItem item qty ->
             let
-                reduce_if_matched ( i, iq ) =
-                    if i == item && iq >= qty then
-                        ( i, iq - qty )
-                        --TODO get gp for selling
-
-                    else
-                        ( i, iq )
-
                 has_items_to_sell =
                     List.length
                         (List.filter
@@ -689,7 +689,7 @@ update msg model =
                             non_matching_shop_items ++ updated_shop_items
 
                 new_inventory =
-                    List.map reduce_if_matched model.owned_items
+                    List.map (reduce_if_matched item qty) model.owned_items
 
                 { shop_trends } =
                     model

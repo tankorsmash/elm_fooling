@@ -58,6 +58,7 @@ type alias ItemTypeId =
 type alias ItemId =
     UUID
 
+
 type alias CharacterId =
     UUID
 
@@ -175,8 +176,8 @@ type alias ItemTradeLog =
 
 
 type alias Model =
-    { owned_items : List ( Item, Int )
-    , items_for_sale : List ( Item, Int )
+    { owned_items : InventoryRecords
+    , items_for_sale : InventoryRecords
     , hovered_item_for_sale : Maybe Item
     , hovered_item_in_inventory : Maybe Item
     , gold_in_pocket : Int
@@ -1081,14 +1082,47 @@ trends_display shop_trends is_expanded =
         ]
 
 
+render_inventory :
+    String
+    -> InventoryRecords
+    -> Int
+    -> ShopTrends
+    -> Maybe Item
+    -> ListContext
+    -> Element Msg
+render_inventory header held_items gold_held shop_trends hovered_item context =
+    Element.column [ width fill, spacingXY 0 5 ] <|
+        (++)
+            [ Element.row [ font_scaled 2, width fill ]
+                [ Element.el [ border_bottom 2 ] <| text "Character's Inventory"
+                , text "   "
+                , row [ font_scaled 1, centerX ] <|
+                    [ text "Held: ", render_gp gold_held ]
+                ]
+            ]
+            (List.map
+                (\item ->
+                    render_single_item_for_sale
+                        shop_trends
+                        gold_held
+                        hovered_item
+                        item
+                        context
+                )
+             <|
+                List.sortBy sort_func held_items
+            )
+
+
+sort_func =
+    Tuple.first >> .name
+
+
 view : Model -> Html.Html Msg
 view model =
     let
         welcome_header =
             Element.el [ font_scaled 3, padding_bottom 10 ] <| text "Welcome to the Item Shop!"
-
-        sort_func =
-            Tuple.first >> .name
 
         items_for_sale_grid =
             Element.column [ width fill, spacingXY 0 5 ] <|
@@ -1130,6 +1164,29 @@ view model =
                      <|
                         List.sortBy sort_func model.owned_items
                     )
+
+        items_in_character =
+            Element.column [ width fill, spacingXY 0 5 ] <|
+                (++)
+                    [ Element.row [ font_scaled 2, width fill ]
+                        [ Element.el [ border_bottom 2 ] <| text "Character's Inventory"
+                        , text "   "
+                        , row [ font_scaled 1, centerX ] <|
+                            [ text "Held: ", render_gp model.gold_in_pocket ]
+                        ]
+                    ]
+                    (List.map
+                        (\item ->
+                            render_single_item_for_sale
+                                model.shop_trends
+                                model.gold_in_pocket
+                                model.hovered_item_in_inventory
+                                item
+                                InventoryItems
+                        )
+                     <|
+                        List.sortBy sort_func model.owned_items
+                    )
     in
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
         Element.column [ width fill, font_scaled 1 ]
@@ -1140,6 +1197,15 @@ view model =
             -- , items_for_sale_table
             , items_for_sale_grid
             , Element.el [ paddingXY 0 10, width fill ] items_in_inventory
+            , Element.el [ paddingXY 0 10, width fill ]
+                (render_inventory
+                    "CHARACTER"
+                    model.owned_items
+                    model.gold_in_pocket
+                    model.shop_trends
+                    model.hovered_item_in_inventory
+                    InventoryItems
+                )
             ]
 
 

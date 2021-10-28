@@ -249,7 +249,7 @@ item_frames =
             }
           )
         , ( "book"
-          , { name = "Book of the Dead with a real"
+          , { name = "Book of the Dead"
             , item_type = Spellbook
             , raw_gold_cost = 20
             , description = "Bound in leather, this book has a skull for a cover"

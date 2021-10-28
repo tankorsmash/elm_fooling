@@ -574,6 +574,7 @@ reduce_if_matched item qty ( i, iq ) =
     else
         ( i, iq )
 
+
 has_items_to_sell inventory_records item qty =
     List.length
         (List.filter
@@ -583,6 +584,7 @@ has_items_to_sell inventory_records item qty =
             inventory_records
         )
         > 0
+
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
@@ -674,10 +676,10 @@ update msg model =
                     has_items_to_sell model.owned_items item qty
 
                 new_shop_items =
-                    add_item_to_inventory_records model.owned_items item qty
+                    add_item_to_inventory_records model.items_for_sale item qty
 
                 new_inventory =
-                    remove_item_from_inventory_records model.items_for_sale item qty
+                    remove_item_from_inventory_records model.owned_items item qty
 
                 { shop_trends } =
                     model
@@ -794,6 +796,29 @@ shop_buy_button gold_cost gold_in_pocket ( item, qty ) =
             "can't afford"
 
 
+shop_sell_button : Bool -> InventoryRecord -> Element Msg
+shop_sell_button has_items_to_sell_ ( item, qty ) =
+    let
+        button_type =
+            if has_items_to_sell_ then
+                primary_button
+
+            else
+                secondary_button
+    in
+    button_type
+        [ Element.transparent <| not has_items_to_sell_
+        , width (fill |> Element.minimum 120)
+        ]
+        (SellItem item 1)
+    <|
+        if has_items_to_sell_ then
+            "sell me"
+
+        else
+            "can't afford"
+
+
 debug_explain =
     let
         do_explain =
@@ -880,11 +905,12 @@ render_single_item_for_sale shop_trends gold_in_pocket maybe_hovered_item ( item
                     shop_buy_button current_price gold_in_pocket ( item, qty )
 
                 InventoryItems ->
-                    primary_button
-                        [ Element.transparent <| qty < 1 ]
-                        (SellItem item 1)
-                        "sell me"
+                    shop_sell_button (qty >= 1) ( item, 1 )
 
+                -- primary_button
+                --     [ Element.transparent <| qty < 1 ]
+                --     (SellItem item 1)
+                --     "sell me"
                 CharacterItems ->
                     Element.none
     in

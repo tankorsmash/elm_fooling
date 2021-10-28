@@ -964,7 +964,9 @@ trends_display shop_trends is_expanded =
                     , Element.moveDown 20
                     ]
                 <|
-                    List.map render_single_trade_log_entry shop_trends.item_trade_logs
+                    List.map
+                        render_single_trade_log_entry
+                        shop_trends.item_trade_logs
 
         has_trades =
             List.length shop_trends.item_trade_logs > 0

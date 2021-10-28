@@ -547,6 +547,11 @@ add_item_to_inventory_records records item qty =
             non_matching_inv_items ++ updated_inv_items
 
 
+remove_item_from_inventory_records : InventoryRecords -> Item -> Int -> InventoryRecords
+remove_item_from_inventory_records records item qty =
+    List.map (reduce_if_matched item qty) records
+
+
 reduce_if_matched item qty ( i, iq ) =
     if i == item && iq >= qty then
         ( i, iq - qty )
@@ -596,7 +601,7 @@ update msg model =
                     add_item_to_inventory_records model.owned_items item qty
 
                 new_shop_items =
-                    List.map  (reduce_if_matched item qty) model.items_for_sale
+                    remove_item_from_inventory_records model.items_for_sale item qty
 
                 { shop_trends } =
                     model

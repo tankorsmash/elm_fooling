@@ -1090,47 +1090,6 @@ view model =
         sort_func =
             Tuple.first >> .name
 
-        -- items_for_sale_table =
-        --     Element.table [ width fill, font_scaled 1, spacing 5, paddingXY 0 10 ]
-        --         { data = List.sortBy sort_func model.items_for_sale
-        --         , columns =
-        --             [ { header = Element.none
-        --               , view = Tuple.first >> .name >> text >> el [ font_scaled 2, debug_explain ]
-        --               , width = fillPortion 2
-        --               }
-        --             , { header = Element.none
-        --               , view = Tuple.first >> .raw_gold_cost >> render_gp >> el [ debug_explain ]
-        --               , width = fillPortion 1
-        --               }
-        --             , { header = Element.none
-        --               , view = Tuple.first >> .item_type >> render_item_type >> el [ debug_explain ]
-        --               , width = fillPortion 2
-        --               }
-        --             , { header = Element.none
-        --               , view =
-        --                     (\( i, qty ) ->
-        --                         if qty == 1 then
-        --                             text ""
-        --
-        --                         else if qty == 0 then
-        --                             text "SOLD OUT"
-        --
-        --                         else
-        --                             text <| "x" ++ String.fromInt qty
-        --                     )
-        --                         >> el [ debug_explain ]
-        --               , width = fillPortion 1
-        --               }
-        --             , { header = Element.none
-        --               , view = Tuple.first >> .description >> (\desc -> clipText desc 24) >> text >> el [ alignLeft, debug_explain ]
-        --               , width = fillPortion 2
-        --               }
-        --             , { header = Element.none
-        --               , view = \( i, q ) -> el [ debug_explain ] <| shop_buy_button model.gold_in_pocket ( i, q )
-        --               , width = fillPortion 1
-        --               }
-        --             ]
-        --         }
         items_for_sale_grid =
             Element.column [ width fill, spacingXY 0 5 ] <|
                 (++)

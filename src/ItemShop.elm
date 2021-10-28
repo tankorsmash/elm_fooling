@@ -237,6 +237,21 @@ item_frames =
         ]
 
 
+get_item_by_str : String -> Maybe Item
+get_item_by_str item_str =
+    Dict.get item_str item_frames
+
+
+get_item_by_id : UUID -> Maybe Item
+get_item_by_id item_id =
+    List.head <|
+        List.filter
+            (\item -> item.id == item_id)
+        <|
+            List.map Tuple.second <|
+                Dict.toList item_frames
+
+
 initial_items_for_sale : List ( Item, Int )
 initial_items_for_sale =
     let
@@ -895,6 +910,61 @@ border_bottom bord =
     Border.widthEach { bottom = bord, left = 0, right = 0, top = 0 }
 
 
+render_single_trade_log_entry : ItemTradeLog -> Element msg
+render_single_trade_log_entry trade_log =
+    let
+        { from_party, to_party, item_id, quantity, gold_cost } =
+            trade_log
+
+        maybe_item =
+            get_item_by_id item_id
+
+        qty_str =
+            String.fromInt quantity |> (++) "x"
+
+        rendered_cost : Element msg
+        rendered_cost =
+            render_gp gold_cost
+
+        item_name =
+            case maybe_item of
+                Just item ->
+                    item.name
+
+                Nothing ->
+                    "Unknown item"
+    in
+    case ( from_party, to_party ) of
+        ( ShopParty, PlayerParty ) ->
+            paragraph []
+                [ text <|
+                    item_name
+                        ++ " ("
+                        ++ qty_str
+                        ++ ") "
+                        ++ "was purchased for "
+                , rendered_cost
+                ]
+
+        ( PlayerParty, ShopParty ) ->
+            paragraph []
+                [ text <|
+                    item_name
+                        ++ " ("
+                        ++ qty_str
+                        ++ ") "
+                        ++ "was sold for "
+                , rendered_cost
+                ]
+
+        _ ->
+            text <|
+                "an item was traded from "
+                    ++ trade_party_to_str from_party
+                    ++ " to "
+                    ++ trade_party_to_str to_party
+
+
 trends_display : ShopTrends -> Bool -> Element.Element Msg
 trends_display shop_trends is_expanded =
     let
@@ -944,14 +1014,6 @@ trends_display shop_trends is_expanded =
                     :: specific_trends
                     ++ rendered_item_trade_logs
 
-        render_single_trade_log_entry : ItemTradeLog -> Element msg
-        render_single_trade_log_entry trade_log =
-            text <|
-                "an item was traded from "
-                    ++ trade_party_to_str trade_log.from_party
-                    ++ " to "
-                    ++ trade_party_to_str trade_log.to_party
-
         expanded_trade_logs =
             Element.below <|
                 column
@@ -961,6 +1023,7 @@ trends_display shop_trends is_expanded =
                     , Border.rounded 3
                     , Border.width 2
                     , padding 10
+                    , spacing 5
                     , Element.moveDown 20
                     ]
                 <|
@@ -972,7 +1035,7 @@ trends_display shop_trends is_expanded =
             List.length shop_trends.item_trade_logs > 0
     in
     column
-        ([ paddingXY 0 5 ]
+        ([ paddingXY 0 5, width fill ]
             ++ (if has_trades then
                     [ Events.onMouseEnter <| StartTrendsHover
                     , Events.onMouseLeave <| EndTrendsHover

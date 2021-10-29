@@ -84,7 +84,7 @@ initial_model =
     let
         initial_entries =
             [ { title = "I think we should change this"
-              , body = "This is a long description of all the stuff we need to change, it's unreal"
+              , body = "This is a long description of all the stuff we need to change, it's unreal. I am currently listening to Hell on Earth, and its boppin'.\n\nThis is a new line."
               , votes = { ups = 12, downs = 2 }
               , tags =
                     [ { name = "Feedback", description = "This is a tag for thoughts on a change" }
@@ -93,7 +93,7 @@ initial_model =
               , status = InConsideration
               }
             , { title = "Been lovin 3.0"
-              , body = "Having a lot of fun playing the latest build, can't wait to see what you guys come up with next!"
+              , body = "Having a lot of fun playing the latest build, can't wait to see what you guys come up with next!\n\nI've been having a lot of fun listening to Beatiful Heartbeat by Morten, but of course remixed by Deoro. It's banging.\n\nIt's even better than the original, which is crazy."
               , votes = { ups = 2, downs = 30 }
               , tags =
                     [ { name = "Feedback", description = "This is a tag for thoughts on a change" }
@@ -146,16 +146,16 @@ view model =
             model.entries
 
         render_entry entry =
-            row [ spacing 10, width fill, padding 10 ]
+            row [ spacing 25, width fill, padding 10 ]
                 [ row []
-                    [ column [ centerX ]
+                    [ column [ centerX, Border.width 1, Border.rounded 4, padding 2, Border.color <| rgb 0.75 0.75 0.75 ]
                         [ el [ centerX ] <| text "/\\"
                         , text <| String.fromInt <| entry.votes.ups + entry.votes.downs
                         ]
                     ]
                 , column [ width fill, spacing 10 ]
                     [ el [ scaled_font 2 ] <| text entry.title
-                    , el [ font_grey ] <| text entry.body
+                    , paragraph [ font_grey ] [ text entry.body ]
                     ]
                 , row [] [ text "[], 0" ]
                 ]

@@ -429,5 +429,9 @@ view model =
     in
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
         column [ scaled_font 1 ] <|
-            create_post_block
-                :: List.map render_entry_ entries
+            [ row [ width fill ]
+                [ el [width <| fillPortion 1] create_post_block
+                , column [ width <| fillPortion 5 ] <|
+                    List.map render_entry_ entries
+                ]
+            ]

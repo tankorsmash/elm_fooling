@@ -167,11 +167,6 @@ scaled_font scale =
     Font.size <| scaled scale
 
 
-font_grey : Element.Attribute msg
-font_grey =
-    Font.color <| rgb 0.35 0.35 0.35
-
-
 clipText : String -> Int -> String
 clipText str length =
     if String.length str > length then
@@ -300,6 +295,27 @@ render_entry time_now entry =
         ]
 
 
+font_grey : Element.Attribute msg
+font_grey =
+    Font.color <| rgb 0.35 0.35 0.35
+
+
+background_grey =
+    Background.color <| rgb 0.96 0.96 0.96
+
+
+border_dark_edges =
+    Border.color <| rgb 0.937 0.937 0.937
+
+
+background_white =
+    Background.color <| rgb 1 1 1
+
+
+thin_border =
+    Border.width 1
+
+
 view : Model -> Html.Html Msg
 view model =
     let
@@ -308,7 +324,33 @@ view model =
 
         render_entry_ entry =
             render_entry model.time_now entry
+
+        input_style =
+            [ border_dark_edges
+            , thin_border
+            , background_white
+            , width fill
+            , spacing 5
+            , padding 10
+            ]
+
+        create_post_block =
+            column [ background_grey, border_dark_edges, Border.width 1, padding 10, spacing 10, Border.rounded 5 ]
+                [ el [ centerX ] <| text "Create Post"
+                , column (font_grey :: input_style)
+                    [ el [ Font.size 14 ] <| text "TITLE"
+                    , text "Short, descriptive title"
+                    ]
+                , column (font_grey :: input_style)
+                    [ el [ Font.size 14 ] <| text "DETAILS"
+                    , text "Any additional details"
+                    ]
+                , column [ border_dark_edges, thin_border, background_white, width fill ]
+                    [ text "create post"
+                    ]
+                ]
     in
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
         column [ scaled_font 1 ] <|
-            List.map render_entry_ entries
+            create_post_block
+                :: List.map render_entry_ entries

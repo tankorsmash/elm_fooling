@@ -188,10 +188,10 @@ type alias Character =
 type alias Model =
     { player : Character
     , shop : Character
+    , character : Character
     , hovered_item_for_sale : Maybe Item
     , hovered_item_in_inventory : Maybe Item
     , hovered_item_in_character : Maybe Item
-    , gold_in_pocket : Int
     , shop_trends : ShopTrends
     , shop_trends_hovered : Bool
     }
@@ -506,9 +506,7 @@ item_type_to_pretty_string_plural item_type =
 init : ( Model, Cmd Msg )
 init =
     ( { player = { held_items = initial_owned_items, held_gold = 0, char_id = UUID.forName "player character" UUID.dnsNamespace, name = "Player", party = PlayerParty }
-      , shop = { held_items = initial_owned_items, held_gold = 0, char_id = UUID.forName "shop character" UUID.dnsNamespace, name = "Shop", party = ShopParty }
-      , gold_in_pocket = 0
-      , items_for_sale = initial_items_for_sale
+      , shop = { held_items = initial_items_for_sale, held_gold = 0, char_id = UUID.forName "shop character" UUID.dnsNamespace, name = "Shop", party = ShopParty }
       , character = initial_character
       , hovered_item_for_sale = Nothing
       , hovered_item_in_inventory = Nothing
@@ -687,60 +685,27 @@ update msg model =
                 ( model, Cmd.none )
 
         SellItem item qty ->
-            let
-                has_items_to_sell_ =
-                    has_items_to_sell model.owned_items item qty
+            if has_items_to_sell model.player.held_items item qty then
+                let
+                    ( new_shop_trends, new_player, new_shop ) =
+                        trade_items_from_party_to_other model.shop_trends model.player model.shop item qty
 
-                new_shop_items =
-                    add_item_to_inventory_records model.items_for_sale item qty
+                    total_cost =
+                        get_adjusted_item_cost model.shop_trends item qty
 
-                new_inventory =
-                    remove_item_from_inventory_records model.owned_items item qty
-
-                { shop_trends } =
-                    model
-
-                { item_type_sentiment } =
-                    shop_trends
-
-                new_its =
-                    update_item_type_sentiment item_type_sentiment item.item_type -0.1
-
-                new_trade_log_entry : ItemTradeLog
-                new_trade_log_entry =
-                    { item_id = item.id
-                    , quantity = qty
-                    , gold_cost = total_cost
-                    , from_party = PlayerParty
-                    , to_party = ShopParty
-                    }
-
-                new_item_trade_logs =
-                    shop_trends.item_trade_logs
-                        ++ [ new_trade_log_entry ]
-
-                new_shop_trends =
-                    { shop_trends
-                        | item_type_sentiment = new_its
-                        , item_trade_logs = new_item_trade_logs
-                    }
-
-                total_cost =
-                    get_adjusted_item_cost model.shop_trends item qty
-
-                new_model =
-                    if has_items_to_sell_ then
+                    new_model =
                         { model
-                            | owned_items = new_inventory
-                            , items_for_sale = new_shop_items
-                            , gold_in_pocket = model.gold_in_pocket + total_cost
+                            | player =
+                                { new_player
+                                    | held_gold = new_player.held_gold + total_cost
+                                }
+                            , shop = new_shop
                             , shop_trends = new_shop_trends
                         }
-
-                    else
-                        model
-            in
-            ( new_model, Cmd.none )
+                in
+                ( new_model, Cmd.none )
+            else
+                (model, Cmd.none)
 
         StartTrendsHover ->
             ( { model | shop_trends_hovered = True }, Cmd.none )
@@ -1181,13 +1146,13 @@ view model =
                         (\item ->
                             render_single_item_for_sale
                                 model.shop_trends
-                                model.gold_in_pocket
+                                model.player.held_gold
                                 model.hovered_item_for_sale
                                 item
                                 ShopItems
                         )
                      <|
-                        List.sortBy sort_func model.items_for_sale
+                        List.sortBy sort_func model.shop.held_items
                     )
 
         items_in_inventory =
@@ -1197,20 +1162,20 @@ view model =
                         [ Element.el [ border_bottom 2 ] <| text "Items In Inventory"
                         , text "   "
                         , row [ font_scaled 1, centerX ] <|
-                            [ text "Held: ", render_gp model.gold_in_pocket ]
+                            [ text "Held: ", render_gp model.player.held_gold ]
                         ]
                     ]
                     (List.map
                         (\item ->
                             render_single_item_for_sale
                                 model.shop_trends
-                                model.gold_in_pocket
+                                model.player.held_gold
                                 model.hovered_item_in_inventory
                                 item
                                 InventoryItems
                         )
                      <|
-                        List.sortBy sort_func model.owned_items
+                        List.sortBy sort_func model.player.held_items
                     )
 
         character =

@@ -615,60 +615,57 @@ update msg model =
                     ( { model | hovered_item_in_character = Nothing }, Cmd.none )
 
         BuyItem item qty ->
-            let
-                total_cost =
-                    get_adjusted_item_cost model.shop_trends item qty
+            if can_afford_item model.shop_trends model.gold_in_pocket item qty then
+                let
+                    total_cost =
+                        get_adjusted_item_cost model.shop_trends item qty
 
-                can_afford_item_ =
-                    can_afford_item model.shop_trends model.gold_in_pocket item qty
+                    new_inventory =
+                        add_item_to_inventory_records model.owned_items item qty
 
-                new_inventory =
-                    add_item_to_inventory_records model.owned_items item qty
+                    new_shop_items =
+                        remove_item_from_inventory_records model.items_for_sale item qty
 
-                new_shop_items =
-                    remove_item_from_inventory_records model.items_for_sale item qty
+                    { shop_trends } =
+                        model
 
-                { shop_trends } =
-                    model
+                    { item_type_sentiment } =
+                        shop_trends
 
-                { item_type_sentiment } =
-                    shop_trends
+                    new_its =
+                        update_item_type_sentiment item_type_sentiment item.item_type 0.1
 
-                new_its =
-                    update_item_type_sentiment item_type_sentiment item.item_type 0.1
+                    new_trade_log_entry : ItemTradeLog
+                    new_trade_log_entry =
+                        { item_id = item.id
+                        , quantity = qty
+                        , gold_cost = total_cost
+                        , from_party = ShopParty
+                        , to_party = PlayerParty
+                        }
 
-                new_trade_log_entry : ItemTradeLog
-                new_trade_log_entry =
-                    { item_id = item.id
-                    , quantity = qty
-                    , gold_cost = total_cost
-                    , from_party = ShopParty
-                    , to_party = PlayerParty
-                    }
+                    new_item_trade_logs =
+                        shop_trends.item_trade_logs
+                            ++ [ new_trade_log_entry ]
 
-                new_item_trade_logs =
-                    shop_trends.item_trade_logs
-                        ++ [ new_trade_log_entry ]
+                    new_shop_trends =
+                        { shop_trends
+                            | item_type_sentiment = new_its
+                            , item_trade_logs = new_item_trade_logs
+                        }
 
-                new_shop_trends =
-                    { shop_trends
-                        | item_type_sentiment = new_its
-                        , item_trade_logs = new_item_trade_logs
-                    }
-
-                new_model =
-                    if can_afford_item_ then
+                    new_model =
                         { model
                             | owned_items = new_inventory
                             , items_for_sale = new_shop_items
                             , gold_in_pocket = model.gold_in_pocket - total_cost
                             , shop_trends = new_shop_trends
                         }
+                in
+                ( new_model, Cmd.none )
 
-                    else
-                        model
-            in
-            ( new_model, Cmd.none )
+            else
+                ( model, Cmd.none )
 
         SellItem item qty ->
             let

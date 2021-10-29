@@ -349,19 +349,21 @@ view model =
 
         input_style =
             [ border_dark_edges
+            , Border.rounded 5
             , thin_border
             , background_white
             , width fill
             , spacing 5
             , padding 10
+            , Font.alignLeft
             ]
 
         create_post_block =
             column [ background_grey, border_dark_edges, Border.width 1, padding 10, spacing 10, Border.rounded 5 ]
                 [ el [ centerX ] <| text "Create Post"
                 , column (font_grey :: input_style)
-                    [ el [ Font.size 14 ] <| text "TITLE"
-                    , Input.text [ Border.width 0 ]
+                    [ el [ Font.semiBold, Font.size 14 ] <| text "TITLE"
+                    , Input.text [ Border.width 0, Font.alignLeft, paddingXY 0 10, spacing 0 ]
                         { onChange = CreatePostUpdateTitle
                         , text =
                             case model.create_post.title of
@@ -370,13 +372,25 @@ view model =
 
                                 Nothing ->
                                     ""
-                        , placeholder = Just <| Input.placeholder [] <| text "Short, descriptive title"
+                        , placeholder = Just <| Input.placeholder [ alignLeft, Font.alignLeft ] <| text "Short, descriptive title"
                         , label = Input.labelHidden "hidden title"
                         }
                     ]
                 , column (font_grey :: input_style)
-                    [ el [ Font.size 14 ] <| text "DETAILS"
-                    , text "Any additional details"
+                    [ el [ Font.semiBold, Font.size 14 ] <| text "DETAILS"
+                    , Input.multiline [ Border.width 0, paddingXY 0 10 ]
+                        { onChange = CreatePostUpdateDetails
+                        , text =
+                            case model.create_post.details of
+                                Just details ->
+                                    details
+
+                                Nothing ->
+                                    ""
+                        , placeholder = Just <| Input.placeholder [] <| text "Any additional details..."
+                        , label = Input.labelHidden "hidden details"
+                        , spellcheck = True
+                        }
                     ]
                 , column [ border_dark_edges, thin_border, background_white, width fill ]
                     [ text "create post"

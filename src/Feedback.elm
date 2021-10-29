@@ -171,7 +171,27 @@ update msg model =
             ( { model | create_post = { create_post | details = Just new_details } }, Cmd.none )
 
         CreatePostSubmit ->
-            ( model, Cmd.none )
+            let
+                { create_post, entries } =
+                    model
+
+                { title, details } =
+                    create_post
+
+                new_entry =
+                    { title = Maybe.withDefault "No title given" title
+                    , body = Maybe.withDefault "No details given" details
+                    , votes = { ups = 0, downs = 0 }
+                    , tags = []
+                    , status = New
+                    , created_at = model.time_now
+                    , comments = []
+                    }
+
+                empty_create_post =
+                    { title = Nothing, details = Nothing }
+            in
+            ( { model | entries = entries ++ [ new_entry ], create_post = empty_create_post }, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
@@ -430,7 +450,7 @@ view model =
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
         column [ scaled_font 1 ] <|
             [ row [ width fill ]
-                [ el [width <| fillPortion 1] create_post_block
+                [ el [ width <| fillPortion 1 ] create_post_block
                 , column [ width <| fillPortion 5 ] <|
                     List.map render_entry_ entries
                 ]

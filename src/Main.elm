@@ -1179,10 +1179,6 @@ navbar model =
                 )
                 nav_items
             )
-        -- [ Navbar.itemLink [ onClick (ChangeTab RedditListingTab) ] [ text "Home" ]
-        -- , Navbar.itemLink [ onClick (ChangeTab RedditListingTab) ] [ text "item 2" ]
-        -- , Navbar.itemLink [ onClick (ChangeTab RedditListingTab) ] [ text "item 2" ]
-        -- ]
         |> Navbar.view model.current_navbar_state
 
 

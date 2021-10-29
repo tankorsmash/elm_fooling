@@ -479,6 +479,7 @@ init _ url navKey =
                 [ --Task.perform AdjustTimeZone Time.here,
                   Cmd.map GotFrameViewMsg frame_view_cmds
                 , Cmd.map GotItemShopMsg item_shop_cmds
+                , Cmd.map GotFeedbackMsg feedback_cmds
 
                 -- , post_to_test_post
                 -- frame_view_cmds

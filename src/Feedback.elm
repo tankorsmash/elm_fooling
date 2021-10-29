@@ -94,7 +94,7 @@ initial_model =
               }
             , { title = "Been lovin 3.0"
               , body = "Having a lot of fun playing the latest build, can't wait to see what you guys come up with next!"
-              , votes = { ups = 12, downs = 2 }
+              , votes = { ups = 2, downs = 30 }
               , tags =
                     [ { name = "Feedback", description = "This is a tag for thoughts on a change" }
                     , { name = "Complaint", description = "This is a tag for all negative feelings" }
@@ -134,13 +134,31 @@ scaled_font scale =
     Font.size <| scaled scale
 
 
+font_grey : Element.Attribute msg
+font_grey =
+    Font.color <| rgb 0.35 0.35 0.35
+
+
 view : Model -> Html.Html Msg
 view model =
     let
         entries =
             model.entries
 
-        render_entry = .title >> text
+        render_entry entry =
+            row [ spacing 10, width fill, padding 10 ]
+                [ row []
+                    [ column [ centerX ]
+                        [ el [ centerX ] <| text "/\\"
+                        , text <| String.fromInt <| entry.votes.ups + entry.votes.downs
+                        ]
+                    ]
+                , column [ width fill, spacing 10 ]
+                    [ el [ scaled_font 2 ] <| text entry.title
+                    , el [ font_grey ] <| text entry.body
+                    ]
+                , row [] [ text "[], 0" ]
+                ]
     in
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
         column [ scaled_font 1 ] <|

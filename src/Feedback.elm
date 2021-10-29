@@ -70,6 +70,18 @@ type alias Votes =
     }
 
 
+type alias User =
+    { username : String
+    }
+
+
+type alias Comment =
+    { author : User
+    , body : String
+    , created_at : Time.Posix
+    }
+
+
 type alias FeedbackEntry =
     { title : String
     , body : String
@@ -77,6 +89,7 @@ type alias FeedbackEntry =
     , tags : List Tag
     , status : IssueStatus
     , created_at : Time.Posix
+    , comments : List Comment
     }
 
 
@@ -97,6 +110,7 @@ initial_model =
                     ]
               , status = InConsideration
               , created_at = Time.millisToPosix 1635544030000
+              , comments = []
               }
             , { title = "Been lovin 3.0"
               , body = "Having a lot of fun playing the latest build, can't wait to see what you guys come up with next!\n\nI've been having a lot of fun listening to Beatiful Heartbeat by Morten, but of course remixed by Deoro. It's banging.\n\nIt's even better than the original, which is crazy."
@@ -107,6 +121,17 @@ initial_model =
                     ]
               , status = InConsideration
               , created_at = Time.millisToPosix 619663630000
+              , comments = []
+              }
+            , { title = "Pretty sure I like PoGo more"
+              , body = "I just love the amount of little digimons you pick up and put in your pocket. There isn't too much like it, so its a lot of fun."
+              , votes = { ups = 13, downs = 10 }
+              , tags =
+                    [ { name = "Complaint", description = "This is a tag for all negative feelings" }
+                    ]
+              , status = InConsideration
+              , created_at = Time.millisToPosix 1319262630000
+              , comments = []
               }
             ]
     in
@@ -257,28 +282,33 @@ format_date_raw posix =
         ]
 
 
+render_entry : Time.Posix -> FeedbackEntry -> Element Msg
+render_entry time_now entry =
+    row [ spacing 25, width fill, padding 10 ]
+        [ row [ width <| fillPortion 1 ]
+            [ column [ centerX, Border.width 1, Border.rounded 4, padding 2, Border.color <| rgb 0.75 0.75 0.75, width fill ]
+                [ el [ centerX ] <| text "/\\"
+                , el [ centerX ] <| text <| String.fromInt <| entry.votes.ups - entry.votes.downs
+                ]
+            ]
+        , column [ width <| fillPortion 13, spacing 10 ]
+            [ el [ scaled_font 2 ] <| text entry.title
+            , paragraph [ font_grey ] [ text <| clipText entry.body 150 ]
+            , el [ Font.size 12 ] <| text <| format_date entry.created_at ++ " - " ++ format_relative_date time_now entry.created_at
+            ]
+        , row [ width <| fillPortion 1 ] [ text <| "[], " ++ (String.fromInt <| List.length entry.comments) ]
+        ]
+
+
 view : Model -> Html.Html Msg
 view model =
     let
         entries =
             model.entries
 
-        render_entry entry =
-            row [ spacing 25, width fill, padding 10 ]
-                [ row []
-                    [ column [ centerX, Border.width 1, Border.rounded 4, padding 2, Border.color <| rgb 0.75 0.75 0.75 ]
-                        [ el [ centerX ] <| text "/\\"
-                        , text <| String.fromInt <| entry.votes.ups + entry.votes.downs
-                        ]
-                    ]
-                , column [ width fill, spacing 10 ]
-                    [ el [ scaled_font 2 ] <| text entry.title
-                    , paragraph [ font_grey ] [ text <| clipText entry.body 150 ]
-                    , el [ Font.size 12 ] <| text <| format_date entry.created_at ++ " - " ++ format_relative_date model.time_now entry.created_at
-                    ]
-                , row [] [ text "[], 0" ]
-                ]
+        render_entry_ entry =
+            render_entry model.time_now entry
     in
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
         column [ scaled_font 1 ] <|
-            List.map render_entry entries
+            List.map render_entry_ entries

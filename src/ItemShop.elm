@@ -186,9 +186,8 @@ type alias Character =
 
 
 type alias Model =
-    { owned_items : InventoryRecords
-    , items_for_sale : InventoryRecords
-    , character : Character
+    { player : Character
+    , shop : Character
     , hovered_item_for_sale : Maybe Item
     , hovered_item_in_inventory : Maybe Item
     , hovered_item_in_character : Maybe Item
@@ -506,13 +505,14 @@ item_type_to_pretty_string_plural item_type =
 
 init : ( Model, Cmd Msg )
 init =
-    ( { owned_items = initial_owned_items
+    ( { player = { held_items = initial_owned_items, held_gold = 0, char_id = UUID.forName "player character" UUID.dnsNamespace, name = "Player", party = PlayerParty }
+      , shop = { held_items = initial_owned_items, held_gold = 0, char_id = UUID.forName "shop character" UUID.dnsNamespace, name = "Shop", party = ShopParty }
+      , gold_in_pocket = 0
       , items_for_sale = initial_items_for_sale
       , character = initial_character
       , hovered_item_for_sale = Nothing
       , hovered_item_in_inventory = Nothing
       , hovered_item_in_character = Nothing
-      , gold_in_pocket = 0
       , shop_trends = initial_shop_trends
       , shop_trends_hovered = False
       }
@@ -597,7 +597,7 @@ has_items_to_sell inventory_records item qty =
 NOTE: assumes the can\_afford checks etc have been done
 
 -}
-trade_items_from_party_to_other : ShopTrends -> Character -> Character -> Item -> Int -> ShopTrends
+trade_items_from_party_to_other : ShopTrends -> Character -> Character -> Item -> Int -> ( ShopTrends, Character, Character )
 trade_items_from_party_to_other shop_trends from_character to_character item qty =
     let
         total_cost =
@@ -625,10 +625,13 @@ trade_items_from_party_to_other shop_trends from_character to_character item qty
             shop_trends.item_trade_logs
                 ++ [ log_entry ]
     in
-    { shop_trends
+    ( { shop_trends
         | item_type_sentiment = new_its
         , item_trade_logs = new_item_trade_logs
-    }
+      }
+    , { from_character | held_items = new_from_items }
+    , { to_character | held_items = new_to_items }
+    )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -660,50 +663,21 @@ update msg model =
                     ( { model | hovered_item_in_character = Nothing }, Cmd.none )
 
         BuyItem item qty ->
-            if can_afford_item model.shop_trends model.gold_in_pocket item qty then
+            if can_afford_item model.shop_trends model.player.held_gold item qty then
                 let
                     total_cost =
                         get_adjusted_item_cost model.shop_trends item qty
 
-                    new_inventory =
-                        add_item_to_inventory_records model.owned_items item qty
-
-                    new_shop_items =
-                        remove_item_from_inventory_records model.items_for_sale item qty
-
-                    { shop_trends } =
-                        model
-
-                    { item_type_sentiment } =
-                        shop_trends
-
-                    new_its =
-                        update_item_type_sentiment item_type_sentiment item.item_type 0.1
-
-                    new_trade_log_entry : ItemTradeLog
-                    new_trade_log_entry =
-                        { item_id = item.id
-                        , quantity = qty
-                        , gold_cost = total_cost
-                        , from_party = ShopParty
-                        , to_party = PlayerParty
-                        }
-
-                    new_item_trade_logs =
-                        shop_trends.item_trade_logs
-                            ++ [ new_trade_log_entry ]
-
-                    new_shop_trends =
-                        { shop_trends
-                            | item_type_sentiment = new_its
-                            , item_trade_logs = new_item_trade_logs
-                        }
+                    ( new_shop_trends, new_shop, new_player ) =
+                        trade_items_from_party_to_other model.shop_trends model.shop model.player item qty
 
                     new_model =
                         { model
-                            | owned_items = new_inventory
-                            , items_for_sale = new_shop_items
-                            , gold_in_pocket = model.gold_in_pocket - total_cost
+                            | player =
+                                { new_player
+                                    | held_gold = new_player.held_gold - total_cost
+                                }
+                            , shop = new_shop
                             , shop_trends = new_shop_trends
                         }
                 in

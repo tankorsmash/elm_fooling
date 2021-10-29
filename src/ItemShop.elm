@@ -607,8 +607,21 @@ trade_items_from_party_to_other shop_trends from_character to_character item qty
         new_from_items =
             remove_item_from_inventory_records from_character.held_items item qty
 
+        sentiment_delta =
+            if from_character.party == ShopParty then
+                0.1
+
+            else if to_character.party == ShopParty then
+                -0.1
+
+            else
+                0.0
+
         new_its =
-            update_item_type_sentiment shop_trends.item_type_sentiment item.item_type 0.1
+            update_item_type_sentiment
+                shop_trends.item_type_sentiment
+                item.item_type
+                sentiment_delta
 
         log_entry : ItemTradeLog
         log_entry =
@@ -704,8 +717,9 @@ update msg model =
                         }
                 in
                 ( new_model, Cmd.none )
+
             else
-                (model, Cmd.none)
+                ( model, Cmd.none )
 
         StartTrendsHover ->
             ( { model | shop_trends_hovered = True }, Cmd.none )

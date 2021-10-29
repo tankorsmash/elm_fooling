@@ -139,6 +139,14 @@ font_grey =
     Font.color <| rgb 0.35 0.35 0.35
 
 
+clipText : String -> Int -> String
+clipText str length =
+    if String.length str > length then
+        String.left length str ++ "..."
+
+    else
+        str
+
 view : Model -> Html.Html Msg
 view model =
     let
@@ -155,7 +163,7 @@ view model =
                     ]
                 , column [ width fill, spacing 10 ]
                     [ el [ scaled_font 2 ] <| text entry.title
-                    , paragraph [ font_grey ] [ text entry.body ]
+                    , paragraph [ font_grey ] [ text <| clipText entry.body 150 ]
                     ]
                 , row [] [ text "[], 0" ]
                 ]

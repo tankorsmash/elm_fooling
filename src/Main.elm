@@ -1143,15 +1143,18 @@ navbar model =
         nav_items : List ( TabType, String, String )
         nav_items =
             [ ( HomeTab, "Home", "home" )
-            -- , ( PostDataTableTab, "PostData Table", "post_data_table_tab" )
-            -- , ( RedditListingTab, "Reddit Submissions Table", "reddit_listing_tab" )
-            -- , ( SinglePostDataTab, "Single PostData", "single_post_data_tab" )
-            -- , ( WeatherTab, "Weather", "weather_tab" )
             , ( FrameViewTab, "Frame View", "frame_view_tab" )
-            -- , ( ModalTab, "Modal Example", "modal_tab" )
             , ( OpenDotaTab, "OpenDota", "open_dota_tab" )
             , ( ElmUIPlaygroundTab, "ElmUI Playground", "elm_ui_playground_tab" )
             , ( ItemShopTab, "Item Shop", "item_shop_tab" )
+            ]
+
+        dropdown_items =
+            [ ( PostDataTableTab, "PostData Table", "post_data_table_tab" )
+            , ( RedditListingTab, "Reddit Submissions Table", "reddit_listing_tab" )
+            , ( SinglePostDataTab, "Single PostData", "single_post_data_tab" )
+            , ( WeatherTab, "Weather", "weather_tab" )
+            , ( ModalTab, "Modal Example", "modal_tab" )
             ]
     in
     Navbar.config NavbarMsg
@@ -1179,6 +1182,32 @@ navbar model =
                 )
                 nav_items
             )
+        |> Navbar.items [ Navbar.dropdown
+                { id = "nav-dropdown"
+                , toggle = Navbar.dropdownToggle [] [ text "others" ]
+                , items =
+                    List.map
+                        (\( tab_type, txt, url ) ->
+                            Navbar.dropdownItem
+                                [ onClick (ChangeTab tab_type)
+                                , let
+                                    ( rule, val ) =
+                                        if model.current_tab == tab_type then
+                                            ( "color", "blue" )
+
+                                        else
+                                            ( "", "" )
+                                  in
+                                  style rule val
+                                , style "margin-left" "10px"
+                                , style "cursor" "pointer"
+                                , href url
+                                ]
+                                [ a [ href url ] [ text txt ] ]
+                        )
+                        dropdown_items
+                }
+           ]
         |> Navbar.view model.current_navbar_state
 
 

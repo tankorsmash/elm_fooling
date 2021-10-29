@@ -322,6 +322,11 @@ font_grey =
     Font.color <| rgb 0.35 0.35 0.35
 
 
+font_white : Element.Attribute msg
+font_white =
+    Font.color <| rgb 1 1 1
+
+
 background_grey =
     Background.color <| rgb 0.96 0.96 0.96
 
@@ -336,6 +341,31 @@ background_white =
 
 thin_border =
     Border.width 1
+
+
+white_color =
+    rgb 1 1 1
+
+
+purple_color =
+    rgb255 82 93 249
+
+
+purple_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
+purple_button attrs on_press label =
+    Input.button
+        ([ font_white
+         , Font.size 16
+         , Font.center
+         , padding 6
+         , Background.color purple_color
+         , Border.rounded 5
+         , Border.width 5
+         , Border.color purple_color
+         ]
+            ++ attrs
+        )
+        { onPress = Just on_press, label = text label }
 
 
 view : Model -> Html.Html Msg
@@ -378,7 +408,7 @@ view model =
                     ]
                 , column (font_grey :: input_style)
                     [ el [ Font.semiBold, Font.size 14 ] <| text "DETAILS"
-                    , Input.multiline [ Border.width 0, paddingXY 0 10 ]
+                    , Input.multiline [ Border.width 0, paddingXY 0 10, height (fill |> Element.minimum 75) ]
                         { onChange = CreatePostUpdateDetails
                         , text =
                             case model.create_post.details of
@@ -392,8 +422,8 @@ view model =
                         , spellcheck = True
                         }
                     ]
-                , column [ border_dark_edges, thin_border, background_white, width fill ]
-                    [ text "create post"
+                , column [ width fill ]
+                    [ purple_button [ alignRight, Font.variant Font.smallCaps ] CreatePostSubmit "create post"
                     ]
                 ]
     in

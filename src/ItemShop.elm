@@ -181,6 +181,7 @@ type alias Character =
     , held_gold : Int
     , char_id : CharacterId
     , name : String
+    , party : TradeParty
     }
 
 
@@ -320,12 +321,17 @@ initial_owned_items =
 
 initial_character : Character
 initial_character =
+    let
+        billy_id =
+            UUID.forName "character 1" UUID.dnsNamespace
+    in
     { held_items =
         [ ( Maybe.withDefault unset_item_frame <| Dict.get "dagger" item_frames, 8 )
         ]
     , held_gold = 100
-    , char_id = UUID.forName "character 1" UUID.dnsNamespace
+    , char_id = billy_id
     , name = "Billy"
+    , party = CharacterParty billy_id
     }
 
 
@@ -584,6 +590,45 @@ has_items_to_sell inventory_records item qty =
             inventory_records
         )
         > 0
+
+
+{-| Gives items from character to other
+
+NOTE: assumes the can\_afford checks etc have been done
+
+-}
+trade_items_from_party_to_other : ShopTrends -> Character -> Character -> Item -> Int -> ShopTrends
+trade_items_from_party_to_other shop_trends from_character to_character item qty =
+    let
+        total_cost =
+            get_adjusted_item_cost shop_trends item qty
+
+        new_to_items =
+            add_item_to_inventory_records to_character.held_items item qty
+
+        new_from_items =
+            remove_item_from_inventory_records from_character.held_items item qty
+
+        new_its =
+            update_item_type_sentiment shop_trends.item_type_sentiment item.item_type 0.1
+
+        log_entry : ItemTradeLog
+        log_entry =
+            { item_id = item.id
+            , quantity = qty
+            , gold_cost = total_cost
+            , from_party = from_character.party
+            , to_party = to_character.party
+            }
+
+        new_item_trade_logs =
+            shop_trends.item_trade_logs
+                ++ [ log_entry ]
+    in
+    { shop_trends
+        | item_type_sentiment = new_its
+        , item_trade_logs = new_item_trade_logs
+    }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )

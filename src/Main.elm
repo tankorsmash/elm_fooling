@@ -1156,10 +1156,25 @@ navbar model =
             , ( WeatherTab, "Weather", "weather_tab" )
             , ( ModalTab, "Modal Example", "modal_tab" )
             ]
+
+        all_items =
+            nav_items ++ dropdown_items
     in
     Navbar.config NavbarMsg
         |> Navbar.withAnimation
-        |> Navbar.brand [ href "#" ] [ text "Home Page" ]
+        |> Navbar.brand [ href "#" ]
+            [ text <|
+                case
+                    List.filter
+                        (\( tab_type, _, _ ) -> tab_type == model.current_tab)
+                        all_items
+                of
+                    ( tab_type, header, tab_id ) :: rest ->
+                        header
+
+                    [] ->
+                        "Unknown Tab"
+            ]
         |> Navbar.customItems
             (List.map
                 (\( tab_type, txt, url ) ->
@@ -1182,7 +1197,8 @@ navbar model =
                 )
                 nav_items
             )
-        |> Navbar.items [ Navbar.dropdown
+        |> Navbar.items
+            [ Navbar.dropdown
                 { id = "nav-dropdown"
                 , toggle = Navbar.dropdownToggle [] [ text "others" ]
                 , items =
@@ -1207,7 +1223,7 @@ navbar model =
                         )
                         dropdown_items
                 }
-           ]
+            ]
         |> Navbar.view model.current_navbar_state
 
 

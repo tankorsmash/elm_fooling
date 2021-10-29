@@ -48,6 +48,7 @@ import UUID exposing (UUID)
 type alias Model =
     { entries : List FeedbackEntry
     , time_now : Time.Posix
+    , create_post : { title : Maybe String, details : Maybe String }
     }
 
 
@@ -95,6 +96,9 @@ type alias FeedbackEntry =
 
 type Msg
     = UpdateTime Time.Posix
+    | CreatePostUpdateTitle String
+    | CreatePostUpdateDetails String
+    | CreatePostSubmit
 
 
 initial_model : Model
@@ -137,6 +141,7 @@ initial_model =
     in
     { entries = initial_entries
     , time_now = Time.millisToPosix 0
+    , create_post = { title = Nothing, details = Nothing }
     }
 
 
@@ -150,6 +155,23 @@ update msg model =
     case msg of
         UpdateTime new_time ->
             ( { model | time_now = new_time }, Cmd.none )
+
+        CreatePostUpdateTitle new_title ->
+            let
+                { create_post } =
+                    model
+            in
+            ( { model | create_post = { create_post | title = Just new_title } }, Cmd.none )
+
+        CreatePostUpdateDetails new_details ->
+            let
+                { create_post } =
+                    model
+            in
+            ( { model | create_post = { create_post | details = Just new_details } }, Cmd.none )
+
+        CreatePostSubmit ->
+            ( model, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
@@ -339,7 +361,18 @@ view model =
                 [ el [ centerX ] <| text "Create Post"
                 , column (font_grey :: input_style)
                     [ el [ Font.size 14 ] <| text "TITLE"
-                    , text "Short, descriptive title"
+                    , Input.text [ Border.width 0 ]
+                        { onChange = CreatePostUpdateTitle
+                        , text =
+                            case model.create_post.title of
+                                Just title ->
+                                    title
+
+                                Nothing ->
+                                    ""
+                        , placeholder = Just <| Input.placeholder [] <| text "Short, descriptive title"
+                        , label = Input.labelHidden "hidden title"
+                        }
                     ]
                 , column (font_grey :: input_style)
                     [ el [ Font.size 14 ] <| text "DETAILS"

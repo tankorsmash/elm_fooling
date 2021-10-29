@@ -1,5 +1,6 @@
 port module Main exposing (..)
 
+import Feedback
 import Bootstrap.Button as Button
 import Bootstrap.CDN as CDN
 import Bootstrap.Card as Card
@@ -158,6 +159,7 @@ type Msg
     | TableRowClicked
     | GotVisualOutputMsg VisualOutput.Msg
     | GotItemShopMsg ItemShop.Msg
+    | GotFeedbackMsg Feedback.Msg
 
 
 
@@ -248,6 +250,7 @@ type TabType
     | OpenDotaTab
     | ElmUIPlaygroundTab
     | ItemShopTab
+    | FeedbackTab
 
 
 type alias Model =
@@ -283,6 +286,7 @@ type alias Model =
     , elm_ui_playground_model : ElmUIPlayground.Model
     , visual_output_model : VisualOutput.Model
     , item_shop_model : ItemShop.Model
+    , feedback_model : Feedback.Model
     }
 
 
@@ -333,6 +337,7 @@ matchRoute =
         , map (TabRoute OpenDotaTab) (s "open_dota_tab" </> fragment identity)
         , map (TabRoute ElmUIPlaygroundTab) (s "elm_ui_playground_tab" </> fragment identity)
         , map (TabRoute ItemShopTab) (s "item_shop_tab" </> fragment identity)
+        , map (TabRoute FeedbackTab) (s "feedback_tab" </> fragment identity)
         ]
 
 
@@ -429,6 +434,9 @@ init _ url navKey =
         ( item_shop_model, item_shop_cmds ) =
             ItemShop.init
 
+        ( feedback_model, feedback_cmds) =
+            Feedback.init
+
         initial_model : Model
         initial_model =
             { count = 0
@@ -462,6 +470,7 @@ init _ url navKey =
             , elm_ui_playground_model = ElmUIPlayground.init
             , visual_output_model = VisualOutput.init
             , item_shop_model = item_shop_model
+            , feedback_model = feedback_model
             }
 
         existingCmds : Cmd Msg
@@ -916,6 +925,17 @@ update msg model =
             , Cmd.map GotItemShopMsg sub_cmd
             )
 
+        GotFeedbackMsg feedback_msg ->
+            let
+                ( sub_model, sub_cmd ) =
+                    Feedback.update feedback_msg model.feedback_model
+            in
+            ( { model
+                | feedback_model = sub_model
+              }
+            , Cmd.map GotFeedbackMsg sub_cmd
+            )
+
 
 dota_update : DotaMsg -> DotaModel -> ( DotaModel, Cmd Msg )
 dota_update msg dota_model =
@@ -1147,6 +1167,7 @@ navbar model =
             , ( OpenDotaTab, "OpenDota", "open_dota_tab" )
             , ( ElmUIPlaygroundTab, "ElmUI Playground", "elm_ui_playground_tab" )
             , ( ItemShopTab, "Item Shop", "item_shop_tab" )
+            , ( FeedbackTab, "Feedback", "feedback_tab" )
             ]
 
         dropdown_items =
@@ -1467,6 +1488,10 @@ homeView model =
                 ItemShopTab ->
                     Html.map GotItemShopMsg <|
                         ItemShop.view model.item_shop_model
+
+                FeedbackTab ->
+                    Html.map GotFeedbackMsg <|
+                        Feedback.view model.feedback_model
 
         bootstrap_stylesheet =
             CDN.stylesheet

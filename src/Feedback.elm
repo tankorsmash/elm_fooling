@@ -408,8 +408,11 @@ view model =
             , Font.alignLeft
             ]
 
+        made_with_love =
+            el [ centerX, paddingXY 0 10, font_grey, Font.size 12 ] <| text "Powered by Elm"
+
         create_post_block =
-            column [ background_grey, border_dark_edges, Border.width 1, padding 10, spacing 10, Border.rounded 5 ]
+            column [ background_grey, border_dark_edges, Border.width 1, padding 10, spacing 10, Border.rounded 5, Element.below <| made_with_love ]
                 [ el [ centerX ] <| text "Create Post"
                 , column (font_grey :: input_style)
                     [ el [ Font.semiBold, Font.size 14 ] <| text "TITLE"

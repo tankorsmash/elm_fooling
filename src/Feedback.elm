@@ -10,8 +10,10 @@ import Element
     exposing
         ( Color
         , Element
+        , alignBottom
         , alignLeft
         , alignRight
+        , alignTop
         , centerX
         , centerY
         , column
@@ -321,9 +323,9 @@ format_date_raw posix =
 
 render_entry : Time.Posix -> FeedbackEntry -> Element Msg
 render_entry time_now entry =
-    row [ spacing 25, width fill, padding 10 ]
-        [ row [ width <| fillPortion 1 ]
-            [ column [ centerX, Border.width 1, Border.rounded 4, padding 2, Border.color <| rgb 0.75 0.75 0.75, width fill ]
+    row [ spacingXY 10 25, width fill, padding 10 ]
+        [ row [ width <| fillPortion 1, width (fill |> Element.minimum 55), paddingXY 5 0, alignTop ]
+            [ column [ alignTop, centerX, Border.width 1, Border.rounded 4, padding 2, Border.color <| rgb 0.75 0.75 0.75, width fill ]
                 [ el [ centerX ] <| text "/\\"
                 , el [ centerX ] <| text <| String.fromInt <| entry.votes.ups - entry.votes.downs
                 ]
@@ -454,7 +456,7 @@ view model =
         column [ scaled_font 1 ] <|
             [ row [ width fill ]
                 [ el [ width <| fillPortion 1 ] create_post_block
-                , column [ width <| fillPortion 5 ] <|
+                , column [ width <| fillPortion 5, spacingXY 0 20 ] <|
                     List.map render_entry_ entries
                 ]
             ]

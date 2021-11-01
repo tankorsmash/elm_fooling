@@ -52,6 +52,8 @@ type alias Model =
     , time_now : Time.Posix
     , create_post : { title : Maybe String, details : Maybe String }
     , detail_entry_id : Maybe Int
+    , logged_in_user : Maybe User
+    , users : List User
     }
 
 
@@ -100,6 +102,7 @@ type alias FeedbackEntry =
     , created_at : Time.Posix
     , comments : List Comment
     , id : Int
+    , author : User
     }
 
 
@@ -113,6 +116,18 @@ type Msg
 initial_model : Model
 initial_model =
     let
+        mike =
+            { username = "Jobang McDonald" }
+
+        matt =
+            { username = "Mathias Smith" }
+
+        alice =
+            { username = "Alicia Keys" }
+
+        initial_users =
+            [ mike, matt, alice ]
+
         initial_entries =
             [ { title = "I think we should change this"
               , body = "This is a long description of all the stuff we need to change, it's unreal. I am currently listening to Hell on Earth, and its boppin'.\n\nThis is a new line."
@@ -125,6 +140,7 @@ initial_model =
               , created_at = Time.millisToPosix 1635544030000
               , comments = []
               , id = 1
+              , author = mike
               }
             , { title = "Been lovin 3.0"
               , body = "Having a lot of fun playing the latest build, can't wait to see what you guys come up with next!\n\nI've been having a lot of fun listening to Beatiful Heartbeat by Morten, but of course remixed by Deoro. It's banging.\n\nIt's even better than the original, which is crazy."
@@ -137,6 +153,7 @@ initial_model =
               , created_at = Time.millisToPosix 619663630000
               , comments = []
               , id = 2
+              , author = matt
               }
             , { title = "Pretty sure I like PoGo more"
               , body = "I just love the amount of little digimons you pick up and put in your pocket. There isn't too much like it, so its a lot of fun."
@@ -148,6 +165,7 @@ initial_model =
               , created_at = Time.millisToPosix 1319262630000
               , comments = []
               , id = 3
+              , author = alice
               }
             ]
     in
@@ -155,6 +173,8 @@ initial_model =
     , time_now = Time.millisToPosix 0
     , create_post = { title = Nothing, details = Nothing }
     , detail_entry_id = Nothing
+    , logged_in_user = Just mike
+    , users = initial_users
     }
 
 
@@ -184,36 +204,43 @@ update msg model =
             ( { model | create_post = { create_post | details = Just new_details } }, Cmd.none )
 
         CreatePostSubmit ->
-            let
-                { create_post, entries } =
-                    model
+            case model.logged_in_user of
+                Just logged_in_user ->
+                    let
+                        { create_post, entries } =
+                            model
 
-                { title, details } =
-                    create_post
+                        { title, details } =
+                            create_post
 
-                new_entry =
-                    { title = Maybe.withDefault "No title given" title
-                    , body = Maybe.withDefault "No details given" details
-                    , votes = { ups = 0, downs = 0 }
-                    , tags = []
-                    , status = New
-                    , created_at = model.time_now
-                    , comments = []
-                    , id =
-                        1
-                            + (case List.maximum <| List.map .id entries of
-                                Just max_id ->
-                                    max_id
+                        new_entry =
+                            { title = Maybe.withDefault "No title given" title
+                            , body = Maybe.withDefault "No details given" details
+                            , votes = { ups = 0, downs = 0 }
+                            , tags = []
+                            , status = New
+                            , created_at = model.time_now
+                            , comments = []
+                            , id =
+                                1
+                                    + (case List.maximum <| List.map .id entries of
+                                        Just max_id ->
+                                            max_id
 
-                                Nothing ->
-                                    0
-                              )
-                    }
+                                        Nothing ->
+                                            0
+                                      )
+                            , author = logged_in_user
+                            }
 
-                empty_create_post =
-                    { title = Nothing, details = Nothing }
-            in
-            ( { model | entries = entries ++ [ new_entry ], create_post = empty_create_post }, Cmd.none )
+                        empty_create_post =
+                            { title = Nothing, details = Nothing }
+                    in
+                    ( { model | entries = entries ++ [ new_entry ], create_post = empty_create_post }, Cmd.none )
+
+                -- TODO: alert something because you need a logged in user
+                Nothing ->
+                    ( model, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
@@ -412,7 +439,29 @@ purple_button attrs on_press label =
 
 render_single_detail : FeedbackEntry -> Element Msg
 render_single_detail entry =
-    text <| "Found matching entry!"
+    let
+        _ =
+            123
+    in
+    column []
+        [ row [ spacing 10 ]
+            -- vote box
+            [ row [ width <| fillPortion 1, width (fill |> Element.minimum 55), paddingXY 5 0, alignTop ]
+                [ column [ alignTop, centerX, Border.width 1, Border.rounded 4, padding 2, Border.color <| rgb 0.75 0.75 0.75, width fill ]
+                    [ el [ centerX ] <| text "/\\"
+                    , el [ centerX ] <| text <| String.fromInt <| entry.votes.ups - entry.votes.downs
+                    ]
+                ]
+
+            -- entry title
+            , text <| entry.title
+            ]
+        , row []
+            [ el [] <| text "T"
+            , el [] <| text entry.author.username
+            ]
+        , paragraph [] [ text <| entry.body ]
+        ]
 
 
 detail_view : Model -> Html.Html Msg

@@ -1,6 +1,5 @@
 port module Main exposing (..)
 
-import Feedback
 import Bootstrap.Button as Button
 import Bootstrap.CDN as CDN
 import Bootstrap.Card as Card
@@ -17,6 +16,7 @@ import Browser.Navigation as Nav
 import Debug
 import Element
 import ElmUIPlayground
+import Feedback
 import FormData
     exposing
         ( DataType(..)
@@ -251,6 +251,7 @@ type TabType
     | ElmUIPlaygroundTab
     | ItemShopTab
     | FeedbackTab
+    | FeedbackTabDetail Int
 
 
 type alias Model =
@@ -308,6 +309,10 @@ type Route
     | UnsetRoute
 
 
+
+-- | FeedbackRoute Feedback.Route
+
+
 parseUrl : Url.Url -> Route
 parseUrl url =
     case parse matchRoute url of
@@ -338,6 +343,7 @@ matchRoute =
         , map (TabRoute ElmUIPlaygroundTab) (s "elm_ui_playground_tab" </> fragment identity)
         , map (TabRoute ItemShopTab) (s "item_shop_tab" </> fragment identity)
         , map (TabRoute FeedbackTab) (s "feedback_tab" </> fragment identity)
+        , map (TabRoute << FeedbackTabDetail) (s "feedback_tab" </> int </> fragment identity)
         ]
 
 
@@ -434,7 +440,7 @@ init _ url navKey =
         ( item_shop_model, item_shop_cmds ) =
             ItemShop.init
 
-        ( feedback_model, feedback_cmds) =
+        ( feedback_model, feedback_cmds ) =
             Feedback.init
 
         initial_model : Model
@@ -1491,8 +1497,20 @@ homeView model =
                         ItemShop.view model.item_shop_model
 
                 FeedbackTab ->
+                    let
+                        { feedback_model } =
+                            model
+                    in
                     Html.map GotFeedbackMsg <|
-                        Feedback.view model.feedback_model
+                        Feedback.view {feedback_model | detail_entry_id = Nothing }
+
+                FeedbackTabDetail entry_id ->
+                    let
+                        { feedback_model } =
+                            model
+                    in
+                    Html.map GotFeedbackMsg <|
+                        Feedback.detail_view { feedback_model | detail_entry_id = Just entry_id }
 
         bootstrap_stylesheet =
             CDN.stylesheet

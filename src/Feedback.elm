@@ -1,4 +1,4 @@
-module Feedback exposing (Model, Msg, init, subscriptions, update, view)
+module Feedback exposing (Model, Msg, Route, detail_view, init, subscriptions, update, view)
 
 import Array
 import Color
@@ -51,6 +51,7 @@ type alias Model =
     { entries : List FeedbackEntry
     , time_now : Time.Posix
     , create_post : { title : Maybe String, details : Maybe String }
+    , detail_entry_id : Maybe Int
     }
 
 
@@ -65,6 +66,11 @@ type IssueStatus
     | InConsideration
     | Rejected
     | Implemented
+
+
+type Route
+    = List
+    | Detail Int
 
 
 type alias Votes =
@@ -93,6 +99,7 @@ type alias FeedbackEntry =
     , status : IssueStatus
     , created_at : Time.Posix
     , comments : List Comment
+    , id : Int
     }
 
 
@@ -117,6 +124,7 @@ initial_model =
               , status = InConsideration
               , created_at = Time.millisToPosix 1635544030000
               , comments = []
+              , id = 1
               }
             , { title = "Been lovin 3.0"
               , body = "Having a lot of fun playing the latest build, can't wait to see what you guys come up with next!\n\nI've been having a lot of fun listening to Beatiful Heartbeat by Morten, but of course remixed by Deoro. It's banging.\n\nIt's even better than the original, which is crazy."
@@ -128,6 +136,7 @@ initial_model =
               , status = InConsideration
               , created_at = Time.millisToPosix 619663630000
               , comments = []
+              , id = 2
               }
             , { title = "Pretty sure I like PoGo more"
               , body = "I just love the amount of little digimons you pick up and put in your pocket. There isn't too much like it, so its a lot of fun."
@@ -138,12 +147,14 @@ initial_model =
               , status = InConsideration
               , created_at = Time.millisToPosix 1319262630000
               , comments = []
+              , id = 3
               }
             ]
     in
     { entries = initial_entries
     , time_now = Time.millisToPosix 0
     , create_post = { title = Nothing, details = Nothing }
+    , detail_entry_id = Nothing
     }
 
 
@@ -188,6 +199,15 @@ update msg model =
                     , status = New
                     , created_at = model.time_now
                     , comments = []
+                    , id =
+                        1
+                            + (case List.maximum <| List.map .id entries of
+                                Just max_id ->
+                                    max_id
+
+                                Nothing ->
+                                    0
+                              )
                     }
 
                 empty_create_post =
@@ -388,6 +408,24 @@ purple_button attrs on_press label =
             ++ attrs
         )
         { onPress = Just on_press, label = text label }
+
+
+detail_view : Model -> Html.Html msg
+detail_view model =
+    let
+        { detail_entry_id } =
+            model
+    in
+    Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
+        case detail_entry_id of
+            Just entry_id ->
+                Element.el [] <|
+                    text <|
+                        "Viewing detail of: "
+                            ++ String.fromInt entry_id
+
+            Nothing ->
+                text <| "No entry id given, 404"
 
 
 view : Model -> Html.Html Msg

@@ -48,7 +48,7 @@ import UUID exposing (UUID)
 
 
 type alias Model =
-    { entries : List FeedbackEntry
+    { entries : Array.Array FeedbackEntry
     , time_now : Time.Posix
     , create_post : { title : Maybe String, details : Maybe String }
     , detail_entry_id : Maybe Int
@@ -102,7 +102,7 @@ type alias FeedbackEntry =
     , tags : List Tag
     , status : IssueStatus
     , created_at : Time.Posix
-    , comments : List Comment
+    , comments : Array.Array Comment
     , id : Int
     , author : User
     }
@@ -135,54 +135,56 @@ initial_model =
             [ mike, matt, alice ]
 
         initial_entries =
-            [ { title = "I think we should change this"
-              , body = "This is a long description of all the stuff we need to change, it's unreal. I am currently listening to Hell on Earth, and its boppin'.\n\nThis is a new line."
-              , votes = { ups = 12, downs = 2 }
-              , tags =
-                    [ { name = "Feedback", description = "This is a tag for thoughts on a change" }
-                    , { name = "Complaint", description = "This is a tag for all negative feelings" }
-                    ]
-              , status = InConsideration
-              , created_at = Time.millisToPosix 1635544030000
-              , comments =
-                    [ { author = mike
-                      , body = "This is a short comment."
-                      , created_at = Time.millisToPosix 1635543030000
-                      }
-                    , { author = alice
-                      , body = "This however is quite a long comment. It turns out, while this is still simple, it still requires a bit of effort every step of the way. Kinda like life"
-                      , created_at = Time.millisToPosix 1635543030000
-                      }
-                    ]
-              , id = 1
-              , author = mike
-              }
-            , { title = "Been lovin 3.0"
-              , body = "Having a lot of fun playing the latest build, can't wait to see what you guys come up with next!\n\nI've been having a lot of fun listening to Beatiful Heartbeat by Morten, but of course remixed by Deoro. It's banging.\n\nIt's even better than the original, which is crazy."
-              , votes = { ups = 2, downs = 30 }
-              , tags =
-                    [ { name = "Feedback", description = "This is a tag for thoughts on a change" }
-                    , { name = "Complaint", description = "This is a tag for all negative feelings" }
-                    ]
-              , status = InConsideration
-              , created_at = Time.millisToPosix 619663630000
-              , comments = []
-              , id = 2
-              , author = matt
-              }
-            , { title = "Pretty sure I like PoGo more"
-              , body = "I just love the amount of little digimons you pick up and put in your pocket. There isn't too much like it, so its a lot of fun."
-              , votes = { ups = 13, downs = 10 }
-              , tags =
-                    [ { name = "Complaint", description = "This is a tag for all negative feelings" }
-                    ]
-              , status = InConsideration
-              , created_at = Time.millisToPosix 1319262630000
-              , comments = []
-              , id = 3
-              , author = alice
-              }
-            ]
+            Array.fromList
+                [ { title = "I think we should change this"
+                  , body = "This is a long description of all the stuff we need to change, it's unreal. I am currently listening to Hell on Earth, and its boppin'.\n\nThis is a new line."
+                  , votes = { ups = 12, downs = 2 }
+                  , tags =
+                        [ { name = "Feedback", description = "This is a tag for thoughts on a change" }
+                        , { name = "Complaint", description = "This is a tag for all negative feelings" }
+                        ]
+                  , status = InConsideration
+                  , created_at = Time.millisToPosix 1635544030000
+                  , comments =
+                        Array.fromList
+                            [ { author = mike
+                              , body = "This is a short comment."
+                              , created_at = Time.millisToPosix 1635543030000
+                              }
+                            , { author = alice
+                              , body = "This however is quite a long comment. It turns out, while this is still simple, it still requires a bit of effort every step of the way. Kinda like life"
+                              , created_at = Time.millisToPosix 1635543030000
+                              }
+                            ]
+                  , id = 1
+                  , author = mike
+                  }
+                , { title = "Been lovin 3.0"
+                  , body = "Having a lot of fun playing the latest build, can't wait to see what you guys come up with next!\n\nI've been having a lot of fun listening to Beatiful Heartbeat by Morten, but of course remixed by Deoro. It's banging.\n\nIt's even better than the original, which is crazy."
+                  , votes = { ups = 2, downs = 30 }
+                  , tags =
+                        [ { name = "Feedback", description = "This is a tag for thoughts on a change" }
+                        , { name = "Complaint", description = "This is a tag for all negative feelings" }
+                        ]
+                  , status = InConsideration
+                  , created_at = Time.millisToPosix 619663630000
+                  , comments = Array.empty
+                  , id = 2
+                  , author = matt
+                  }
+                , { title = "Pretty sure I like PoGo more"
+                  , body = "I just love the amount of little digimons you pick up and put in your pocket. There isn't too much like it, so its a lot of fun."
+                  , votes = { ups = 13, downs = 10 }
+                  , tags =
+                        [ { name = "Complaint", description = "This is a tag for all negative feelings" }
+                        ]
+                  , status = InConsideration
+                  , created_at = Time.millisToPosix 1319262630000
+                  , comments = Array.empty
+                  , id = 3
+                  , author = alice
+                  }
+                ]
     in
     { entries = initial_entries
     , time_now = Time.millisToPosix 0
@@ -230,6 +232,7 @@ update msg model =
                         { title, details } =
                             create_post
 
+                        new_entry : FeedbackEntry
                         new_entry =
                             { title = Maybe.withDefault "No title given" title
                             , body = Maybe.withDefault "No details given" details
@@ -237,10 +240,10 @@ update msg model =
                             , tags = []
                             , status = New
                             , created_at = model.time_now
-                            , comments = []
+                            , comments = Array.empty
                             , id =
                                 1
-                                    + (case List.maximum <| List.map .id entries of
+                                    + (case List.maximum <| Array.toList <| Array.map .id entries of
                                         Just max_id ->
                                             max_id
 
@@ -253,7 +256,12 @@ update msg model =
                         empty_create_post =
                             { title = Nothing, details = Nothing }
                     in
-                    ( { model | entries = entries ++ [ new_entry ], create_post = empty_create_post }, Cmd.none )
+                    ( { model
+                        | entries = Array.push new_entry entries
+                        , create_post = empty_create_post
+                      }
+                    , Cmd.none
+                    )
 
                 -- TODO: alert something because you need a logged in user
                 Nothing ->
@@ -280,9 +288,30 @@ update msg model =
                         new_comment =
                             { author = logged_in_user, body = comment_body, created_at = model.time_now }
 
-                        comments = entry.comments
+                        comments =
+                            Array.push new_comment entry.comments
+
+                        new_entry =
+                            { entry | comments = comments }
+
+                        new_entries =
+                            Array.map
+                                (\e ->
+                                    if e.id == new_entry.id then
+                                        new_entry
+
+                                    else
+                                        e
+                                )
+                                model.entries
                     in
-                    ( model, Cmd.none )
+                    ( { model
+                        | entries = new_entries
+                        , detail_comment_body = Nothing
+                        , detail_comment_focused = Nothing
+                      }
+                    , Cmd.none
+                    )
 
                 Nothing ->
                     ( model, Cmd.none )
@@ -437,7 +466,7 @@ render_entry time_now entry =
             , paragraph [ font_grey ] [ text <| clipText entry.body 150 ]
             , el [ Font.size 12 ] <| text <| format_date entry.created_at ++ " - " ++ format_relative_date time_now entry.created_at
             ]
-        , row [ width <| fillPortion 1 ] [ text <| "[], " ++ (String.fromInt <| List.length entry.comments) ]
+        , row [ width <| fillPortion 1 ] [ text <| "[], " ++ (String.fromInt <| Array.length entry.comments) ]
         ]
 
 
@@ -627,7 +656,8 @@ render_single_detail ( detail_comment_focused_, detail_comment_body, time_now ) 
                                     [ Border.width 2, Border.rounded 5 ]
                                )
                             ++ [ Events.onFocus <| EntryDetailCommentFocused entry.id
-                               , Events.onLoseFocus <| EntryDetailCommentLostFocused entry.id
+
+                               -- , Events.onLoseFocus <| EntryDetailCommentLostFocused entry.id --TODO: fix this firing before the click on submitting the button
                                ]
                         )
                         { onChange = EntryDetailCommentUpdate
@@ -667,7 +697,7 @@ render_single_detail ( detail_comment_focused_, detail_comment_body, time_now ) 
             , el [ right_portion, font_grey, Font.size 12, Font.medium ] <| text "ACTIVITY"
             ]
          ]
-            ++ List.map render_comment entry.comments
+            ++ (Array.toList <| Array.map render_comment entry.comments)
         )
 
 
@@ -680,7 +710,7 @@ detail_view model =
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [ scaled_font 1 ] <|
         case detail_entry_id of
             Just entry_id ->
-                case List.head <| List.filter (.id >> (==) entry_id) model.entries of
+                case Array.get 0 <| Array.filter (.id >> (==) entry_id) model.entries of
                     Nothing ->
                         text <| "No entries match id given: " ++ String.fromInt entry_id
 
@@ -758,6 +788,7 @@ view model =
             [ row [ width fill ]
                 [ el [ width <| fillPortion 1, alignTop ] create_post_block
                 , column [ width <| fillPortion 5, spacingXY 0 20, alignTop ] <|
-                    List.map render_entry_ entries
+                    Array.toList <|
+                        Array.map render_entry_ entries
                 ]
             ]

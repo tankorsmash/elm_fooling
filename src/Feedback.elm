@@ -42,6 +42,7 @@ import Element.Input as Input
 import Html
 import Html.Attributes
 import Random
+import Set
 import Task
 import Time
 import UUID exposing (UUID)
@@ -537,8 +538,8 @@ explain_todo =
     Element.explain Debug.todo
 
 
-render_single_detail : ( Maybe Int, Maybe String, Time.Posix ) -> FeedbackEntry -> Element Msg
-render_single_detail ( detail_comment_focused_, detail_comment_body, time_now ) entry =
+render_single_detail : Model -> FeedbackEntry -> Element Msg
+render_single_detail model entry =
     let
         _ =
             123
@@ -563,7 +564,7 @@ render_single_detail ( detail_comment_focused_, detail_comment_body, time_now ) 
 
         detail_comment_focused =
             False
-                || (case detail_comment_focused_ of
+                || (case model.detail_comment_focused of
                         Nothing ->
                             False
 
@@ -624,6 +625,7 @@ render_single_detail ( detail_comment_focused_, detail_comment_body, time_now ) 
                 , text voter.username
                 ]
 
+        participants : List User
         participants =
             let
                 commenters : List User
@@ -632,12 +634,29 @@ render_single_detail ( detail_comment_focused_, detail_comment_body, time_now ) 
 
                 includes_author =
                     Debug.log "includes author?" <| not <| List.isEmpty <| List.filter (\c -> c == entry.author) commenters
-            in
-            if includes_author then
-                commenters
 
-            else
-                entry.author :: commenters
+                everyone =
+                    if includes_author then
+                        commenters
+
+                    else
+                        entry.author :: commenters
+
+                username_matches : String -> User -> Bool
+                username_matches username user =
+                    user.username == username
+
+                usernames : List String
+                usernames =
+                    Set.toList <| Set.fromList <| List.map .username commenters
+            in
+            List.filterMap
+                (\username ->
+                    List.head <|
+                        List.filter (username_matches username) model.users
+                )
+            <|
+                usernames
 
         voters_block =
             column
@@ -701,7 +720,7 @@ render_single_detail ( detail_comment_focused_, detail_comment_body, time_now ) 
                 -- entry body
                 , column [ right_portion ]
                     [ paragraph [] [ text <| entry.body ]
-                    , el [ Font.size 12, font_grey, paddingXY 0 10 ] <| text <| format_relative_date time_now entry.created_at
+                    , el [ Font.size 12, font_grey, paddingXY 0 10 ] <| text <| format_relative_date model.time_now entry.created_at
                     , el
                         [ width fill
                         ]
@@ -726,7 +745,7 @@ render_single_detail ( detail_comment_focused_, detail_comment_body, time_now ) 
                             )
                             { onChange = EntryDetailCommentUpdate
                             , text =
-                                case detail_comment_body of
+                                case model.detail_comment_body of
                                     Just body ->
                                         body
 
@@ -786,7 +805,7 @@ detail_view model =
                         text <| "No entries match id given: " ++ String.fromInt entry_id
 
                     Just entry ->
-                        render_single_detail ( detail_comment_focused, detail_comment_body, time_now ) entry
+                        render_single_detail model entry
 
             Nothing ->
                 text <| "No entry id given, 404"

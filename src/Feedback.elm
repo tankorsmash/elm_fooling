@@ -528,19 +528,23 @@ render_single_detail detail_comment_body time_now entry =
             , column [ right_portion, spacing 15 ]
                 [ paragraph [] [ text <| entry.body ]
                 , el [ Font.size 12, font_grey ] <| text <| format_relative_date time_now entry.created_at
-                , Input.multiline [ Border.width 0, paddingXY 0 10, height (fill |> Element.minimum 75) ]
-                    { onChange = EntryDetailCommentUpdate
-                    , text =
-                        case detail_comment_body of
-                            Just body ->
-                                body
+                , el [ border_dark_edges, width fill ] <|
+                    Input.multiline
+                        [ paddingXY 10 10
+                        , width fill
+                        ]
+                        { onChange = EntryDetailCommentUpdate
+                        , text =
+                            case detail_comment_body of
+                                Just body ->
+                                    body
 
-                            Nothing ->
-                                ""
-                    , placeholder = Just <| Input.placeholder [] <| text "Leave a comment"
-                    , label = Input.labelHidden "hidden details"
-                    , spellcheck = True
-                    }
+                                Nothing ->
+                                    ""
+                        , placeholder = Just <| Input.placeholder [] <| text "Leave a comment"
+                        , label = Input.labelHidden "hidden details"
+                        , spellcheck = True
+                        }
                 ]
             ]
         ]

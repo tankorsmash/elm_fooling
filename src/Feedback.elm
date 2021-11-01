@@ -52,6 +52,7 @@ type alias Model =
     , time_now : Time.Posix
     , create_post : { title : Maybe String, details : Maybe String }
     , detail_entry_id : Maybe Int
+    , detail_comment_body : Maybe String
     , logged_in_user : Maybe User
     , users : List User
     }
@@ -111,6 +112,8 @@ type Msg
     | CreatePostUpdateTitle String
     | CreatePostUpdateDetails String
     | CreatePostSubmit
+    | EntryDetailCommentUpdate String
+    | EntryDetailCommentSubmit Int
 
 
 initial_model : Model
@@ -173,6 +176,7 @@ initial_model =
     , time_now = Time.millisToPosix 0
     , create_post = { title = Nothing, details = Nothing }
     , detail_entry_id = Nothing
+    , detail_comment_body = Nothing
     , logged_in_user = Just mike
     , users = initial_users
     }
@@ -241,6 +245,17 @@ update msg model =
                 -- TODO: alert something because you need a logged in user
                 Nothing ->
                     ( model, Cmd.none )
+
+        EntryDetailCommentUpdate new_comment ->
+            ( { model | detail_comment_body = Just new_comment }, Cmd.none )
+
+        EntryDetailCommentSubmit entry_id ->
+            Debug.todo "gotta implement submitting a comment"
+                ( model, Cmd.none )
+
+
+
+-- ( { model | detail_comment_body = new_comment }, Cmd.none )
 
 
 subscriptions : Model -> Sub Msg
@@ -445,8 +460,8 @@ explain_todo =
     Element.explain Debug.todo
 
 
-render_single_detail : Time.Posix -> FeedbackEntry -> Element Msg
-render_single_detail time_now entry =
+render_single_detail : Maybe String -> Time.Posix -> FeedbackEntry -> Element Msg
+render_single_detail detail_comment_body time_now entry =
     let
         _ =
             123
@@ -513,6 +528,19 @@ render_single_detail time_now entry =
             , column [ right_portion, spacing 15 ]
                 [ paragraph [] [ text <| entry.body ]
                 , el [ Font.size 12, font_grey ] <| text <| format_relative_date time_now entry.created_at
+                , Input.multiline [ Border.width 0, paddingXY 0 10, height (fill |> Element.minimum 75) ]
+                    { onChange = EntryDetailCommentUpdate
+                    , text =
+                        case detail_comment_body of
+                            Just body ->
+                                body
+
+                            Nothing ->
+                                ""
+                    , placeholder = Just <| Input.placeholder [] <| text "Leave a comment"
+                    , label = Input.labelHidden "hidden details"
+                    , spellcheck = True
+                    }
                 ]
             ]
         ]
@@ -521,7 +549,7 @@ render_single_detail time_now entry =
 detail_view : Model -> Html.Html Msg
 detail_view model =
     let
-        { detail_entry_id } =
+        { detail_entry_id, detail_comment_body } =
             model
     in
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [ scaled_font 1 ] <|
@@ -532,7 +560,7 @@ detail_view model =
                         text <| "No entries match id given: " ++ String.fromInt entry_id
 
                     Just entry ->
-                        render_single_detail model.time_now entry
+                        render_single_detail detail_comment_body model.time_now entry
 
             Nothing ->
                 text <| "No entry id given, 404"

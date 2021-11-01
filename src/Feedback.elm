@@ -53,6 +53,7 @@ type alias Model =
     , create_post : { title : Maybe String, details : Maybe String }
     , detail_entry_id : Maybe Int
     , detail_comment_body : Maybe String
+    , detail_comment_focused : Maybe Int -- either an entry id or nothing
     , logged_in_user : Maybe User
     , users : List User
     }
@@ -114,6 +115,8 @@ type Msg
     | CreatePostSubmit
     | EntryDetailCommentUpdate String
     | EntryDetailCommentSubmit Int
+    | EntryDetailCommentFocused Int
+    | EntryDetailCommentLostFocused Int
 
 
 initial_model : Model
@@ -186,6 +189,7 @@ initial_model =
     , create_post = { title = Nothing, details = Nothing }
     , detail_entry_id = Nothing
     , detail_comment_body = Nothing
+    , detail_comment_focused = Nothing
     , logged_in_user = Just mike
     , users = initial_users
     }
@@ -262,6 +266,12 @@ update msg model =
         EntryDetailCommentSubmit entry_id ->
             Debug.todo "gotta implement submitting a comment"
                 ( model, Cmd.none )
+
+        EntryDetailCommentFocused entry_id ->
+            ( { model | detail_comment_focused = Just entry_id }, Cmd.none )
+
+        EntryDetailCommentLostFocused entry_id ->
+            ( { model | detail_comment_focused = Nothing }, Cmd.none )
 
 
 
@@ -470,8 +480,8 @@ explain_todo =
     Element.explain Debug.todo
 
 
-render_single_detail : Maybe String -> Time.Posix -> FeedbackEntry -> Element Msg
-render_single_detail detail_comment_body time_now entry =
+render_single_detail : ( Maybe Int, Maybe String, Time.Posix ) -> FeedbackEntry -> Element Msg
+render_single_detail ( detail_comment_focused_, detail_comment_body, time_now ) entry =
     let
         _ =
             123
@@ -493,6 +503,16 @@ render_single_detail detail_comment_body time_now entry =
 
         left_blank =
             el [ left_portion ] <| Element.none
+
+        detail_comment_focused =
+            False
+                || (case detail_comment_focused_ of
+                        Nothing ->
+                            False
+
+                        Just entry_id ->
+                            entry_id == entry.id
+                   )
 
         render_comment : Comment -> Element Msg
         render_comment comment =
@@ -566,14 +586,30 @@ render_single_detail detail_comment_body time_now entry =
               el [ left_portion ] <| Element.none
 
             -- entry body
-            , column [ right_portion, spacing 15 ]
+            , column [ right_portion ]
                 [ paragraph [] [ text <| entry.body ]
-                , el [ Font.size 12, font_grey ] <| text <| format_relative_date time_now entry.created_at
-                , el [ border_dark_edges, width fill ] <|
+                , el [ Font.size 12, font_grey, paddingXY 0 10 ] <| text <| format_relative_date time_now entry.created_at
+                , el
+                    [ width fill
+                    ]
+                  <|
                     Input.multiline
-                        [ paddingXY 10 10
-                        , width fill
-                        ]
+                        ([ paddingXY 10 10
+                         , width fill
+                         , border_dark_edges
+                         ]
+                            ++ (if detail_comment_focused then
+                                    [ Border.widthEach { top = 2, left = 2, right = 2, bottom = 0 }
+                                    , Border.roundEach <| { topLeft = 5, topRight = 5, bottomLeft = 0, bottomRight = 0 }
+                                    ]
+
+                                else
+                                    [ Border.width 2, Border.rounded 5 ]
+                               )
+                            ++ [ Events.onFocus <| EntryDetailCommentFocused entry.id
+                               , Events.onLoseFocus <| EntryDetailCommentLostFocused entry.id
+                               ]
+                        )
                         { onChange = EntryDetailCommentUpdate
                         , text =
                             case detail_comment_body of
@@ -586,6 +622,24 @@ render_single_detail detail_comment_body time_now entry =
                         , label = Input.labelHidden "hidden details"
                         , spellcheck = True
                         }
+                , case detail_comment_focused of
+                    True ->
+                        el
+                            [ border_dark_edges
+                            , Border.width 2
+                            , width fill
+                            , paddingXY 10 10
+                            ]
+                        <|
+                            purple_button
+                                [ alignRight
+                                , Font.variant Font.smallCaps
+                                ]
+                                (EntryDetailCommentSubmit entry.id)
+                                "Submit"
+
+                    False ->
+                        Element.none
                 ]
             ]
          , row row_styling
@@ -600,7 +654,7 @@ render_single_detail detail_comment_body time_now entry =
 detail_view : Model -> Html.Html Msg
 detail_view model =
     let
-        { detail_entry_id, detail_comment_body } =
+        { detail_entry_id, detail_comment_body, time_now, detail_comment_focused } =
             model
     in
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [ scaled_font 1 ] <|
@@ -611,7 +665,7 @@ detail_view model =
                         text <| "No entries match id given: " ++ String.fromInt entry_id
 
                     Just entry ->
-                        render_single_detail detail_comment_body model.time_now entry
+                        render_single_detail ( detail_comment_focused, detail_comment_body, time_now ) entry
 
             Nothing ->
                 text <| "No entry id given, 404"

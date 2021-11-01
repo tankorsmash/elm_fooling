@@ -437,30 +437,68 @@ purple_button attrs on_press label =
         { onPress = Just on_press, label = text label }
 
 
+padding_left left =
+    Element.paddingEach { top = 0, right = 0, bottom = 0, left = left }
+
+
 render_single_detail : FeedbackEntry -> Element Msg
 render_single_detail entry =
     let
         _ =
             123
+
+        left_col_width =
+            width <| Element.px 50
+
+        left_padding =
+            padding_left 50
+
+        left_portion =
+            width <| fillPortion 1
+
+        right_portion =
+            width <| fillPortion 9
     in
     column []
-        [ row [ spacing 10 ]
+        [ row [ spacing 10, padding 10, width fill ]
             -- vote box
-            [ row [ width <| fillPortion 1, width (fill |> Element.minimum 55), paddingXY 5 0, alignTop ]
-                [ column [ alignTop, centerX, Border.width 1, Border.rounded 4, padding 2, Border.color <| rgb 0.75 0.75 0.75, width fill ]
-                    [ el [ centerX ] <| text "/\\"
-                    , el [ centerX ] <| text <| String.fromInt <| entry.votes.ups - entry.votes.downs
+            [ el [ left_col_width, left_portion ] <|
+                row [ width (fill |> Element.minimum 55), paddingXY 5 0, alignTop ]
+                    [ column [ alignTop, centerX, Border.width 1, Border.rounded 4, padding 2, Border.color <| rgb 0.75 0.75 0.75 ]
+                        [ el [ centerX ] <| text "/\\"
+                        , el [ centerX ] <| text <| String.fromInt <| entry.votes.ups - entry.votes.downs
+                        ]
                     ]
-                ]
 
             -- entry title
-            , text <| entry.title
+            , el [ right_portion ] <| text <| entry.title
             ]
-        , row []
-            [ el [] <| text "T"
-            , el [] <| text entry.author.username
+        , row [ spacing 10, padding 10, width fill ]
+            [ -- user image
+              el [ left_col_width, left_portion ] <|
+                el
+                    [ Border.width 5
+                    , Border.rounded 20
+                    , Background.color <| rgb 0.2 0.3 0.4
+                    , Border.color <| rgb 0.2 0.3 0.4
+                    , Font.color <| white_color
+                    , padding 10
+                    , centerX
+                    ]
+                <|
+                    text <|
+                        String.left 1 entry.author.username
+
+            -- username
+            , el [ right_portion ] <| text entry.author.username
             ]
-        , paragraph [] [ text <| entry.body ]
+        , row [ spacing 10, padding 10, width fill ]
+            [ -- blank space
+              el [ left_portion ] <| Element.none
+
+            -- entry body
+            , paragraph [ right_portion ] [ text <| entry.body ]
+            ]
         ]
 
 

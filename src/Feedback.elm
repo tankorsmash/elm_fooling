@@ -244,7 +244,8 @@ update msg model =
 
                 -- TODO: alert something because you need a logged in user
                 Nothing ->
-                    ( model, Cmd.none )
+                    Debug.todo "need to alert the user that they have to be logged in"
+                        ( model, Cmd.none )
 
         EntryDetailCommentUpdate new_comment ->
             ( { model | detail_comment_body = Just new_comment }, Cmd.none )

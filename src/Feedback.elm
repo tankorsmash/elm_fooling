@@ -600,113 +600,170 @@ render_single_detail ( detail_comment_focused_, detail_comment_body, time_now ) 
                     , el [ right_portion ] <| paragraph [] [ text comment.body ]
                     ]
                 ]
-    in
-    column []
-        ([ row row_styling
-            -- vote box
-            [ el [ left_col_width, left_portion ] <|
-                row [ width (fill |> Element.minimum 55), paddingXY 5 0, alignTop ]
-                    [ column [ alignTop, centerX, Border.width 1, Border.rounded 4, padding 2, Border.color <| rgb 0.75 0.75 0.75 ]
-                        [ el [ centerX ] <| text "/\\"
-                        , el [ centerX ] <| text <| String.fromInt <| entry.votes.ups - entry.votes.downs
+
+        render_voter voter =
+            row [ spacing 10 ]
+                [ -- user image
+                  el [ left_col_width, left_portion ] <|
+                    el
+                        [ Border.width 10
+                        , Border.rounded 20
+                        , Background.color <| rgb 0.2 0.3 0.4
+                        , Border.color <| rgb 0.2 0.3 0.4
+                        , Font.color <| white_color
+                        , centerX
+                        , height <| (fill |> Element.maximum 30)
+                        , alignTop
+                        , Element.inFront <|
+                            el [ Font.size 16, Font.center, alignTop, Element.moveUp 8, centerX ] <|
+                                text <|
+                                    String.left 1 entry.author.username
                         ]
-                    ]
-
-            -- entry title
-            , el [ right_portion, scaled_font 2 ] <| text <| entry.title
-            ]
-         , row (row_styling ++ [ paddingXY 10 0 ])
-            [ -- user image
-              el [ left_col_width, left_portion ] <|
-                el
-                    [ Border.width 20
-                    , Border.rounded 20
-                    , Background.color <| rgb 0.2 0.3 0.4
-                    , Border.color <| rgb 0.2 0.3 0.4
-                    , Font.color <| white_color
-                    , centerX
-                    , height <| (fill |> Element.maximum 30)
-                    , alignTop
-                    , Element.inFront <|
-                        el [ scaled_font 2, Font.center, alignTop, Element.moveUp 8, centerX ] <|
-                            text <|
-                                String.left 1 entry.author.username
-                    ]
-                <|
-                    Element.none
-
-            -- username
-            , el [ right_portion, Font.semiBold ] <| text entry.author.username
-            ]
-         , row row_styling
-            [ -- blank space
-              el [ left_portion ] <| Element.none
-
-            -- entry body
-            , column [ right_portion ]
-                [ paragraph [] [ text <| entry.body ]
-                , el [ Font.size 12, font_grey, paddingXY 0 10 ] <| text <| format_relative_date time_now entry.created_at
-                , el
-                    [ width fill
-                    ]
-                  <|
-                    Input.multiline
-                        ([ paddingXY 10 10
-                         , width fill
-                         , border_dark_edges
-                         ]
-                            ++ (if detail_comment_focused then
-                                    [ Border.widthEach { top = 2, left = 2, right = 2, bottom = 0 }
-                                    , Border.roundEach <| { topLeft = 5, topRight = 5, bottomLeft = 0, bottomRight = 0 }
-                                    ]
-
-                                else
-                                    [ Border.width 2, Border.rounded 5 ]
-                               )
-                            ++ [ Events.onFocus <| EntryDetailCommentFocused entry.id
-                               , Element.focused []
-                               , Events.onLoseFocus <| EntryDetailCommentLostFocused entry.id --TODO: fix this firing before the click on submitting the button
-                               ]
-                        )
-                        { onChange = EntryDetailCommentUpdate
-                        , text =
-                            case detail_comment_body of
-                                Just body ->
-                                    body
-
-                                Nothing ->
-                                    ""
-                        , placeholder = Just <| Input.placeholder [] <| text "Leave a comment"
-                        , label = Input.labelHidden "hidden details"
-                        , spellcheck = True
-                        }
-                , case detail_comment_focused of
-                    True ->
-                        el
-                            [ border_dark_edges
-                            , Border.width 2
-                            , width fill
-                            , paddingXY 10 10
-                            ]
-                        <|
-                            purple_button
-                                [ alignRight
-                                , Font.variant Font.smallCaps
-                                ]
-                                (EntryDetailCommentSubmit entry)
-                                "Submit"
-
-                    False ->
+                    <|
                         Element.none
+                , text voter.username
                 ]
-            ]
-         , row row_styling
-            [ left_blank
-            , el [ right_portion, font_grey, Font.size 12, Font.medium ] <| text "ACTIVITY"
-            ]
-         ]
-            ++ (Array.toList <| Array.map render_comment entry.comments)
-        )
+
+        participants =
+            let
+                commenters : List User
+                commenters =
+                    Array.toList <| Array.map .author entry.comments
+
+                includes_author =
+                    Debug.log "includes author?" <| not <| List.isEmpty <| List.filter (\c -> c == entry.author) commenters
+            in
+            if includes_author then
+                commenters
+
+            else
+                entry.author :: commenters
+
+        voters_block =
+            column
+                [ alignTop
+                , background_grey
+                , border_dark_edges
+                , Border.width 1
+                , padding 20
+                , spacing 10
+                , Border.rounded 5
+                , Element.below <| made_with_love
+                ]
+            <|
+                ([ el [ centerX, font_grey, alignLeft, Font.size 12 ] <| text "PARTICIPANTS" ]
+                    ++ List.map render_voter participants
+                )
+    in
+    row []
+        [ voters_block
+        , column []
+            ([ row row_styling
+                -- vote box
+                [ el [ left_col_width, left_portion ] <|
+                    row [ width (fill |> Element.minimum 55), paddingXY 5 0, alignTop ]
+                        [ column [ alignTop, centerX, Border.width 1, Border.rounded 4, padding 2, Border.color <| rgb 0.75 0.75 0.75 ]
+                            [ el [ centerX ] <| text "/\\"
+                            , el [ centerX ] <| text <| String.fromInt <| entry.votes.ups - entry.votes.downs
+                            ]
+                        ]
+
+                -- entry title
+                , el [ right_portion, scaled_font 2 ] <| text <| entry.title
+                ]
+             , row (row_styling ++ [ paddingXY 10 0 ])
+                [ -- user image
+                  el [ left_col_width, left_portion ] <|
+                    el
+                        [ Border.width 20
+                        , Border.rounded 20
+                        , Background.color <| rgb 0.2 0.3 0.4
+                        , Border.color <| rgb 0.2 0.3 0.4
+                        , Font.color <| white_color
+                        , centerX
+                        , height <| (fill |> Element.maximum 30)
+                        , alignTop
+                        , Element.inFront <|
+                            el [ scaled_font 2, Font.center, alignTop, Element.moveUp 8, centerX ] <|
+                                text <|
+                                    String.left 1 entry.author.username
+                        ]
+                    <|
+                        Element.none
+
+                -- username
+                , el [ right_portion, Font.semiBold ] <| text entry.author.username
+                ]
+             , row row_styling
+                [ -- blank space
+                  el [ left_portion ] <| Element.none
+
+                -- entry body
+                , column [ right_portion ]
+                    [ paragraph [] [ text <| entry.body ]
+                    , el [ Font.size 12, font_grey, paddingXY 0 10 ] <| text <| format_relative_date time_now entry.created_at
+                    , el
+                        [ width fill
+                        ]
+                      <|
+                        Input.multiline
+                            ([ paddingXY 10 10
+                             , width fill
+                             , border_dark_edges
+                             ]
+                                ++ (if detail_comment_focused then
+                                        [ Border.widthEach { top = 2, left = 2, right = 2, bottom = 0 }
+                                        , Border.roundEach <| { topLeft = 5, topRight = 5, bottomLeft = 0, bottomRight = 0 }
+                                        ]
+
+                                    else
+                                        [ Border.width 2, Border.rounded 5 ]
+                                   )
+                                ++ [ Events.onFocus <| EntryDetailCommentFocused entry.id
+                                   , Element.focused []
+                                   , Events.onLoseFocus <| EntryDetailCommentLostFocused entry.id --TODO: fix this firing before the click on submitting the button
+                                   ]
+                            )
+                            { onChange = EntryDetailCommentUpdate
+                            , text =
+                                case detail_comment_body of
+                                    Just body ->
+                                        body
+
+                                    Nothing ->
+                                        ""
+                            , placeholder = Just <| Input.placeholder [] <| text "Leave a comment"
+                            , label = Input.labelHidden "hidden details"
+                            , spellcheck = True
+                            }
+                    , case detail_comment_focused of
+                        True ->
+                            el
+                                [ border_dark_edges
+                                , Border.width 2
+                                , width fill
+                                , paddingXY 10 10
+                                ]
+                            <|
+                                purple_button
+                                    [ alignRight
+                                    , Font.variant Font.smallCaps
+                                    ]
+                                    (EntryDetailCommentSubmit entry)
+                                    "Submit"
+
+                        False ->
+                            Element.none
+                    ]
+                ]
+             , row row_styling
+                [ left_blank
+                , el [ right_portion, font_grey, Font.size 12, Font.medium ] <| text "ACTIVITY"
+                ]
+             ]
+                ++ (Array.toList <| Array.map render_comment entry.comments)
+            )
+        ]
 
 
 detail_view : Model -> Html.Html Msg
@@ -735,6 +792,10 @@ detail_view model =
                 text <| "No entry id given, 404"
 
 
+made_with_love =
+    el [ centerX, paddingXY 0 10, font_grey, Font.size 12 ] <| text "Powered by Elm"
+
+
 view : Model -> Html.Html Msg
 view model =
     let
@@ -754,9 +815,6 @@ view model =
             , padding 10
             , Font.alignLeft
             ]
-
-        made_with_love =
-            el [ centerX, paddingXY 0 10, font_grey, Font.size 12 ] <| text "Powered by Elm"
 
         create_post_block =
             column [ background_grey, border_dark_edges, Border.width 1, padding 10, spacing 10, Border.rounded 5, Element.below <| made_with_love ]

@@ -441,6 +441,10 @@ padding_left left =
     Element.paddingEach { top = 0, right = 0, bottom = 0, left = left }
 
 
+explain_todo =
+    Element.explain Debug.todo
+
+
 render_single_detail : FeedbackEntry -> Element Msg
 render_single_detail entry =
     let
@@ -458,9 +462,14 @@ render_single_detail entry =
 
         right_portion =
             width <| fillPortion 9
+
+        row_styling =
+            [ spacing 10, padding 10, width fill ]
+
+        --, explain Debug.todo]
     in
     column []
-        [ row [ spacing 10, padding 10, width fill ]
+        [ row row_styling
             -- vote box
             [ el [ left_col_width, left_portion ] <|
                 row [ width (fill |> Element.minimum 55), paddingXY 5 0, alignTop ]
@@ -471,28 +480,32 @@ render_single_detail entry =
                     ]
 
             -- entry title
-            , el [ right_portion ] <| text <| entry.title
+            , el [ right_portion, scaled_font 2 ] <| text <| entry.title
             ]
-        , row [ spacing 10, padding 10, width fill ]
+        , row (row_styling ++ [ paddingXY 10 0 ])
             [ -- user image
               el [ left_col_width, left_portion ] <|
                 el
-                    [ Border.width 5
+                    [ Border.width 20
                     , Border.rounded 20
                     , Background.color <| rgb 0.2 0.3 0.4
                     , Border.color <| rgb 0.2 0.3 0.4
                     , Font.color <| white_color
-                    , padding 10
                     , centerX
+                    , height <| (fill |> Element.maximum 30)
+                    , alignTop
+                    , Element.inFront <|
+                        el [ scaled_font 2, Font.center, alignTop, Element.moveUp 8, centerX ] <|
+                            text <|
+                                String.left 1 entry.author.username
                     ]
                 <|
-                    text <|
-                        String.left 1 entry.author.username
+                    Element.none
 
             -- username
-            , el [ right_portion ] <| text entry.author.username
+            , el [ right_portion, Font.semiBold ] <| text entry.author.username
             ]
-        , row [ spacing 10, padding 10, width fill ]
+        , row row_styling
             [ -- blank space
               el [ left_portion ] <| Element.none
 
@@ -508,7 +521,7 @@ detail_view model =
         { detail_entry_id } =
             model
     in
-    Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
+    Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [ scaled_font 1 ] <|
         case detail_entry_id of
             Just entry_id ->
                 case List.head <| List.filter (.id >> (==) entry_id) model.entries of

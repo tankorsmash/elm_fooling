@@ -410,7 +410,12 @@ purple_button attrs on_press label =
         { onPress = Just on_press, label = text label }
 
 
-detail_view : Model -> Html.Html msg
+render_single_detail : FeedbackEntry -> Element Msg
+render_single_detail entry =
+    text <| "Found matching entry!"
+
+
+detail_view : Model -> Html.Html Msg
 detail_view model =
     let
         { detail_entry_id } =
@@ -419,10 +424,12 @@ detail_view model =
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
         case detail_entry_id of
             Just entry_id ->
-                Element.el [] <|
-                    text <|
-                        "Viewing detail of: "
-                            ++ String.fromInt entry_id
+                case List.head <| List.filter (.id >> (==) entry_id) model.entries of
+                    Nothing ->
+                        text <| "No entries match id given: " ++ String.fromInt entry_id
+
+                    Just entry ->
+                        render_single_detail entry
 
             Nothing ->
                 text <| "No entry id given, 404"

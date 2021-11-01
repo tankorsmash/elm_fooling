@@ -320,7 +320,11 @@ update msg model =
             ( { model | detail_comment_focused = Just entry_id }, Cmd.none )
 
         EntryDetailCommentLostFocused entry_id ->
-            ( { model | detail_comment_focused = Nothing }, Cmd.none )
+            if model.detail_comment_body == Nothing then
+                ( { model | detail_comment_focused = Nothing }, Cmd.none )
+
+            else
+                ( model, Cmd.none )
 
 
 
@@ -656,8 +660,8 @@ render_single_detail ( detail_comment_focused_, detail_comment_body, time_now ) 
                                     [ Border.width 2, Border.rounded 5 ]
                                )
                             ++ [ Events.onFocus <| EntryDetailCommentFocused entry.id
-
-                               -- , Events.onLoseFocus <| EntryDetailCommentLostFocused entry.id --TODO: fix this firing before the click on submitting the button
+                               , Element.focused []
+                               , Events.onLoseFocus <| EntryDetailCommentLostFocused entry.id --TODO: fix this firing before the click on submitting the button
                                ]
                         )
                         { onChange = EntryDetailCommentUpdate
@@ -707,7 +711,13 @@ detail_view model =
         { detail_entry_id, detail_comment_body, time_now, detail_comment_focused } =
             model
     in
-    Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [ scaled_font 1 ] <|
+    Element.layoutWith
+        { options =
+            [ Element.noStaticStyleSheet
+            ]
+        }
+        [ scaled_font 1 ]
+    <|
         case detail_entry_id of
             Just entry_id ->
                 case Array.get 0 <| Array.filter (.id >> (==) entry_id) model.entries of
@@ -749,7 +759,7 @@ view model =
                 [ el [ centerX ] <| text "Create Post"
                 , column (font_grey :: input_style)
                     [ el [ Font.semiBold, Font.size 14 ] <| text "TITLE"
-                    , Input.text [ Border.width 0, Font.alignLeft, paddingXY 0 10, spacing 0 ]
+                    , Input.text [ Border.width 0, Font.alignLeft, paddingXY 0 10, spacing 0, Element.focused [] ]
                         { onChange = CreatePostUpdateTitle
                         , text =
                             case model.create_post.title of
@@ -764,7 +774,7 @@ view model =
                     ]
                 , column (font_grey :: input_style)
                     [ el [ Font.semiBold, Font.size 14 ] <| text "DETAILS"
-                    , Input.multiline [ Border.width 0, paddingXY 0 10, height (fill |> Element.minimum 75) ]
+                    , Input.multiline [ Border.width 0, paddingXY 0 10, height (fill |> Element.minimum 75), Element.focused [] ]
                         { onChange = CreatePostUpdateDetails
                         , text =
                             case model.create_post.details of

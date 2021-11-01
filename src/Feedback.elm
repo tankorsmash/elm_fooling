@@ -844,7 +844,7 @@ view model =
 
         create_post_block =
             column [ background_grey, border_dark_edges, Border.width 1, padding 10, spacing 10, Border.rounded 5, Element.below <| made_with_love ]
-                [ el [ centerX ] <| text "Create Post"
+                [ el [ centerX, padding 10 ] <| text "Create a Post"
                 , column (font_grey :: input_style)
                     [ el [ Font.semiBold, Font.size 14 ] <| text "TITLE"
                     , Input.text [ Border.width 0, Font.alignLeft, paddingXY 0 10, spacing 0, Element.focused [] ]

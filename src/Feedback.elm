@@ -223,50 +223,54 @@ update msg model =
             ( { model | create_post = { create_post | details = Just new_details } }, Cmd.none )
 
         CreatePostSubmit ->
-            case model.logged_in_user of
-                Just logged_in_user ->
-                    let
-                        { create_post, entries } =
-                            model
+            if model.create_post.title == Nothing || model.create_post.details == Nothing then
+                ( model, Cmd.none )
 
-                        { title, details } =
-                            create_post
+            else
+                case model.logged_in_user of
+                    Just logged_in_user ->
+                        let
+                            { create_post, entries } =
+                                model
 
-                        new_entry : FeedbackEntry
-                        new_entry =
-                            { title = Maybe.withDefault "No title given" title
-                            , body = Maybe.withDefault "No details given" details
-                            , votes = { ups = 0, downs = 0 }
-                            , tags = []
-                            , status = New
-                            , created_at = model.time_now
-                            , comments = Array.empty
-                            , id =
-                                1
-                                    + (case List.maximum <| Array.toList <| Array.map .id entries of
-                                        Just max_id ->
-                                            max_id
+                            { title, details } =
+                                create_post
 
-                                        Nothing ->
-                                            0
-                                      )
-                            , author = logged_in_user
-                            }
+                            new_entry : FeedbackEntry
+                            new_entry =
+                                { title = Maybe.withDefault "No title given" title
+                                , body = Maybe.withDefault "No details given" details
+                                , votes = { ups = 0, downs = 0 }
+                                , tags = []
+                                , status = New
+                                , created_at = model.time_now
+                                , comments = Array.empty
+                                , id =
+                                    1
+                                        + (case List.maximum <| Array.toList <| Array.map .id entries of
+                                            Just max_id ->
+                                                max_id
 
-                        empty_create_post =
-                            { title = Nothing, details = Nothing }
-                    in
-                    ( { model
-                        | entries = Array.push new_entry entries
-                        , create_post = empty_create_post
-                      }
-                    , Cmd.none
-                    )
+                                            Nothing ->
+                                                0
+                                          )
+                                , author = logged_in_user
+                                }
 
-                -- TODO: alert something because you need a logged in user
-                Nothing ->
-                    Debug.todo "need to alert the user that they have to be logged in"
-                        ( model, Cmd.none )
+                            empty_create_post =
+                                { title = Nothing, details = Nothing }
+                        in
+                        ( { model
+                            | entries = Array.push new_entry entries
+                            , create_post = empty_create_post
+                          }
+                        , Cmd.none
+                        )
+
+                    -- TODO: alert something because you need a logged in user
+                    Nothing ->
+                        Debug.todo "need to alert the user that they have to be logged in"
+                            ( model, Cmd.none )
 
         EntryDetailCommentUpdate new_comment ->
             ( { model | detail_comment_body = Just new_comment }, Cmd.none )
@@ -466,7 +470,7 @@ render_entry time_now entry =
                 ]
             ]
         , column [ width <| fillPortion 13, spacing 10 ]
-            [ el [ scaled_font 2 ] <| text entry.title
+            [ Element.link [ scaled_font 2 ] { url = "/feedback_tab/" ++ String.fromInt entry.id, label = text entry.title }
             , paragraph [ font_grey ] [ text <| clipText entry.body 150 ]
             , el [ Font.size 12 ] <| text <| format_date entry.created_at ++ " - " ++ format_relative_date time_now entry.created_at
             ]

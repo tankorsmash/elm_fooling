@@ -114,7 +114,7 @@ type Msg
     | CreatePostUpdateDetails String
     | CreatePostSubmit
     | EntryDetailCommentUpdate String
-    | EntryDetailCommentSubmit Int
+    | EntryDetailCommentSubmit FeedbackEntry
     | EntryDetailCommentFocused Int
     | EntryDetailCommentLostFocused Int
 
@@ -263,9 +263,29 @@ update msg model =
         EntryDetailCommentUpdate new_comment ->
             ( { model | detail_comment_body = Just new_comment }, Cmd.none )
 
-        EntryDetailCommentSubmit entry_id ->
-            Debug.todo "gotta implement submitting a comment"
-                ( model, Cmd.none )
+        EntryDetailCommentSubmit entry ->
+            let
+                comment_body =
+                    case model.detail_comment_body of
+                        Just body ->
+                            body
+
+                        Nothing ->
+                            "Empty comment."
+            in
+            case model.logged_in_user of
+                Just logged_in_user ->
+                    let
+                        new_comment : Comment
+                        new_comment =
+                            { author = logged_in_user, body = comment_body, created_at = model.time_now }
+
+                        comments = entry.comments
+                    in
+                    ( model, Cmd.none )
+
+                Nothing ->
+                    ( model, Cmd.none )
 
         EntryDetailCommentFocused entry_id ->
             ( { model | detail_comment_focused = Just entry_id }, Cmd.none )
@@ -635,7 +655,7 @@ render_single_detail ( detail_comment_focused_, detail_comment_body, time_now ) 
                                 [ alignRight
                                 , Font.variant Font.smallCaps
                                 ]
-                                (EntryDetailCommentSubmit entry.id)
+                                (EntryDetailCommentSubmit entry)
                                 "Submit"
 
                     False ->

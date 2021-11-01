@@ -445,8 +445,8 @@ explain_todo =
     Element.explain Debug.todo
 
 
-render_single_detail : FeedbackEntry -> Element Msg
-render_single_detail entry =
+render_single_detail : Time.Posix -> FeedbackEntry -> Element Msg
+render_single_detail time_now entry =
     let
         _ =
             123
@@ -510,7 +510,10 @@ render_single_detail entry =
               el [ left_portion ] <| Element.none
 
             -- entry body
-            , paragraph [ right_portion ] [ text <| entry.body ]
+            , column [ right_portion, spacing 15 ]
+                [ paragraph [] [ text <| entry.body ]
+                , el [ Font.size 12, font_grey ] <| text <| format_relative_date time_now entry.created_at
+                ]
             ]
         ]
 
@@ -529,7 +532,7 @@ detail_view model =
                         text <| "No entries match id given: " ++ String.fromInt entry_id
 
                     Just entry ->
-                        render_single_detail entry
+                        render_single_detail model.time_now entry
 
             Nothing ->
                 text <| "No entry id given, 404"

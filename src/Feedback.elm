@@ -141,7 +141,16 @@ initial_model =
                     ]
               , status = InConsideration
               , created_at = Time.millisToPosix 1635544030000
-              , comments = []
+              , comments =
+                    [ { author = mike
+                      , body = "This is a short comment."
+                      , created_at = Time.millisToPosix 1635543030000
+                      }
+                    , { author = alice
+                      , body = "This however is quite a long comment. It turns out, while this is still simple, it still requires a bit of effort every step of the way. Kinda like life"
+                      , created_at = Time.millisToPosix 1635543030000
+                      }
+                    ]
               , id = 1
               , author = mike
               }
@@ -482,10 +491,41 @@ render_single_detail detail_comment_body time_now entry =
         row_styling =
             [ spacing 10, padding 10, width fill ]
 
-        --, explain Debug.todo]
+        left_blank =
+            el [ left_portion ] <| Element.none
+
+        render_comment : Comment -> Element Msg
+        render_comment comment =
+            row row_styling
+                [ -- user image
+                  el [ left_col_width, left_portion ] <|
+                    el
+                        [ Border.width 20
+                        , Border.rounded 20
+                        , Background.color <| rgb 0.2 0.3 0.4
+                        , Border.color <| rgb 0.2 0.3 0.4
+                        , Font.color <| white_color
+                        , centerX
+                        , height <| (fill |> Element.maximum 30)
+                        , alignTop
+                        , Element.inFront <|
+                            el [ scaled_font 2, Font.center, alignTop, Element.moveUp 8, centerX ] <|
+                                text <|
+                                    String.left 1 comment.author.username
+                        ]
+                    <|
+                        Element.none
+                , column [ right_portion, spacing 10 ]
+                    -- username
+                    [ el [ left_portion, Font.semiBold ] <| text comment.author.username
+
+                    --comment body
+                    , el [ right_portion ] <| paragraph [] [ text comment.body ]
+                    ]
+                ]
     in
     column []
-        [ row row_styling
+        ([ row row_styling
             -- vote box
             [ el [ left_col_width, left_portion ] <|
                 row [ width (fill |> Element.minimum 55), paddingXY 5 0, alignTop ]
@@ -498,7 +538,7 @@ render_single_detail detail_comment_body time_now entry =
             -- entry title
             , el [ right_portion, scaled_font 2 ] <| text <| entry.title
             ]
-        , row (row_styling ++ [ paddingXY 10 0 ])
+         , row (row_styling ++ [ paddingXY 10 0 ])
             [ -- user image
               el [ left_col_width, left_portion ] <|
                 el
@@ -521,7 +561,7 @@ render_single_detail detail_comment_body time_now entry =
             -- username
             , el [ right_portion, Font.semiBold ] <| text entry.author.username
             ]
-        , row row_styling
+         , row row_styling
             [ -- blank space
               el [ left_portion ] <| Element.none
 
@@ -548,7 +588,13 @@ render_single_detail detail_comment_body time_now entry =
                         }
                 ]
             ]
-        ]
+         , row row_styling
+            [ left_blank
+            , el [ right_portion, font_grey, Font.size 12, Font.medium ] <| text "ACTIVITY"
+            ]
+         ]
+            ++ List.map render_comment entry.comments
+        )
 
 
 detail_view : Model -> Html.Html Msg

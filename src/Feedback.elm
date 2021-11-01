@@ -884,7 +884,7 @@ view model =
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
         column [ scaled_font 1 ] <|
             [ row [ width fill ]
-                [ el [ width <| fillPortion 1, alignTop ] create_post_block
+                [ el [ width <| fillPortion 2, alignTop ] create_post_block
                 , column [ width <| fillPortion 5, spacingXY 0 20, alignTop ] <|
                     Array.toList <|
                         Array.map render_entry_ entries

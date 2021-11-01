@@ -728,10 +728,10 @@ update msg model =
             ( { model | shop_trends_hovered = False }, Cmd.none )
 
         UpdateTick time ->
-            let
-                _ =
-                    Debug.log "tick" time
-            in
+            -- let
+            --     _ =
+            --         Debug.log "tick" time
+            -- in
             ( model, Cmd.none )
 
 

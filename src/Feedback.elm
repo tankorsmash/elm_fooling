@@ -598,7 +598,14 @@ render_single_detail model entry =
                     [ el [ left_portion, Font.semiBold ] <| text comment.author.username
 
                     --comment body
-                    , el [ right_portion ] <| paragraph [] [ text comment.body ]
+                    , el [ right_portion ] <|
+                        column [ spacing 10 ]
+                            [ paragraph [] [ text comment.body ]
+                            , el [ alignLeft, Font.size 14, font_grey ] <|
+                                text <|
+                                    "<3 1234 · "
+                                        ++ format_relative_date model.time_now comment.created_at
+                            ]
                     ]
                 ]
 
@@ -676,7 +683,7 @@ render_single_detail model entry =
     in
     row []
         [ voters_block
-        , column []
+        , column [ width fill ]
             ([ row row_styling
                 -- vote box
                 [ el [ left_col_width, left_portion ] <|
@@ -731,12 +738,12 @@ render_single_detail model entry =
                              , border_dark_edges
                              ]
                                 ++ (if detail_comment_focused then
-                                        [ Border.widthEach { top = 2, left = 2, right = 2, bottom = 0 }
+                                        [ Border.widthEach { top = 1, left = 1, right = 1, bottom = 0 }
                                         , Border.roundEach <| { topLeft = 5, topRight = 5, bottomLeft = 0, bottomRight = 0 }
                                         ]
 
                                     else
-                                        [ Border.width 2, Border.rounded 5 ]
+                                        [ Border.width 1, Border.rounded 5 ]
                                    )
                                 ++ [ Events.onFocus <| EntryDetailCommentFocused entry.id
                                    , Element.focused []
@@ -759,7 +766,7 @@ render_single_detail model entry =
                         True ->
                             el
                                 [ border_dark_edges
-                                , Border.width 2
+                                , Border.width 1
                                 , width fill
                                 , paddingXY 10 10
                                 ]

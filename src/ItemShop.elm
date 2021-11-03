@@ -520,7 +520,8 @@ init =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Time.every 1000 UpdateTick
+    Sub.none
+    -- Time.every 1000 UpdateTick
 
 
 find_matching_records : Item -> InventoryRecord -> Bool

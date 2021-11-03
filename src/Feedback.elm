@@ -118,6 +118,7 @@ type Msg
     | EntryDetailCommentSubmit FeedbackEntry
     | EntryDetailCommentFocused Int
     | EntryDetailCommentLostFocused Int
+    | EntryVotedUp Int
 
 
 initial_model : Model
@@ -340,6 +341,71 @@ update msg model =
             else
                 ( model, Cmd.none )
 
+        EntryVotedUp entry_id ->
+            case model.logged_in_user of
+                Nothing ->
+                    ( model, Cmd.none )
+
+                Just user ->
+                    let
+                        -- mb_entry = Array.get 0  <| Array.filter (.id >> ((==) entry_id)) model.entries
+                        maybe_idx_entry =
+                            List.head <| List.filter (Tuple.second >> .id >> (==) entry_id) <| Array.toIndexedList model.entries
+
+                        new_model =
+                            case maybe_idx_entry of
+                                Just idx_entry ->
+                                    -- TODO: find votes for logged in user, and then replace it, if needed
+                                    let
+                                        ( idx, entry ) =
+                                            idx_entry
+
+                                        { ups, downs } =
+                                            entry.votes
+
+                                        matches_username_ =
+                                            username_matches user.username
+
+                                        has_voted_up =
+                                            List.any matches_username_ ups
+
+                                        has_voted_down =
+                                            List.any matches_username_ downs
+
+                                        new_ups : List User
+                                        new_ups =
+                                            if has_voted_up then
+                                                List.filter (not << matches_username_) ups
+
+                                            else
+                                                ups ++ [ user ]
+
+                                        new_downs : List User
+                                        new_downs =
+                                            List.filter (not << matches_username_) downs
+
+                                        new_votes : Votes
+                                        new_votes =
+                                            { ups = new_ups, downs = new_downs }
+
+                                        replace_entry : FeedbackEntry -> FeedbackEntry
+                                        replace_entry old_entry =
+                                            if old_entry.id == entry.id then
+                                                { old_entry | votes = new_votes }
+
+                                            else
+                                                old_entry
+
+                                        new_entries =
+                                            Array.map replace_entry model.entries
+                                    in
+                                    { model | entries = new_entries }
+
+                                Nothing ->
+                                    model
+                    in
+                    ( new_model, Cmd.none )
+
 
 
 -- ( { model | detail_comment_body = new_comment }, Cmd.none )
@@ -478,16 +544,36 @@ total_votes votes =
 
 render_entry : Time.Posix -> FeedbackEntry -> Element Msg
 render_entry time_now entry =
-    row [ spacingXY 10 25, width fill, padding 10 ]
-        [ row [ width <| fillPortion 1, width (fill |> Element.minimum 55), paddingXY 5 0, alignTop ]
-            [ column [ alignTop, centerX, Border.width 1, Border.rounded 4, padding 2, Border.color <| rgb 0.75 0.75 0.75, width fill ]
-                [ el [ centerX ] <| text "/\\"
-                , el [ centerX ] <|
-                    text <|
-                        String.fromInt <|
-                            total_votes entry.votes
+    let
+        hovered_vote_style : List (Element.Attribute msg)
+        hovered_vote_style =
+            [ Element.mouseOver [ Border.color <| rgb 0 0 0 ] ]
+
+        vote_block =
+            row [ width <| fillPortion 1, width (fill |> Element.minimum 55), paddingXY 5 0, alignTop ]
+                [ column
+                    (hovered_vote_style
+                        ++ [ Events.onClick <| EntryVotedUp entry.id
+                           , Element.pointer
+                           , alignTop
+                           , centerX
+                           , Border.width 1
+                           , Border.rounded 4
+                           , padding 2
+                           , Border.color <| rgb 0.75 0.75 0.75
+                           , width fill
+                           ]
+                    )
+                    [ el [ centerX ] <| text "/\\"
+                    , el [ centerX ] <|
+                        text <|
+                            String.fromInt <|
+                                total_votes entry.votes
+                    ]
                 ]
-            ]
+    in
+    row [ spacingXY 10 25, width fill, padding 10 ]
+        [ vote_block
         , column [ width <| fillPortion 13, spacing 10 ]
             [ Element.link [ scaled_font 2 ] { url = "/feedback_tab/" ++ String.fromInt entry.id, label = text entry.title }
             , paragraph [ font_grey ] [ text <| clipText entry.body 150 ]
@@ -554,6 +640,11 @@ padding_left left =
 
 explain_todo =
     Element.explain Debug.todo
+
+
+username_matches : String -> User -> Bool
+username_matches username user =
+    user.username == username
 
 
 render_single_detail : Model -> FeedbackEntry -> Element Msg
@@ -670,10 +761,6 @@ render_single_detail model entry =
 
                     else
                         entry.author :: commenters ++ voters
-
-                username_matches : String -> User -> Bool
-                username_matches username user =
-                    user.username == username
 
                 usernames : List String
                 usernames =

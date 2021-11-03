@@ -79,8 +79,8 @@ type Route
 
 
 type alias Votes =
-    { ups : Int
-    , downs : Int
+    { ups : List User
+    , downs : List User
     }
 
 
@@ -132,14 +132,23 @@ initial_model =
         alice =
             { username = "Alicia Keys" }
 
+        mark =
+            { username = "Marky Mark" }
+
+        james =
+            { username = "James Hetfield" }
+
+        cliff =
+            { username = "CliffyB" }
+
         initial_users =
-            [ mike, matt, alice ]
+            [ mike, matt, alice, mark, james, cliff ]
 
         initial_entries =
             Array.fromList
                 [ { title = "I think we should change this"
                   , body = "This is a long description of all the stuff we need to change, it's unreal. I am currently listening to Hell on Earth, and its boppin'.\n\nThis is a new line."
-                  , votes = { ups = 12, downs = 2 }
+                  , votes = { ups = [mark, james, cliff], downs = [alice] }
                   , tags =
                         [ { name = "Feedback", description = "This is a tag for thoughts on a change" }
                         , { name = "Complaint", description = "This is a tag for all negative feelings" }
@@ -162,7 +171,7 @@ initial_model =
                   }
                 , { title = "Been lovin 3.0"
                   , body = "Having a lot of fun playing the latest build, can't wait to see what you guys come up with next!\n\nI've been having a lot of fun listening to Beatiful Heartbeat by Morten, but of course remixed by Deoro. It's banging.\n\nIt's even better than the original, which is crazy."
-                  , votes = { ups = 2, downs = 30 }
+                  , votes = { ups = [alice], downs = [] }
                   , tags =
                         [ { name = "Feedback", description = "This is a tag for thoughts on a change" }
                         , { name = "Complaint", description = "This is a tag for all negative feelings" }
@@ -175,7 +184,7 @@ initial_model =
                   }
                 , { title = "Pretty sure I like PoGo more"
                   , body = "I just love the amount of little digimons you pick up and put in your pocket. There isn't too much like it, so its a lot of fun."
-                  , votes = { ups = 13, downs = 10 }
+                  , votes = { ups = [james, mark, mike, cliff], downs = [alice] }
                   , tags =
                         [ { name = "Complaint", description = "This is a tag for all negative feelings" }
                         ]
@@ -241,7 +250,7 @@ update msg model =
                             new_entry =
                                 { title = Maybe.withDefault "No title given" title
                                 , body = Maybe.withDefault "No details given" details
-                                , votes = { ups = 0, downs = 0 }
+                                , votes = { ups = [], downs = [] }
                                 , tags = []
                                 , status = New
                                 , created_at = model.time_now
@@ -467,7 +476,8 @@ render_entry time_now entry =
         [ row [ width <| fillPortion 1, width (fill |> Element.minimum 55), paddingXY 5 0, alignTop ]
             [ column [ alignTop, centerX, Border.width 1, Border.rounded 4, padding 2, Border.color <| rgb 0.75 0.75 0.75, width fill ]
                 [ el [ centerX ] <| text "/\\"
-                , el [ centerX ] <| text <| String.fromInt <| entry.votes.ups - entry.votes.downs
+                , el [ centerX ] <| text <| String.fromInt <|
+                    (List.length entry.votes.ups) - (List.length entry.votes.downs)
                 ]
             ]
         , column [ width <| fillPortion 13, spacing 10 ]
@@ -690,7 +700,8 @@ render_single_detail model entry =
                     row [ width (fill |> Element.minimum 55), paddingXY 5 0, alignTop ]
                         [ column [ alignTop, centerX, Border.width 1, Border.rounded 4, padding 2, Border.color <| rgb 0.75 0.75 0.75 ]
                             [ el [ centerX ] <| text "/\\"
-                            , el [ centerX ] <| text <| String.fromInt <| entry.votes.ups - entry.votes.downs
+                            , el [ centerX ] <| text <| String.fromInt <|
+                                (List.length entry.votes.ups) - (List.length entry.votes.downs)
                             ]
                         ]
 

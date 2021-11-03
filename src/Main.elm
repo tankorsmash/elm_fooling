@@ -517,7 +517,7 @@ initCurrentPage ( model, existingCmds ) =
                     ( NotFoundPage, Cmd.none )
 
         page_info =
-            model.page_info
+            Debug.log "page info" model.page_info
     in
     ( { model | page_info = { page_info | page = currentPage } }
     , Cmd.batch [ existingCmds, mappedPageCmds ]
@@ -547,6 +547,10 @@ processOutMsg outMsg model =
                         model
             in
             ( new_model, new_cmd )
+
+
+update_page_url page_info url route =
+    { page_info | url = url, route = route }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -606,6 +610,9 @@ update msg model =
                 newRoute =
                     Debug.log "parsed Route" <| parseUrl url
 
+                updated_page_info =
+                    update_page_url page_info url newRoute
+
                 fragment =
                     case newRoute of
                         -- Home (Just hash) ->
@@ -616,18 +623,43 @@ update msg model =
                         _ ->
                             Debug.log "empty hash on UrlChanged" ""
 
-                ( frame_model, frame_cmd, out_msg ) =
-                    Magnolia.FrameView.update model.frame_view_model (Magnolia.FrameView.HashUpdated fragment)
-
                 ( new_model, new_cmd ) =
-                    processOutMsg out_msg
-                        { model
-                            | page_info = { page_info | url = url, route = newRoute }
-                            , frame_view_model = frame_model
-                        }
+                    case newRoute of
+                        TabRoute FrameViewTab maybe_str ->
+                            let
+                                ( frame_model, frame_cmd, out_msg ) =
+                                    Magnolia.FrameView.update model.frame_view_model (Magnolia.FrameView.HashUpdated fragment)
+
+                                ( new_model_, new_cmd_ ) =
+                                    processOutMsg out_msg
+                                        { model
+                                            | page_info = updated_page_info
+                                            , frame_view_model = frame_model
+                                        }
+                            in
+                            ( new_model_, Cmd.batch [ Cmd.map GotFrameViewMsg frame_cmd, new_cmd_ ] )
+
+                        TabRoute tab_type maybe_str ->
+                            let
+                                _ =
+                                    Debug.log "tabroute route detected" ""
+                            in
+                            ( { model
+                                | page_info = updated_page_info
+                                , current_tab = tab_type
+                              }
+                            , Cmd.none
+                            )
+
+                        _ ->
+                            let
+                                _ =
+                                    Debug.log "non-frameview route detected" ""
+                            in
+                            ( { model | page_info = updated_page_info }, Cmd.none )
             in
             ( new_model
-            , Cmd.batch [ Cmd.map GotFrameViewMsg frame_cmd, new_cmd ]
+            , new_cmd
             )
                 |> initCurrentPage
 
@@ -1502,7 +1534,7 @@ homeView model =
                             model
                     in
                     Html.map GotFeedbackMsg <|
-                        Feedback.view {feedback_model | detail_entry_id = Nothing }
+                        Feedback.view { feedback_model | detail_entry_id = Nothing }
 
                 FeedbackTabDetail entry_id ->
                     let

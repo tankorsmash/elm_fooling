@@ -1,4 +1,4 @@
-module Feedback exposing (Model, Msg, Route, detail_view, init, subscriptions, update, list_view)
+module Feedback exposing (Model, Msg, Route, detail_view, init, list_view, subscriptions, update)
 
 import Array
 import Color
@@ -470,6 +470,12 @@ format_date_raw posix =
         ]
 
 
+total_votes : Votes -> Int
+total_votes votes =
+    List.length votes.ups
+        - List.length votes.downs
+
+
 render_entry : Time.Posix -> FeedbackEntry -> Element Msg
 render_entry time_now entry =
     row [ spacingXY 10 25, width fill, padding 10 ]
@@ -479,8 +485,7 @@ render_entry time_now entry =
                 , el [ centerX ] <|
                     text <|
                         String.fromInt <|
-                            List.length entry.votes.ups
-                                - List.length entry.votes.downs
+                            total_votes entry.votes
                 ]
             ]
         , column [ width <| fillPortion 13, spacing 10 ]
@@ -720,8 +725,7 @@ render_single_detail model entry =
                                 , el [ centerX ] <|
                                     text <|
                                         String.fromInt <|
-                                            List.length entry.votes.ups
-                                                - List.length entry.votes.downs
+                                            total_votes entry.votes
                                 ]
                             ]
 

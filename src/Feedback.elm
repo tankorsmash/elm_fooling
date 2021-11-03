@@ -550,7 +550,7 @@ render_entry time_now entry =
             [ Element.mouseOver [ Border.color <| rgb 0 0 0 ] ]
 
         vote_block =
-            row [ width <| fillPortion 1, width (fill |> Element.minimum 55), alignTop ]
+            row [ width <| fillPortion 1, width (fill |> Element.minimum 55), paddingXY 5 0, alignTop ]
                 [ column
                     (hovered_vote_style
                         ++ [ Events.onClick <| EntryVotedUp entry.id
@@ -559,7 +559,9 @@ render_entry time_now entry =
                            , centerX
                            , Border.width 1
                            , Border.rounded 4
+                           , padding 2
                            , Border.color <| rgb 0.75 0.75 0.75
+                           , width fill
                            ]
                     )
                     [ el [ centerX ] <| text "/\\"
@@ -683,7 +685,7 @@ render_single_detail model entry =
         render_comment comment =
             row row_styling
                 [ -- user image
-                  el [ left_col_width, left_portion, alignTop ] <|
+                  el [ left_col_width, left_portion ] <|
                     el
                         [ Border.width 20
                         , Border.rounded 20
@@ -702,7 +704,7 @@ render_single_detail model entry =
                         Element.none
                 , column [ right_portion, spacing 10 ]
                     -- username
-                    [ el [ left_portion, Font.semiBold, alignLeft ] <| text comment.author.username
+                    [ el [ left_portion, Font.semiBold ] <| text comment.author.username
 
                     --comment body
                     , el [ right_portion ] <|
@@ -801,19 +803,11 @@ render_single_detail model entry =
         , row [ paddingXY 0 15 ]
             [ voters_block
             , column [ width fill ]
-                ([ row (row_styling ++ [ paddingXY 6 10 ])
+                ([ row row_styling
                     -- vote box
-                    [ el [ left_portion ] <|
+                    [ el [ left_col_width, left_portion ] <|
                         row [ width (fill |> Element.minimum 55), paddingXY 5 0, alignTop ]
-                            [ column
-                                [ alignTop
-                                , centerX
-                                , Border.width 1
-                                , Border.rounded 4
-                                , padding 2
-                                , Border.color <| rgb 0.75 0.75 0.75
-                                , width fill
-                                ]
+                            [ column [ alignTop, centerX, Border.width 1, Border.rounded 4, padding 2, Border.color <| rgb 0.75 0.75 0.75 ]
                                 [ el [ centerX ] <| text "/\\"
                                 , el [ centerX ] <|
                                     text <|
@@ -827,7 +821,7 @@ render_single_detail model entry =
                     ]
                  , row (row_styling ++ [ paddingXY 10 0 ])
                     [ -- user image
-                      el [ left_portion ] <|
+                      el [ left_col_width, left_portion ] <|
                         el
                             [ Border.width 20
                             , Border.rounded 20
@@ -846,7 +840,7 @@ render_single_detail model entry =
                             Element.none
 
                     -- username
-                    , el [ right_portion, Font.semiBold, Font.alignLeft ] <| text entry.author.username
+                    , el [ right_portion, Font.semiBold ] <| text entry.author.username
                     ]
                  , row row_styling
                     [ -- blank space
@@ -912,8 +906,7 @@ render_single_detail model entry =
                     ]
                  , row row_styling
                     [ left_blank
-                    , el [ right_portion, font_grey, Font.size 12, Font.medium ] <|
-                        text "ACTIVITY"
+                    , el [ right_portion, font_grey, Font.size 12, Font.medium ] <| text "ACTIVITY"
                     ]
                  ]
                     ++ (Array.toList <| Array.map render_comment entry.comments)

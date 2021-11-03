@@ -1534,7 +1534,7 @@ homeView model =
                             model
                     in
                     Html.map GotFeedbackMsg <|
-                        Feedback.view { feedback_model | detail_entry_id = Nothing }
+                        Feedback.list_view { feedback_model | detail_entry_id = Nothing }
 
                 FeedbackTabDetail entry_id ->
                     let

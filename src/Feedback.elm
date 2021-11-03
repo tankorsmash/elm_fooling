@@ -1,4 +1,4 @@
-module Feedback exposing (Model, Msg, Route, detail_view, init, subscriptions, update, view)
+module Feedback exposing (Model, Msg, Route, detail_view, init, subscriptions, update, list_view)
 
 import Array
 import Color
@@ -854,8 +854,8 @@ made_with_love =
     el [ centerX, paddingXY 0 10, font_grey, Font.size 12 ] <| text "Powered by Elm"
 
 
-view : Model -> Html.Html Msg
-view model =
+list_view : Model -> Html.Html Msg
+list_view model =
     let
         entries =
             model.entries

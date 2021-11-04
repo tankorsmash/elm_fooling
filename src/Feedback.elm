@@ -763,7 +763,7 @@ render_single_detail model entry =
                         , Element.inFront <|
                             el [ Font.size 16, Font.center, alignTop, Element.moveUp 8, centerX ] <|
                                 text <|
-                                    String.left 1 entry.author.username
+                                    String.left 1 voter.username
                         ]
                     <|
                         Element.none

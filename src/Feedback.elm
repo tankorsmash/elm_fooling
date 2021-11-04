@@ -581,6 +581,14 @@ render_entry time_now entry =
         ]
 
 
+voted_up_color =
+    rgb 0.25 0.75 0.25
+
+
+unvoted_color =
+    rgb 0.75 0.75 0.75
+
+
 font_grey : Element.Attribute msg
 font_grey =
     Font.color <| rgb 0.35 0.35 0.35
@@ -811,6 +819,18 @@ render_single_detail model entry =
                 ([ el [ centerX, font_grey, alignLeft, Font.size 12 ] <| text "PARTICIPANTS" ]
                     ++ List.map render_voter participants
                 )
+
+        vote_block_color =
+            case model.logged_in_user of
+                Just user ->
+                    if has_voted_up entry.votes user then
+                        voted_up_color
+
+                    else
+                        unvoted_color
+
+                Nothing ->
+                    unvoted_color
     in
     column []
         [ row
@@ -828,7 +848,7 @@ render_single_detail model entry =
                 ([ row row_styling
                     -- vote box
                     [ el [ left_portion, padding_left 3 ] <|
-                        row []
+                        row [ Font.color vote_block_color ]
                             [ column
                                 (hovered_vote_style
                                     ++ [ Events.onClick <| EntryVotedUp entry.id
@@ -838,7 +858,7 @@ render_single_detail model entry =
                                        , Border.width 1
                                        , Border.rounded 4
                                        , paddingXY 15 5
-                                       , Border.color <| rgb 0.75 0.75 0.75
+                                       , Border.color vote_block_color
                                        ]
                                 )
                                 [ el [ centerX ] <| text "/\\"

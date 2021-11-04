@@ -544,9 +544,21 @@ hovered_vote_style =
     [ Element.mouseOver [ Border.color <| rgb 0 0 0 ] ]
 
 
-render_entry : Time.Posix -> FeedbackEntry -> Element Msg
-render_entry time_now entry =
+render_entry : Maybe User -> Time.Posix -> FeedbackEntry -> Element Msg
+render_entry logged_in_user time_now entry =
     let
+        vote_block_color =
+            case logged_in_user of
+                Just user ->
+                    if has_voted_up entry.votes user then
+                        voted_up_color
+
+                    else
+                        unvoted_color
+
+                Nothing ->
+                    unvoted_color
+
         vote_block =
             row [ width <| fillPortion 1, width (fill |> Element.minimum 55), paddingXY 5 0, alignTop ]
                 [ column
@@ -558,7 +570,7 @@ render_entry time_now entry =
                            , Border.width 1
                            , Border.rounded 4
                            , padding 2
-                           , Border.color <| rgb 0.75 0.75 0.75
+                           , Border.color vote_block_color
                            , width fill
                            ]
                     )
@@ -585,13 +597,17 @@ voted_up_color =
     rgb 0.25 0.75 0.25
 
 
+grey_color =
+    rgb 0.35 0.35 0.35
+
+
 unvoted_color =
     rgb 0.75 0.75 0.75
 
 
 font_grey : Element.Attribute msg
 font_grey =
-    Font.color <| rgb 0.35 0.35 0.35
+    Font.color <| grey_color
 
 
 font_white : Element.Attribute msg
@@ -862,7 +878,7 @@ render_single_detail model entry =
                                        ]
                                 )
                                 [ el [ centerX ] <| text "/\\"
-                                , el [ centerX ] <|
+                                , el [ centerX, font_grey ] <|
                                     (text << String.fromInt << total_votes)
                                         entry.votes
                                 ]
@@ -1004,7 +1020,7 @@ list_view model =
             model.entries
 
         render_entry_ entry =
-            render_entry model.time_now entry
+            render_entry model.logged_in_user model.time_now entry
 
         input_style =
             [ border_dark_edges

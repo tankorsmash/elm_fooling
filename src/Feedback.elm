@@ -542,13 +542,14 @@ total_votes votes =
         - List.length votes.downs
 
 
+hovered_vote_style : List (Element.Attribute msg)
+hovered_vote_style =
+    [ Element.mouseOver [ Border.color <| rgb 0 0 0 ] ]
+
+
 render_entry : Time.Posix -> FeedbackEntry -> Element Msg
 render_entry time_now entry =
     let
-        hovered_vote_style : List (Element.Attribute msg)
-        hovered_vote_style =
-            [ Element.mouseOver [ Border.color <| rgb 0 0 0 ] ]
-
         vote_block =
             row [ width <| fillPortion 1, width (fill |> Element.minimum 55), paddingXY 5 0, alignTop ]
                 [ column
@@ -808,18 +809,21 @@ render_single_detail model entry =
                     [ el [ left_portion, padding_left 3 ] <|
                         row []
                             [ column
-                                [ alignTop
-                                , centerX
-                                , Border.width 1
-                                , Border.rounded 4
-                                , paddingXY 15 5
-                                , Border.color <| rgb 0.75 0.75 0.75
-                                ]
+                                (hovered_vote_style
+                                    ++ [ Events.onClick <| EntryVotedUp entry.id
+                                       , Element.pointer
+                                       , alignTop
+                                       , centerX
+                                       , Border.width 1
+                                       , Border.rounded 4
+                                       , paddingXY 15 5
+                                       , Border.color <| rgb 0.75 0.75 0.75
+                                       ]
+                                )
                                 [ el [ centerX ] <| text "/\\"
                                 , el [ centerX ] <|
-                                    text <|
-                                        String.fromInt <|
-                                            total_votes entry.votes
+                                    (text << String.fromInt << total_votes)
+                                        entry.votes
                                 ]
                             ]
 

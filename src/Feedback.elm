@@ -805,9 +805,16 @@ render_single_detail model entry =
             , column [ width fill ]
                 ([ row row_styling
                     -- vote box
-                    [ el [ left_col_width, left_portion ] <|
-                        row [ width (fill |> Element.minimum 55), alignTop ]
-                            [ column [ alignTop, centerX, Border.width 1, Border.rounded 4, paddingXY 15 5, Border.color <| rgb 0.75 0.75 0.75 ]
+                    [ el [ left_portion, padding_left 3 ] <|
+                        row []
+                            [ column
+                                [ alignTop
+                                , centerX
+                                , Border.width 1
+                                , Border.rounded 4
+                                , paddingXY 15 5
+                                , Border.color <| rgb 0.75 0.75 0.75
+                                ]
                                 [ el [ centerX ] <| text "/\\"
                                 , el [ centerX ] <|
                                     text <|

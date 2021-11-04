@@ -366,15 +366,12 @@ update msg model =
                                         matches_username_ =
                                             username_matches user.username
 
-                                        has_voted_up =
+                                        has_voted_up_ =
                                             List.any matches_username_ ups
-
-                                        has_voted_down =
-                                            List.any matches_username_ downs
 
                                         new_ups : List User
                                         new_ups =
-                                            if has_voted_up then
+                                            if has_voted_up_ then
                                                 List.filter (not << matches_username_) ups
 
                                             else
@@ -646,6 +643,29 @@ explain_todo =
 username_matches : String -> User -> Bool
 username_matches username user =
     user.username == username
+
+
+has_voted_up : Votes -> User -> Bool
+has_voted_up { ups, downs } user =
+    let
+        matches_username_ =
+            username_matches user.username
+    in
+    List.any matches_username_ ups
+
+
+has_voted_down : Votes -> User -> Bool
+has_voted_down { ups, downs } user =
+    let
+        matches_username_ =
+            username_matches user.username
+    in
+    List.any matches_username_ downs
+
+
+has_voted : FeedbackEntry -> User -> Bool
+has_voted entry user =
+    has_voted_up entry.votes user || has_voted_down entry.votes user
 
 
 render_single_detail : Model -> FeedbackEntry -> Element Msg

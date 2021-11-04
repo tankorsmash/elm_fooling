@@ -3,8 +3,50 @@
         <meta charset="UTF-8">
         <title>Main</title>
         <link rel="stylesheet" href="/src/css/main.css">
-        <script src="/main.js"></script>
+        <!-- <script src="/main.js"></script> -->
         <script>
+			let tries = 0;
+			const mainName = "/main.js";
+			function loadScript(url, callback)
+			{
+				// Adding the script tag to the head as suggested before
+				var head = document.head;
+				var script = document.createElement('script');
+				script.type = 'text/javascript';
+				script.src = url;
+
+				const try_again = () => {
+					script.remove();
+					let new_url = mainName + "?____tries___="+tries;
+					console.log("trying again for", new_url)
+					loadScript(new_url, callback);
+					tries += 1;
+				}
+
+				// Then bind the event to the callback function.
+				// There are several events for cross browser compatibility.
+				script.onreadystatechange = () => {
+					console.log("state change", script.readyState);
+					return callback()
+				};
+				script.onload = (args, second_args) => {
+					console.log("onload", args, second_args, script.readyState);
+					console.log("Elm?", typeof Elm);
+					if (typeof Elm === "undefined") { 
+						try_again();
+					} else {
+						return callback()
+					}
+				};
+				script.onerror = (err) => {
+					console.log("ON ERROR", err, script.readyState);
+					// return callback()
+				};
+
+				// Fire the loading
+				head.appendChild(script);
+			}
+
             function init_elm() {
                 window.app = Elm.Main.init({
                     node: document.getElementById('myapp')
@@ -50,6 +92,8 @@
                 window.app.ports.recv_reddit_listing.send(data);
             };
 
+			loadScript(mainName, init_elm);
+
         </script>
     </head>
 
@@ -57,8 +101,8 @@
         <h1>Error in elm initialization </h1>
         <h3>see console</h3>
         <div id="myapp"></div>
-        <script>
-            init_elm();
-        </script>
+        <!-- <script> -->
+        <!--     init_elm(); -->
+        <!-- </script> -->
     </body>
 </html>

@@ -785,6 +785,7 @@ render_single_detail model entry =
                 , spacing 10
                 , Border.rounded 5
                 , Element.below <| made_with_love
+                , width (fill |> Element.minimum 25 |> Element.maximum 200)
                 ]
             <|
                 ([ el [ centerX, font_grey, alignLeft, Font.size 12 ] <| text "PARTICIPANTS" ]

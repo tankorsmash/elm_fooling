@@ -23,24 +23,12 @@
 					tries += 1;
 				}
 
-				// Then bind the event to the callback function.
-				// There are several events for cross browser compatibility.
-				script.onreadystatechange = () => {
-					console.log("state change", script.readyState);
-					return callback()
-				};
 				script.onload = (args, second_args) => {
-					console.log("onload", args, second_args, script.readyState);
-					console.log("Elm?", typeof Elm);
 					if (typeof Elm === "undefined") { 
 						try_again();
 					} else {
 						return callback()
 					}
-				};
-				script.onerror = (err) => {
-					console.log("ON ERROR", err, script.readyState);
-					// return callback()
 				};
 
 				// Fire the loading

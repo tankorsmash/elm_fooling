@@ -344,18 +344,14 @@ initial_owned_items =
 initial_character : Character
 initial_character =
     let
-        billy_id =
-            UUID.forName "character 1" UUID.dnsNamespace
+        base_character =
+            create_character (UUID.forName "character 1" UUID.dnsNamespace) "Billy"
     in
-    { held_items =
-        [ ( Maybe.withDefault unset_item_frame <| Dict.get "dagger" item_frames, 8 )
-        ]
-    , held_gold = 100
-    , char_id = billy_id
-    , name = "Billy"
-    , party = CharacterParty billy_id
-    , trend_tolerance = empty_trend_tolerance
-    , item_types_desired = empty_item_sentiments
+    { base_character
+        | held_items =
+            [ ( Maybe.withDefault unset_item_frame <| Dict.get "dagger" item_frames, 8 )
+            ]
+        , held_gold = 100
     }
 
 
@@ -527,37 +523,56 @@ item_type_to_pretty_string_plural item_type =
         Food ->
             "Food"
 
+
 empty_item_sentiments : ItemSentiments
-empty_item_sentiments = Dict.empty
+empty_item_sentiments =
+    Dict.empty
+
 
 empty_trend_tolerance : TrendTolerance
 empty_trend_tolerance =
     { buy = Dict.empty, sell = Dict.empty }
 
 
+create_character : UUID -> String -> Character
+create_character char_id name =
+    { held_items = []
+    , held_gold = 0
+
+    -- , char_id = UUID.forName "player character" UUID.dnsNamespace
+    , char_id = char_id
+
+    -- , name = "Player"
+    , name = name
+    , party = CharacterParty char_id
+    , trend_tolerance = empty_trend_tolerance
+    , item_types_desired = empty_item_sentiments
+    }
+
+
 init : ( Model, Cmd Msg )
 init =
     let
+        player_base_char =
+            create_character (UUID.forName "player character" UUID.dnsNamespace) "Player"
+
+        shop_base_char =
+            create_character (UUID.forName "shop character" UUID.dnsNamespace) "Shop"
+
         player : Character
         player =
-            { held_items = initial_owned_items
-            , held_gold = 0
-            , char_id = UUID.forName "player character" UUID.dnsNamespace
-            , name = "Player"
-            , party = PlayerParty
-            , trend_tolerance = empty_trend_tolerance
-            , item_types_desired = empty_item_sentiments
+            { player_base_char
+                | held_items = initial_owned_items
+                , held_gold = 0
+                , party = PlayerParty
             }
 
         shop : Character
         shop =
-            { held_items = initial_items_for_sale
-            , held_gold = 999999999
-            , char_id = UUID.forName "shop character" UUID.dnsNamespace
-            , name = "Shop"
-            , party = ShopParty
-            , trend_tolerance = empty_trend_tolerance
-            , item_types_desired = empty_item_sentiments
+            { shop_base_char
+                | held_items = initial_items_for_sale
+                , held_gold = 999999999
+                , party = ShopParty
             }
 
         character : Character

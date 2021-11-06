@@ -838,11 +838,46 @@ get_trend_for_item shop_trends item =
             shop_trends.item_type_sentiment
 
 
+nonzero_qty : InventoryRecord -> Bool
+nonzero_qty ( item, qty ) =
+    qty > 0
+
+
 ai_buy_item_from_shop : ShopTrends -> Character -> Character -> ( ShopTrends, Character, Character )
 ai_buy_item_from_shop shop_trends character shop =
     --TODO decide on an item type to buy, and buy 1.
     -- Maybe, it would be based on the lowest trending one, or one the
     -- character strongly desired or something
+    let
+        buyable_items : InventoryRecords
+        buyable_items =
+            List.filter
+                (\( i, q ) ->
+                    nonzero_qty ( i, q )
+                        && can_afford_item
+                            shop_trends
+                            character.held_gold
+                            { item = i, qty = 1 }
+                )
+                shop.held_items
+
+        -- item type trends sorted by least trendy
+        least_trendy_items : List ( ItemType, Float )
+        least_trendy_items =
+            List.filterMap
+                (\( it_id, trd ) ->
+                    case id_to_item_type it_id of
+                        Just item_type ->
+                            Just ( item_type, trd )
+
+                        Nothing ->
+                            Nothing
+                )
+            <|
+                List.sortBy
+                    Tuple.second
+                    (Dict.toList shop_trends.item_type_sentiment)
+    in
     ( shop_trends, character, shop )
 
 
@@ -881,21 +916,31 @@ ai_sell_item_to_shop shop_trends character shop =
     ( new_shop_trends, new_character, new_shop )
 
 
+type AiActionChoice
+    = NoActionChoice
+    | WantsToSell
+    | WantsToBuy
+
+
 update_ai_chars : Model -> Model
 update_ai_chars model =
     let
         { character, shop_trends, shop } =
             model
 
-        wants_to_sell =
-            True
+        chosen_action =
+            WantsToSell
 
         ( new_shop_trends, new_character, new_shop ) =
-            if wants_to_sell then
-                ai_sell_item_to_shop shop_trends character shop
+            case chosen_action of
+                WantsToSell ->
+                    ai_sell_item_to_shop shop_trends character shop
 
-            else
-                ( shop_trends, character, shop )
+                WantsToBuy ->
+                    ai_buy_item_from_shop shop_trends character shop
+
+                NoActionChoice ->
+                    ( shop_trends, character, shop )
     in
     { model
         | shop_trends = new_shop_trends

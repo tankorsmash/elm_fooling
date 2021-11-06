@@ -998,7 +998,7 @@ render_single_item_for_sale shop_trends gold_in_pocket maybe_hovered_item ( item
                             text "NONE LEFT"
 
                         CharacterItems ->
-                            Element.none
+                            text "NONE"
 
                 else
                     text <| "x" ++ String.fromInt qty

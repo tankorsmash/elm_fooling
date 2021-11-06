@@ -203,6 +203,7 @@ type alias Character =
     , name : String
     , party : TradeParty
     , trend_tolerance : TrendTolerance
+    , item_types_desired : ItemSentiments
     }
 
 
@@ -354,6 +355,7 @@ initial_character =
     , name = "Billy"
     , party = CharacterParty billy_id
     , trend_tolerance = empty_trend_tolerance
+    , item_types_desired = empty_item_sentiments
     }
 
 
@@ -525,6 +527,8 @@ item_type_to_pretty_string_plural item_type =
         Food ->
             "Food"
 
+empty_item_sentiments : ItemSentiments
+empty_item_sentiments = Dict.empty
 
 empty_trend_tolerance : TrendTolerance
 empty_trend_tolerance =
@@ -542,6 +546,7 @@ init =
             , name = "Player"
             , party = PlayerParty
             , trend_tolerance = empty_trend_tolerance
+            , item_types_desired = empty_item_sentiments
             }
 
         shop : Character
@@ -552,6 +557,7 @@ init =
             , name = "Shop"
             , party = ShopParty
             , trend_tolerance = empty_trend_tolerance
+            , item_types_desired = empty_item_sentiments
             }
 
         character : Character

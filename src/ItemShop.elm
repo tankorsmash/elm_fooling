@@ -146,7 +146,7 @@ type Msg
     | SellItem Item Int
     | StartTrendsHover
     | EndTrendsHover
-    | UpdateTick Time.Posix
+    | TickSecond Time.Posix
 
 
 type alias InventoryRecord =
@@ -520,8 +520,8 @@ init =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
-    -- Time.every 1000 UpdateTick
+    -- Sub.none
+    Time.every 1000 TickSecond
 
 
 find_matching_records : Item -> InventoryRecord -> Bool
@@ -646,6 +646,31 @@ trade_items_from_party_to_other shop_trends from_character to_character item qty
     )
 
 
+sell_items_from_party_to_other shop_trends from_party to_party item qty =
+    if has_items_to_sell from_party.held_items item qty then
+        let
+            ( new_shop_trends, new_from_party_, new_to_party_ ) =
+                trade_items_from_party_to_other shop_trends from_party to_party item qty
+
+            total_cost =
+                get_adjusted_item_cost shop_trends item qty
+
+            new_from_party =
+                { new_from_party_
+                    | held_gold = new_from_party_.held_gold + total_cost
+                }
+
+            new_to_party =
+                { new_to_party_
+                    | held_gold = new_to_party_.held_gold + total_cost
+                }
+        in
+        ( new_shop_trends, new_from_party, new_to_party )
+
+    else
+        ( shop_trends, from_party, to_party )
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -699,28 +724,22 @@ update msg model =
                 ( model, Cmd.none )
 
         SellItem item qty ->
-            if has_items_to_sell model.player.held_items item qty then
-                let
-                    ( new_shop_trends, new_player, new_shop ) =
-                        trade_items_from_party_to_other model.shop_trends model.player model.shop item qty
-
-                    total_cost =
-                        get_adjusted_item_cost model.shop_trends item qty
-
-                    new_model =
-                        { model
-                            | player =
-                                { new_player
-                                    | held_gold = new_player.held_gold + total_cost
-                                }
-                            , shop = new_shop
-                            , shop_trends = new_shop_trends
-                        }
-                in
-                ( new_model, Cmd.none )
-
-            else
-                ( model, Cmd.none )
+            let
+                ( new_shop_trends, new_player, new_shop ) =
+                    trade_items_from_party_to_other
+                        model.shop_trends
+                        model.player
+                        model.shop
+                        item
+                        qty
+            in
+            ( { model
+                | shop_trends = new_shop_trends
+                , player = new_player
+                , shop = new_shop
+              }
+            , Cmd.none
+            )
 
         StartTrendsHover ->
             ( { model | shop_trends_hovered = True }, Cmd.none )
@@ -728,7 +747,7 @@ update msg model =
         EndTrendsHover ->
             ( { model | shop_trends_hovered = False }, Cmd.none )
 
-        UpdateTick time ->
+        TickSecond time ->
             -- let
             --     _ =
             --         Debug.log "tick" time

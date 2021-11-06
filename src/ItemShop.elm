@@ -187,12 +187,22 @@ type alias ItemTradeLog =
     }
 
 
+type alias TrendTolerance =
+    { --highest it'll buy the item type for
+      buy : ItemSentiments
+
+    --lowest it'll sell the item type for
+    , sell : ItemSentiments
+    }
+
+
 type alias Character =
     { held_items : InventoryRecords
     , held_gold : Int
     , char_id : CharacterId
     , name : String
     , party : TradeParty
+    , trend_tolerance : TrendTolerance
     }
 
 
@@ -286,7 +296,7 @@ get_item_by_id item_id =
                 Dict.toList item_frames
 
 
-initial_items_for_sale : List ( Item, Int )
+initial_items_for_sale : InventoryRecords
 initial_items_for_sale =
     let
         seed =
@@ -324,7 +334,7 @@ initial_items_for_sale =
     just_items
 
 
-initial_owned_items : List ( Item, Int )
+initial_owned_items : InventoryRecords
 initial_owned_items =
     [ ( Maybe.withDefault unset_item_frame <| Dict.get "boots" item_frames, 12 )
     ]
@@ -343,6 +353,7 @@ initial_character =
     , char_id = billy_id
     , name = "Billy"
     , party = CharacterParty billy_id
+    , trend_tolerance = empty_trend_tolerance
     }
 
 
@@ -515,15 +526,35 @@ item_type_to_pretty_string_plural item_type =
             "Food"
 
 
+empty_trend_tolerance : TrendTolerance
+empty_trend_tolerance =
+    { buy = Dict.empty, sell = Dict.empty }
+
+
 init : ( Model, Cmd Msg )
 init =
     let
+        player : Character
         player =
-            { held_items = initial_owned_items, held_gold = 0, char_id = UUID.forName "player character" UUID.dnsNamespace, name = "Player", party = PlayerParty }
+            { held_items = initial_owned_items
+            , held_gold = 0
+            , char_id = UUID.forName "player character" UUID.dnsNamespace
+            , name = "Player"
+            , party = PlayerParty
+            , trend_tolerance = empty_trend_tolerance
+            }
 
+        shop : Character
         shop =
-            { held_items = initial_items_for_sale, held_gold = 999999999, char_id = UUID.forName "shop character" UUID.dnsNamespace, name = "Shop", party = ShopParty }
+            { held_items = initial_items_for_sale
+            , held_gold = 999999999
+            , char_id = UUID.forName "shop character" UUID.dnsNamespace
+            , name = "Shop"
+            , party = ShopParty
+            , trend_tolerance = empty_trend_tolerance
+            }
 
+        character : Character
         character =
             initial_character
     in
@@ -788,7 +819,11 @@ update_ai_chars model =
                     ( shop_trends, character, shop )
 
                 Just ( item, qty ) ->
-                    sell_items_from_party_to_other shop_trends character shop { item = item, qty = 1 }
+                    sell_items_from_party_to_other
+                        shop_trends
+                        character
+                        shop
+                        { item = item, qty = 1 }
     in
     { model
         | shop_trends = new_shop_trends

@@ -512,7 +512,7 @@ item_type_to_pretty_string_plural item_type =
 init : ( Model, Cmd Msg )
 init =
     ( { player = { held_items = initial_owned_items, held_gold = 0, char_id = UUID.forName "player character" UUID.dnsNamespace, name = "Player", party = PlayerParty }
-      , shop = { held_items = initial_items_for_sale, held_gold = 0, char_id = UUID.forName "shop character" UUID.dnsNamespace, name = "Shop", party = ShopParty }
+      , shop = { held_items = initial_items_for_sale, held_gold = 999999999, char_id = UUID.forName "shop character" UUID.dnsNamespace, name = "Shop", party = ShopParty }
       , character = initial_character
       , hovered_item_for_sale = Nothing
       , hovered_item_in_inventory = Nothing
@@ -535,8 +535,8 @@ find_matching_records to_match ( recorded_item, _ ) =
     to_match == recorded_item
 
 
-can_afford_item : ShopTrends -> Int -> Item -> Int -> Bool
-can_afford_item shop_trends held_gold item qty =
+can_afford_item : ShopTrends -> Int -> TradeOrder -> Bool
+can_afford_item shop_trends held_gold { item, qty } =
     held_gold >= get_adjusted_item_cost shop_trends item qty
 
 
@@ -654,7 +654,10 @@ trade_items_from_party_to_other shop_trends from_character to_character { item, 
 
 sell_items_from_party_to_other : ShopTrends -> Character -> Character -> TradeOrder -> ( ShopTrends, Character, Character )
 sell_items_from_party_to_other shop_trends from_party to_party { item, qty } =
-    if has_items_to_sell from_party.held_items item qty then
+    if
+        has_items_to_sell from_party.held_items item qty
+            && can_afford_item shop_trends to_party.held_gold { item = item, qty = qty }
+    then
         let
             ( new_shop_trends, new_from_party_, new_to_party_ ) =
                 trade_items_from_party_to_other shop_trends from_party to_party { item = item, qty = qty }
@@ -1173,7 +1176,8 @@ view model =
         items_for_sale_grid =
             Element.column [ width fill, spacingXY 0 5 ] <|
                 (++)
-                    [ Element.el [ font_scaled 2, border_bottom 2 ] <| text "Items For Sale"
+                    [ Element.el [ font_scaled 2, border_bottom 2 ] <|
+                        text "Items For Sale"
                     ]
                     (List.map
                         (\item ->

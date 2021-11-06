@@ -1137,24 +1137,58 @@ listing_view model =
         ]
 
 
+tab_type_to_str : TabType -> String
+tab_type_to_str tab_type =
+    case tab_type of
+        HomeTab ->
+            "Home"
+
+        FrameViewTab ->
+            "Frame View"
+
+        OpenDotaTab ->
+            "OpenDota"
+
+        ElmUIPlaygroundTab ->
+            "ElmUI Playground"
+
+        ItemShopTab ->
+            "Item Shop"
+
+        PostDataTableTab ->
+            "PostData Table"
+
+        RedditListingTab ->
+            "Reddit Submissions Table"
+
+        SinglePostDataTab ->
+            "Single PostData"
+
+        WeatherTab ->
+            "Weather"
+
+        ModalTab ->
+            "Modal Example"
+
+
 navbar : Model -> Html Msg
 navbar model =
     let
-        nav_items : List ( TabType, String, String )
+        nav_items : List ( TabType, String )
         nav_items =
-            [ ( HomeTab, "Home", "home" )
-            , ( FrameViewTab, "Frame View", "frame_view_tab" )
-            , ( OpenDotaTab, "OpenDota", "open_dota_tab" )
-            , ( ElmUIPlaygroundTab, "ElmUI Playground", "elm_ui_playground_tab" )
-            , ( ItemShopTab, "Item Shop", "item_shop_tab" )
+            [ ( HomeTab, "home" )
+            , ( FrameViewTab, "frame_view_tab" )
+            , ( OpenDotaTab, "open_dota_tab" )
+            , ( ElmUIPlaygroundTab, "elm_ui_playground_tab" )
+            , ( ItemShopTab, "item_shop_tab" )
             ]
 
         dropdown_items =
-            [ ( PostDataTableTab, "PostData Table", "post_data_table_tab" )
-            , ( RedditListingTab, "Reddit Submissions Table", "reddit_listing_tab" )
-            , ( SinglePostDataTab, "Single PostData", "single_post_data_tab" )
-            , ( WeatherTab, "Weather", "weather_tab" )
-            , ( ModalTab, "Modal Example", "modal_tab" )
+            [ ( PostDataTableTab, "post_data_table_tab" )
+            , ( RedditListingTab, "reddit_listing_tab" )
+            , ( SinglePostDataTab, "single_post_data_tab" )
+            , ( WeatherTab, "weather_tab" )
+            , ( ModalTab, "modal_tab" )
             ]
 
         all_items =
@@ -1166,18 +1200,18 @@ navbar model =
             [ text <|
                 case
                     List.filter
-                        (\( tab_type, _, _ ) -> tab_type == model.current_tab)
+                        (\( tab_type, _ ) -> tab_type == model.current_tab)
                         all_items
                 of
-                    ( tab_type, header, tab_id ) :: rest ->
-                        header
+                    ( tab_type, tab_id ) :: rest ->
+                        tab_type_to_str tab_type
 
                     [] ->
                         "Unknown Tab"
             ]
         |> Navbar.customItems
             (List.map
-                (\( tab_type, txt, url ) ->
+                (\( tab_type, url ) ->
                     Navbar.textItem
                         [ onClick (ChangeTab tab_type)
                         , let
@@ -1193,7 +1227,7 @@ navbar model =
                         , style "cursor" "pointer"
                         , href url
                         ]
-                        [ a [ href url ] [ text txt ] ]
+                        [ a [ href url ] [ text <| tab_type_to_str tab_type ] ]
                 )
                 nav_items
             )
@@ -1203,7 +1237,7 @@ navbar model =
                 , toggle = Navbar.dropdownToggle [] [ text "others" ]
                 , items =
                     List.map
-                        (\( tab_type, txt, url ) ->
+                        (\( tab_type, url ) ->
                             Navbar.dropdownItem
                                 [ onClick (ChangeTab tab_type)
                                 , let
@@ -1219,7 +1253,7 @@ navbar model =
                                 , style "cursor" "pointer"
                                 , href url
                                 ]
-                                [ a [ href url ] [ text txt ] ]
+                                [ a [ href url ] [ text <| tab_type_to_str tab_type ] ]
                         )
                         dropdown_items
                 }
@@ -1544,7 +1578,7 @@ port exec_jsonp : String -> Cmd msg
 
 view : Model -> Browser.Document Msg
 view model =
-    { title = "Elm Fooling"
+    { title = tab_type_to_str model.current_tab ++ " | Elm Fooling"
     , body =
         [ case model.page_info.page of
             NotFoundPage ->

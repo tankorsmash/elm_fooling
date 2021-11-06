@@ -702,10 +702,14 @@ trade_items_from_party_to_other shop_trends from_character to_character { item, 
 
 sell_items_from_party_to_other : ShopTrends -> Character -> Character -> TradeOrder -> ( ShopTrends, Character, Character )
 sell_items_from_party_to_other shop_trends from_party to_party { item, qty } =
-    if
-        has_items_to_sell from_party.held_items item qty
-            && can_afford_item shop_trends to_party.held_gold { item = item, qty = qty }
-    then
+    let
+        has_items =
+            has_items_to_sell from_party.held_items item qty
+
+        can_afford =
+            can_afford_item shop_trends to_party.held_gold { item = item, qty = qty }
+    in
+    if has_items && can_afford then
         let
             ( new_shop_trends, new_from_party_, new_to_party_ ) =
                 trade_items_from_party_to_other shop_trends from_party to_party { item = item, qty = qty }
@@ -833,9 +837,7 @@ update_ai_chars model =
 
         untrendy_items : InventoryRecords
         untrendy_items =
-            List.filter
-                untrendy_enough
-                sellable_items
+            List.filter untrendy_enough sellable_items
 
         ( new_shop_trends, new_character, new_shop ) =
             case List.head untrendy_items of

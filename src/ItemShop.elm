@@ -662,7 +662,7 @@ sell_items_from_party_to_other shop_trends from_party to_party item qty =
 
             new_to_party =
                 { new_to_party_
-                    | held_gold = new_to_party_.held_gold + total_cost
+                    | held_gold = new_to_party_.held_gold - total_cost
                 }
         in
         ( new_shop_trends, new_from_party, new_to_party )
@@ -700,28 +700,22 @@ update msg model =
                     ( { model | hovered_item_in_character = Nothing }, Cmd.none )
 
         BuyItem item qty ->
-            if can_afford_item model.shop_trends model.player.held_gold item qty then
-                let
-                    total_cost =
-                        get_adjusted_item_cost model.shop_trends item qty
-
-                    ( new_shop_trends, new_shop, new_player ) =
-                        trade_items_from_party_to_other model.shop_trends model.shop model.player item qty
-
-                    new_model =
-                        { model
-                            | player =
-                                { new_player
-                                    | held_gold = new_player.held_gold - total_cost
-                                }
-                            , shop = new_shop
-                            , shop_trends = new_shop_trends
-                        }
-                in
-                ( new_model, Cmd.none )
-
-            else
-                ( model, Cmd.none )
+            let
+                ( new_shop_trends, new_shop, new_player) =
+                    sell_items_from_party_to_other
+                        model.shop_trends
+                        model.shop
+                        model.player
+                        item
+                        qty
+            in
+            ( { model
+                | shop_trends = new_shop_trends
+                , player = new_player
+                , shop = new_shop
+              }
+            , Cmd.none
+            )
 
         SellItem item qty ->
             let

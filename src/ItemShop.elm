@@ -652,6 +652,7 @@ trade_items_from_party_to_other shop_trends from_character to_character { item, 
     )
 
 
+sell_items_from_party_to_other : ShopTrends -> Character -> Character -> TradeOrder -> ( ShopTrends, Character, Character )
 sell_items_from_party_to_other shop_trends from_party to_party { item, qty } =
     if has_items_to_sell from_party.held_items item qty then
         let

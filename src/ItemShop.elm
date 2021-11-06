@@ -805,16 +805,40 @@ update msg model =
             ( update_ai_chars model, Cmd.none )
 
 
+get_trend_for_item : ShopTrends -> Item -> Float
+get_trend_for_item shop_trends item =
+    Maybe.withDefault 1.0 <|
+        Dict.get
+            (item_type_to_id item.item_type)
+            shop_trends.item_type_sentiment
+
+
+update_ai_chars : Model -> Model
 update_ai_chars model =
     let
         { character, shop_trends, shop } =
             model
 
+        sellable_items : InventoryRecords
         sellable_items =
             List.filter (\( i, qty ) -> qty > 0) character.held_items
 
+        -- AI needs to trend to be at least above 80% to sell
+        sellable_trend =
+            0.8
+
+        untrendy_enough : InventoryRecord -> Bool
+        untrendy_enough ( item, qty ) =
+            get_trend_for_item shop_trends item >= sellable_trend
+
+        untrendy_items : InventoryRecords
+        untrendy_items =
+            List.filter
+                untrendy_enough
+                sellable_items
+
         ( new_shop_trends, new_character, new_shop ) =
-            case List.head sellable_items of
+            case List.head untrendy_items of
                 Nothing ->
                     ( shop_trends, character, shop )
 

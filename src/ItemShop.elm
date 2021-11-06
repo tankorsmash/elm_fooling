@@ -125,8 +125,8 @@ type TradeParty
     | CharacterParty CharacterId
 
 
-trade_party_to_str : TradeParty -> String
-trade_party_to_str party =
+trade_party_to_str : List Character -> TradeParty -> String
+trade_party_to_str all_characters party =
     case party of
         ShopParty ->
             "Shop"
@@ -135,7 +135,12 @@ trade_party_to_str party =
             "Player"
 
         CharacterParty char_id ->
-            "CharacterId"
+            case List.head <| List.filter (.char_id >> (==) char_id) all_characters of
+                Just character ->
+                    character.name
+
+                Nothing ->
+                    "Unnamed Character"
 
 
 type Msg
@@ -195,6 +200,7 @@ type alias Model =
     { player : Character
     , shop : Character
     , character : Character
+    , characters : List Character
     , hovered_item_for_sale : Maybe Item
     , hovered_item_in_inventory : Maybe Item
     , hovered_item_in_character : Maybe Item
@@ -511,9 +517,20 @@ item_type_to_pretty_string_plural item_type =
 
 init : ( Model, Cmd Msg )
 init =
-    ( { player = { held_items = initial_owned_items, held_gold = 0, char_id = UUID.forName "player character" UUID.dnsNamespace, name = "Player", party = PlayerParty }
-      , shop = { held_items = initial_items_for_sale, held_gold = 999999999, char_id = UUID.forName "shop character" UUID.dnsNamespace, name = "Shop", party = ShopParty }
-      , character = initial_character
+    let
+        player =
+            { held_items = initial_owned_items, held_gold = 0, char_id = UUID.forName "player character" UUID.dnsNamespace, name = "Player", party = PlayerParty }
+
+        shop =
+            { held_items = initial_items_for_sale, held_gold = 999999999, char_id = UUID.forName "shop character" UUID.dnsNamespace, name = "Shop", party = ShopParty }
+
+        character =
+            initial_character
+    in
+    ( { player = player
+      , shop = shop
+      , character = character
+      , characters = [ player, shop, character ]
       , hovered_item_for_sale = Nothing
       , hovered_item_in_inventory = Nothing
       , hovered_item_in_character = Nothing
@@ -1007,8 +1024,8 @@ border_bottom bord =
     Border.widthEach { bottom = bord, left = 0, right = 0, top = 0 }
 
 
-render_single_trade_log_entry : ItemTradeLog -> Element msg
-render_single_trade_log_entry trade_log =
+render_single_trade_log_entry : List Character -> ItemTradeLog -> Element msg
+render_single_trade_log_entry all_characters trade_log =
     let
         { from_party, to_party, item_id, quantity, gold_cost } =
             trade_log
@@ -1057,13 +1074,13 @@ render_single_trade_log_entry trade_log =
         _ ->
             text <|
                 "an item was traded from "
-                    ++ trade_party_to_str from_party
+                    ++ trade_party_to_str all_characters from_party
                     ++ " to "
-                    ++ trade_party_to_str to_party
+                    ++ trade_party_to_str all_characters to_party
 
 
-trends_display : ShopTrends -> Bool -> Element.Element Msg
-trends_display shop_trends is_expanded =
+trends_display : ShopTrends -> List Character -> Bool -> Element.Element Msg
+trends_display shop_trends all_characters is_expanded =
     let
         render_single_popularity : ( Int, Float ) -> Element.Element msg
         render_single_popularity ( type_id, popularity ) =
@@ -1125,7 +1142,7 @@ trends_display shop_trends is_expanded =
                     ]
                 <|
                     List.map
-                        render_single_trade_log_entry
+                        (render_single_trade_log_entry all_characters)
                         shop_trends.item_trade_logs
 
         has_trades =
@@ -1244,7 +1261,7 @@ view model =
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
         Element.column [ width fill, font_scaled 1 ]
             [ welcome_header
-            , trends_display model.shop_trends model.shop_trends_hovered
+            , trends_display model.shop_trends model.characters model.shop_trends_hovered
 
             -- , el [ font_scaled 2, border_bottom 2 ] <| text "Items for Sale"
             -- , items_for_sale_table

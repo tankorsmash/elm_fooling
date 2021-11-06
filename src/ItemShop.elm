@@ -149,6 +149,12 @@ type Msg
     | TickSecond Time.Posix
 
 
+type alias TradeOrder =
+    { item : Item
+    , qty : Int
+    }
+
+
 type alias InventoryRecord =
     ( Item, Int )
 
@@ -596,8 +602,8 @@ has_items_to_sell inventory_records item qty =
 NOTE: assumes the can\_afford checks etc have been done
 
 -}
-trade_items_from_party_to_other : ShopTrends -> Character -> Character -> Item -> Int -> ( ShopTrends, Character, Character )
-trade_items_from_party_to_other shop_trends from_character to_character item qty =
+trade_items_from_party_to_other : ShopTrends -> Character -> Character -> TradeOrder -> ( ShopTrends, Character, Character )
+trade_items_from_party_to_other shop_trends from_character to_character { item, qty } =
     let
         total_cost =
             get_adjusted_item_cost shop_trends item qty
@@ -646,11 +652,11 @@ trade_items_from_party_to_other shop_trends from_character to_character item qty
     )
 
 
-sell_items_from_party_to_other shop_trends from_party to_party item qty =
+sell_items_from_party_to_other shop_trends from_party to_party { item, qty } =
     if has_items_to_sell from_party.held_items item qty then
         let
             ( new_shop_trends, new_from_party_, new_to_party_ ) =
-                trade_items_from_party_to_other shop_trends from_party to_party item qty
+                trade_items_from_party_to_other shop_trends from_party to_party { item = item, qty = qty }
 
             total_cost =
                 get_adjusted_item_cost shop_trends item qty
@@ -701,13 +707,12 @@ update msg model =
 
         BuyItem item qty ->
             let
-                ( new_shop_trends, new_shop, new_player) =
+                ( new_shop_trends, new_shop, new_player ) =
                     sell_items_from_party_to_other
                         model.shop_trends
                         model.shop
                         model.player
-                        item
-                        qty
+                        { item = item, qty = qty }
             in
             ( { model
                 | shop_trends = new_shop_trends
@@ -724,8 +729,7 @@ update msg model =
                         model.shop_trends
                         model.player
                         model.shop
-                        item
-                        qty
+                        { item = item, qty = qty }
             in
             ( { model
                 | shop_trends = new_shop_trends

@@ -754,7 +754,30 @@ update msg model =
             --     _ =
             --         Debug.log "tick" time
             -- in
-            ( model, Cmd.none )
+            ( update_ai_chars model, Cmd.none )
+
+
+update_ai_chars model =
+    let
+        { character, shop_trends, shop } =
+            model
+
+        sellable_items =
+            List.filter (\( i, qty ) -> qty > 0) character.held_items
+
+        ( new_shop_trends, new_character, new_shop ) =
+            case List.head sellable_items of
+                Nothing ->
+                    ( shop_trends, character, shop )
+
+                Just ( item, qty ) ->
+                    sell_items_from_party_to_other shop_trends character shop { item = item, qty = 1 }
+    in
+    { model
+        | shop_trends = new_shop_trends
+        , character = new_character
+        , shop = new_shop
+    }
 
 
 render_item_type : ItemType -> Element.Element Msg

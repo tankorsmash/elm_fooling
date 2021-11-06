@@ -726,7 +726,7 @@ update msg model =
         SellItem item qty ->
             let
                 ( new_shop_trends, new_player, new_shop ) =
-                    trade_items_from_party_to_other
+                    sell_items_from_party_to_other
                         model.shop_trends
                         model.player
                         model.shop

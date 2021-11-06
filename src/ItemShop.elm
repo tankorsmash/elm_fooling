@@ -838,12 +838,17 @@ get_trend_for_item shop_trends item =
             shop_trends.item_type_sentiment
 
 
-update_ai_chars : Model -> Model
-update_ai_chars model =
-    let
-        { character, shop_trends, shop } =
-            model
+ai_buy_item_from_shop : ShopTrends -> Character -> Character -> ( ShopTrends, Character, Character )
+ai_buy_item_from_shop shop_trends character shop =
+    --TODO decide on an item type to buy, and buy 1.
+    -- Maybe, it would be based on the lowest trending one, or one the
+    -- character strongly desired or something
+    ( shop_trends, character, shop )
 
+
+ai_sell_item_to_shop : ShopTrends -> Character -> Character -> ( ShopTrends, Character, Character )
+ai_sell_item_to_shop shop_trends character shop =
+    let
         sellable_items : InventoryRecords
         sellable_items =
             List.filter (\( i, qty ) -> qty > 0) character.held_items
@@ -852,6 +857,7 @@ update_ai_chars model =
         sellable_trend =
             0.8
 
+        -- trend is high enough to sell
         untrendy_enough : InventoryRecord -> Bool
         untrendy_enough ( item, qty ) =
             get_trend_for_item shop_trends item >= sellable_trend
@@ -871,6 +877,25 @@ update_ai_chars model =
                         character
                         shop
                         { item = item, qty = 1 }
+    in
+    ( new_shop_trends, new_character, new_shop )
+
+
+update_ai_chars : Model -> Model
+update_ai_chars model =
+    let
+        { character, shop_trends, shop } =
+            model
+
+        wants_to_sell =
+            True
+
+        ( new_shop_trends, new_character, new_shop ) =
+            if wants_to_sell then
+                ai_sell_item_to_shop shop_trends character shop
+
+            else
+                ( shop_trends, character, shop )
     in
     { model
         | shop_trends = new_shop_trends

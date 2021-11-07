@@ -1272,16 +1272,19 @@ render_single_trade_log_entry all_characters trade_log =
                 ]
 
         _ ->
-            paragraph [] [text <|
-                item_name ++" was traded from "
-                    ++ trade_party_to_str all_characters from_party
-                    ++ " to "
-                    ++ trade_party_to_str all_characters to_party
+            paragraph []
+                [ text <|
+                    item_name
+                        ++ " was traded from "
+                        ++ trade_party_to_str all_characters from_party
+                        ++ " to "
+                        ++ trade_party_to_str all_characters to_party
                         ++ " ("
                         ++ qty_str
                         ++ ") "
                         ++ "was traded for "
-                , rendered_cost]
+                , rendered_cost
+                ]
 
 
 trends_display : ShopTrends -> List Character -> Bool -> Element.Element Msg
@@ -1310,7 +1313,7 @@ trends_display shop_trends all_characters is_expanded =
                 text "No trends at the moment."
 
             else
-                text "Something is trending!"
+                Element.none
 
         specific_trends : List (Element msg)
         specific_trends =
@@ -1321,7 +1324,7 @@ trends_display shop_trends all_characters is_expanded =
         rendered_item_trade_logs : List (Element msg)
         rendered_item_trade_logs =
             [ text <|
-                "Trade logs go here, and there have been "
+                "There have been "
                     ++ (String.fromInt <| List.length shop_trends.item_trade_logs)
                     ++ " trades"
             ]
@@ -1331,6 +1334,7 @@ trends_display shop_trends all_characters is_expanded =
             row [ spacing 15, paddingXY 0 10 ] <|
                 summarized
                     :: specific_trends
+                    ++ [ Element.el [ font_scaled 2, centerY ] <| text "|" ]
                     ++ rendered_item_trade_logs
 
         expanded_trade_logs =

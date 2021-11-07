@@ -1272,11 +1272,16 @@ render_single_trade_log_entry all_characters trade_log =
                 ]
 
         _ ->
-            text <|
-                "an item was traded from "
+            paragraph [] [text <|
+                item_name ++" was traded from "
                     ++ trade_party_to_str all_characters from_party
                     ++ " to "
                     ++ trade_party_to_str all_characters to_party
+                        ++ " ("
+                        ++ qty_str
+                        ++ ") "
+                        ++ "was traded for "
+                , rendered_cost]
 
 
 trends_display : ShopTrends -> List Character -> Bool -> Element.Element Msg

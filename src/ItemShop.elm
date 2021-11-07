@@ -917,7 +917,7 @@ ai_buy_item_from_shop shop_trends character shop =
         ( new_shop_trends, new_shop, new_character ) =
             case maybe_item_to_buy of
                 Nothing ->
-                    ( shop_trends, character, shop )
+                    ( shop_trends, shop, character )
 
                 Just item ->
                     sell_items_from_party_to_other

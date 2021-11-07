@@ -874,12 +874,9 @@ ai_buy_item_from_shop shop_trends character shop =
         least_trendy_items =
             List.filterMap
                 (\( it_id, trd ) ->
-                    case id_to_item_type it_id of
-                        Just item_type ->
-                            Just ( item_type, trd )
-
-                        Nothing ->
-                            Nothing
+                    id_to_item_type it_id
+                        |> Maybe.andThen
+                            (\item_type -> Just ( item_type, trd ))
                 )
             <|
                 List.sortBy
@@ -895,8 +892,10 @@ ai_buy_item_from_shop shop_trends character shop =
                 Nothing ->
                     case
                         List.filter
-                            (Tuple.first >> .item_type >> (==) item_type)
-                            -- (\( i, q ) -> i.item_type == item_type)
+                            (Tuple.first
+                                >> .item_type
+                                >> (==) item_type
+                            )
                             wanted_items
                     of
                         [] ->

@@ -168,6 +168,14 @@ type alias InventoryRecords =
     List InventoryRecord
 
 
+type alias ItemTypeIdSentiment =
+    ( ItemTypeId, Float )
+
+
+type alias ItemTypeSentiment =
+    ( ItemType, Float )
+
+
 type alias ItemSentiments =
     Dict.Dict ItemTypeId Float
 
@@ -849,8 +857,8 @@ ai_buy_item_from_shop shop_trends character shop =
     -- Maybe, it would be based on the lowest trending one, or one the
     -- character strongly desired or something
     let
-        buyable_items : InventoryRecords
-        buyable_items =
+        wanted_items : InventoryRecords
+        wanted_items =
             List.filter
                 (\( i, q ) ->
                     nonzero_qty ( i, q )
@@ -877,6 +885,35 @@ ai_buy_item_from_shop shop_trends character shop =
                 List.sortBy
                     Tuple.second
                     (Dict.toList shop_trends.item_type_sentiment)
+
+        is_buyable : ItemTypeSentiment -> Maybe Item -> Maybe Item
+        is_buyable ( item_type, trend ) buyable_item =
+            case buyable_item of
+                Just buyable ->
+                    Just buyable
+
+                Nothing ->
+                    case
+                        List.filter
+                            (Tuple.first >> .item_type >> (==) item_type)
+                            -- (\( i, q ) -> i.item_type == item_type)
+                            wanted_items
+                    of
+                        [] ->
+                            Nothing
+
+                        ( xi, xq ) :: xs ->
+                            Just xi
+
+        maybe_item_to_buy : Maybe Item
+        maybe_item_to_buy =
+            List.foldl
+                is_buyable
+                Nothing
+                least_trendy_items
+
+        _ =
+            Debug.log "maybe item to buy" maybe_item_to_buy
     in
     ( shop_trends, character, shop )
 
@@ -929,7 +966,7 @@ update_ai_chars model =
             model
 
         chosen_action =
-            WantsToSell
+            WantsToBuy
 
         ( new_shop_trends, new_character, new_shop ) =
             case chosen_action of

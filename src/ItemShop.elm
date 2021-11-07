@@ -913,8 +913,20 @@ ai_buy_item_from_shop shop_trends character shop =
 
         _ =
             Debug.log "maybe item to buy" maybe_item_to_buy
+
+        ( new_shop_trends, new_shop, new_character ) =
+            case maybe_item_to_buy of
+                Nothing ->
+                    ( shop_trends, character, shop )
+
+                Just item ->
+                    sell_items_from_party_to_other
+                        shop_trends
+                        shop
+                        character
+                        { item = item, qty = 1 }
     in
-    ( shop_trends, character, shop )
+    ( new_shop_trends, new_character, new_shop )
 
 
 ai_sell_item_to_shop : ShopTrends -> Character -> Character -> ( ShopTrends, Character, Character )

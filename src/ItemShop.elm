@@ -869,6 +869,9 @@ ai_buy_item_from_shop shop_trends character shop =
                 )
                 shop.held_items
 
+        max_trend =
+            1.2
+
         -- item type trends sorted by least trendy
         least_trendy_items : List ( ItemType, Float )
         least_trendy_items =
@@ -876,7 +879,12 @@ ai_buy_item_from_shop shop_trends character shop =
                 (\( it_id, trd ) ->
                     id_to_item_type it_id
                         |> Maybe.andThen
-                            (\item_type -> Just ( item_type, trd ))
+                            (if trd < max_trend then
+                                \item_type -> Just ( item_type, trd )
+
+                             else
+                                always Nothing
+                            )
                 )
             <|
                 List.sortBy

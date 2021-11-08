@@ -1395,17 +1395,10 @@ render_inventory :
     -> Maybe Item
     -> ListContext
     -> Element Msg
-render_inventory header {held_items, held_gold} shop_trends hovered_item context =
-    Element.column [ width fill, spacingXY 0 5 ] <|
-        (++)
-            [ Element.row [ font_scaled 2, width fill ]
-                [ Element.el [ border_bottom 2 ] <| text header
-                , text "   "
-                , row [ font_scaled 1, centerX ] <|
-                    [ text "Held: ", render_gp held_gold ]
-                ]
-            ]
-            (List.map
+render_inventory header { held_items, held_gold } shop_trends hovered_item context =
+    let
+        rendered_items =
+            List.map
                 (\item ->
                     render_single_item_for_sale
                         shop_trends
@@ -1414,9 +1407,18 @@ render_inventory header {held_items, held_gold} shop_trends hovered_item context
                         item
                         context
                 )
-             <|
+            <|
                 List.sortBy sort_func held_items
-            )
+    in
+    Element.column [ width fill, spacingXY 0 5 ] <|
+        [ Element.row [ font_scaled 2, width fill ]
+            [ Element.el [ border_bottom 2 ] <| text header
+            , text "   "
+            , row [ font_scaled 1, centerX ] <|
+                [ text "Held: ", render_gp held_gold ]
+            ]
+        ]
+            ++ rendered_items
 
 
 sort_func =

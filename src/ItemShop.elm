@@ -1106,8 +1106,8 @@ is_item_trending item_type_sentiments item =
             False
 
 
-render_single_item_for_sale : ShopTrends -> Int -> Maybe Item -> ( Item, Int ) -> ListContext -> Element.Element Msg
-render_single_item_for_sale shop_trends gold_in_pocket maybe_hovered_item ( item, qty ) context =
+render_single_item_for_sale : ShopTrends -> Int -> Maybe Item -> ( Item, Int ) -> ListContext -> (InventoryRecord -> Element Msg) -> Element.Element Msg
+render_single_item_for_sale shop_trends gold_in_pocket maybe_hovered_item ( item, qty ) context controls_column =
     let
         is_hovered_item =
             case maybe_hovered_item of
@@ -1116,6 +1116,9 @@ render_single_item_for_sale shop_trends gold_in_pocket maybe_hovered_item ( item
 
                 Nothing ->
                     False
+
+        current_price =
+            get_adjusted_item_cost shop_trends item 1
 
         --shown when hovered over item
         expanded_display =
@@ -1160,24 +1163,6 @@ render_single_item_for_sale shop_trends gold_in_pocket maybe_hovered_item ( item
 
                 False ->
                     Element.none
-
-        current_price =
-            get_adjusted_item_cost shop_trends item 1
-
-        controls_column =
-            case context of
-                ShopItems ->
-                    shop_buy_button current_price gold_in_pocket ( item, qty )
-
-                InventoryItems ->
-                    shop_sell_button (qty >= 1) ( item, 1 )
-
-                -- primary_button
-                --     [ Element.transparent <| qty < 1 ]
-                --     (SellItem item 1)
-                --     "sell me"
-                CharacterItems ->
-                    Element.none
     in
     row
         [ font_scaled 1
@@ -1213,7 +1198,7 @@ render_single_item_for_sale shop_trends gold_in_pocket maybe_hovered_item ( item
             ]
         , column [ width <| (fillPortion 3 |> Element.maximum 200), debug_explain ]
             [ el [] <| text <| clipText item.description 24 ]
-        , column [ portion 1, debug_explain ] [ controls_column ]
+        , column [ portion 1, debug_explain ] [ controls_column ( item, qty ) ]
         ]
 
 
@@ -1394,8 +1379,9 @@ render_inventory :
     -> ShopTrends
     -> Maybe Item
     -> ListContext
+    -> (InventoryRecord -> Element Msg)
     -> Element Msg
-render_inventory header { held_items, held_gold } shop_trends hovered_item context =
+render_inventory header { held_items, held_gold } shop_trends hovered_item context controls_column =
     let
         rendered_items =
             List.map
@@ -1406,6 +1392,7 @@ render_inventory header { held_items, held_gold } shop_trends hovered_item conte
                         hovered_item
                         item
                         context
+                        controls_column
                 )
             <|
                 List.sortBy sort_func held_items
@@ -1445,6 +1432,7 @@ view model =
                     model.shop_trends
                     model.hovered_item_for_sale
                     ShopItems
+                    (\( item, qty ) -> shop_buy_button (get_adjusted_item_cost model.shop_trends item 1) model.player.held_gold ( item, qty ))
             , Element.el [ paddingXY 0 10, width fill ] <|
                 render_inventory
                     "Items In Inventory"
@@ -1452,6 +1440,7 @@ view model =
                     model.shop_trends
                     model.hovered_item_in_inventory
                     InventoryItems
+                    (\( item, qty ) -> shop_sell_button (qty >= 1) ( item, 1 ))
             , Element.el [ paddingXY 0 10, width fill ]
                 (render_inventory
                     (character.name ++ "'s Inventory")
@@ -1459,6 +1448,7 @@ view model =
                     model.shop_trends
                     model.hovered_item_in_character
                     CharacterItems
+                    (always Element.none)
                 )
             ]
 

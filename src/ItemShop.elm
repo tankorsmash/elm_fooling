@@ -1055,10 +1055,10 @@ shop_buy_button gold_cost gold_in_pocket ( item, qty ) =
         (BuyItem item 1)
     <|
         if can_afford then
-            "buy me (TODO pass these in)"
+            "BUY"
 
         else
-            "can't afford"
+            "Need GP"
 
 
 shop_sell_button : Bool -> InventoryRecord -> Element Msg
@@ -1078,10 +1078,10 @@ shop_sell_button has_items_to_sell_ ( item, qty ) =
         (SellItem item 1)
     <|
         if has_items_to_sell_ then
-            "sell me"
+            "SELL"
 
         else
-            "can't afford"
+            "Need GP"
 
 
 debug_explain =

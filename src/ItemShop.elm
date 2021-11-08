@@ -1106,7 +1106,14 @@ is_item_trending item_type_sentiments item =
             False
 
 
-render_single_item_for_sale : ShopTrends -> Int -> Maybe Item -> ( Item, Int ) -> ListContext -> (InventoryRecord -> Element Msg) -> Element.Element Msg
+render_single_item_for_sale :
+    ShopTrends
+    -> Int
+    -> Maybe Item
+    -> InventoryRecord
+    -> ListContext
+    -> (InventoryRecord -> Element Msg)
+    -> Element.Element Msg
 render_single_item_for_sale shop_trends gold_in_pocket maybe_hovered_item ( item, qty ) context controls_column =
     let
         is_hovered_item =

@@ -1189,9 +1189,9 @@ render_single_item_for_sale shop_trends gold_in_pocket maybe_hovered_item ( item
         , Events.onMouseLeave <| MouseLeaveShopItem context item
         , Element.below expanded_display
         ]
-        [ column [ width (fillPortion 2 |> Element.maximum 200), font_scaled 2, debug_explain ] [ text <| clipText item.name 15 ]
+        [ column [ Element.clip, width (fillPortion 2 |> Element.maximum 150), Font.size 16, debug_explain ] [ text <| clipText item.name 25 ]
         , column [ portion 1, debug_explain ] [ render_gp <| get_adjusted_item_cost shop_trends item 1 ]
-        , column [ portion 2, debug_explain ] [ render_item_type item.item_type ]
+        , column [ portion 1, debug_explain ] [ render_item_type item.item_type ]
         , column [ portion 1, debug_explain ]
             [ el [] <|
                 if qty == 1 then
@@ -1498,7 +1498,7 @@ view model =
 
 scaled : Int -> Int
 scaled val =
-    modular 16 1.25 val |> round
+    modular 14 1.25 val |> round
 
 
 font_scaled : Int -> Element.Attribute msg

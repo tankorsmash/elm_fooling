@@ -440,6 +440,22 @@ primary_color =
             rgb255 255 0 0
 
 
+primary_color_bright : Color
+primary_color_bright =
+    case Convert.hexToColor "#66b0ff" of
+        Ok color ->
+            let
+                -- convert to a Color lib Color record
+                rgba =
+                    Color.toRgba color
+            in
+            -- from the Color record, call the ElmUI `rgb` func
+            rgb rgba.red rgba.green rgba.blue
+
+        Err err ->
+            rgb255 255 0 0
+
+
 primary_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
 primary_button attrs on_press label =
     Input.button
@@ -452,6 +468,11 @@ primary_button attrs on_press label =
          , Border.rounded 5
          , Border.width 5
          , Border.color primary_color
+         , Element.mouseOver
+            [ Background.color <| primary_color_bright
+            , Border.color <| primary_color_bright
+            , Font.color <| rgb 0 0 0
+            ]
          ]
             ++ attrs
         )
@@ -1019,9 +1040,13 @@ clipText str length =
         str
 
 
+grey_color =
+    rgb 0.35 0.35 0.35
+
+
 font_grey : Element.Attribute msg
 font_grey =
-    Font.color <| rgb 0.35 0.35 0.35
+    Font.color <| grey_color
 
 
 render_gp : Int -> Element msg

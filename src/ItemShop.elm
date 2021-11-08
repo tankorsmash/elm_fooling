@@ -218,7 +218,6 @@ type alias Character =
 type alias Model =
     { player : Character
     , shop : Character
-    , character : Character
     , characters : List Character
     , hovered_item_for_sale : Maybe Item
     , hovered_item_in_inventory : Maybe Item
@@ -1002,27 +1001,51 @@ type AiActionChoice
 update_ai_chars : Model -> Model
 update_ai_chars model =
     let
-        { character, shop_trends, shop } =
+        { old_characters, old_shop_trends, old_shop } =
             model
 
-        chosen_action =
-            WantsToBuy
+        -- loop through all the characters and..
+        -- pass the updated shop trends and characters down
+        -- if we use foldl, i am not sure how to iterate through all the characters
+        --  without re-using them. Answer: iterate through character ids instead
+        update_ai char_id ( shop_trends, characters ) =
+            let
+                chosen_action =
+                    WantsToBuy
 
-        ( new_shop_trends, new_character, new_shop ) =
-            case chosen_action of
-                WantsToSell ->
-                    ai_sell_item_to_shop shop_trends character shop
+                character = --TODO look up char_id in characters
+                    model.character
 
-                WantsToBuy ->
-                    ai_buy_item_from_shop shop_trends character shop
+                shop = --TODO look it up in the shop
+                    model.shop
 
-                NoActionChoice ->
-                    ( shop_trends, character, shop )
+                ( new_shop_trends_, new_character, new_shop ) =
+                    case chosen_action of
+                        WantsToSell ->
+                            ai_sell_item_to_shop shop_trends character shop
+
+                        WantsToBuy ->
+                            ai_buy_item_from_shop shop_trends character shop
+
+                        NoActionChoice ->
+                            ( shop_trends, character, shop )
+
+                new_characters_ = --TODO update this with `new_character`
+                    old_characters
+            in
+            ( new_shop_trends_, new_characters_, new_shop )
+
+        ( new_shop_trends, new_characters ) =
+            List.foldl
+                update_ai
+                (old_shop_trends, old_characters)
+            <|
+                List.map .char_id old_characters
     in
     { model
         | shop_trends = new_shop_trends
-        , character = new_character
-        , shop = new_shop
+        , characters = new_characters
+        , shop = new_shop --TODO pull the shop out from new_characters
     }
 
 
@@ -1473,6 +1496,15 @@ view model =
                     model.hovered_item_in_inventory
                     InventoryItems
                     (\( item, qty ) -> shop_sell_button (qty >= 1) ( item, 1 ))
+            , Element.el [ paddingXY 0 10, width fill ]
+                (render_inventory
+                    (character.name ++ "'s Inventory")
+                    model.character
+                    model.shop_trends
+                    model.hovered_item_in_character
+                    CharacterItems
+                    (always Element.none)
+                )
             , Element.el [ paddingXY 0 10, width fill ]
                 (render_inventory
                     (character.name ++ "'s Inventory")

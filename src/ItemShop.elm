@@ -1055,7 +1055,7 @@ shop_buy_button gold_cost gold_in_pocket ( item, qty ) =
         (BuyItem item 1)
     <|
         if can_afford then
-            "buy me"
+            "buy me (TODO pass these in)"
 
         else
             "can't afford"
@@ -1431,48 +1431,6 @@ view model =
         welcome_header =
             Element.el [ font_scaled 3, padding_bottom 10 ] <| text "Welcome to the Item Shop!"
 
-        items_for_sale_grid =
-            Element.column [ width fill, spacingXY 0 5 ] <|
-                (++)
-                    [ Element.el [ font_scaled 2, border_bottom 2 ] <|
-                        text "Items For Sale"
-                    ]
-                    (List.map
-                        (\item ->
-                            render_single_item_for_sale
-                                model.shop_trends
-                                model.player.held_gold
-                                model.hovered_item_for_sale
-                                item
-                                ShopItems
-                        )
-                     <|
-                        List.sortBy sort_func model.shop.held_items
-                    )
-
-        items_in_inventory =
-            Element.column [ width fill, spacingXY 0 5 ] <|
-                (++)
-                    [ Element.row [ font_scaled 2, width fill ]
-                        [ Element.el [ border_bottom 2 ] <| text "Items In Inventory"
-                        , text "   "
-                        , row [ font_scaled 1, centerX ] <|
-                            [ text "Held: ", render_gp model.player.held_gold ]
-                        ]
-                    ]
-                    (List.map
-                        (\item ->
-                            render_single_item_for_sale
-                                model.shop_trends
-                                model.player.held_gold
-                                model.hovered_item_in_inventory
-                                item
-                                InventoryItems
-                        )
-                     <|
-                        List.sortBy sort_func model.player.held_items
-                    )
-
         character =
             model.character
     in
@@ -1480,8 +1438,20 @@ view model =
         Element.column [ width fill, font_scaled 1 ]
             [ welcome_header
             , trends_display model.shop_trends model.characters model.shop_trends_hovered
-            , items_for_sale_grid
-            , Element.el [ paddingXY 0 10, width fill ] items_in_inventory
+            , Element.el [ paddingXY 0 10, width fill ] <|
+                render_inventory
+                    "Items For Sale"
+                    model.shop
+                    model.shop_trends
+                    model.hovered_item_for_sale
+                    ShopItems
+            , Element.el [ paddingXY 0 10, width fill ] <|
+                render_inventory
+                    "Items In Inventory"
+                    model.player
+                    model.shop_trends
+                    model.hovered_item_in_inventory
+                    InventoryItems
             , Element.el [ paddingXY 0 10, width fill ]
                 (render_inventory
                     (character.name ++ "'s Inventory")

@@ -1390,27 +1390,26 @@ trends_display shop_trends all_characters is_expanded =
 
 render_inventory :
     String
-    -> InventoryRecords
-    -> Int
+    -> Character
     -> ShopTrends
     -> Maybe Item
     -> ListContext
     -> Element Msg
-render_inventory header held_items gold_held shop_trends hovered_item context =
+render_inventory header {held_items, held_gold} shop_trends hovered_item context =
     Element.column [ width fill, spacingXY 0 5 ] <|
         (++)
             [ Element.row [ font_scaled 2, width fill ]
                 [ Element.el [ border_bottom 2 ] <| text header
                 , text "   "
                 , row [ font_scaled 1, centerX ] <|
-                    [ text "Held: ", render_gp gold_held ]
+                    [ text "Held: ", render_gp held_gold ]
                 ]
             ]
             (List.map
                 (\item ->
                     render_single_item_for_sale
                         shop_trends
-                        gold_held
+                        held_gold
                         hovered_item
                         item
                         context
@@ -1479,16 +1478,12 @@ view model =
         Element.column [ width fill, font_scaled 1 ]
             [ welcome_header
             , trends_display model.shop_trends model.characters model.shop_trends_hovered
-
-            -- , el [ font_scaled 2, border_bottom 2 ] <| text "Items for Sale"
-            -- , items_for_sale_table
             , items_for_sale_grid
             , Element.el [ paddingXY 0 10, width fill ] items_in_inventory
             , Element.el [ paddingXY 0 10, width fill ]
                 (render_inventory
                     (character.name ++ "'s Inventory")
-                    model.character.held_items
-                    model.character.held_gold
+                    model.character
                     model.shop_trends
                     model.hovered_item_in_character
                     CharacterItems

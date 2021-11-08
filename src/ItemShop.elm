@@ -609,7 +609,6 @@ init =
     in
     ( { player = player
       , shop = shop
-      , character = character
       , characters = [ player, shop, character ]
       , hovered_item_for_sale = Nothing
       , hovered_item_in_inventory = Nothing
@@ -998,54 +997,71 @@ type AiActionChoice
     | WantsToBuy
 
 
+lookup_by_char_id : UUID -> List Character -> Maybe Character
+lookup_by_char_id char_id characters =
+    List.head <| List.filter (\c -> c.char_id == char_id) characters
+
+
 update_ai_chars : Model -> Model
 update_ai_chars model =
     let
-        { old_characters, old_shop_trends, old_shop } =
-            model
+        old_characters =
+            model.characters
+
+        old_shop_trends =
+            model.shop_trends
 
         -- loop through all the characters and..
         -- pass the updated shop trends and characters down
         -- if we use foldl, i am not sure how to iterate through all the characters
         --  without re-using them. Answer: iterate through character ids instead
+        update_ai : UUID -> ( ShopTrends, List Character ) -> ( ShopTrends, List Character )
         update_ai char_id ( shop_trends, characters ) =
             let
-                chosen_action =
-                    WantsToBuy
+                --TODO: make sure character isn't shop
+                maybe_character =
+                    lookup_by_char_id char_id characters
 
-                character = --TODO look up char_id in characters
-                    model.character
-
-                shop = --TODO look it up in the shop
-                    model.shop
-
-                ( new_shop_trends_, new_character, new_shop ) =
-                    case chosen_action of
-                        WantsToSell ->
-                            ai_sell_item_to_shop shop_trends character shop
-
-                        WantsToBuy ->
-                            ai_buy_item_from_shop shop_trends character shop
-
-                        NoActionChoice ->
-                            ( shop_trends, character, shop )
-
-                new_characters_ = --TODO update this with `new_character`
-                    old_characters
+                maybe_shop =
+                    lookup_by_char_id model.shop.char_id characters
             in
-            ( new_shop_trends_, new_characters_, new_shop )
+            case ( maybe_character, maybe_shop ) of
+                ( Just character, Just shop ) ->
+                    let
+                        chosen_action =
+                            WantsToBuy
+
+                        ( new_shop_trends_, new_character, new_shop ) =
+                            case chosen_action of
+                                WantsToSell ->
+                                    ai_sell_item_to_shop shop_trends character shop
+
+                                WantsToBuy ->
+                                    ai_buy_item_from_shop shop_trends character shop
+
+                                NoActionChoice ->
+                                    ( shop_trends, character, shop )
+
+                        new_characters_ =
+                            --TODO replace character and shop in this
+                            old_characters
+                    in
+                    ( new_shop_trends_, new_characters_ )
+
+                _ ->
+                    ( shop_trends, characters )
 
         ( new_shop_trends, new_characters ) =
             List.foldl
                 update_ai
-                (old_shop_trends, old_characters)
+                ( old_shop_trends, old_characters )
             <|
                 List.map .char_id old_characters
     in
     { model
         | shop_trends = new_shop_trends
         , characters = new_characters
-        , shop = new_shop --TODO pull the shop out from new_characters
+        , shop = model.shop --TODO pull the shop out from new_characters
     }
 
 
@@ -1472,12 +1488,9 @@ view model =
     let
         welcome_header =
             Element.el [ font_scaled 3, padding_bottom 10 ] <| text "Welcome to the Item Shop!"
-
-        character =
-            model.character
     in
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
-        Element.column [ width fill, font_scaled 1 ]
+        Element.column [ width fill, font_scaled 1 ] <|
             [ welcome_header
             , trends_display model.shop_trends model.characters model.shop_trends_hovered
             , Element.el [ paddingXY 0 10, width fill ] <|
@@ -1496,25 +1509,20 @@ view model =
                     model.hovered_item_in_inventory
                     InventoryItems
                     (\( item, qty ) -> shop_sell_button (qty >= 1) ( item, 1 ))
-            , Element.el [ paddingXY 0 10, width fill ]
-                (render_inventory
-                    (character.name ++ "'s Inventory")
-                    model.character
-                    model.shop_trends
-                    model.hovered_item_in_character
-                    CharacterItems
-                    (always Element.none)
-                )
-            , Element.el [ paddingXY 0 10, width fill ]
-                (render_inventory
-                    (character.name ++ "'s Inventory")
-                    model.character
-                    model.shop_trends
-                    model.hovered_item_in_character
-                    CharacterItems
-                    (always Element.none)
-                )
             ]
+                ++ List.map
+                    (\character ->
+                        Element.el [ paddingXY 0 10, width fill ]
+                            (render_inventory
+                                (character.name ++ "'s Inventory")
+                                character
+                                model.shop_trends
+                                model.hovered_item_in_character
+                                CharacterItems
+                                (always Element.none)
+                            )
+                    )
+                    model.characters
 
 
 scaled : Int -> Int

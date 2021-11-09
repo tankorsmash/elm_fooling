@@ -1084,7 +1084,8 @@ update_ai_chars model =
                 update_ai
                 ( old_shop_trends, old_characters, ai_tick_time )
             <|
-                List.map .char_id old_characters
+                List.map .char_id <|
+                    exclude_player_and_shop model old_characters
 
         final_shop =
             Maybe.withDefault model.shop <|

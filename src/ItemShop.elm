@@ -1028,8 +1028,9 @@ update_ai_chars model =
             case ( maybe_character, maybe_shop ) of
                 ( Just character, Just shop ) ->
                     let
+                        --TODO randomly choose this one
                         chosen_action =
-                            WantsToBuy
+                            WantsToSell
 
                         ( new_shop_trends_, new_character, new_shop ) =
                             case chosen_action of
@@ -1043,8 +1044,18 @@ update_ai_chars model =
                                     ( shop_trends, character, shop )
 
                         new_characters_ =
-                            --TODO replace character and shop in this
-                            old_characters
+                            List.map
+                                (\c ->
+                                    if c.char_id == character.char_id then
+                                        new_character
+
+                                    else if c.char_id == shop.char_id then
+                                        new_shop
+
+                                    else
+                                        c
+                                )
+                                old_characters
                     in
                     ( new_shop_trends_, new_characters_ )
 
@@ -1057,11 +1068,18 @@ update_ai_chars model =
                 ( old_shop_trends, old_characters )
             <|
                 List.map .char_id old_characters
+
+        final_shop =
+            Maybe.withDefault model.shop <|
+                List.head <|
+                    List.filter
+                        (\c -> c.char_id == model.shop.char_id)
+                        new_characters
     in
     { model
         | shop_trends = new_shop_trends
         , characters = new_characters
-        , shop = model.shop --TODO pull the shop out from new_characters
+        , shop = final_shop --TODO pull the shop out from new_characters
     }
 
 

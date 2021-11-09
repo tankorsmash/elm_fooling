@@ -1501,6 +1501,13 @@ sort_func =
     Tuple.first >> .name
 
 
+exclude_player_and_shop : { a | player : Character, shop : Character } -> List Character -> List Character
+exclude_player_and_shop { player, shop } characters =
+    List.filter
+        (\c -> c.char_id /= player.char_id && c.char_id /= shop.char_id)
+        characters
+
+
 view : Model -> Html.Html Msg
 view model =
     let
@@ -1528,19 +1535,21 @@ view model =
                     InventoryItems
                     (\( item, qty ) -> shop_sell_button (qty >= 1) ( item, 1 ))
             ]
-                ++ List.map
-                    (\character ->
-                        Element.el [ paddingXY 0 10, width fill ]
-                            (render_inventory
-                                (character.name ++ "'s Inventory")
-                                character
-                                model.shop_trends
-                                model.hovered_item_in_character
-                                CharacterItems
-                                (always Element.none)
-                            )
-                    )
-                    model.characters
+                ++ (List.map
+                        (\character ->
+                            Element.el [ paddingXY 0 10, width fill ]
+                                (render_inventory
+                                    (character.name ++ "'s Inventory")
+                                    character
+                                    model.shop_trends
+                                    model.hovered_item_in_character
+                                    CharacterItems
+                                    (always Element.none)
+                                )
+                        )
+                    <|
+                        exclude_player_and_shop model model.characters
+                   )
 
 
 scaled : Int -> Int

@@ -38,6 +38,7 @@ import Element.Input as Input
 import Html
 import Html.Attributes
 import Random
+import Random.List
 import Task
 import Time
 import UUID exposing (UUID)
@@ -1013,12 +1014,15 @@ update_ai_chars model =
         old_shop_trends =
             model.shop_trends
 
+        ai_tick_time =
+            Random.initialSeed <| Time.posixToMillis model.ai_tick_time
+
         -- loop through all the characters and..
         -- pass the updated shop trends and characters down
         -- if we use foldl, i am not sure how to iterate through all the characters
         --  without re-using them. Answer: iterate through character ids instead
-        update_ai : UUID -> ( ShopTrends, List Character ) -> ( ShopTrends, List Character )
-        update_ai char_id ( shop_trends, characters ) =
+        update_ai : UUID -> ( ShopTrends, List Character, Random.Seed ) -> ( ShopTrends, List Character, Random.Seed )
+        update_ai char_id ( shop_trends, characters, ai_tick_seed ) =
             let
                 --TODO: make sure character isn't shop
                 maybe_character =
@@ -1030,9 +1034,20 @@ update_ai_chars model =
             case ( maybe_character, maybe_shop ) of
                 ( Just character, Just shop ) ->
                     let
-                        --TODO randomly choose this one
+                        ( ( maybe_chosen_action, _ ), new_seed ) =
+                            Random.step
+                                (Random.List.choose
+                                    [ WantsToSell, WantsToBuy, NoActionChoice ]
+                                )
+                                ai_tick_seed
+
                         chosen_action =
-                            WantsToSell
+                            case maybe_chosen_action of
+                                Just action ->
+                                    action
+
+                                Nothing ->
+                                    NoActionChoice
 
                         ( new_shop_trends_, new_character, new_shop ) =
                             case chosen_action of
@@ -1059,15 +1074,15 @@ update_ai_chars model =
                                 )
                                 old_characters
                     in
-                    ( new_shop_trends_, new_characters_ )
+                    ( new_shop_trends_, new_characters_, new_seed )
 
                 _ ->
-                    ( shop_trends, characters )
+                    ( shop_trends, characters, ai_tick_seed )
 
-        ( new_shop_trends, new_characters ) =
+        ( new_shop_trends, new_characters, new_ai_tick_time ) =
             List.foldl
                 update_ai
-                ( old_shop_trends, old_characters )
+                ( old_shop_trends, old_characters, ai_tick_time )
             <|
                 List.map .char_id old_characters
 

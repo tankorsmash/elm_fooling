@@ -224,6 +224,7 @@ type alias Model =
     , hovered_item_in_character : Maybe Item
     , shop_trends : ShopTrends
     , shop_trends_hovered : Bool
+    , ai_tick_time : Time.Posix --used to seed the ai randomness
     }
 
 
@@ -615,8 +616,9 @@ init =
       , hovered_item_in_character = Nothing
       , shop_trends = initial_shop_trends
       , shop_trends_hovered = False
+      , ai_tick_time = Time.millisToPosix -1
       }
-    , Cmd.none
+    , Task.perform TickSecond Time.now
     )
 
 
@@ -854,7 +856,7 @@ update msg model =
             --     _ =
             --         Debug.log "tick" time
             -- in
-            ( update_ai_chars model, Cmd.none )
+            ( update_ai_chars { model | ai_tick_time = time }, Cmd.none )
 
 
 get_trend_for_item : ShopTrends -> Item -> Float

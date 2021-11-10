@@ -1,6 +1,8 @@
 module ItemShop exposing (Model, Msg, init, subscriptions, update, view)
 
 import Array
+import Chart as C
+import Chart.Attributes as CA
 import Color
 import Color.Convert as Convert
 import Dict
@@ -1526,6 +1528,37 @@ exclude_player_and_shop { player, shop } characters =
         characters
 
 
+charts_display : Model -> Element Msg
+charts_display model =
+    let
+        chart_width = 520
+        chart_height = 150
+    in
+    Element.el
+        [ width <| Element.px 520
+        , height <| Element.px (chart_height + 20)
+        , paddingXY 20 0
+        ]
+    <|
+        Element.html <|
+            C.chart
+                [ CA.height chart_height
+                , CA.width chart_width
+                , CA.padding { top = 10, bottom = 5, left = 10, right = 10 }
+                ]
+                [ C.xLabels []
+                , C.yLabels [ CA.withGrid ]
+                , C.series .x
+                    [ C.interpolated .y [ CA.monotone ] [ CA.circle ]
+                    , C.interpolated .z [ CA.monotone ] [ CA.square ]
+                    ]
+                    [ { x = 1, y = 2, z = 3 }
+                    , { x = 5, y = 4, z = 1 }
+                    , { x = 10, y = 2, z = 4 }
+                    ]
+                ]
+
+
 view : Model -> Html.Html Msg
 view model =
     let
@@ -1535,6 +1568,7 @@ view model =
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
         Element.column [ width fill, font_scaled 1 ] <|
             [ welcome_header
+            , Element.el [ paddingXY 0 10, width fill ] <| charts_display model
             , trends_display model.shop_trends model.characters model.shop_trends_hovered
             , Element.el [ paddingXY 0 10, width fill ] <|
                 render_inventory

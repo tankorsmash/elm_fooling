@@ -1554,6 +1554,8 @@ charts_display model =
             , { time = Time.millisToPosix 39999, item_type = Weapon, value = 20 }
             ]
 
+        get_data_from_single_datum = (.time >> Time.posixToMillis >> toFloat)
+
         render_tooltip chart_item =
             [ C.tooltip chart_item
                 []
@@ -1581,7 +1583,7 @@ charts_display model =
                 ]
                 [ C.xLabels []
                 , C.yLabels [ CA.withGrid ]
-                , C.series (.time >> Time.posixToMillis >> toFloat)
+                , C.series get_data_from_single_datum
                     [ C.interpolated .value [ CA.monotone ] [ CA.circle ]
                     ]
                     dataset

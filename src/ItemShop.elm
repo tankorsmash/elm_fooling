@@ -157,7 +157,8 @@ type Msg
     | StartTrendsHover
     | EndTrendsHover
     | TickSecond Time.Posix
-    | OnTrendChartHover (List (CI.One TrendSnapshot CI.Dot))
+      -- | OnTrendChartHover (List (CI.One TrendSnapshot CI.Dot))
+    | OnTrendChartHover (List (CI.One ( Int, ShopTrends ) CI.Dot))
 
 
 type alias TradeOrder =
@@ -233,8 +234,11 @@ type alias Model =
     , hovered_item_in_inventory : Maybe Item
     , hovered_item_in_character : Maybe Item
     , shop_trends : ShopTrends
+    , historical_shop_trends : List ShopTrends
     , shop_trends_hovered : Bool
-    , hovered_trend_chart : List (CI.One TrendSnapshot CI.Dot)
+
+    -- , hovered_trend_chart : List (CI.One TrendSnapshot CI.Dot)
+    , hovered_trend_chart : List (CI.One ( Int, ShopTrends ) CI.Dot)
     , ai_tick_time : Time.Posix --used to seed the ai randomness
     }
 
@@ -626,6 +630,7 @@ init =
       , hovered_item_in_inventory = Nothing
       , hovered_item_in_character = Nothing
       , shop_trends = initial_shop_trends
+      , historical_shop_trends = []
       , shop_trends_hovered = False
       , ai_tick_time = Time.millisToPosix -1
       , hovered_trend_chart = []
@@ -834,6 +839,7 @@ update msg model =
             in
             ( { model
                 | shop_trends = new_shop_trends
+                , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
                 , player = new_player
                 , shop = new_shop
               }
@@ -851,6 +857,7 @@ update msg model =
             in
             ( { model
                 | shop_trends = new_shop_trends
+                , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
                 , player = new_player
                 , shop = new_shop
               }
@@ -1209,6 +1216,16 @@ debug_explain =
         Element.scale 1.0
 
 
+get_item_type_trend : ItemSentiments -> ItemType -> Float
+get_item_type_trend item_type_sentiments item_type =
+    case Dict.get (item_type_to_id item_type) item_type_sentiments of
+        Just existing_sent ->
+            existing_sent
+
+        Nothing ->
+            1.0
+
+
 is_item_trending : ItemSentiments -> Item -> Bool
 is_item_trending item_type_sentiments item =
     case Dict.get (item_type_to_id item.item_type) item_type_sentiments of
@@ -1549,21 +1566,23 @@ charts_display model =
             150
 
         dataset =
-            [ { time = Time.millisToPosix 19999, item_type = Weapon, value = 20 }
-            , { time = Time.millisToPosix 29999, item_type = Weapon, value = 20 }
-            , { time = Time.millisToPosix 39999, item_type = Weapon, value = 20 }
-            ]
+            List.indexedMap Tuple.pair model.historical_shop_trends
 
-        get_data_from_single_datum = (.time >> Time.posixToMillis >> toFloat)
+        -- get_x_from_single_datum = (.time >> Time.posixToMillis >> toFloat)
+        get_x_from_single_datum : ( Int, ShopTrends ) -> Float
+        get_x_from_single_datum =
+            Tuple.first >> toFloat
 
-        render_tooltip chart_item =
-            [ C.tooltip chart_item
+        get_y_from_single_datum : ( Int, ShopTrends ) -> Float
+        get_y_from_single_datum =
+            Tuple.second >> .item_type_sentiment >> (\its -> get_item_type_trend its Weapon)
+
+        render_tooltip shop_trends =
+            [ C.tooltip shop_trends
                 []
                 []
                 [ Html.text <|
-                    item_type_to_pretty_string <|
-                        .item_type <|
-                            CI.getData chart_item
+                    Debug.toString shop_trends
                 ]
             ]
     in
@@ -1583,12 +1602,11 @@ charts_display model =
                 ]
                 [ C.xLabels []
                 , C.yLabels [ CA.withGrid ]
-                , C.series get_data_from_single_datum
-                    [ C.interpolated .value [ CA.monotone ] [ CA.circle ]
-                    ]
+                , C.series get_x_from_single_datum
+                    [ C.interpolated get_y_from_single_datum [ CA.monotone ] [ CA.circle ] ]
                     dataset
                 , C.each model.hovered_trend_chart <|
-                    \p item ->
+                    \plane item ->
                         render_tooltip item
                 ]
 

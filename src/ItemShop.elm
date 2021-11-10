@@ -3,6 +3,8 @@ module ItemShop exposing (Model, Msg, init, subscriptions, update, view)
 import Array
 import Chart as C
 import Chart.Attributes as CA
+import Chart.Events as CE
+import Chart.Item as CI
 import Color
 import Color.Convert as Convert
 import Dict
@@ -155,6 +157,7 @@ type Msg
     | StartTrendsHover
     | EndTrendsHover
     | TickSecond Time.Posix
+    | OnTrendChartHover (List (CI.One TrendSnapshot CI.Dot))
 
 
 type alias TradeOrder =
@@ -218,6 +221,10 @@ type alias Character =
     }
 
 
+type alias TrendSnapshot =
+    { time : Time.Posix, item_type : ItemType, value : Float }
+
+
 type alias Model =
     { player : Character
     , shop : Character
@@ -227,6 +234,7 @@ type alias Model =
     , hovered_item_in_character : Maybe Item
     , shop_trends : ShopTrends
     , shop_trends_hovered : Bool
+    , hovered_trend_chart : List (CI.One TrendSnapshot CI.Dot)
     , ai_tick_time : Time.Posix --used to seed the ai randomness
     }
 
@@ -620,6 +628,7 @@ init =
       , shop_trends = initial_shop_trends
       , shop_trends_hovered = False
       , ai_tick_time = Time.millisToPosix -1
+      , hovered_trend_chart = []
       }
     , Task.perform TickSecond Time.now
     )
@@ -861,6 +870,9 @@ update msg model =
             -- in
             ( update_ai_chars { model | ai_tick_time = time }, Cmd.none )
 
+        OnTrendChartHover hovered ->
+            ( { model | hovered_trend_chart = hovered }, Cmd.none )
+
 
 get_trend_for_item : ShopTrends -> Item -> Float
 get_trend_for_item shop_trends item =
@@ -943,9 +955,8 @@ ai_buy_item_from_shop shop_trends character shop =
                 Nothing
                 least_trendy_items
 
-        _ =
-            Debug.log "maybe item to buy" maybe_item_to_buy
-
+        -- _ =
+        --     Debug.log "maybe item to buy" maybe_item_to_buy
         ( new_shop_trends, new_shop, new_character ) =
             case maybe_item_to_buy of
                 Nothing ->
@@ -1531,8 +1542,28 @@ exclude_player_and_shop { player, shop } characters =
 charts_display : Model -> Element Msg
 charts_display model =
     let
-        chart_width = 520
-        chart_height = 150
+        chart_width =
+            520
+
+        chart_height =
+            150
+
+        dataset =
+            [ { time = Time.millisToPosix 19999, item_type = Weapon, value = 20 }
+            , { time = Time.millisToPosix 29999, item_type = Weapon, value = 20 }
+            , { time = Time.millisToPosix 39999, item_type = Weapon, value = 20 }
+            ]
+
+        render_tooltip chart_item =
+            [ C.tooltip chart_item
+                []
+                []
+                [ Html.text <|
+                    item_type_to_pretty_string <|
+                        .item_type <|
+                            CI.getData chart_item
+                ]
+            ]
     in
     Element.el
         [ width <| Element.px 520
@@ -1545,17 +1576,18 @@ charts_display model =
                 [ CA.height chart_height
                 , CA.width chart_width
                 , CA.padding { top = 10, bottom = 5, left = 10, right = 10 }
+                , CE.onMouseMove OnTrendChartHover (CE.getNearest CI.dots)
+                , CE.onMouseLeave (OnTrendChartHover [])
                 ]
                 [ C.xLabels []
                 , C.yLabels [ CA.withGrid ]
-                , C.series .x
-                    [ C.interpolated .y [ CA.monotone ] [ CA.circle ]
-                    , C.interpolated .z [ CA.monotone ] [ CA.square ]
+                , C.series (.time >> Time.posixToMillis >> toFloat)
+                    [ C.interpolated .value [ CA.monotone ] [ CA.circle ]
                     ]
-                    [ { x = 1, y = 2, z = 3 }
-                    , { x = 5, y = 4, z = 1 }
-                    , { x = 10, y = 2, z = 4 }
-                    ]
+                    dataset
+                , C.each model.hovered_trend_chart <|
+                    \p item ->
+                        render_tooltip item
                 ]
 
 

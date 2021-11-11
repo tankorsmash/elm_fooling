@@ -1599,16 +1599,16 @@ charts_display model =
         get_x_from_single_datum =
             Tuple.first >> toFloat
 
-        get_y_from_single_datum : ( Int, ShopTrends ) -> Float
-        get_y_from_single_datum =
-            Tuple.second >> .item_type_sentiment >> (\its -> get_item_type_trend its Weapon)
+        get_y_from_single_datum : ItemType -> ( Int, ShopTrends ) -> Float
+        get_y_from_single_datum item_type =
+            Tuple.second >> .item_type_sentiment >> (\its -> get_item_type_trend its item_type)
 
         render_tooltip item =
             [ C.tooltip item
                 []
                 []
                 [ Html.text <|
-                    (CI.getData item |> (get_y_from_single_datum >> float_to_percent))
+                    (CI.getData item |> (get_y_from_single_datum Weapon >> float_to_percent))
                 ]
             ]
     in
@@ -1633,7 +1633,7 @@ charts_display model =
                 [ C.xLabels []
                 , C.yLabels [ CA.format float_to_percent, CA.withGrid ]
                 , C.series get_x_from_single_datum
-                    [ C.interpolated get_y_from_single_datum [ CA.monotone ] [] |> C.named dataset_name ]
+                    [ C.interpolated (\trd -> get_y_from_single_datum Weapon trd) [ CA.monotone ] [] |> C.named dataset_name ]
                     dataset
                 , C.each model.hovered_trend_chart <|
                     \plane item ->

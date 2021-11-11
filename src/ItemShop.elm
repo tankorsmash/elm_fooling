@@ -1611,7 +1611,6 @@ charts_display model =
                     (CI.getData item |> (get_y_from_single_datum >> float_to_percent))
                 ]
             ]
-
     in
     Element.el
         [ width <| Element.px chart_width
@@ -1626,6 +1625,10 @@ charts_display model =
                 , CA.padding { top = 10, bottom = 5, left = 10, right = 10 }
                 , CE.onMouseMove OnTrendChartHover (CE.getNearest CI.dots)
                 , CE.onMouseLeave (OnTrendChartHover [])
+                , CA.domain
+                    [ CA.lowest 0 CA.exactly
+                    , CA.highest 2 CA.exactly
+                    ]
                 ]
                 [ C.xLabels []
                 , C.yLabels [ CA.withGrid ]

@@ -1626,12 +1626,12 @@ charts_display model =
                 , CE.onMouseMove OnTrendChartHover (CE.getNearest CI.dots)
                 , CE.onMouseLeave (OnTrendChartHover [])
                 , CA.domain
-                    [ CA.lowest 0 CA.exactly
-                    , CA.highest 2 CA.exactly
+                    [ CA.lowest 0.5 CA.exactly
+                    , CA.highest 1.5 CA.exactly
                     ]
                 ]
                 [ C.xLabels []
-                , C.yLabels [ CA.withGrid ]
+                , C.yLabels [ CA.format float_to_percent, CA.withGrid ]
                 , C.series get_x_from_single_datum
                     [ C.interpolated get_y_from_single_datum [ CA.monotone ] [] |> C.named dataset_name ]
                     dataset

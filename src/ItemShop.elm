@@ -1588,11 +1588,8 @@ charts_display model =
         chart_height =
             150
 
-        dataset =
+        raw_dataset =
             List.indexedMap Tuple.pair model.historical_shop_trends
-
-        dataset_name =
-            item_type_to_pretty_string Weapon
 
         -- get_x_from_single_datum = (.time >> Time.posixToMillis >> toFloat)
         get_x_from_single_datum : ( Int, ShopTrends ) -> Float
@@ -1610,6 +1607,24 @@ charts_display model =
                 [ Html.text <|
                     (CI.getData item |> (get_y_from_single_datum Weapon >> float_to_percent))
                 ]
+            ]
+
+        build_dataset item_type =
+            C.series get_x_from_single_datum
+                [ C.interpolated
+                    (\trd -> get_y_from_single_datum item_type trd)
+                    [ CA.monotone ]
+                    []
+                    |> C.named (item_type_to_pretty_string item_type)
+                ]
+                raw_dataset
+
+        datasets =
+            [ build_dataset Weapon
+            , build_dataset Armor
+            , build_dataset Spellbook
+            , build_dataset Furniture
+            , build_dataset Food
             ]
     in
     Element.el
@@ -1630,22 +1645,19 @@ charts_display model =
                     , CA.highest 1.5 CA.exactly
                     ]
                 ]
-                [ C.xLabels []
-                , C.yLabels [ CA.format float_to_percent, CA.withGrid ]
-                , C.series get_x_from_single_datum
-                    [ C.interpolated (\trd -> get_y_from_single_datum Weapon trd) [ CA.monotone ] [] |> C.named dataset_name ]
-                    dataset
-                , C.each model.hovered_trend_chart <|
-                    \plane item ->
-                        render_tooltip item
-                , C.legendsAt .min
-                    .max
-                    [ CA.column
-                    , CA.moveRight 15
-                    , CA.spacing 5
-                    ]
-                    [ CA.width 20 ]
-                ]
+                ([ C.xLabels []
+                 , C.yLabels [ CA.format float_to_percent, CA.withGrid ]
+                 ]
+                    ++ datasets
+                    ++ [ C.legendsAt .min
+                            .max
+                            [ CA.column
+                            , CA.moveRight 15
+                            , CA.spacing 5
+                            ]
+                            [ CA.width 20 ]
+                       ]
+                )
 
 
 view : Model -> Html.Html Msg

@@ -1025,6 +1025,14 @@ lookup_by_char_id char_id characters =
     List.head <| List.filter (\c -> c.char_id == char_id) characters
 
 
+type alias AiUpdateData =
+    { shop_trends : ShopTrends
+    , historical_shop_trends : List ShopTrends
+    , characters : List Character
+    , ai_tick_seed : Random.Seed
+    }
+
+
 update_ai_chars : Model -> Model
 update_ai_chars model =
     let
@@ -1034,6 +1042,9 @@ update_ai_chars model =
         old_shop_trends =
             model.shop_trends
 
+        old_historical_shop_trends =
+            model.historical_shop_trends
+
         ai_tick_time =
             Random.initialSeed <| Time.posixToMillis model.ai_tick_time
 
@@ -1041,8 +1052,8 @@ update_ai_chars model =
         -- pass the updated shop trends and characters down
         -- if we use foldl, i am not sure how to iterate through all the characters
         --  without re-using them. Answer: iterate through character ids instead
-        update_ai : UUID -> ( ShopTrends, List Character, Random.Seed ) -> ( ShopTrends, List Character, Random.Seed )
-        update_ai char_id ( shop_trends, characters, ai_tick_seed ) =
+        update_ai : UUID -> AiUpdateData -> AiUpdateData
+        update_ai char_id { shop_trends, historical_shop_trends, characters, ai_tick_seed } =
             let
                 --TODO: make sure character isn't shop
                 maybe_character =
@@ -1093,16 +1104,22 @@ update_ai_chars model =
                                         c
                                 )
                                 old_characters
+
+                        new_historical_shop_trends =
+                            List.append
+                                historical_shop_trends
+                                [ new_shop_trends_ ]
                     in
-                    ( new_shop_trends_, new_characters_, new_seed )
+                    { shop_trends = new_shop_trends_, historical_shop_trends = new_historical_shop_trends, characters = new_characters_, ai_tick_seed = new_seed }
 
                 _ ->
-                    ( shop_trends, characters, ai_tick_seed )
+                    { shop_trends = shop_trends, historical_shop_trends = historical_shop_trends, characters = characters, ai_tick_seed = ai_tick_seed }
 
-        ( new_shop_trends, new_characters, new_ai_tick_time ) =
+        new_ai_data : AiUpdateData
+        new_ai_data =
             List.foldl
                 update_ai
-                ( old_shop_trends, old_characters, ai_tick_time )
+                { shop_trends = old_shop_trends, historical_shop_trends = old_historical_shop_trends, characters = old_characters, ai_tick_seed = ai_tick_time }
             <|
                 List.map .char_id <|
                     exclude_player_and_shop model old_characters
@@ -1112,12 +1129,13 @@ update_ai_chars model =
                 List.head <|
                     List.filter
                         (\c -> c.char_id == model.shop.char_id)
-                        new_characters
+                        new_ai_data.characters
     in
     { model
-        | shop_trends = new_shop_trends
-        , characters = new_characters
-        , shop = final_shop --TODO pull the shop out from new_characters
+        | shop_trends = new_ai_data.shop_trends
+        , historical_shop_trends = new_ai_data.historical_shop_trends
+        , characters = new_ai_data.characters
+        , shop = final_shop
     }
 
 
@@ -1556,17 +1574,25 @@ exclude_player_and_shop { player, shop } characters =
         characters
 
 
+float_to_percent : Float -> String
+float_to_percent flt =
+    flt * 100 |> floor |> String.fromInt |> (\str -> str ++ "%")
+
+
 charts_display : Model -> Element Msg
 charts_display model =
     let
         chart_width =
-            520
+            1200
 
         chart_height =
             150
 
         dataset =
             List.indexedMap Tuple.pair model.historical_shop_trends
+
+        dataset_name =
+            item_type_to_pretty_string Weapon
 
         -- get_x_from_single_datum = (.time >> Time.posixToMillis >> toFloat)
         get_x_from_single_datum : ( Int, ShopTrends ) -> Float
@@ -1577,17 +1603,18 @@ charts_display model =
         get_y_from_single_datum =
             Tuple.second >> .item_type_sentiment >> (\its -> get_item_type_trend its Weapon)
 
-        render_tooltip shop_trends =
-            [ C.tooltip shop_trends
+        render_tooltip item =
+            [ C.tooltip item
                 []
                 []
                 [ Html.text <|
-                    Debug.toString shop_trends
+                    (CI.getData item |> (get_y_from_single_datum >> float_to_percent))
                 ]
             ]
+
     in
     Element.el
-        [ width <| Element.px 520
+        [ width <| Element.px chart_width
         , height <| Element.px (chart_height + 20)
         , paddingXY 20 0
         ]
@@ -1603,11 +1630,18 @@ charts_display model =
                 [ C.xLabels []
                 , C.yLabels [ CA.withGrid ]
                 , C.series get_x_from_single_datum
-                    [ C.interpolated get_y_from_single_datum [ CA.monotone ] [ CA.circle ] ]
+                    [ C.interpolated get_y_from_single_datum [ CA.monotone ] [] |> C.named dataset_name ]
                     dataset
                 , C.each model.hovered_trend_chart <|
                     \plane item ->
                         render_tooltip item
+                , C.legendsAt .min
+                    .max
+                    [ CA.column
+                    , CA.moveRight 15
+                    , CA.spacing 5
+                    ]
+                    [ CA.width 20 ]
                 ]
 
 

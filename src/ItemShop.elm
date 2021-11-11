@@ -1610,14 +1610,17 @@ charts_display model =
             ]
 
         build_dataset item_type =
-            C.series get_x_from_single_datum
-                [ C.interpolated
-                    (\trd -> get_y_from_single_datum item_type trd)
-                    [ CA.monotone ]
-                    []
-                    |> C.named (item_type_to_pretty_string item_type)
-                ]
-                raw_dataset
+            if List.all (\(_, shop_trends) -> (get_item_type_trend shop_trends.item_type_sentiment item_type) == 1.0) raw_dataset then
+                C.none
+            else
+                C.series get_x_from_single_datum
+                    [ C.interpolated
+                        (\trd -> get_y_from_single_datum item_type trd)
+                        [ CA.monotone ]
+                        []
+                        |> C.named (item_type_to_pretty_string item_type)
+                    ]
+                    raw_dataset
 
         datasets =
             [ build_dataset Weapon
@@ -1641,8 +1644,8 @@ charts_display model =
                 , CE.onMouseMove OnTrendChartHover (CE.getNearest CI.dots)
                 , CE.onMouseLeave (OnTrendChartHover [])
                 , CA.domain
-                    [ CA.lowest 0.5 CA.exactly
-                    , CA.highest 1.5 CA.exactly
+                    [ CA.lowest 0.0 CA.exactly
+                    , CA.highest 2.0 CA.exactly
                     ]
                 ]
                 ([ C.xLabels []

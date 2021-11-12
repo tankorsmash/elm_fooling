@@ -883,10 +883,15 @@ update msg model =
 
 get_trend_for_item : ShopTrends -> Item -> Float
 get_trend_for_item shop_trends item =
+    get_sentiment_for_item shop_trends.item_type_sentiment item
+
+
+get_sentiment_for_item : ItemSentiments -> Item -> Float
+get_sentiment_for_item item_type_sentiment item =
     Maybe.withDefault 1.0 <|
         Dict.get
             (item_type_to_id item.item_type)
-            shop_trends.item_type_sentiment
+            item_type_sentiment
 
 
 nonzero_qty : InventoryRecord -> Bool
@@ -906,10 +911,14 @@ ai_buy_item_from_shop shop_trends character shop =
                 character.held_gold
                 { item = item, qty = 1 }
 
+        check_nonzero_desire item =
+            get_sentiment_for_item character.item_types_desired item
+                > 0.0
+
         wanted_items : InventoryRecords
         wanted_items =
             List.filter
-                (\( i, q ) -> nonzero_qty ( i, q ) && check_can_afford i)
+                (\( i, q ) -> nonzero_qty ( i, q ) && check_can_afford i && check_nonzero_desire i)
                 shop.held_items
 
         max_trend =

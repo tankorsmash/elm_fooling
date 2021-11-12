@@ -900,16 +900,16 @@ ai_buy_item_from_shop shop_trends character shop =
     -- Maybe, it would be based on the lowest trending one, or one the
     -- character strongly desired or something
     let
+        check_can_afford item =
+            can_afford_item
+                shop_trends
+                character.held_gold
+                { item = item, qty = 1 }
+
         wanted_items : InventoryRecords
         wanted_items =
             List.filter
-                (\( i, q ) ->
-                    nonzero_qty ( i, q )
-                        && can_afford_item
-                            shop_trends
-                            character.held_gold
-                            { item = i, qty = 1 }
-                )
+                (\( i, q ) -> nonzero_qty ( i, q ) && check_can_afford i)
                 shop.held_items
 
         max_trend =

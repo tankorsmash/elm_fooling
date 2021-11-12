@@ -1679,12 +1679,19 @@ charts_display model =
         get_y_from_single_datum item_type =
             Tuple.second >> .item_type_sentiment >> (\its -> get_item_type_trend its item_type)
 
-        render_tooltip item =
+        render_tooltip plane item =
+            let
+                _ =
+                    Debug.log "item" <| CI.getData item
+
+                item_type =
+                    Weapon
+            in
             [ C.tooltip item
                 []
                 []
                 [ Html.text <|
-                    (CI.getData item |> (get_y_from_single_datum Weapon >> float_to_percent))
+                    (CI.getData item |> (get_y_from_single_datum item_type >> float_to_percent))
                 ]
             ]
 
@@ -1740,6 +1747,7 @@ charts_display model =
                             , CA.spacing 5
                             ]
                             [ CA.width 20 ]
+                       , C.each model.hovered_trend_chart <| render_tooltip
                        ]
                 )
 

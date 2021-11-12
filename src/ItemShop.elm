@@ -1711,12 +1711,21 @@ charts_display model =
                 []
                 []
                 [ Html.text <|
-                    (CI.getData item |> (get_y_from_single_datum item_type >> float_to_percent))
+                    (CI.getData item
+                        |> get_y_from_single_datum item_type
+                        |> float_to_percent
+                    )
                 ]
             ]
 
         build_dataset item_type =
-            if List.all (\( _, shop_trends ) -> get_item_type_trend shop_trends.item_type_sentiment item_type == 1.0) raw_dataset then
+            if
+                List.all
+                    (\( _, shop_trends ) ->
+                        get_item_type_trend shop_trends.item_type_sentiment item_type == 1.0
+                    )
+                    raw_dataset
+            then
                 C.none
 
             else

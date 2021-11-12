@@ -1629,6 +1629,25 @@ render_inventory header character shop_trends hovered_item context controls_colu
                                            )
                             )
                    )
+
+        rendered_dislikes : List (Element Msg)
+        rendered_dislikes =
+            []
+                ++ (Dict.toList character.item_types_desired
+                        |> List.filter (Tuple.second >> (\trd -> trd <= 0.0))
+                        |> List.map
+                            (\( it_id, trd ) ->
+                                text <|
+                                    "Dislikes: "
+                                        ++ (case id_to_item_type it_id of
+                                                Just item_type ->
+                                                    item_type_to_pretty_string item_type
+
+                                                Nothing ->
+                                                    "Unknown"
+                                           )
+                            )
+                   )
     in
     Element.column [ width fill, spacingXY 0 5 ] <|
         [ Element.row [ font_scaled 2, width fill ]
@@ -1639,6 +1658,7 @@ render_inventory header character shop_trends hovered_item context controls_colu
             ]
         ]
             ++ rendered_desires
+            ++ rendered_dislikes
             ++ rendered_items
 
 

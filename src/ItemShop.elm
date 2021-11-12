@@ -375,6 +375,7 @@ initial_character =
             [ ( Maybe.withDefault unset_item_frame <| Dict.get "dagger" item_frames, 8 )
             ]
         , held_gold = 100
+        , item_types_desired = Dict.fromList [(item_type_to_id Weapon, 0.0)]
     }
 
 
@@ -888,9 +889,14 @@ get_trend_for_item shop_trends item =
 
 get_sentiment_for_item : ItemSentiments -> Item -> Float
 get_sentiment_for_item item_type_sentiment item =
+    get_sentiment_for_item_type item_type_sentiment item.item_type
+
+
+get_sentiment_for_item_type : ItemSentiments -> ItemType -> Float
+get_sentiment_for_item_type item_type_sentiment item_type =
     Maybe.withDefault 1.0 <|
         Dict.get
-            (item_type_to_id item.item_type)
+            (item_type_to_id item_type)
             item_type_sentiment
 
 
@@ -941,7 +947,26 @@ ai_buy_item_from_shop shop_trends character shop =
             <|
                 List.sortBy
                     Tuple.second
-                    (Dict.toList shop_trends.item_type_sentiment)
+                <|
+                    List.filter
+                        (\( it_id, trd ) ->
+                            let
+                                maybe_item_type =
+                                    id_to_item_type it_id
+
+                                desire =
+                                    case maybe_item_type of
+                                        Just item_type ->
+                                            get_sentiment_for_item_type
+                                                character.item_types_desired
+                                                item_type
+
+                                        Nothing ->
+                                            1.0
+                            in
+                            desire > 0
+                        )
+                        (Dict.toList shop_trends.item_type_sentiment)
 
         is_buyable : ItemTypeSentiment -> Maybe Item -> Maybe Item
         is_buyable ( item_type, trend ) buyable_item =

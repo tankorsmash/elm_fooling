@@ -1068,7 +1068,10 @@ update_ai_chars model =
                         ( ( maybe_chosen_action, _ ), new_seed ) =
                             Random.step
                                 (Random.List.choose
-                                    [ WantsToSell, WantsToBuy, NoActionChoice ]
+                                    (List.repeat 10 WantsToSell
+                                        ++ List.repeat 10 WantsToBuy
+                                        ++ List.repeat 5 NoActionChoice
+                                    )
                                 )
                                 ai_tick_seed
 

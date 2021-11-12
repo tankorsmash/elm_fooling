@@ -364,19 +364,20 @@ initial_owned_items =
     ]
 
 
-initial_character : Character
-initial_character =
+initial_characters : List Character
+initial_characters =
     let
         base_character =
             create_character (UUID.forName "character 1" UUID.dnsNamespace) "Billy"
     in
-    { base_character
+    [ { base_character
         | held_items =
             [ ( Maybe.withDefault unset_item_frame <| Dict.get "dagger" item_frames, 8 )
             ]
         , held_gold = 100
-        , item_types_desired = Dict.fromList [(item_type_to_id Weapon, 0.0)]
-    }
+        , item_types_desired = Dict.fromList [ ( item_type_to_id Weapon, 0.0 ) ]
+      }
+    ]
 
 
 get_adjusted_item_cost : ShopTrends -> Item -> Int -> Int
@@ -620,13 +621,13 @@ init =
                 , party = ShopParty
             }
 
-        character : Character
-        character =
-            initial_character
+        characters : List Character
+        characters =
+            [ player, shop ] ++ initial_characters
     in
     ( { player = player
       , shop = shop
-      , characters = [ player, shop, character ]
+      , characters = characters
       , hovered_item_for_sale = Nothing
       , hovered_item_in_inventory = Nothing
       , hovered_item_in_character = Nothing
@@ -1567,7 +1568,8 @@ trends_display shop_trends all_characters is_expanded =
                         ++ (List.map
                                 (render_single_trade_log_entry all_characters)
                             <|
-                                List.take 50 <| List.reverse shop_trends.item_trade_logs
+                                List.take 50 <|
+                                    List.reverse shop_trends.item_trade_logs
                            )
 
         has_trades =

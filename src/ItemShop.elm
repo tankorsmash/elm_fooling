@@ -1610,6 +1610,25 @@ render_inventory header character shop_trends hovered_item context controls_colu
                 )
             <|
                 List.sortBy sort_func held_items
+
+        rendered_desires : List (Element Msg)
+        rendered_desires =
+            []
+                ++ (Dict.toList character.item_types_desired
+                        |> List.filter (Tuple.second >> (\trd -> trd > 0.0))
+                        |> List.map
+                            (\( it_id, trd ) ->
+                                text <|
+                                    "Desires: "
+                                        ++ (case id_to_item_type it_id of
+                                                Just item_type ->
+                                                    item_type_to_pretty_string item_type
+
+                                                Nothing ->
+                                                    "Unknown"
+                                           )
+                            )
+                   )
     in
     Element.column [ width fill, spacingXY 0 5 ] <|
         [ Element.row [ font_scaled 2, width fill ]
@@ -1619,6 +1638,7 @@ render_inventory header character shop_trends hovered_item context controls_colu
                 [ text "Held: ", render_gp held_gold ]
             ]
         ]
+            ++ rendered_desires
             ++ rendered_items
 
 

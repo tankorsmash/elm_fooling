@@ -150,8 +150,8 @@ trade_party_to_str all_characters party =
 
 type Msg
     = Noop
-    | MouseEnterShopItem ListContext Item
-    | MouseLeaveShopItem ListContext Item
+    | MouseEnterShopItem ListContext ( CharacterId, Item )
+    | MouseLeaveShopItem ListContext ( CharacterId, Item )
     | BuyItem Item Int
     | SellItem Item Int
     | StartTrendsHover
@@ -230,9 +230,7 @@ type alias Model =
     { player : Character
     , shop : Character
     , characters : List Character
-    , hovered_item_for_sale : Maybe Item
-    , hovered_item_in_inventory : Maybe Item
-    , hovered_item_in_character : Maybe Item
+    , hovered_item_in_character : Maybe ( CharacterId, Item )
     , shop_trends : ShopTrends
     , historical_shop_trends : List ShopTrends
     , shop_trends_hovered : Bool
@@ -367,15 +365,25 @@ initial_owned_items =
 initial_characters : List Character
 initial_characters =
     let
-        base_character =
+        base_character_1 =
             create_character (UUID.forName "character 1" UUID.dnsNamespace) "Billy"
+
+        base_character_2 =
+            create_character (UUID.forName "character 2" UUID.dnsNamespace) "Mitchell"
     in
-    [ { base_character
+    [ { base_character_1
         | held_items =
             [ ( Maybe.withDefault unset_item_frame <| Dict.get "dagger" item_frames, 8 )
             ]
         , held_gold = 100
         , item_types_desired = Dict.fromList [ ( item_type_to_id Weapon, 0.0 ) ]
+      }
+    , { base_character_2
+        | held_items =
+            [ ( Maybe.withDefault unset_item_frame <| Dict.get "boots" item_frames, 12 )
+            ]
+        , held_gold = 200
+        , item_types_desired = Dict.fromList [ ( item_type_to_id Spellbook, 0.0 ) ]
       }
     ]
 
@@ -628,8 +636,6 @@ init =
     ( { player = player
       , shop = shop
       , characters = characters
-      , hovered_item_for_sale = Nothing
-      , hovered_item_in_inventory = Nothing
       , hovered_item_in_character = Nothing
       , shop_trends = initial_shop_trends
       , historical_shop_trends = []
@@ -809,26 +815,10 @@ update msg model =
             ( model, Cmd.none )
 
         MouseEnterShopItem context item ->
-            case context of
-                ShopItems ->
-                    ( { model | hovered_item_for_sale = Just item }, Cmd.none )
-
-                InventoryItems ->
-                    ( { model | hovered_item_in_inventory = Just item }, Cmd.none )
-
-                CharacterItems ->
-                    ( { model | hovered_item_in_character = Just item }, Cmd.none )
+            ( { model | hovered_item_in_character = Just item }, Cmd.none )
 
         MouseLeaveShopItem context item ->
-            case context of
-                ShopItems ->
-                    ( { model | hovered_item_for_sale = Nothing }, Cmd.none )
-
-                InventoryItems ->
-                    ( { model | hovered_item_in_inventory = Nothing }, Cmd.none )
-
-                CharacterItems ->
-                    ( { model | hovered_item_in_character = Nothing }, Cmd.none )
+            ( { model | hovered_item_in_character = Nothing }, Cmd.none )
 
         BuyItem item qty ->
             let
@@ -1294,18 +1284,18 @@ is_item_trending item_type_sentiments item =
 
 render_single_item_for_sale :
     ShopTrends
-    -> Int
-    -> Maybe Item
+    -> Character
+    -> Maybe ( CharacterId, Item )
     -> InventoryRecord
     -> ListContext
     -> (InventoryRecord -> Element Msg)
     -> Element.Element Msg
-render_single_item_for_sale shop_trends gold_in_pocket maybe_hovered_item ( item, qty ) context controls_column =
+render_single_item_for_sale shop_trends { char_id, held_gold } maybe_hovered_item ( item, qty ) context controls_column =
     let
         is_hovered_item =
             case maybe_hovered_item of
-                Just hovered_item ->
-                    item == hovered_item
+                Just ( hovered_char_id, hovered_item ) ->
+                    char_id == hovered_char_id && item == hovered_item
 
                 Nothing ->
                     False
@@ -1363,8 +1353,8 @@ render_single_item_for_sale shop_trends gold_in_pocket maybe_hovered_item ( item
         , spacingXY 5 0
 
         -- , Element.spaceEvenly
-        , Events.onMouseEnter <| MouseEnterShopItem context item
-        , Events.onMouseLeave <| MouseLeaveShopItem context item
+        , Events.onMouseEnter <| MouseEnterShopItem context ( char_id, item )
+        , Events.onMouseLeave <| MouseLeaveShopItem context ( char_id, item )
         , Element.below expanded_display
         ]
         [ column [ Element.clip, width (fillPortion 2 |> Element.maximum 150), Font.size 16, debug_explain ] [ text <| clipText item.name 25 ]
@@ -1602,18 +1592,21 @@ render_inventory :
     String
     -> Character
     -> ShopTrends
-    -> Maybe Item
+    -> Maybe ( CharacterId, Item )
     -> ListContext
     -> (InventoryRecord -> Element Msg)
     -> Element Msg
-render_inventory header { held_items, held_gold } shop_trends hovered_item context controls_column =
+render_inventory header character shop_trends hovered_item context controls_column =
     let
+        { char_id, held_items, held_gold } =
+            character
+
         rendered_items =
             List.map
                 (\item ->
                     render_single_item_for_sale
                         shop_trends
-                        held_gold
+                        character
                         hovered_item
                         item
                         context
@@ -1751,7 +1744,7 @@ view model =
                     "Items For Sale"
                     model.shop
                     model.shop_trends
-                    model.hovered_item_for_sale
+                    model.hovered_item_in_character
                     ShopItems
                     (\( item, qty ) -> shop_buy_button (get_adjusted_item_cost model.shop_trends item 1) model.player.held_gold ( item, qty ))
             , Element.el [ paddingXY 0 10, width fill ] <|
@@ -1759,7 +1752,7 @@ view model =
                     "Items In Inventory"
                     model.player
                     model.shop_trends
-                    model.hovered_item_in_inventory
+                    model.hovered_item_in_character
                     InventoryItems
                     (\( item, qty ) -> shop_sell_button (qty >= 1) ( item, 1 ))
             ]

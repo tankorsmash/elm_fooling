@@ -148,6 +148,10 @@ trade_party_to_str all_characters party =
                     "Unnamed Character"
 
 
+type alias TrendChartDatum =
+    ( Int, ( ItemType, Float ) )
+
+
 type Msg
     = Noop
     | MouseEnterShopItem ListContext ( CharacterId, Item )
@@ -158,7 +162,7 @@ type Msg
     | EndTrendsHover
     | TickSecond Time.Posix
       -- | OnTrendChartHover (List (CI.One TrendSnapshot CI.Dot))
-    | OnTrendChartHover (List (CI.One ( Int, ShopTrends ) CI.Dot))
+    | OnTrendChartHover (List (CI.One TrendChartDatum CI.Dot))
 
 
 type alias TradeOrder =
@@ -236,7 +240,7 @@ type alias Model =
     , shop_trends_hovered : Bool
 
     -- , hovered_trend_chart : List (CI.One TrendSnapshot CI.Dot)
-    , hovered_trend_chart : List (CI.One ( Int, ShopTrends ) CI.Dot)
+    , hovered_trend_chart : List (CI.One TrendChartDatum CI.Dot)
     , ai_tick_time : Time.Posix --used to seed the ai randomness
     }
 
@@ -1682,25 +1686,35 @@ charts_display : Model -> Element Msg
 charts_display model =
     let
         chart_width =
-            1200
+            700
 
         chart_height =
             150
 
+        -- raw_dataset : List TrendChartDatum
+        raw_dataset : List ( Int, ShopTrends )
         raw_dataset =
-            List.indexedMap Tuple.pair <| List.take 200 model.historical_shop_trends
+            List.indexedMap Tuple.pair <| model.historical_shop_trends
 
         -- get_x_from_single_datum = (.time >> Time.posixToMillis >> toFloat)
-        get_x_from_single_datum : ( Int, ShopTrends ) -> Float
+        get_x_from_single_datum : TrendChartDatum -> Float
         get_x_from_single_datum =
             Tuple.first >> toFloat
 
-        get_y_from_single_datum : ItemType -> ( Int, ShopTrends ) -> Float
-        get_y_from_single_datum item_type =
-            Tuple.second >> .item_type_sentiment >> (\its -> get_item_type_trend its item_type)
+        -- get_y_from_single_datum : ItemType -> TrendChartDatum -> Float
+        get_y_from_single_datum : TrendChartDatum -> Float
+        get_y_from_single_datum ( idx, it_val ) =
+            Tuple.second it_val
 
+        -- render_tooltip : p -> CI.One TrendChartDatum CI.Dot -> a
         render_tooltip plane item =
             let
+                ( id, it_val ) =
+                    CI.getData item
+
+                ( item_type_, val ) =
+                    it_val
+
                 _ =
                     Debug.log "item" <| CI.getData item
 
@@ -1711,12 +1725,25 @@ charts_display model =
                 []
                 []
                 [ Html.text <|
-                    (CI.getData item
-                        |> get_y_from_single_datum item_type
-                        |> float_to_percent
-                    )
+                    item_type_to_pretty_string item_type_
+                        ++ ": "
+                        ++ float_to_percent val
                 ]
             ]
+
+        filter_dataset_by_item_type : ItemType -> ShopTrends -> ( ItemType, Float )
+        filter_dataset_by_item_type item_type { item_type_sentiment } =
+            ( item_type
+            , get_item_type_trend item_type_sentiment item_type
+            )
+
+        build_filtered_dataset : ItemType -> List TrendChartDatum
+        build_filtered_dataset item_type =
+            List.map
+                (\( idx, s_t ) ->
+                    ( idx, filter_dataset_by_item_type item_type s_t )
+                )
+                raw_dataset
 
         build_dataset item_type =
             if
@@ -1729,15 +1756,17 @@ charts_display model =
                 C.none
 
             else
-                C.series get_x_from_single_datum
+                C.series (\( idx, _ ) -> toFloat idx)
                     [ C.interpolated
-                        (\trd -> get_y_from_single_datum item_type trd)
+                        -- (\trd -> get_y_from_single_datum item_type trd)
+                        (\( idx, it_val ) -> Tuple.second it_val)
                         [ CA.monotone ]
                         []
                         |> C.named (item_type_to_pretty_string item_type)
                     ]
-                    raw_dataset
+                    (build_filtered_dataset item_type)
 
+        -- raw_dataset
         datasets =
             [ build_dataset Weapon
             , build_dataset Armor
@@ -1745,6 +1774,36 @@ charts_display model =
             , build_dataset Furniture
             , build_dataset Food
             ]
+
+        -- chart_attributes : List (CA.Attribute a)
+        chart_attributes =
+            [ CA.height chart_height
+            , CA.width chart_width
+            , CA.padding { top = 10, bottom = 5, left = 10, right = 10 }
+            , CE.onMouseMove OnTrendChartHover (CE.getNearest CI.dots)
+            , CE.onMouseLeave (OnTrendChartHover [])
+            , CA.domain
+                [ CA.lowest 0.5 CA.orLower
+                , CA.highest 1.5 CA.orHigher
+                , CA.centerAt 1.0
+                ]
+            ]
+
+        chart_elements : List (C.Element TrendChartDatum msg)
+        chart_elements =
+            [ C.xLabels []
+            , C.yLabels [ CA.format float_to_percent, CA.withGrid ]
+            ]
+                ++ datasets
+                ++ [ C.legendsAt .min
+                        .max
+                        [ CA.column
+                        , CA.moveRight 15
+                        , CA.spacing 5
+                        ]
+                        [ CA.width 20 ]
+                   , C.each model.hovered_trend_chart <| render_tooltip
+                   ]
     in
     Element.el
         [ width <| Element.px chart_width
@@ -1754,31 +1813,8 @@ charts_display model =
     <|
         Element.html <|
             C.chart
-                [ CA.height chart_height
-                , CA.width chart_width
-                , CA.padding { top = 10, bottom = 5, left = 10, right = 10 }
-                , CE.onMouseMove OnTrendChartHover (CE.getNearest CI.dots)
-                , CE.onMouseLeave (OnTrendChartHover [])
-                , CA.domain
-                    [ CA.lowest 0.5 CA.orLower
-                    , CA.highest 1.5 CA.orHigher
-                    , CA.centerAt 1.0
-                    ]
-                ]
-                ([ C.xLabels []
-                 , C.yLabels [ CA.format float_to_percent, CA.withGrid ]
-                 ]
-                    ++ datasets
-                    ++ [ C.legendsAt .min
-                            .max
-                            [ CA.column
-                            , CA.moveRight 15
-                            , CA.spacing 5
-                            ]
-                            [ CA.width 20 ]
-                       , C.each model.hovered_trend_chart <| render_tooltip
-                       ]
-                )
+                chart_attributes
+                chart_elements
 
 
 view : Model -> Html.Html Msg

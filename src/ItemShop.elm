@@ -863,10 +863,6 @@ update msg model =
             ( { model | shop_trends_hovered = False }, Cmd.none )
 
         TickSecond time ->
-            -- let
-            --     _ =
-            --         Debug.log "tick" time
-            -- in
             ( update_ai_chars { model | ai_tick_time = time }, Cmd.none )
 
         OnTrendChartHover hovered ->

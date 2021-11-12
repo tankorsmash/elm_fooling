@@ -1419,7 +1419,35 @@ render_single_trade_log_entry all_characters trade_log =
                 , rendered_cost
                 ]
 
-        _ ->
+        ( ShopParty, _ ) ->
+            paragraph []
+                [ text <|
+                    "Shop --> "
+                        ++ trade_party_to_str all_characters to_party
+                        ++ " "
+                        ++ item_name
+                        ++ " ("
+                        ++ qty_str
+                        ++ ") "
+                        ++ "-- value: "
+                , Element.el [Font.color <| rgb 1 0 0] <| rendered_cost
+                ]
+
+        ( _, ShopParty ) ->
+            paragraph []
+                [ text <|
+                    "Shop <-- "
+                        ++ trade_party_to_str all_characters from_party
+                        ++ " "
+                        ++ item_name
+                        ++ " ("
+                        ++ qty_str
+                        ++ ") "
+                        ++ "-- value: "
+                , Element.el [Font.color <| rgb 0 1 0] rendered_cost
+                ]
+
+        ( _, _ ) ->
             paragraph []
                 [ text <|
                     item_name
@@ -1589,7 +1617,7 @@ charts_display model =
             150
 
         raw_dataset =
-            List.indexedMap Tuple.pair model.historical_shop_trends
+            List.indexedMap Tuple.pair <| List.take 200 model.historical_shop_trends
 
         -- get_x_from_single_datum = (.time >> Time.posixToMillis >> toFloat)
         get_x_from_single_datum : ( Int, ShopTrends ) -> Float

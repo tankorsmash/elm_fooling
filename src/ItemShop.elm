@@ -1430,7 +1430,7 @@ render_single_trade_log_entry all_characters trade_log =
                         ++ qty_str
                         ++ ") "
                         ++ "-- value: "
-                , Element.el [Font.color <| rgb 1 0 0] <| rendered_cost
+                , Element.el [ Font.color <| rgb 1 0 0 ] <| rendered_cost
                 ]
 
         ( _, ShopParty ) ->
@@ -1444,7 +1444,7 @@ render_single_trade_log_entry all_characters trade_log =
                         ++ qty_str
                         ++ ") "
                         ++ "-- value: "
-                , Element.el [Font.color <| rgb 0 1 0] rendered_cost
+                , Element.el [ Font.color <| rgb 0 1 0 ] rendered_cost
                 ]
 
         ( _, _ ) ->
@@ -1526,9 +1526,12 @@ trends_display shop_trends all_characters is_expanded =
                     , Element.moveDown 20
                     ]
                 <|
-                    List.map
-                        (render_single_trade_log_entry all_characters)
-                        shop_trends.item_trade_logs
+                    [ Element.el [ font_grey, Font.size 12 ] <| text "Latest first" ]
+                        ++ (List.map
+                                (render_single_trade_log_entry all_characters)
+                            <|
+                                List.reverse shop_trends.item_trade_logs
+                           )
 
         has_trades =
             List.length shop_trends.item_trade_logs > 0

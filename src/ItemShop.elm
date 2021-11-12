@@ -1567,7 +1567,7 @@ trends_display shop_trends all_characters is_expanded =
                         ++ (List.map
                                 (render_single_trade_log_entry all_characters)
                             <|
-                                List.reverse shop_trends.item_trade_logs
+                                List.take 50 <| List.reverse shop_trends.item_trade_logs
                            )
 
         has_trades =

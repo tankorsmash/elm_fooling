@@ -1691,17 +1691,25 @@ charts_display model =
         chart_height =
             150
 
-        -- raw_dataset : List TrendChartDatum
+        chart_points =
+            200
+
+        raw_dataset_len =
+            List.length model.historical_shop_trends
+
         raw_dataset : List ( Int, ShopTrends )
         raw_dataset =
-            List.indexedMap Tuple.pair <| model.historical_shop_trends
+            List.indexedMap Tuple.pair <|
+                if raw_dataset_len > chart_points then
+                    List.drop (raw_dataset_len - chart_points) model.historical_shop_trends
 
-        -- get_x_from_single_datum = (.time >> Time.posixToMillis >> toFloat)
+                else
+                    model.historical_shop_trends
+
         get_x_from_single_datum : TrendChartDatum -> Float
         get_x_from_single_datum =
             Tuple.first >> toFloat
 
-        -- get_y_from_single_datum : ItemType -> TrendChartDatum -> Float
         get_y_from_single_datum : TrendChartDatum -> Float
         get_y_from_single_datum ( idx, it_val ) =
             Tuple.second it_val

@@ -1684,7 +1684,11 @@ render_inventory header character shop_trends hovered_item context controls_colu
 
         rendered_action_log : List (Element Msg)
         rendered_action_log =
-            [ text "Took an action" ]
+            if List.length character.action_log > 0 then
+                List.map (\_ -> text "took an action") character.action_log
+
+            else
+                [ text "No action taken" ]
     in
     Element.column [ width fill, spacingXY 0 5 ] <|
         [ Element.row [ font_scaled 2, width fill ]

@@ -197,6 +197,17 @@ type alias ShopTrends =
     }
 
 
+type ActionLogType
+    = Traded
+    | DidNothing
+
+
+type alias ActionLog =
+    { log_type : ActionLogType
+    , time : Time.Posix
+    }
+
+
 type alias ItemTradeLog =
     { item_id : ItemId
     , quantity : Int
@@ -223,6 +234,7 @@ type alias Character =
     , party : TradeParty
     , trend_tolerance : TrendTolerance
     , item_types_desired : ItemSentiments
+    , action_log : List ActionLog
     }
 
 
@@ -605,6 +617,7 @@ create_character char_id name =
     , party = CharacterParty char_id
     , trend_tolerance = empty_trend_tolerance
     , item_types_desired = empty_item_sentiments
+    , action_log = []
     }
 
 

@@ -1185,6 +1185,14 @@ grey_color =
     rgb 0.35 0.35 0.35
 
 
+very_light_grey_color =
+    rgb 0.75 0.75 0.75
+
+
+light_grey_color =
+    rgb 0.55 0.55 0.55
+
+
 font_grey : Element.Attribute msg
 font_grey =
     Font.color <| grey_color
@@ -1587,6 +1595,19 @@ trends_display shop_trends all_characters is_expanded =
         ]
 
 
+divider : List (Element msg)
+divider =
+    [ Element.el [ width fill, paddingXY 50 5 ] <|
+        Element.el
+            [ width fill
+            , border_bottom 1
+            , Border.color very_light_grey_color
+            ]
+        <|
+            Element.none
+    ]
+
+
 render_inventory :
     String
     -> Character
@@ -1647,6 +1668,10 @@ render_inventory header character shop_trends hovered_item context controls_colu
                                             "Unknown"
                                    )
                     )
+
+        rendered_action_log : List (Element Msg)
+        rendered_action_log =
+            [ text "Took an action" ]
     in
     Element.column [ width fill, spacingXY 0 5 ] <|
         [ Element.row [ font_scaled 2, width fill ]
@@ -1658,6 +1683,8 @@ render_inventory header character shop_trends hovered_item context controls_colu
         ]
             ++ rendered_desires
             ++ rendered_dislikes
+            ++ rendered_action_log
+            ++ divider
             ++ rendered_items
 
 

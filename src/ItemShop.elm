@@ -1160,7 +1160,10 @@ update_ai_chars model =
                                         new_shop
 
                                     else
-                                        c
+                                        let
+                                            _ = Debug.log "character id not found"
+                                        in
+                                            c
                                 )
                                 old_characters
 
@@ -1172,6 +1175,9 @@ update_ai_chars model =
                     { shop_trends = new_shop_trends_, historical_shop_trends = new_historical_shop_trends, characters = new_characters_, ai_tick_seed = new_seed }
 
                 _ ->
+                    let
+                        err = Debug.log "character not found early"
+                    in
                     { shop_trends = shop_trends, historical_shop_trends = historical_shop_trends, characters = characters, ai_tick_seed = ai_tick_seed }
 
         new_ai_data : AiUpdateData
@@ -1719,7 +1725,7 @@ render_inventory header character shop_trends hovered_item context controls_colu
                 List.map (text << action_log_to_str) character.action_log
 
             else
-                [ text "No action taken" ]
+                [ text "No actions taken" ]
     in
     Element.column [ width fill, spacingXY 0 5 ] <|
         [ Element.row [ font_scaled 2, width fill ]

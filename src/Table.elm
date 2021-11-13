@@ -276,15 +276,7 @@ build_rows : List (ColumnDef obj) -> obj -> RenderedRow obj
 build_rows column_defs row =
     let
         cell_builder cl =
-            case cl.column_type of
-                String ->
-                    cl.lookup_func row
-
-                Int ->
-                    cl.lookup_func row
-
-                Img ->
-                    cl.lookup_func row
+            cl.lookup_func row
     in
     { row_data =
         List.foldl

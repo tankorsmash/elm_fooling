@@ -1053,34 +1053,32 @@ weather_view model =
                     True
 
         weather_downloaded_str =
-            case is_weather_downloaded of
-                False ->
-                    "No"
+            if not is_weather_downloaded then
+                "No"
 
-                True ->
-                    "Yes"
+            else
+                "Yes"
 
         weather_main =
             model.current_weather_response.main
 
         weather_content =
-            case is_weather_downloaded of
-                False ->
-                    div [] []
+            if not is_weather_downloaded then
+                div [] []
 
-                True ->
-                    div []
-                        [ b [] [ text model.current_weather_response.name ]
-                        , text " is currently: "
-                        , temperature_val weather_main.temp
-                        , text " But it feels more like: "
-                        , temperature_val weather_main.feels_like
-                        , br [] []
-                        , text " You can expect temperatures as high as: "
-                        , temperature_val weather_main.temp_max
-                        , text " and as low as: "
-                        , temperature_val weather_main.temp_min
-                        ]
+            else
+                div []
+                    [ b [] [ text model.current_weather_response.name ]
+                    , text " is currently: "
+                    , temperature_val weather_main.temp
+                    , text " But it feels more like: "
+                    , temperature_val weather_main.feels_like
+                    , br [] []
+                    , text " You can expect temperatures as high as: "
+                    , temperature_val weather_main.temp_max
+                    , text " and as low as: "
+                    , temperature_val weather_main.temp_min
+                    ]
     in
     div []
         [ span [] [ text <| "Weather is downloaded? " ++ weather_downloaded_str ]
@@ -1297,7 +1295,7 @@ hero_row total_bans hero_stat =
             , div [] <| List.map (\r -> text <| r ++ " ") hero_stat.roles
             ]
         , Grid.col []
-            [ text <| "Ban: " ++ (String.join "" <| List.map String.fromChar <| List.take 5 <| String.toList <| String.fromFloat raw_ban_rate) ++ "%"
+            [ text <| "Ban: " ++ (String.concat <| List.map String.fromChar <| List.take 5 <| String.toList <| String.fromFloat raw_ban_rate) ++ "%"
             ]
         ]
 

@@ -1316,18 +1316,17 @@ update model msg =
                     frame_matches_from_feds_frame_data_frame_id model.frame_edit_datas active_frame_type
 
                 full_url =
-                    case just_frame_id_matches of
-                        True ->
-                            clojure_json_server_url
-                                ++ "api/frames/"
-                                ++ to_data_name active_frame_type
-                                ++ "/"
-                                ++ get_frame_id_from_feds_frame_data
-                                    model.frame_edit_datas
-                                    active_frame_type
+                    if just_frame_id_matches then
+                        clojure_json_server_url
+                            ++ "api/frames/"
+                            ++ to_data_name active_frame_type
+                            ++ "/"
+                            ++ get_frame_id_from_feds_frame_data
+                                model.frame_edit_datas
+                                active_frame_type
 
-                        False ->
-                            clojure_json_server_url ++ "api/create_frame/" ++ to_data_name active_frame_type
+                    else
+                        clojure_json_server_url ++ "api/create_frame/" ++ to_data_name active_frame_type
 
                 maybe_encoded_frame =
                     encode_frame_by_frame_type model.frame_edit_datas active_frame_type
@@ -1357,12 +1356,11 @@ update model msg =
                     Debug.log "resp came through" <|
                         case json_http_result of
                             Ok json_server_resp_ ->
-                                case json_server_resp_.success of
-                                    True ->
-                                        ( Just ( json_server_resp_.success, json_server_resp_.message, json_server_resp_.data ), Noop )
+                                if json_server_resp_.success then
+                                    ( Just ( json_server_resp_.success, json_server_resp_.message, json_server_resp_.data ), Noop )
 
-                                    False ->
-                                        ( Nothing, ToVisualOutput json_server_resp_.message )
+                                else
+                                    ( Nothing, ToVisualOutput json_server_resp_.message )
 
                             Err (Http.BadStatus status_code) ->
                                 let
@@ -1394,12 +1392,11 @@ update model msg =
                             ErrorMemo "Failed"
 
                         Just ( success, message, json_value ) ->
-                            case success of
-                                True ->
-                                    SuccessfulMemo message
+                            if success then
+                                SuccessfulMemo message
 
-                                False ->
-                                    FailureMemo message
+                            else
+                                FailureMemo message
 
                 feds =
                     model.frame_edit_datas
@@ -2071,12 +2068,11 @@ inner_form_data_view maybe_frame_data maybe_form_definition all_frames frame_id_
             Button.button
                 [ Button.onClick SubmitFrameEditForm, Button.primary ]
                 [ text <|
-                    case frame_id_matches of
-                        True ->
-                            "Update"
+                    if frame_id_matches then
+                        "Update"
 
-                        False ->
-                            "Create"
+                    else
+                        "Create"
                 ]
 
         alert_body alert_type alert_text is_open =

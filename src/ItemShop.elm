@@ -1305,47 +1305,46 @@ render_single_item_for_sale shop_trends { char_id, held_gold } maybe_hovered_ite
 
         --shown when hovered over item
         expanded_display =
-            case is_hovered_item of
-                True ->
-                    Element.el
-                        [ width fill
-                        , Background.color <| rgb 1 1 1
-                        , Border.color <| rgb 0.35 0.35 0.35
-                        , Border.rounded 3
-                        , Border.width 2
-                        , padding 10
-                        , Element.moveDown 20
-                        ]
-                    <|
-                        column [ spacing 5 ]
-                            [ paragraph []
-                                [ text item.name
-                                , text ": "
-                                , text item.description
-                                ]
-                            , paragraph [] <|
-                                [ text "Current Price: "
-                                , render_gp current_price
-                                ]
-                                    ++ (if
-                                            is_item_trending
-                                                shop_trends.item_type_sentiment
-                                                item
-                                                && item.raw_gold_cost
-                                                /= current_price
-                                        then
-                                            [ text " (originally "
-                                            , render_gp item.raw_gold_cost
-                                            , text ")"
-                                            ]
-
-                                        else
-                                            []
-                                       )
+            if is_hovered_item then
+                Element.el
+                    [ width fill
+                    , Background.color <| rgb 1 1 1
+                    , Border.color <| rgb 0.35 0.35 0.35
+                    , Border.rounded 3
+                    , Border.width 2
+                    , padding 10
+                    , Element.moveDown 20
+                    ]
+                <|
+                    column [ spacing 5 ]
+                        [ paragraph []
+                            [ text item.name
+                            , text ": "
+                            , text item.description
                             ]
+                        , paragraph [] <|
+                            [ text "Current Price: "
+                            , render_gp current_price
+                            ]
+                                ++ (if
+                                        is_item_trending
+                                            shop_trends.item_type_sentiment
+                                            item
+                                            && item.raw_gold_cost
+                                            /= current_price
+                                    then
+                                        [ text " (originally "
+                                        , render_gp item.raw_gold_cost
+                                        , text ")"
+                                        ]
 
-                False ->
-                    Element.none
+                                    else
+                                        []
+                                   )
+                        ]
+
+            else
+                Element.none
     in
     row
         [ font_scaled 1
@@ -1617,41 +1616,37 @@ render_inventory header character shop_trends hovered_item context controls_colu
 
         rendered_desires : List (Element Msg)
         rendered_desires =
-            []
-                ++ (Dict.toList character.item_types_desired
-                        |> List.filter (Tuple.second >> (\trd -> trd > 0.0))
-                        |> List.map
-                            (\( it_id, trd ) ->
-                                text <|
-                                    "Desires: "
-                                        ++ (case id_to_item_type it_id of
-                                                Just item_type ->
-                                                    item_type_to_pretty_string item_type
+            Dict.toList character.item_types_desired
+                |> List.filter (Tuple.second >> (\trd -> trd > 0.0))
+                |> List.map
+                    (\( it_id, trd ) ->
+                        text <|
+                            "Desires: "
+                                ++ (case id_to_item_type it_id of
+                                        Just item_type ->
+                                            item_type_to_pretty_string item_type
 
-                                                Nothing ->
-                                                    "Unknown"
-                                           )
-                            )
-                   )
+                                        Nothing ->
+                                            "Unknown"
+                                   )
+                    )
 
         rendered_dislikes : List (Element Msg)
         rendered_dislikes =
-            []
-                ++ (Dict.toList character.item_types_desired
-                        |> List.filter (Tuple.second >> (\trd -> trd <= 0.0))
-                        |> List.map
-                            (\( it_id, trd ) ->
-                                text <|
-                                    "Dislikes: "
-                                        ++ (case id_to_item_type it_id of
-                                                Just item_type ->
-                                                    item_type_to_pretty_string item_type
+            Dict.toList character.item_types_desired
+                |> List.filter (Tuple.second >> (\trd -> trd <= 0.0))
+                |> List.map
+                    (\( it_id, trd ) ->
+                        text <|
+                            "Dislikes: "
+                                ++ (case id_to_item_type it_id of
+                                        Just item_type ->
+                                            item_type_to_pretty_string item_type
 
-                                                Nothing ->
-                                                    "Unknown"
-                                           )
-                            )
-                   )
+                                        Nothing ->
+                                            "Unknown"
+                                   )
+                    )
     in
     Element.column [ width fill, spacingXY 0 5 ] <|
         [ Element.row [ font_scaled 2, width fill ]

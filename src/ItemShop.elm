@@ -199,6 +199,7 @@ type alias ShopTrends =
 
 type ActionLogType
     = Traded
+    | WantedButCouldntTrade
     | DidNothing
 
 
@@ -909,8 +910,8 @@ nonzero_qty ( item, qty ) =
     qty > 0
 
 
-ai_buy_item_from_shop : ShopTrends -> Character -> Character -> ( ShopTrends, Character, Character )
-ai_buy_item_from_shop shop_trends character shop =
+ai_buy_item_from_shop : Time.Posix -> ShopTrends -> Character -> Character -> ( ShopTrends, Character, Character )
+ai_buy_item_from_shop ai_tick_time shop_trends character shop =
     --TODO decide on an item type to buy, and buy 1.
     -- Maybe, it would be based on the lowest trending one, or one the
     -- character strongly desired or something
@@ -1005,20 +1006,23 @@ ai_buy_item_from_shop shop_trends character shop =
         ( new_shop_trends, new_shop, new_character ) =
             case maybe_item_to_buy of
                 Nothing ->
-                    ( shop_trends, shop, character )
+                    ( shop_trends
+                    , shop
+                    , append_to_character_action_log character { time = ai_tick_time, log_type = WantedButCouldntTrade }
+                    )
 
                 Just item ->
                     sell_items_from_party_to_other
                         shop_trends
                         shop
-                        character
+                        (append_to_character_action_log character { time = ai_tick_time, log_type = Traded })
                         { item = item, qty = 1 }
     in
     ( new_shop_trends, new_character, new_shop )
 
 
-ai_sell_item_to_shop : ShopTrends -> Character -> Character -> ( ShopTrends, Character, Character )
-ai_sell_item_to_shop shop_trends character shop =
+ai_sell_item_to_shop : Time.Posix -> ShopTrends -> Character -> Character -> ( ShopTrends, Character, Character )
+ai_sell_item_to_shop ai_tick_time shop_trends character shop =
     let
         sellable_items : InventoryRecords
         sellable_items =
@@ -1040,12 +1044,18 @@ ai_sell_item_to_shop shop_trends character shop =
         ( new_shop_trends, new_character, new_shop ) =
             case List.head untrendy_items of
                 Nothing ->
-                    ( shop_trends, character, shop )
+                    ( shop_trends
+                    , append_to_character_action_log character { log_type = WantedButCouldntTrade, time = ai_tick_time }
+                    , shop
+                    )
 
                 Just ( item, qty ) ->
                     sell_items_from_party_to_other
                         shop_trends
-                        character
+                        (append_to_character_action_log
+                            character
+                            { log_type = Traded, time = ai_tick_time }
+                        )
                         shop
                         { item = item, qty = 1 }
     in
@@ -1069,6 +1079,11 @@ type alias AiUpdateData =
     , characters : List Character
     , ai_tick_seed : Random.Seed
     }
+
+
+append_to_character_action_log : Character -> ActionLog -> Character
+append_to_character_action_log character new_log =
+    { character | action_log = character.action_log ++ [ new_log ] }
 
 
 update_ai_chars : Model -> Model
@@ -1124,13 +1139,16 @@ update_ai_chars model =
                         ( new_shop_trends_, new_character, new_shop ) =
                             case chosen_action of
                                 WantsToSell ->
-                                    ai_sell_item_to_shop shop_trends character shop
+                                    ai_sell_item_to_shop model.ai_tick_time shop_trends character shop
 
                                 WantsToBuy ->
-                                    ai_buy_item_from_shop shop_trends character shop
+                                    ai_buy_item_from_shop model.ai_tick_time shop_trends character shop
 
                                 NoActionChoice ->
-                                    ( shop_trends, character, shop )
+                                    ( shop_trends
+                                    , append_to_character_action_log character { log_type = DidNothing, time = model.ai_tick_time }
+                                    , shop
+                                    )
 
                         new_characters_ =
                             List.map
@@ -1621,6 +1639,19 @@ divider =
     ]
 
 
+action_log_to_str : ActionLog -> String
+action_log_to_str action_log =
+    case action_log.log_type of
+        Traded ->
+            "Traded"
+
+        WantedButCouldntTrade ->
+            "Wanted but couldn't trade"
+
+        DidNothing ->
+            "Did nothing"
+
+
 render_inventory :
     String
     -> Character
@@ -1685,7 +1716,7 @@ render_inventory header character shop_trends hovered_item context controls_colu
         rendered_action_log : List (Element Msg)
         rendered_action_log =
             if List.length character.action_log > 0 then
-                List.map (\_ -> text "took an action") character.action_log
+                List.map (text << action_log_to_str) character.action_log
 
             else
                 [ text "No action taken" ]

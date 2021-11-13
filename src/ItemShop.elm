@@ -1083,6 +1083,10 @@ type alias AiUpdateData =
 
 append_to_character_action_log : Character -> ActionLog -> Character
 append_to_character_action_log character new_log =
+    let
+        _ =
+            Debug.log "appending for " <| character.name ++ ": " ++ action_log_to_str new_log
+    in
     { character | action_log = character.action_log ++ [ new_log ] }
 
 
@@ -1137,6 +1141,10 @@ update_ai_chars model =
                                     NoActionChoice
 
                         ( new_shop_trends_, new_character, new_shop ) =
+                            let
+                                _ =
+                                    Debug.log "chosen action for" character.name
+                            in
                             case chosen_action of
                                 WantsToSell ->
                                     ai_sell_item_to_shop model.ai_tick_time shop_trends character shop
@@ -1154,6 +1162,10 @@ update_ai_chars model =
                             List.map
                                 (\c ->
                                     if c.char_id == character.char_id then
+                                        let
+                                            _ =
+                                                Debug.log "replaced new char" new_character.name
+                                        in
                                         new_character
 
                                     else if c.char_id == shop.char_id then
@@ -1161,9 +1173,10 @@ update_ai_chars model =
 
                                     else
                                         let
-                                            _ = Debug.log "character id not found"
+                                            _ =
+                                                Debug.log "character id not found"
                                         in
-                                            c
+                                        c
                                 )
                                 old_characters
 
@@ -1176,7 +1189,8 @@ update_ai_chars model =
 
                 _ ->
                     let
-                        err = Debug.log "character not found early"
+                        err =
+                            Debug.log "character not found early"
                     in
                     { shop_trends = shop_trends, historical_shop_trends = historical_shop_trends, characters = characters, ai_tick_seed = ai_tick_seed }
 

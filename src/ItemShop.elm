@@ -1714,7 +1714,10 @@ render_inventory header character shop_trends hovered_item context controls_colu
         rendered_action_log : List (Element Msg)
         rendered_action_log =
             if List.length character.action_log > 0 then
-                List.map (text << action_log_to_str) character.action_log
+                character.action_log
+                    |> List.reverse
+                    |> List.take 20
+                    |> List.map (text << action_log_to_str)
 
             else
                 [ text "No actions taken" ]

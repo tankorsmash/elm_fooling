@@ -198,7 +198,7 @@ type alias ShopTrends =
 
 
 type ActionLogType
-    = Traded
+    = Traded ItemTradeLog
     | WantedButCouldntTrade
     | DidNothing
 
@@ -1010,11 +1010,33 @@ ai_buy_item_from_shop ai_tick_time shop_trends character shop =
                     )
 
                 Just item ->
-                    sell_items_from_party_to_other
-                        shop_trends
-                        shop
-                        (append_to_character_action_log character { time = ai_tick_time, log_type = Traded })
-                        { item = item, qty = 1 }
+                    let
+                        ( nst, ns, nc ) =
+                            sell_items_from_party_to_other
+                                shop_trends
+                                shop
+                                character
+                                { item = item, qty = 1 }
+
+                        -- note that this assumes sell_items_from_party_to_other creates a single trade log
+                        maybe_item_trade_log : Maybe ItemTradeLog
+                        maybe_item_trade_log =
+                            List.drop
+                                (List.length nst.item_trade_logs - 1)
+                                nst.item_trade_logs
+                                |> List.head
+                    in
+                    ( nst
+                    , ns
+                    , case maybe_item_trade_log of
+                        Just item_trade_log ->
+                            append_to_character_action_log
+                                nc
+                                { log_type = Traded item_trade_log, time = ai_tick_time }
+
+                        Nothing ->
+                            nc
+                    )
     in
     ( new_shop_trends, new_character, new_shop )
 
@@ -1048,14 +1070,33 @@ ai_sell_item_to_shop ai_tick_time shop_trends character shop =
                     )
 
                 Just ( item, qty ) ->
-                    sell_items_from_party_to_other
-                        shop_trends
-                        (append_to_character_action_log
-                            character
-                            { log_type = Traded, time = ai_tick_time }
-                        )
-                        shop
-                        { item = item, qty = 1 }
+                    let
+                        ( nst, nc, ns ) =
+                            sell_items_from_party_to_other
+                                shop_trends
+                                shop
+                                character
+                                { item = item, qty = 1 }
+
+                        -- note that this assumes sell_items_from_party_to_other creates a single trade log
+                        maybe_item_trade_log : Maybe ItemTradeLog
+                        maybe_item_trade_log =
+                            List.drop
+                                (List.length nst.item_trade_logs - 1)
+                                nst.item_trade_logs
+                                |> List.head
+                    in
+                    ( nst
+                    , case maybe_item_trade_log of
+                        Just item_trade_log ->
+                            append_to_character_action_log
+                                nc
+                                { log_type = Traded item_trade_log, time = ai_tick_time }
+
+                        Nothing ->
+                            nc
+                    , ns
+                    )
     in
     ( new_shop_trends, new_character, new_shop )
 
@@ -1640,7 +1681,7 @@ divider =
 action_log_to_str : ActionLog -> String
 action_log_to_str action_log =
     case action_log.log_type of
-        Traded ->
+        Traded item_trade_log ->
             "Traded"
 
         WantedButCouldntTrade ->

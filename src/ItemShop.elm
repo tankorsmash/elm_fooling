@@ -63,8 +63,10 @@ type alias ItemTypeId =
 type alias ItemId =
     UUID
 
+
 type alias ItemIdStr =
     String
+
 
 type alias CharacterId =
     UUID
@@ -290,40 +292,47 @@ unset_item_frame =
 
 item_frames : Dict.Dict String Item
 item_frames =
-    Dict.fromList
-        [ ( "boots"
-          , { name = "Boots"
-            , item_type = Armor
-            , raw_gold_cost = 5
-            , description = "An old pair of boots"
-            , id = UUID.forName "boots" UUID.dnsNamespace
-            }
-          )
-        , ( "sword"
-          , { name = "Sword"
-            , item_type = Weapon
-            , raw_gold_cost = 15
-            , description = "A rusted sword"
-            , id = UUID.forName "rusted sword" UUID.dnsNamespace
-            }
-          )
-        , ( "dagger"
-          , { name = "Dagger"
-            , item_type = Weapon
-            , raw_gold_cost = 10
-            , description = "A small weapon that fits in your pocket"
-            , id = UUID.forName "small dagger" UUID.dnsNamespace
-            }
-          )
-        , ( "book"
-          , { name = "Book of the Dead"
-            , item_type = Spellbook
-            , raw_gold_cost = 20
-            , description = "Bound in leather, this book has a skull for a cover"
-            , id = UUID.forName "book of the dead" UUID.dnsNamespace
-            }
-          )
-        ]
+    let
+        initial_items =
+            [ { name = "Boots"
+              , item_type = Armor
+              , raw_gold_cost = 5
+              , description = "An old pair of boots"
+              , id = UUID.forName "boots" UUID.dnsNamespace
+              }
+            , { name = "Sword"
+              , item_type = Weapon
+              , raw_gold_cost = 15
+              , description = "A rusted sword"
+              , id = UUID.forName "rusted sword" UUID.dnsNamespace
+              }
+            , { name = "Dagger"
+              , item_type = Weapon
+              , raw_gold_cost = 10
+              , description = "A small weapon that fits in your pocket"
+              , id = UUID.forName "small dagger" UUID.dnsNamespace
+              }
+            , { name = "Book of the Dead"
+              , item_type = Spellbook
+              , raw_gold_cost = 20
+              , description = "Bound in leather, this book has a skull for a cover"
+              , id = UUID.forName "book of the dead" UUID.dnsNamespace
+              }
+            ]
+    in
+    Dict.fromList <|
+        List.map
+            (\item ->
+                let
+                    _ =
+                        Debug.log "uuid" <| UUID.toString item.id
+
+                    _ =
+                        Debug.log "name" <| item.name
+                in
+                ( UUID.toString item.id, item )
+            )
+            initial_items
 
 
 get_item_by_str : String -> Maybe Item
@@ -349,10 +358,10 @@ initial_items_for_sale =
 
         maybe_items : List ( String, Int )
         maybe_items =
-            [ ( "boots", 3 )
-            , ( "sword", 5 )
-            , ( "dagger", 4 )
-            , ( "book", 1 )
+            [ ( "a41ae9d3-61f0-54f9-800e-56f53ed3ac98", 3 ) --boots
+            , ( "c3c38323-1743-5a47-a8e3-bf6ec28137f9", 5 )
+            , ( "6b7e301d-ab12-5e81-acfc-547e63004ffa", 4 )
+            , ( "48e66792-4c97-598f-8937-3a7042f00591", 1 )
             ]
 
         just_items : List ( Item, Int )
@@ -381,7 +390,7 @@ initial_items_for_sale =
 
 initial_owned_items : InventoryRecords
 initial_owned_items =
-    [ ( Maybe.withDefault unset_item_frame <| Dict.get "boots" item_frames, 12 )
+    [ ( Maybe.withDefault unset_item_frame <| Dict.get "a41ae9d3-61f0-54f9-800e-56f53ed3ac98" item_frames, 12 )
     ]
 
 
@@ -396,14 +405,14 @@ initial_characters =
     in
     [ { base_character_1
         | held_items =
-            [ ( Maybe.withDefault unset_item_frame <| Dict.get "dagger" item_frames, 8 )
+            [ ( Maybe.withDefault unset_item_frame <| Dict.get "6b7e301d-ab12-5e81-acfc-547e63004ffa" item_frames, 8 )
             ]
         , held_gold = 100
         , item_types_desired = Dict.fromList [ ( item_type_to_id Weapon, 0.0 ) ]
       }
     , { base_character_2
         | held_items =
-            [ ( Maybe.withDefault unset_item_frame <| Dict.get "boots" item_frames, 12 )
+            [ ( Maybe.withDefault unset_item_frame <| Dict.get "a41ae9d3-61f0-54f9-800e-56f53ed3ac98" item_frames, 12 )
             ]
         , held_gold = 200
         , item_types_desired = Dict.fromList [ ( item_type_to_id Spellbook, 0.0 ) ]

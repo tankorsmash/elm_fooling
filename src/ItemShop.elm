@@ -288,6 +288,7 @@ unset_item_frame =
     }
 
 
+item_frames : Dict.Dict String Item
 item_frames =
     Dict.fromList
         [ ( "boots"

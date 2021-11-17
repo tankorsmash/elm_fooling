@@ -290,8 +290,8 @@ unset_item_frame =
     }
 
 
-item_frames : Dict.Dict String Item
-item_frames =
+initial_item_db : Dict.Dict String Item
+initial_item_db =
     let
         initial_items =
             [ { name = "Boots"
@@ -335,23 +335,22 @@ item_frames =
             initial_items
 
 
-get_item_by_str : String -> Maybe Item
-get_item_by_str item_str =
-    Dict.get item_str item_frames
+
+-- get_item_by_str : String -> Maybe Item
+-- get_item_by_str item_str =
+--     Dict.get item_str item_frames
+-- get_item_by_id : UUID -> Maybe Item
+-- get_item_by_id item_id =
+--     List.head <|
+--         List.filter
+--             (\item -> item.id == item_id)
+--         <|
+--             List.map Tuple.second <|
+--                 Dict.toList item_frames
 
 
-get_item_by_id : UUID -> Maybe Item
-get_item_by_id item_id =
-    List.head <|
-        List.filter
-            (\item -> item.id == item_id)
-        <|
-            List.map Tuple.second <|
-                Dict.toList item_frames
-
-
-initial_items_for_sale : InventoryRecords
-initial_items_for_sale =
+initial_items_for_sale : ItemDb -> InventoryRecords
+initial_items_for_sale item_db =
     let
         seed =
             Random.initialSeed 12345
@@ -367,8 +366,8 @@ initial_items_for_sale =
         just_items : List ( Item, Int )
         just_items =
             List.filterMap
-                (\( item_str, qty ) ->
-                    case Dict.get item_str item_frames of
+                (\( item_id_str, qty ) ->
+                    case lookup_item_id_str item_db item_id_str of
                         Just item ->
                             Just ( item, qty )
 
@@ -388,14 +387,14 @@ initial_items_for_sale =
     just_items
 
 
-initial_owned_items : InventoryRecords
-initial_owned_items =
-    [ ( Maybe.withDefault unset_item_frame <| Dict.get "a41ae9d3-61f0-54f9-800e-56f53ed3ac98" item_frames, 12 )
+initial_owned_items : ItemDb -> InventoryRecords
+initial_owned_items item_db =
+    [ ( lookup_item_id_str_default item_db "a41ae9d3-61f0-54f9-800e-56f53ed3ac98", 12 )
     ]
 
 
-initial_characters : List Character
-initial_characters =
+initial_characters : ItemDb -> List Character
+initial_characters item_db =
     let
         base_character_1 =
             create_character (UUID.forName "character 1" UUID.dnsNamespace) "Billy"
@@ -405,14 +404,14 @@ initial_characters =
     in
     [ { base_character_1
         | held_items =
-            [ ( Maybe.withDefault unset_item_frame <| Dict.get "6b7e301d-ab12-5e81-acfc-547e63004ffa" item_frames, 8 )
+            [ ( lookup_item_id_str_default item_db "6b7e301d-ab12-5e81-acfc-547e63004ffa", 8 )
             ]
         , held_gold = 100
         , item_types_desired = Dict.fromList [ ( item_type_to_id Weapon, 0.0 ) ]
       }
     , { base_character_2
         | held_items =
-            [ ( Maybe.withDefault unset_item_frame <| Dict.get "a41ae9d3-61f0-54f9-800e-56f53ed3ac98" item_frames, 12 )
+            [ ( lookup_item_id_str_default item_db "a41ae9d3-61f0-54f9-800e-56f53ed3ac98", 12 )
             ]
         , held_gold = 200
         , item_types_desired = Dict.fromList [ ( item_type_to_id Spellbook, 0.0 ) ]
@@ -646,10 +645,13 @@ init =
         shop_base_char =
             create_character (UUID.forName "shop character" UUID.dnsNamespace) "Shop"
 
+        item_db =
+            initial_item_db
+
         player : Character
         player =
             { player_base_char
-                | held_items = initial_owned_items
+                | held_items = initial_owned_items item_db
                 , held_gold = 0
                 , party = PlayerParty
             }
@@ -657,21 +659,21 @@ init =
         shop : Character
         shop =
             { shop_base_char
-                | held_items = initial_items_for_sale
+                | held_items = initial_items_for_sale item_db
                 , held_gold = 999999999
                 , party = ShopParty
             }
 
         characters : List Character
         characters =
-            [ player, shop ] ++ initial_characters
+            [ player, shop ] ++ initial_characters item_db
     in
     ( { player = player
       , shop = shop
       , characters = characters
       , hovered_item_in_character = Nothing
       , shop_trends = initial_shop_trends
-      , item_db = Dict.empty
+      , item_db = item_db
       , historical_shop_trends = []
       , shop_trends_hovered = False
       , ai_tick_time = Time.millisToPosix -1
@@ -1493,14 +1495,14 @@ border_bottom bord =
     Border.widthEach { bottom = bord, left = 0, right = 0, top = 0 }
 
 
-render_single_trade_log_entry : List Character -> ItemTradeLog -> Element msg
-render_single_trade_log_entry all_characters trade_log =
+render_single_trade_log_entry : ItemDb -> List Character -> ItemTradeLog -> Element msg
+render_single_trade_log_entry item_db all_characters trade_log =
     let
         { from_party, to_party, item_id, quantity, gold_cost } =
             trade_log
 
         maybe_item =
-            get_item_by_id item_id
+            lookup_item_id item_db item_id
 
         qty_str =
             String.fromInt quantity |> (++) "x"
@@ -1584,8 +1586,8 @@ render_single_trade_log_entry all_characters trade_log =
                 ]
 
 
-trends_display : ShopTrends -> List Character -> Bool -> Element.Element Msg
-trends_display shop_trends all_characters is_expanded =
+trends_display : ItemDb -> ShopTrends -> List Character -> Bool -> Element.Element Msg
+trends_display item_db shop_trends all_characters is_expanded =
     let
         render_single_popularity : ( Int, Float ) -> Element.Element msg
         render_single_popularity ( type_id, popularity ) =
@@ -1649,7 +1651,7 @@ trends_display shop_trends all_characters is_expanded =
                 <|
                     [ Element.el [ font_grey, Font.size 12 ] <| text "Latest first" ]
                         ++ (List.map
-                                (render_single_trade_log_entry all_characters)
+                                (render_single_trade_log_entry item_db all_characters)
                             <|
                                 List.take 50 <|
                                     List.reverse shop_trends.item_trade_logs
@@ -1694,19 +1696,40 @@ divider =
     ]
 
 
+lookup_item_id_str : ItemDb -> String -> Maybe Item
+lookup_item_id_str item_db item_id_str =
+    Dict.get item_id_str item_db
+
+
 lookup_item_id : ItemDb -> ItemId -> Maybe Item
 lookup_item_id item_db item_id =
-    Dict.get (UUID.toString item_id) item_db
+    -- Dict.get (UUID.toString item_id) item_db
+    lookup_item_id_str item_db (UUID.toString item_id)
+
+
+lookup_item_id_str_default : ItemDb -> ItemIdStr -> Item
+lookup_item_id_str_default item_db item_id_str =
+    case Dict.get item_id_str item_db of
+        Just item ->
+            item
+
+        Nothing ->
+            unset_item_frame
+
+
+lookup_item_id_default : ItemDb -> ItemId -> Item
+lookup_item_id_default item_db item_id =
+    lookup_item_id_str_default item_db (UUID.toString item_id)
 
 
 action_log_to_str : ItemDb -> ActionLog -> String
 action_log_to_str item_db action_log =
     case action_log.log_type of
         Traded item_trade_log ->
-            "Traded"
+            "Traded: "
                 ++ (case lookup_item_id item_db item_trade_log.item_id of
                         Nothing ->
-                            "Unkown Item"
+                            "Unknown Item"
 
                         Just item ->
                             item.name
@@ -1976,7 +1999,7 @@ view model =
         Element.column [ width fill, font_scaled 1 ] <|
             [ welcome_header
             , Element.el [ paddingXY 0 10, width fill ] <| charts_display model
-            , trends_display model.shop_trends model.characters model.shop_trends_hovered
+            , trends_display model.item_db model.shop_trends model.characters model.shop_trends_hovered
             , Element.el [ paddingXY 0 10, width fill ] <|
                 render_inventory
                     model

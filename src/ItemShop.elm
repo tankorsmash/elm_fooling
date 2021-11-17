@@ -63,6 +63,8 @@ type alias ItemTypeId =
 type alias ItemId =
     UUID
 
+type alias ItemIdStr =
+    String
 
 type alias CharacterId =
     UUID
@@ -243,6 +245,10 @@ type alias TrendSnapshot =
     { time : Time.Posix, item_type : ItemType, value : Float }
 
 
+type alias ItemDb =
+    Dict.Dict ItemIdStr Item
+
+
 type alias Model =
     { player : Character
     , shop : Character
@@ -251,8 +257,7 @@ type alias Model =
     , shop_trends : ShopTrends
     , historical_shop_trends : List ShopTrends
     , shop_trends_hovered : Bool
-
-    -- , hovered_trend_chart : List (CI.One TrendSnapshot CI.Dot)
+    , item_db : ItemDb
     , hovered_trend_chart : List (CI.One TrendChartDatum CI.Dot)
     , ai_tick_time : Time.Posix --used to seed the ai randomness
     }
@@ -656,6 +661,7 @@ init =
       , characters = characters
       , hovered_item_in_character = Nothing
       , shop_trends = initial_shop_trends
+      , item_db = Dict.empty
       , historical_shop_trends = []
       , shop_trends_hovered = False
       , ai_tick_time = Time.millisToPosix -1
@@ -1678,11 +1684,23 @@ divider =
     ]
 
 
-action_log_to_str : ActionLog -> String
-action_log_to_str action_log =
+lookup_item_id : ItemDb -> ItemId -> Maybe Item
+lookup_item_id item_db item_id =
+    Dict.get (UUID.toString item_id) item_db
+
+
+action_log_to_str : ItemDb -> ActionLog -> String
+action_log_to_str item_db action_log =
     case action_log.log_type of
         Traded item_trade_log ->
             "Traded"
+                ++ (case lookup_item_id item_db item_trade_log.item_id of
+                        Nothing ->
+                            "Unkown Item"
+
+                        Just item ->
+                            item.name
+                   )
 
         WantedButCouldntTrade ->
             "Wanted but couldn't trade"
@@ -1692,14 +1710,15 @@ action_log_to_str action_log =
 
 
 render_inventory :
-    String
+    Model
+    -> String
     -> Character
     -> ShopTrends
     -> Maybe ( CharacterId, Item )
     -> ListContext
     -> (InventoryRecord -> Element Msg)
     -> Element Msg
-render_inventory header character shop_trends hovered_item context controls_column =
+render_inventory model header character shop_trends hovered_item context controls_column =
     let
         { char_id, held_items, held_gold } =
             character
@@ -1758,7 +1777,7 @@ render_inventory header character shop_trends hovered_item context controls_colu
                 character.action_log
                     |> List.reverse
                     |> List.take 20
-                    |> List.map (text << action_log_to_str)
+                    |> List.map (text << action_log_to_str model.item_db)
 
             else
                 [ text "No actions taken" ]
@@ -1950,6 +1969,7 @@ view model =
             , trends_display model.shop_trends model.characters model.shop_trends_hovered
             , Element.el [ paddingXY 0 10, width fill ] <|
                 render_inventory
+                    model
                     "Items For Sale"
                     model.shop
                     model.shop_trends
@@ -1958,6 +1978,7 @@ view model =
                     (\( item, qty ) -> shop_buy_button (get_adjusted_item_cost model.shop_trends item 1) model.player.held_gold ( item, qty ))
             , Element.el [ paddingXY 0 10, width fill ] <|
                 render_inventory
+                    model
                     "Items In Inventory"
                     model.player
                     model.shop_trends
@@ -1969,6 +1990,7 @@ view model =
                         (\character ->
                             Element.el [ paddingXY 0 10, width fill ]
                                 (render_inventory
+                                    model
                                     (character.name ++ "'s Inventory")
                                     character
                                     model.shop_trends

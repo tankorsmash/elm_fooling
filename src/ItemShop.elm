@@ -1,6 +1,7 @@
 module ItemShop exposing (Model, Msg, init, subscriptions, update, view)
 
 import Array
+import Browser.Events
 import Chart as C
 import Chart.Attributes as CA
 import Chart.Events as CE
@@ -42,6 +43,9 @@ import Element.Font as Font
 import Element.Input as Input
 import Html
 import Html.Attributes
+import Html.Events
+import Json.Decode as Decode
+import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Random
 import Random.List
 import Task
@@ -157,6 +161,15 @@ type alias TrendChartDatum =
     ( Int, ( ItemType, Float ) )
 
 
+type KeyEventMsg
+    = KeyEventControl
+    | KeyEventAlt
+    | KeyEventShift
+    | KeyEventMeta
+    | KeyEventLetter Char
+    | KeyEventUnknown String
+
+
 type Msg
     = Noop
     | MouseEnterShopItem ListContext ( CharacterId, Item )
@@ -169,6 +182,8 @@ type Msg
       -- | OnTrendChartHover (List (CI.One TrendSnapshot CI.Dot))
     | OnTrendChartHover (List (CI.One TrendChartDatum CI.Dot))
     | ToggleShowDebugInventories
+    | KeyPressedMsg KeyEventMsg
+    | KeyReleasedMsg KeyEventMsg
 
 
 type alias TradeOrder =
@@ -336,13 +351,6 @@ initial_item_db =
     Dict.fromList <|
         List.map
             (\item ->
-                let
-                    _ =
-                        Debug.log "uuid" <| UUID.toString item.id
-
-                    _ =
-                        Debug.log "name" <| item.name
-                in
                 ( UUID.toString item.id, item )
             )
             initial_items
@@ -720,7 +728,45 @@ init =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     -- Sub.none
-    Time.every 1000 TickSecond
+    Sub.batch
+        [ Time.every 1000 TickSecond
+        , Browser.Events.onKeyDown keyPressedDecoder
+        , Browser.Events.onKeyUp keyReleasedDecoder
+        ]
+
+
+keyPressedDecoder : Decode.Decoder Msg
+keyPressedDecoder =
+    Decode.map (toKey >> KeyPressedMsg) (Decode.field "key" Decode.string)
+
+
+keyReleasedDecoder : Decode.Decoder Msg
+keyReleasedDecoder =
+    Decode.map (toKey >> KeyReleasedMsg) (Decode.field "key" Decode.string)
+
+
+toKey : String -> KeyEventMsg
+toKey event_key_string =
+    case event_key_string of
+        "Control" ->
+            KeyEventControl
+
+        "Shift" ->
+            KeyEventShift
+
+        "Alt" ->
+            KeyEventAlt
+
+        "Meta" ->
+            KeyEventMeta
+
+        string_ ->
+            case String.uncons string_ of
+                Just ( char, "" ) ->
+                    KeyEventLetter char
+
+                _ ->
+                    KeyEventUnknown event_key_string
 
 
 find_matching_records : Item -> InventoryRecord -> Bool
@@ -940,6 +986,22 @@ update msg model =
 
         ToggleShowDebugInventories ->
             ( { model | show_debug_inventories = not model.show_debug_inventories }, Cmd.none )
+
+        KeyPressedMsg key_event_msg ->
+            case key_event_msg of
+                KeyEventShift ->
+                    ( { model | show_debug_inventories = True }, Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        KeyReleasedMsg key_event_msg ->
+            case key_event_msg of
+                KeyEventShift ->
+                    ( { model | show_debug_inventories = False }, Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
 
 
 {-| adds 1 gold per second. GPM is a misnomer
@@ -2120,9 +2182,8 @@ charts_display historical_shop_trends hovered_trend_chart =
                 ( item_type_, val ) =
                     it_val
 
-                _ =
-                    Debug.log "item" <| CI.getData item
-
+                -- _ =
+                --     Debug.log "item" <| CI.getData item
                 item_type =
                     Weapon
             in
@@ -2245,7 +2306,9 @@ view model =
                             )
                     )
     in
-    Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
+    Element.layoutWith { options = [] }
+        []
+    <|
         Element.column [ width fill, font_scaled 1, height fill ] <|
             [ welcome_header
             , Element.el [ paddingXY 0 10, width fill ] <| charts_display model.historical_shop_trends model.hovered_trend_chart

@@ -280,6 +280,7 @@ type alias Model =
     , hovered_trend_chart : List (CI.One TrendChartDatum CI.Dot)
     , ai_tick_time : Time.Posix --used to seed the ai randomness
     , show_debug_inventories : Bool
+    , show_charts_in_hovered_item : Bool
     }
 
 
@@ -720,6 +721,7 @@ init =
       , ai_tick_time = Time.millisToPosix -1
       , hovered_trend_chart = []
       , show_debug_inventories = True
+      , show_charts_in_hovered_item = False
       }
     , Task.perform TickSecond Time.now
     )
@@ -990,7 +992,7 @@ update msg model =
         KeyPressedMsg key_event_msg ->
             case key_event_msg of
                 KeyEventShift ->
-                    ( { model | show_debug_inventories = True }, Cmd.none )
+                    ( { model | show_charts_in_hovered_item = True }, Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
@@ -998,7 +1000,7 @@ update msg model =
         KeyReleasedMsg key_event_msg ->
             case key_event_msg of
                 KeyEventShift ->
-                    ( { model | show_debug_inventories = False }, Cmd.none )
+                    ( { model | show_charts_in_hovered_item = False }, Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
@@ -1508,14 +1510,14 @@ is_item_trending item_type_sentiments item =
 
 
 render_single_item_for_sale :
-    ( List ShopTrends, ShopTrends )
+    ( List ShopTrends, ShopTrends, Bool )
     -> Character
     -> Maybe ( CharacterId, Item )
     -> InventoryRecord
     -> ListContext
     -> (InventoryRecord -> Element Msg)
     -> Element.Element Msg
-render_single_item_for_sale ( historical_shop_trends, shop_trends ) { char_id, held_gold } maybe_hovered_item ( item, qty ) context controls_column =
+render_single_item_for_sale ( historical_shop_trends, shop_trends, show_charts_in_hovered_item ) { char_id, held_gold } maybe_hovered_item ( item, qty ) context controls_column =
     let
         is_hovered_item =
             case maybe_hovered_item of
@@ -1566,7 +1568,11 @@ render_single_item_for_sale ( historical_shop_trends, shop_trends ) { char_id, h
                                     else
                                         []
                                    )
-                        , el [ paddingXY 20 20 ] <| small_charts_display historical_shop_trends item.item_type
+                        , if show_charts_in_hovered_item then
+                            el [ paddingXY 20 20 ] <| small_charts_display historical_shop_trends item.item_type
+
+                          else
+                            Element.none
                         ]
 
             else
@@ -1897,14 +1903,14 @@ render_inventory model header character shop_trends hovered_item context control
         is_shop_context =
             context == ShopItems
 
-        { historical_shop_trends, item_db } =
+        { historical_shop_trends, item_db, show_charts_in_hovered_item } =
             model
 
         rendered_items =
             List.map
                 (\item ->
                     render_single_item_for_sale
-                        ( historical_shop_trends, shop_trends )
+                        ( historical_shop_trends, shop_trends, show_charts_in_hovered_item )
                         character
                         hovered_item
                         item
@@ -2127,7 +2133,7 @@ small_charts_display historical_shop_trends item_type =
     in
     Element.el
         [ width <| Element.px chart_width
-        , height <| Element.px (chart_height + 20)
+        , height <| Element.px 100
         , paddingXY 20 0
         , centerX
         ]

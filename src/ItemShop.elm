@@ -1543,11 +1543,18 @@ render_single_item_for_sale ( historical_shop_trends, shop_trends, show_charts_i
                     , Element.moveDown 20
                     ]
                 <|
-                    column [ spacing 5 ]
-                        [ paragraph []
-                            [ text item.name
-                            , text ": "
-                            , text item.description
+                    column [ spacing 5, width fill ]
+                        [ row [ width fill ]
+                            [ paragraph []
+                                [ text item.name
+                                , text ": "
+                                , text item.description
+                                ]
+                            , if not show_charts_in_hovered_item then
+                                el [ Font.italic, alignRight, font_grey, Font.size 12 ] <| text "Hold Shift for more"
+
+                              else
+                                Element.none
                             ]
                         , paragraph [] <|
                             [ text "Current Price: "

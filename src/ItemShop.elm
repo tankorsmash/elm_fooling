@@ -168,6 +168,7 @@ type Msg
     | TickSecond Time.Posix
       -- | OnTrendChartHover (List (CI.One TrendSnapshot CI.Dot))
     | OnTrendChartHover (List (CI.One TrendChartDatum CI.Dot))
+    | ToggleShowDebugInventories
 
 
 type alias TradeOrder =
@@ -263,6 +264,7 @@ type alias Model =
     , item_db : ItemDb
     , hovered_trend_chart : List (CI.One TrendChartDatum CI.Dot)
     , ai_tick_time : Time.Posix --used to seed the ai randomness
+    , show_debug_inventories : Bool
     }
 
 
@@ -699,6 +701,7 @@ init =
       , shop_trends_hovered = False
       , ai_tick_time = Time.millisToPosix -1
       , hovered_trend_chart = []
+      , show_debug_inventories = True
       }
     , Task.perform TickSecond Time.now
     )
@@ -924,6 +927,9 @@ update msg model =
 
         OnTrendChartHover hovered ->
             ( { model | hovered_trend_chart = hovered }, Cmd.none )
+
+        ToggleShowDebugInventories ->
+            ( { model | show_debug_inventories = not model.show_debug_inventories }, Cmd.none )
 
 
 get_trend_for_item : ShopTrends -> Item -> Float
@@ -2038,6 +2044,23 @@ view model =
     let
         welcome_header =
             Element.el [ font_scaled 3, padding_bottom 10 ] <| text "Welcome to the Item Shop!"
+
+        debug_inventories : List (Element Msg)
+        debug_inventories =
+            exclude_player_and_shop model model.characters
+                |> List.map
+                    (\character ->
+                        Element.el [ height fill, paddingXY 0 10, width fill ]
+                            (render_inventory
+                                model
+                                (character.name ++ "'s Inventory")
+                                character
+                                model.shop_trends
+                                model.hovered_item_in_character
+                                CharacterItems
+                                (always Element.none)
+                            )
+                    )
     in
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
         Element.column [ width fill, font_scaled 1, height fill ] <|
@@ -2063,21 +2086,16 @@ view model =
                     InventoryItems
                     (\( item, qty ) -> shop_sell_button (qty >= 1) ( item, 1 ))
             ]
-                ++ (List.map
-                        (\character ->
-                            Element.el [ height fill, paddingXY 0 10, width fill ]
-                                (render_inventory
-                                    model
-                                    (character.name ++ "'s Inventory")
-                                    character
-                                    model.shop_trends
-                                    model.hovered_item_in_character
-                                    CharacterItems
-                                    (always Element.none)
-                                )
-                        )
-                    <|
-                        exclude_player_and_shop model model.characters
+                ++ (if model.show_debug_inventories then
+                        [ column [ width fill ]
+                            ([ secondary_button [] ToggleShowDebugInventories "Hide Debug"
+                             ]
+                                ++ debug_inventories
+                            )
+                        ]
+
+                    else
+                        [ secondary_button [] ToggleShowDebugInventories "Show Debug" ]
                    )
 
 

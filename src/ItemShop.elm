@@ -1783,6 +1783,9 @@ render_inventory model header character shop_trends hovered_item context control
         { char_id, held_items, held_gold } =
             character
 
+        is_shop_context =
+            context == ShopItems
+
         rendered_items =
             List.map
                 (\item ->
@@ -1851,27 +1854,36 @@ render_inventory model header character shop_trends hovered_item context control
                 [ width fill
                 , height fill
                 , scrollbars
-                , if List.length character.action_log > 0 then
+                , if not is_shop_context && List.length character.action_log > 0 then
                     height (fill |> Element.maximum 600 |> Element.minimum 50)
 
                   else
                     height fill
                 ]
-                rendered_action_log_items
+                (if not is_shop_context then
+                    rendered_action_log_items
+
+                 else
+                    []
+                )
             ]
     in
     Element.column [ width fill, spacingXY 0 5, height fill ] <|
         [ Element.row [ font_scaled 2, width fill ]
             [ Element.el [ border_bottom 2 ] <| text header
             , text "   "
-            , row [ font_scaled 1, centerX ] <|
-                [ text "Held: ", render_gp held_gold ]
+            , if not is_shop_context then
+                row [ font_scaled 1, centerX ] <|
+                    [ text "Held: ", render_gp held_gold ]
+
+              else
+                Element.none
             ]
         ]
             ++ rendered_desires
             ++ rendered_dislikes
             ++ rendered_action_log
-            ++ (if List.length character.action_log > 0 then
+            ++ (if not is_shop_context && List.length character.action_log > 0 then
                     divider
 
                 else

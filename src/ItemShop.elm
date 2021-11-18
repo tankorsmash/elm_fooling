@@ -942,6 +942,24 @@ update msg model =
             ( { model | show_debug_inventories = not model.show_debug_inventories }, Cmd.none )
 
 
+{-| adds 1 gold per second. GPM is a misnomer
+-}
+add_player_gpm : Character -> Character
+add_player_gpm player =
+    let
+        { held_gold } =
+            player
+
+        max_gold =
+            50
+    in
+    if held_gold < max_gold then
+        { player | held_gold = held_gold + 1 }
+
+    else
+        player
+
+
 update_player : Model -> Model
 update_player model =
     let
@@ -950,11 +968,8 @@ update_player model =
 
         { held_gold } =
             player
-
-        new_player =
-            { player | held_gold = player.held_gold + 1 }
     in
-    { model | player = new_player }
+    { model | player = player |> add_player_gpm }
 
 
 get_trend_for_item : ShopTrends -> Item -> Float

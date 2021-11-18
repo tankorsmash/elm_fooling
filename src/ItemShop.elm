@@ -268,6 +268,14 @@ type alias Model =
     }
 
 
+is_item_trade_log_to_shop item_trade_log =
+    item_trade_log.to_party == ShopParty
+
+
+is_item_trade_log_from_shop item_trade_log =
+    item_trade_log.from_party == ShopParty
+
+
 initial_shop_trends : ShopTrends
 initial_shop_trends =
     { item_type_sentiment =
@@ -1464,7 +1472,7 @@ render_single_item_for_sale ( historical_shop_trends, shop_trends ) { char_id, h
                                     else
                                         []
                                    )
-                        , el [paddingXY 20 20] <| small_charts_display historical_shop_trends item.item_type
+                        , el [ paddingXY 20 20 ] <| small_charts_display historical_shop_trends item.item_type
                         ]
 
             else
@@ -1754,7 +1762,15 @@ action_log_to_str : ItemDb -> ActionLog -> String
 action_log_to_str item_db action_log =
     case action_log.log_type of
         Traded item_trade_log ->
-            "Traded: "
+            let
+                traded_prefix =
+                    if is_item_trade_log_to_shop item_trade_log then
+                        "Sold: "
+
+                    else
+                        "Bought: "
+            in
+            traded_prefix
                 ++ (case lookup_item_id item_db item_trade_log.item_id of
                         Nothing ->
                             "Unknown Item"
@@ -1947,13 +1963,13 @@ small_charts_display historical_shop_trends item_type =
         get_y_from_single_datum ( idx, it_val ) =
             Tuple.second it_val
 
-        filter_dataset_by_item_type :  ShopTrends -> ( ItemType, Float )
+        filter_dataset_by_item_type : ShopTrends -> ( ItemType, Float )
         filter_dataset_by_item_type { item_type_sentiment } =
             ( item_type
             , get_item_type_trend item_type_sentiment item_type
             )
 
-        build_filtered_dataset :  List TrendChartDatum
+        build_filtered_dataset : List TrendChartDatum
         build_filtered_dataset =
             List.map
                 (\( idx, s_t ) ->
@@ -1980,10 +1996,11 @@ small_charts_display historical_shop_trends item_type =
                         []
                         |> C.named (item_type_to_pretty_string item_type)
                     ]
-                    (build_filtered_dataset )
+                    build_filtered_dataset
 
         -- raw_dataset
-        datasets = [ build_dataset ]
+        datasets =
+            [ build_dataset ]
 
         -- chart_attributes : List (CA.Attribute a)
         chart_attributes =
@@ -2025,6 +2042,7 @@ small_charts_display historical_shop_trends item_type =
             C.chart
                 chart_attributes
                 chart_elements
+
 
 charts_display :
     List ShopTrends

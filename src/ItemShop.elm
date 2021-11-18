@@ -933,13 +933,28 @@ update msg model =
             ( { model | shop_trends_hovered = False }, Cmd.none )
 
         TickSecond time ->
-            ( update_ai_chars { model | ai_tick_time = time }, Cmd.none )
+            ( update_ai_chars <| update_player { model | ai_tick_time = time }, Cmd.none )
 
         OnTrendChartHover hovered ->
             ( { model | hovered_trend_chart = hovered }, Cmd.none )
 
         ToggleShowDebugInventories ->
             ( { model | show_debug_inventories = not model.show_debug_inventories }, Cmd.none )
+
+
+update_player : Model -> Model
+update_player model =
+    let
+        { player } =
+            model
+
+        { held_gold } =
+            player
+
+        new_player =
+            { player | held_gold = player.held_gold + 1 }
+    in
+    { model | player = new_player }
 
 
 get_trend_for_item : ShopTrends -> Item -> Float

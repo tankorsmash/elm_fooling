@@ -1464,6 +1464,7 @@ render_single_item_for_sale ( historical_shop_trends, shop_trends ) { char_id, h
                                     else
                                         []
                                    )
+                        , el [paddingXY 20 20] <| small_charts_display historical_shop_trends item.item_type
                         ]
 
             else
@@ -1910,6 +1911,120 @@ float_to_percent : Float -> String
 float_to_percent flt =
     flt * 100 |> floor |> String.fromInt |> (\str -> str ++ "%")
 
+
+small_charts_display :
+    List ShopTrends
+    -> ItemType
+    -> Element Msg
+small_charts_display historical_shop_trends item_type =
+    let
+        chart_width =
+            600
+
+        chart_height =
+            150
+
+        chart_points =
+            200
+
+        raw_dataset_len =
+            List.length historical_shop_trends
+
+        raw_dataset : List ( Int, ShopTrends )
+        raw_dataset =
+            List.indexedMap Tuple.pair <|
+                if raw_dataset_len > chart_points then
+                    List.drop (raw_dataset_len - chart_points) historical_shop_trends
+
+                else
+                    historical_shop_trends
+
+        get_x_from_single_datum : TrendChartDatum -> Float
+        get_x_from_single_datum =
+            Tuple.first >> toFloat
+
+        get_y_from_single_datum : TrendChartDatum -> Float
+        get_y_from_single_datum ( idx, it_val ) =
+            Tuple.second it_val
+
+        filter_dataset_by_item_type :  ShopTrends -> ( ItemType, Float )
+        filter_dataset_by_item_type { item_type_sentiment } =
+            ( item_type
+            , get_item_type_trend item_type_sentiment item_type
+            )
+
+        build_filtered_dataset :  List TrendChartDatum
+        build_filtered_dataset =
+            List.map
+                (\( idx, s_t ) ->
+                    ( idx, filter_dataset_by_item_type s_t )
+                )
+                raw_dataset
+
+        build_dataset =
+            if
+                List.all
+                    (\( _, shop_trends ) ->
+                        get_item_type_trend shop_trends.item_type_sentiment item_type == 1.0
+                    )
+                    raw_dataset
+            then
+                C.none
+
+            else
+                C.series (\( idx, _ ) -> toFloat idx)
+                    [ C.interpolated
+                        -- (\trd -> get_y_from_single_datum item_type trd)
+                        (\( idx, it_val ) -> Tuple.second it_val)
+                        [ CA.monotone ]
+                        []
+                        |> C.named (item_type_to_pretty_string item_type)
+                    ]
+                    (build_filtered_dataset )
+
+        -- raw_dataset
+        datasets = [ build_dataset ]
+
+        -- chart_attributes : List (CA.Attribute a)
+        chart_attributes =
+            [ CA.height chart_height
+            , CA.width chart_width
+            , CA.padding { top = 10, bottom = 5, left = 10, right = 10 }
+            , CE.onMouseMove OnTrendChartHover (CE.getNearest CI.dots)
+            , CE.onMouseLeave (OnTrendChartHover [])
+            , CA.domain
+                [ CA.lowest 0.5 CA.orLower
+                , CA.highest 1.5 CA.orHigher
+                , CA.centerAt 1.0
+                ]
+            ]
+
+        chart_elements : List (C.Element TrendChartDatum msg)
+        chart_elements =
+            [ C.xLabels []
+            , C.yLabels [ CA.format float_to_percent, CA.withGrid ]
+            ]
+                ++ datasets
+                ++ [ C.legendsAt .min
+                        .max
+                        [ CA.column
+                        , CA.moveRight 15
+                        , CA.spacing 5
+                        ]
+                        [ CA.width 20 ]
+                   ]
+    in
+    Element.el
+        [ width <| Element.px chart_width
+        , height <| Element.px (chart_height + 20)
+        , paddingXY 20 0
+        , centerX
+        ]
+    <|
+        Element.html <|
+            C.chart
+                chart_attributes
+                chart_elements
 
 charts_display :
     List ShopTrends

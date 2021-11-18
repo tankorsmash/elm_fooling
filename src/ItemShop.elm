@@ -29,6 +29,7 @@ import Element
         , rgb
         , rgb255
         , row
+        , scrollbars
         , spacing
         , spacingXY
         , text
@@ -551,6 +552,26 @@ secondary_button attrs on_press label =
             ++ attrs
         )
         { onPress = Just on_press, label = text label }
+
+
+
+-- this doesn't help me so far
+
+
+scrollbarYEl : List (Element.Attribute msg) -> Element msg -> Element msg
+scrollbarYEl attrs body =
+    el [ height fill, width fill ] <|
+        el
+            ([ Element.htmlAttribute <| Html.Attributes.style "position" "absolute"
+             , Element.htmlAttribute <| Html.Attributes.style "top" "0"
+             , Element.htmlAttribute <| Html.Attributes.style "right" "0"
+             , Element.htmlAttribute <| Html.Attributes.style "bottom" "0"
+             , Element.htmlAttribute <| Html.Attributes.style "left" "0"
+             , Element.scrollbarY
+             ]
+                ++ attrs
+            )
+            body
 
 
 danger_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
@@ -1349,7 +1370,7 @@ shop_sell_button has_items_to_sell_ ( item, qty ) =
 debug_explain =
     let
         do_explain =
-            False
+            True
     in
     if do_explain then
         explain Debug.todo
@@ -1452,10 +1473,10 @@ render_single_item_for_sale shop_trends { char_id, held_gold } maybe_hovered_ite
         , Events.onMouseLeave <| MouseLeaveShopItem context ( char_id, item )
         , Element.below expanded_display
         ]
-        [ column [ Element.clip, width (fillPortion 2 |> Element.maximum 150), Font.size 16, debug_explain ] [ text <| clipText item.name 25 ]
-        , column [ portion 1, debug_explain ] [ render_gp <| get_adjusted_item_cost shop_trends item 1 ]
-        , column [ portion 1, debug_explain ] [ render_item_type item.item_type ]
-        , column [ portion 1, debug_explain ]
+        [ column [ Element.clip, width (fillPortion 2 |> Element.maximum 150), Font.size 16 ] [ text <| clipText item.name 25 ]
+        , column [ portion 1 ] [ render_gp <| get_adjusted_item_cost shop_trends item 1 ]
+        , column [ portion 1 ] [ render_item_type item.item_type ]
+        , column [ portion 1 ]
             [ el [] <|
                 if qty == 1 then
                     text " "
@@ -1474,9 +1495,9 @@ render_single_item_for_sale shop_trends { char_id, held_gold } maybe_hovered_ite
                 else
                     text <| "x" ++ String.fromInt qty
             ]
-        , column [ width <| (fillPortion 3 |> Element.maximum 200), debug_explain ]
+        , column [ width <| (fillPortion 3 |> Element.maximum 200) ]
             [ el [] <| text <| clipText item.description 24 ]
-        , column [ portion 1, debug_explain ] [ controls_column ( item, qty ) ]
+        , column [ portion 1 ] [ controls_column ( item, qty ) ]
         ]
 
 
@@ -1804,18 +1825,36 @@ render_inventory model header character shop_trends hovered_item context control
                                    )
                     )
 
-        rendered_action_log : List (Element Msg)
-        rendered_action_log =
+        render_single_action_log : ActionLog -> Element Msg
+        render_single_action_log log =
+            el [] (text <| action_log_to_str model.item_db log)
+
+        rendered_action_log_items : List (Element Msg)
+        rendered_action_log_items =
             if List.length character.action_log > 0 then
                 character.action_log
                     |> List.reverse
-                    |> List.take 20
-                    |> List.map (text << action_log_to_str model.item_db)
+                    |> List.take 50
+                    |> List.map render_single_action_log
 
             else
                 [ text "No actions taken" ]
+
+        rendered_action_log =
+            [ column
+                [ width fill
+                , height fill
+                , scrollbars
+                , if List.length character.action_log > 0 then
+                    height (fill |> Element.maximum 600 |> Element.minimum 50)
+
+                  else
+                    height fill
+                ]
+                rendered_action_log_items
+            ]
     in
-    Element.column [ width fill, spacingXY 0 5 ] <|
+    Element.column [ width fill, spacingXY 0 5, height fill ] <|
         [ Element.row [ font_scaled 2, width fill ]
             [ Element.el [ border_bottom 2 ] <| text header
             , text "   "
@@ -1826,7 +1865,12 @@ render_inventory model header character shop_trends hovered_item context control
             ++ rendered_desires
             ++ rendered_dislikes
             ++ rendered_action_log
-            ++ divider
+            ++ (if List.length character.action_log > 0 then
+                    divider
+
+                else
+                    []
+               )
             ++ rendered_items
 
 
@@ -1996,7 +2040,7 @@ view model =
             Element.el [ font_scaled 3, padding_bottom 10 ] <| text "Welcome to the Item Shop!"
     in
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
-        Element.column [ width fill, font_scaled 1 ] <|
+        Element.column [ width fill, font_scaled 1, height fill ] <|
             [ welcome_header
             , Element.el [ paddingXY 0 10, width fill ] <| charts_display model
             , trends_display model.item_db model.shop_trends model.characters model.shop_trends_hovered
@@ -2021,7 +2065,7 @@ view model =
             ]
                 ++ (List.map
                         (\character ->
-                            Element.el [ paddingXY 0 10, width fill ]
+                            Element.el [ height fill, paddingXY 0 10, width fill ]
                                 (render_inventory
                                     model
                                     (character.name ++ "'s Inventory")

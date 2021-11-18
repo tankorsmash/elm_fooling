@@ -1406,14 +1406,14 @@ is_item_trending item_type_sentiments item =
 
 
 render_single_item_for_sale :
-    ShopTrends
+    ( List ShopTrends, ShopTrends )
     -> Character
     -> Maybe ( CharacterId, Item )
     -> InventoryRecord
     -> ListContext
     -> (InventoryRecord -> Element Msg)
     -> Element.Element Msg
-render_single_item_for_sale shop_trends { char_id, held_gold } maybe_hovered_item ( item, qty ) context controls_column =
+render_single_item_for_sale ( historical_shop_trends, shop_trends ) { char_id, held_gold } maybe_hovered_item ( item, qty ) context controls_column =
     let
         is_hovered_item =
             case maybe_hovered_item of
@@ -1786,11 +1786,14 @@ render_inventory model header character shop_trends hovered_item context control
         is_shop_context =
             context == ShopItems
 
+        { historical_shop_trends, item_db } =
+            model
+
         rendered_items =
             List.map
                 (\item ->
                     render_single_item_for_sale
-                        shop_trends
+                        ( historical_shop_trends, shop_trends )
                         character
                         hovered_item
                         item
@@ -1836,7 +1839,7 @@ render_inventory model header character shop_trends hovered_item context control
 
         render_single_action_log : ActionLog -> Element Msg
         render_single_action_log log =
-            el [] (text <| action_log_to_str model.item_db log)
+            el [] (text <| action_log_to_str item_db log)
 
         rendered_action_log_items : List (Element Msg)
         rendered_action_log_items =
@@ -1908,8 +1911,11 @@ float_to_percent flt =
     flt * 100 |> floor |> String.fromInt |> (\str -> str ++ "%")
 
 
-charts_display : Model -> Element Msg
-charts_display model =
+charts_display :
+    List ShopTrends
+    -> List (CI.One TrendChartDatum CI.Dot)
+    -> Element Msg
+charts_display historical_shop_trends hovered_trend_chart =
     let
         chart_width =
             700
@@ -1921,16 +1927,16 @@ charts_display model =
             200
 
         raw_dataset_len =
-            List.length model.historical_shop_trends
+            List.length historical_shop_trends
 
         raw_dataset : List ( Int, ShopTrends )
         raw_dataset =
             List.indexedMap Tuple.pair <|
                 if raw_dataset_len > chart_points then
-                    List.drop (raw_dataset_len - chart_points) model.historical_shop_trends
+                    List.drop (raw_dataset_len - chart_points) historical_shop_trends
 
                 else
-                    model.historical_shop_trends
+                    historical_shop_trends
 
         get_x_from_single_datum : TrendChartDatum -> Float
         get_x_from_single_datum =
@@ -2036,7 +2042,7 @@ charts_display model =
                         , CA.spacing 5
                         ]
                         [ CA.width 20 ]
-                   , C.each model.hovered_trend_chart <| render_tooltip
+                   , C.each hovered_trend_chart <| render_tooltip
                    ]
     in
     Element.el
@@ -2077,7 +2083,7 @@ view model =
     Element.layoutWith { options = [ Element.noStaticStyleSheet ] } [] <|
         Element.column [ width fill, font_scaled 1, height fill ] <|
             [ welcome_header
-            , Element.el [ paddingXY 0 10, width fill ] <| charts_display model
+            , Element.el [ paddingXY 0 10, width fill ] <| charts_display model.historical_shop_trends model.hovered_trend_chart
             , trends_display model.item_db model.shop_trends model.characters model.shop_trends_hovered
             , Element.el [ paddingXY 0 10, width fill ] <|
                 render_inventory

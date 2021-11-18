@@ -268,10 +268,12 @@ type alias Model =
     }
 
 
+is_item_trade_log_to_shop : ItemTradeLog -> Bool
 is_item_trade_log_to_shop item_trade_log =
     item_trade_log.to_party == ShopParty
 
 
+is_item_trade_log_from_shop : ItemTradeLog -> Bool
 is_item_trade_log_from_shop item_trade_log =
     item_trade_log.from_party == ShopParty
 

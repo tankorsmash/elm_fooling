@@ -170,6 +170,10 @@ type KeyEventMsg
     | KeyEventUnknown String
 
 
+type SpecialAction
+    = InviteTrader
+
+
 type Msg
     = Noop
     | MouseEnterShopItem ListContext ( CharacterId, Item )
@@ -186,6 +190,7 @@ type Msg
     | KeyReleasedMsg KeyEventMsg
     | StartTooltipHover String
     | EndTooltipHover String
+    | OnSpecialAction SpecialAction
 
 
 type alias TradeOrder =
@@ -1029,6 +1034,16 @@ update msg model =
 
         EndTooltipHover tooltip_id ->
             ( { model | hovered_tooltip_id = Nothing }, Cmd.none )
+
+        OnSpecialAction special_action ->
+            update_special_action special_action model
+
+
+update_special_action : SpecialAction -> Model -> ( Model, Cmd Msg )
+update_special_action special_action model =
+    case special_action of
+        InviteTrader ->
+            ( model, Cmd.none )
 
 
 {-| adds 1 gold per second. GPM is a misnomer
@@ -2406,6 +2421,7 @@ type alias TooltipConfig =
     , maybe_hovered_tooltip_id : Maybe String
     }
 
+
 primary_button_tooltip :
     List (Element.Attribute Msg)
     -> Msg
@@ -2414,10 +2430,24 @@ primary_button_tooltip :
     -> Element Msg
 primary_button_tooltip attrs on_press label { tooltip_id, tooltip_text, maybe_hovered_tooltip_id } =
     let
+        tooltip_el =
+            Element.el
+                [ width Element.shrink
+                , Background.color <| rgb 1 1 1
+                , Border.color <| rgb 0.35 0.35 0.35
+                , Border.rounded 3
+                , Border.width 2
+                , padding 10
+                , Element.moveUp 20
+                , centerX
+                ]
+            <|
+                text tooltip_text
+
         tooltip_attr =
             case maybe_hovered_tooltip_id of
                 Just hovered_tooltip_id ->
-                    [ Element.above <| text tooltip_text ]
+                    [ Element.above tooltip_el ]
 
                 Nothing ->
                     []
@@ -2433,14 +2463,36 @@ primary_button_tooltip attrs on_press label { tooltip_id, tooltip_text, maybe_ho
         label
 
 
+buildTooltipConfig : String -> TooltipConfig
+buildTooltipConfig text =
+    { tooltip_id = UUID.forName text UUID.dnsNamespace |> UUID.toString
+    , tooltip_text = text
+    , maybe_hovered_tooltip_id = Nothing
+    }
+
+
+withHoveredId : Maybe String -> TooltipConfig -> TooltipConfig
+withHoveredId maybe_hovered_tooltip_id tooltip_config =
+    { tooltip_config
+        | maybe_hovered_tooltip_id = maybe_hovered_tooltip_id
+    }
+
+
 special_actions_display : Model -> Element Msg
 special_actions_display model =
+    let
+        button_search =
+            primary_button_tooltip []
+                (OnSpecialAction InviteTrader)
+                "Invite Trader"
+                (buildTooltipConfig
+                    "Invite a fellow Trader.\n\nThey may have new wares to sell, that you may buy up."
+                    |> withHoveredId model.hovered_tooltip_id
+                )
+    in
     column [ width fill, spacing 10, paddingXY 0 10 ]
         [ el [ font_scaled 2, border_bottom 2 ] <| text "Special Actions"
         , row [ width fill ]
-            [ primary_button_tooltip []
-                Noop
-                "Search For Items"
-                { tooltip_id = "action_1", tooltip_text = "This is a tooltip", maybe_hovered_tooltip_id = model.hovered_tooltip_id }
+            [ button_search
             ]
         ]

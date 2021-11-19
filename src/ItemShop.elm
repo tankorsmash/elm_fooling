@@ -184,6 +184,8 @@ type Msg
     | ToggleShowDebugInventories
     | KeyPressedMsg KeyEventMsg
     | KeyReleasedMsg KeyEventMsg
+    | StartTooltipHover String
+    | EndTooltipHover String
 
 
 type alias TradeOrder =
@@ -286,6 +288,7 @@ type alias Model =
     , ai_tick_time : Time.Posix --used to seed the ai randomness
     , show_debug_inventories : Bool
     , show_charts_in_hovered_item : Bool
+    , hovered_tooltip_id : Maybe String
     }
 
 
@@ -539,8 +542,8 @@ primary_color_bright =
             rgb255 255 0 0
 
 
-primary_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
-primary_button attrs on_press label =
+primary_button_custom : List (Element.Attribute Msg) -> Msg -> Element Msg -> Element Msg
+primary_button_custom attrs on_press label =
     Input.button
         ([ -- bs4-like values
            Font.color white_color
@@ -559,11 +562,16 @@ primary_button attrs on_press label =
          ]
             ++ attrs
         )
-        { onPress = Just on_press, label = text label }
+        { onPress = Just on_press, label = label }
 
 
-secondary_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
-secondary_button attrs on_press label =
+primary_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
+primary_button attrs on_press label =
+    primary_button_custom attrs on_press (text label)
+
+
+secondary_button_custom : List (Element.Attribute Msg) -> Msg -> Element Msg -> Element Msg
+secondary_button_custom attrs on_press label =
     Input.button
         ([ -- bs4-like values
            Font.color white_color
@@ -577,7 +585,12 @@ secondary_button attrs on_press label =
          ]
             ++ attrs
         )
-        { onPress = Just on_press, label = text label }
+        { onPress = Just on_press, label = label }
+
+
+secondary_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
+secondary_button attrs on_press label =
+    secondary_button_custom attrs on_press (text label)
 
 
 
@@ -727,6 +740,7 @@ init =
       , hovered_trend_chart = []
       , show_debug_inventories = True
       , show_charts_in_hovered_item = False
+      , hovered_tooltip_id = Nothing
       }
     , Task.perform TickSecond Time.now
     )
@@ -1009,6 +1023,12 @@ update msg model =
 
                 _ ->
                     ( model, Cmd.none )
+
+        StartTooltipHover tooltip_id ->
+            ( { model | hovered_tooltip_id = Just tooltip_id }, Cmd.none )
+
+        EndTooltipHover tooltip_id ->
+            ( { model | hovered_tooltip_id = Nothing }, Cmd.none )
 
 
 {-| adds 1 gold per second. GPM is a misnomer
@@ -2336,6 +2356,7 @@ view model =
         Element.column [ width fill, font_scaled 1, height fill ] <|
             [ welcome_header
             , Element.el [ paddingXY 0 10, width fill ] <| charts_display model.historical_shop_trends model.hovered_trend_chart
+            , special_actions_display model
             , trends_display model.item_db model.shop_trends model.characters model.shop_trends_hovered
             , Element.el [ paddingXY 0 10, width fill ] <|
                 render_inventory
@@ -2377,3 +2398,49 @@ scaled val =
 font_scaled : Int -> Element.Attribute msg
 font_scaled scale =
     Font.size <| scaled scale
+
+
+type alias TooltipConfig =
+    { tooltip_id : String
+    , tooltip_text : String
+    , maybe_hovered_tooltip_id : Maybe String
+    }
+
+primary_button_tooltip :
+    List (Element.Attribute Msg)
+    -> Msg
+    -> String
+    -> TooltipConfig
+    -> Element Msg
+primary_button_tooltip attrs on_press label { tooltip_id, tooltip_text, maybe_hovered_tooltip_id } =
+    let
+        tooltip_attr =
+            case maybe_hovered_tooltip_id of
+                Just hovered_tooltip_id ->
+                    [ Element.above <| text tooltip_text ]
+
+                Nothing ->
+                    []
+    in
+    primary_button
+        ([ Events.onMouseEnter <| StartTooltipHover tooltip_id
+         , Events.onMouseLeave <| EndTooltipHover tooltip_id
+         ]
+            ++ tooltip_attr
+            ++ attrs
+        )
+        on_press
+        label
+
+
+special_actions_display : Model -> Element Msg
+special_actions_display model =
+    column [ width fill, spacing 10, paddingXY 0 10 ]
+        [ el [ font_scaled 2, border_bottom 2 ] <| text "Special Actions"
+        , row [ width fill ]
+            [ primary_button_tooltip []
+                Noop
+                "Search For Items"
+                { tooltip_id = "action_1", tooltip_text = "This is a tooltip", maybe_hovered_tooltip_id = model.hovered_tooltip_id }
+            ]
+        ]

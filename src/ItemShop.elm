@@ -218,9 +218,14 @@ type alias ShopTrends =
     }
 
 
+type WantedAction
+    = WantedToBuy
+    | WantedToSell
+
+
 type ActionLogType
     = Traded ItemTradeLog
-    | WantedButCouldntTrade
+    | WantedButCouldntTrade WantedAction
     | DidNothing
 
 
@@ -1155,7 +1160,7 @@ ai_buy_item_from_shop ai_tick_time shop_trends character shop =
                 Nothing ->
                     ( shop_trends
                     , shop
-                    , append_to_character_action_log character { time = ai_tick_time, log_type = WantedButCouldntTrade }
+                    , append_to_character_action_log character { time = ai_tick_time, log_type = WantedButCouldntTrade WantedToBuy}
                     )
 
                 Just item ->
@@ -1214,7 +1219,7 @@ ai_sell_item_to_shop ai_tick_time shop_trends character shop =
             case List.head untrendy_items of
                 Nothing ->
                     ( shop_trends
-                    , append_to_character_action_log character { log_type = WantedButCouldntTrade, time = ai_tick_time }
+                    , append_to_character_action_log character { log_type = WantedButCouldntTrade WantedToSell, time = ai_tick_time }
                     , shop
                     )
 
@@ -1886,8 +1891,13 @@ action_log_to_str item_db action_log =
                             item.name
                    )
 
-        WantedButCouldntTrade ->
-            "Wanted but couldn't trade"
+        WantedButCouldntTrade action ->
+            case action of
+                WantedToSell ->
+                    "Wanted to sell, but couldn't"
+
+                WantedToBuy ->
+                    "Wanted to buy, but couldn't"
 
         DidNothing ->
             "Did nothing"

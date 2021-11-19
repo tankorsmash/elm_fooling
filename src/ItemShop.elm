@@ -1160,7 +1160,7 @@ ai_buy_item_from_shop ai_tick_time shop_trends character shop =
                 Nothing ->
                     ( shop_trends
                     , shop
-                    , append_to_character_action_log character { time = ai_tick_time, log_type = WantedButCouldntTrade WantedToBuy}
+                    , append_to_character_action_log character { time = ai_tick_time, log_type = WantedButCouldntTrade WantedToBuy }
                     )
 
                 Just item ->
@@ -2315,6 +2315,7 @@ view model =
         debug_inventories : List (Element Msg)
         debug_inventories =
             exclude_player_and_shop model model.characters
+                |> List.sortBy (.char_id >> UUID.toString)
                 |> List.map
                     (\character ->
                         Element.el [ height fill, paddingXY 0 10, width fill ]

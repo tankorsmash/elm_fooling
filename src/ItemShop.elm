@@ -1176,40 +1176,38 @@ ai_buy_item_from_shop ai_tick_time shop_trends character shop =
         -- item type trends sorted by least trendy
         least_trendy_items : List ( ItemType, Float )
         least_trendy_items =
-            List.filterMap
-                (\( it_id, trd ) ->
-                    id_to_item_type it_id
-                        |> Maybe.andThen
-                            (if trd < max_trend then
-                                \item_type -> Just ( item_type, trd )
+            Dict.toList shop_trends.item_type_sentiment
+                |> List.filter
+                    (\( it_id, trd ) ->
+                        let
+                            maybe_item_type =
+                                id_to_item_type it_id
 
-                             else
-                                always Nothing
-                            )
-                )
-            <|
-                List.sortBy
+                            desire =
+                                case maybe_item_type of
+                                    Just item_type ->
+                                        get_sentiment_for_item_type
+                                            character.item_types_desired
+                                            item_type
+
+                                    Nothing ->
+                                        1.0
+                        in
+                        desire > 0
+                    )
+                |> List.sortBy
                     Tuple.second
-                <|
-                    List.filter
-                        (\( it_id, trd ) ->
-                            let
-                                maybe_item_type =
-                                    id_to_item_type it_id
+                |> List.filterMap
+                    (\( it_id, trd ) ->
+                        id_to_item_type it_id
+                            |> Maybe.andThen
+                                (if trd < max_trend then
+                                    \item_type -> Just ( item_type, trd )
 
-                                desire =
-                                    case maybe_item_type of
-                                        Just item_type ->
-                                            get_sentiment_for_item_type
-                                                character.item_types_desired
-                                                item_type
-
-                                        Nothing ->
-                                            1.0
-                            in
-                            desire > 0
-                        )
-                        (Dict.toList shop_trends.item_type_sentiment)
+                                 else
+                                    always Nothing
+                                )
+                    )
 
         is_buyable : ItemTypeSentiment -> Maybe Item -> Maybe Item
         is_buyable ( item_type, trend ) buyable_item =

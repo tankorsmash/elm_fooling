@@ -406,20 +406,6 @@ initial_item_db =
             initial_items
 
 
-
--- get_item_by_str : String -> Maybe Item
--- get_item_by_str item_str =
---     Dict.get item_str item_frames
--- get_item_by_id : UUID -> Maybe Item
--- get_item_by_id item_id =
---     List.head <|
---         List.filter
---             (\item -> item.id == item_id)
---         <|
---             List.map Tuple.second <|
---                 Dict.toList item_frames
-
-
 initial_items_for_sale : ItemDb -> InventoryRecords
 initial_items_for_sale item_db =
     let

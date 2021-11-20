@@ -1039,11 +1039,28 @@ update msg model =
             update_special_action special_action model
 
 
+generate_uuid : String -> UUID.UUID
+generate_uuid str =
+    UUID.forName str UUID.dnsNamespace
+
+
+handle_invite_trader : Model -> Model
+handle_invite_trader model =
+    let
+        name =
+            "Character " ++ (String.fromInt <| List.length model.characters + 1)
+
+        invited_character =
+            create_character (generate_uuid name) name
+    in
+    { model | characters = model.characters ++ [ invited_character ] }
+
+
 update_special_action : SpecialAction -> Model -> ( Model, Cmd Msg )
 update_special_action special_action model =
     case special_action of
         InviteTrader ->
-            ( model, Cmd.none )
+            ( handle_invite_trader model, Cmd.none )
 
 
 {-| adds 1 gold per second. GPM is a misnomer

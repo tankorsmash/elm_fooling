@@ -1165,7 +1165,9 @@ ai_buy_item_from_shop ai_tick_time shop_trends character shop =
         wanted_items : InventoryRecords
         wanted_items =
             List.filter
-                (\( i, q ) -> nonzero_qty ( i, q ) && check_can_afford i && check_nonzero_desire i)
+                (\( i, q ) ->
+                    nonzero_qty ( i, q ) && check_can_afford i && check_nonzero_desire i
+                )
                 shop.held_items
 
         max_trend =

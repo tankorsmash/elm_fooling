@@ -454,10 +454,10 @@ initial_characters : ItemDb -> List Character
 initial_characters item_db =
     let
         base_character_1 =
-            create_character (UUID.forName "character 1" UUID.dnsNamespace) "Billy"
+            create_character (generate_uuid "character 1") "Billy"
 
         base_character_2 =
-            create_character (UUID.forName "character 2" UUID.dnsNamespace) "Mitchell"
+            create_character (generate_uuid "character 2") "Mitchell"
     in
     [ { base_character_1
         | held_items =

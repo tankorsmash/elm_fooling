@@ -342,6 +342,24 @@ initial_item_db =
               , description = "An old pair of boots"
               , id = UUID.forName "boots" UUID.dnsNamespace
               }
+            , { name = "Leather Armor"
+              , item_type = Armor
+              , raw_gold_cost = 15
+              , description = "Lightly-colored tanned leather"
+              , id = UUID.forName "leather armor" UUID.dnsNamespace
+              }
+            , { name = "Iron Armor"
+              , item_type = Armor
+              , raw_gold_cost = 23
+              , description = "Medium armor, afford some protection"
+              , id = UUID.forName "iron armor" UUID.dnsNamespace
+              }
+            , { name = "Iron Helm"
+              , item_type = Armor
+              , raw_gold_cost = 20
+              , description = "A helmet made of iron"
+              , id = UUID.forName "iron helm" UUID.dnsNamespace
+              }
             , { name = "Sword"
               , item_type = Weapon
               , raw_gold_cost = 15
@@ -354,11 +372,29 @@ initial_item_db =
               , description = "A small weapon that fits in your pocket"
               , id = UUID.forName "small dagger" UUID.dnsNamespace
               }
+            , { name = "Broad-headed xe"
+              , item_type = Weapon
+              , raw_gold_cost = 19
+              , description = "A broad-headed axe, commonly used to fell great trees"
+              , id = UUID.forName "broadheaded axe" UUID.dnsNamespace
+              }
             , { name = "Book of the Dead"
               , item_type = Spellbook
               , raw_gold_cost = 20
               , description = "Bound in leather, this book has a skull for a cover"
               , id = UUID.forName "book of the dead" UUID.dnsNamespace
+              }
+            , { name = "Book of the Magi"
+              , item_type = Spellbook
+              , raw_gold_cost = 50
+              , description = "Light bounces off strangely, as if it imperceptibly shuddered"
+              , id = UUID.forName "book of the magi" UUID.dnsNamespace
+              }
+            , { name = "Book of the Mender"
+              , item_type = Spellbook
+              , raw_gold_cost = 30
+              , description = "Light bounces off strangely, as if it imperceptibly shuddered"
+              , id = UUID.forName "book of the mender" UUID.dnsNamespace
               }
             ]
     in

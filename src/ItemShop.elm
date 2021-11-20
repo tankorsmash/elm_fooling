@@ -1047,13 +1047,21 @@ generate_uuid str =
 handle_invite_trader : Model -> Model
 handle_invite_trader model =
     let
+        { characters } =
+            model
+
         name =
             "Character " ++ (String.fromInt <| List.length model.characters + 1)
 
         invited_character =
             create_character (generate_uuid name) name
     in
-    { model | characters = model.characters ++ [ invited_character ] }
+    { model
+        | characters =
+            List.append
+                characters
+                [ { invited_character | held_gold = 50 } ]
+    }
 
 
 update_special_action : SpecialAction -> Model -> ( Model, Cmd Msg )

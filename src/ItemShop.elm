@@ -1166,35 +1166,38 @@ ai_buy_item_from_shop ai_tick_time shop_trends character shop =
         wanted_items =
             List.filter
                 (\( i, q ) ->
-                    nonzero_qty ( i, q ) && check_can_afford i && check_nonzero_desire i
+                    nonzero_qty ( i, q )
+                        && check_can_afford i
+                        && check_nonzero_desire i
                 )
                 shop.held_items
 
         max_trend =
             1.2
 
+        get_desire_of_item_type_id_above_zero item_type_id =
+            let
+                maybe_item_type =
+                    id_to_item_type item_type_id
+
+                desire =
+                    case maybe_item_type of
+                        Just item_type ->
+                            get_sentiment_for_item_type
+                                character.item_types_desired
+                                item_type
+
+                        Nothing ->
+                            1.0
+            in
+            desire > 0
+
         -- item type trends sorted by least trendy
         least_trendy_items : List ( ItemType, Float )
         least_trendy_items =
             Dict.toList shop_trends.item_type_sentiment
                 |> List.filter
-                    (\( it_id, trd ) ->
-                        let
-                            maybe_item_type =
-                                id_to_item_type it_id
-
-                            desire =
-                                case maybe_item_type of
-                                    Just item_type ->
-                                        get_sentiment_for_item_type
-                                            character.item_types_desired
-                                            item_type
-
-                                    Nothing ->
-                                        1.0
-                        in
-                        desire > 0
-                    )
+                    (Tuple.first >> get_desire_of_item_type_id_above_zero)
                 |> List.sortBy
                     Tuple.second
                 |> List.filterMap

@@ -1245,7 +1245,11 @@ ai_buy_item_from_shop ai_tick_time shop_trends character shop =
                 Nothing ->
                     ( shop_trends
                     , shop
-                    , append_to_character_action_log character { time = ai_tick_time, log_type = WantedButCouldntTrade WantedToBuy }
+                    , append_to_character_action_log
+                        character
+                        { time = ai_tick_time
+                        , log_type = WantedButCouldntTrade WantedToBuy
+                        }
                     )
 
                 Just item ->

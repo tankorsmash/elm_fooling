@@ -1123,9 +1123,25 @@ handle_invite_trader model =
                 ( global_seed, [] )
                 (List.repeat num_items ())
 
+        incr_if_matches item ( i, q ) =
+            if i.id == item.id then
+                ( i, q + 1 )
+
+            else
+                ( i, q )
+
         held_items : List ( Item, Int )
         held_items =
             List.filterMap identity held_maybe_item_frames
+                |> List.foldl
+                    (\( item, qty ) prev_items ->
+                        if List.any (Tuple.first >> .id >> (==) item.id) prev_items then
+                            List.map (incr_if_matches item) prev_items
+
+                        else
+                            ( item, qty ) :: prev_items
+                    )
+                    []
     in
     { model
         | characters =

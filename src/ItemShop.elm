@@ -1079,19 +1079,27 @@ pick_random_item_from_db item_db seed =
     ( maybe_item, new_seed )
 
 
+tuple_swap : ( a, b ) -> ( b, a )
+tuple_swap pair =
+    ( Tuple.second pair, Tuple.first pair )
+
+
 pick_item :
     ItemDb
     ->
         (a
-         -> ( Random.Seed, List ( Maybe Item, Int ) )
-         -> ( Random.Seed, List ( Maybe Item, Int ) )
+         -> ( Random.Seed, List (Maybe InventoryRecord) )
+         -> ( Random.Seed, List (Maybe InventoryRecord) )
         )
 pick_item item_db _ ( prev_seed, folded_items ) =
     let
         ( maybe_item, seed_ ) =
             pick_random_item_from_db item_db prev_seed
+
+        result =
+            Maybe.map (\item -> ( item, 1 )) maybe_item
     in
-    ( seed_, ( maybe_item, 1 ) :: folded_items )
+    ( seed_, result :: folded_items )
 
 
 handle_invite_trader : Model -> Model
@@ -1115,17 +1123,7 @@ handle_invite_trader model =
         held_items : List ( Item, Int )
         held_items =
             List.filterMap identity
-                (List.map
-                    (\( mi, q ) ->
-                        case mi of
-                            Nothing ->
-                                Nothing
-
-                            Just item ->
-                                Just ( item, q )
-                    )
-                    held_maybe_item_frames
-                )
+                held_maybe_item_frames
     in
     { model
         | characters =

@@ -1091,22 +1091,47 @@ handle_invite_trader model =
         invited_character =
             create_character (generate_uuid name) name
 
-        ( maybe_item, new_global_seed ) =
-            pick_random_item_from_db item_db global_seed
+        pick_item :
+            a
+            -> ( Random.Seed, List ( Maybe Item, Int ) )
+            -> ( Random.Seed, List ( Maybe Item, Int ) )
+        pick_item _ ( seed, folded_items ) =
+            let
+                ( maybe_item_, seed_ ) =
+                    pick_random_item_from_db item_db seed
+            in
+            ( seed_, [ ( maybe_item_, 1 ) ] ++ folded_items )
 
+        ( new_global_seed, held_maybe_item_frames ) =
+            List.foldl
+                pick_item
+                ( global_seed, [] )
+                [ 1, 2, 3, 4, 5 ]
+
+        held_items : List ( Item, Int )
         held_items =
-            case maybe_item of
-                Nothing ->
-                    []
+            List.filterMap identity
+                (List.map
+                    (\( mi, q ) ->
+                        case mi of
+                            Nothing ->
+                                Nothing
 
-                Just item ->
-                    [ ( item, 1 ) ]
+                            Just item ->
+                                Just ( item, q )
+                    )
+                    held_maybe_item_frames
+                )
     in
     { model
         | characters =
             List.append
                 characters
-                [ { invited_character | held_gold = 50, held_items = held_items } ]
+                [ { invited_character
+                    | held_gold = 50
+                    , held_items = held_items
+                  }
+                ]
         , global_seed = new_global_seed
     }
 

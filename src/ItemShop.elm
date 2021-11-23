@@ -294,6 +294,7 @@ type alias Model =
     , show_debug_inventories : Bool
     , show_charts_in_hovered_item : Bool
     , hovered_tooltip_id : Maybe String
+    , global_seed : Random.Seed --used to seed anything; will be constantly changed throughout the app
     }
 
 
@@ -768,6 +769,7 @@ init =
       , show_debug_inventories = True
       , show_charts_in_hovered_item = False
       , hovered_tooltip_id = Nothing
+      , global_seed = Random.initialSeed 4
       }
     , Task.perform TickSecond Time.now
     )
@@ -1080,7 +1082,7 @@ pick_random_item_from_db item_db seed =
 handle_invite_trader : Model -> Model
 handle_invite_trader model =
     let
-        { characters, item_db, ai_tick_time } =
+        { characters, item_db, global_seed } =
             model
 
         name =
@@ -1089,8 +1091,8 @@ handle_invite_trader model =
         invited_character =
             create_character (generate_uuid name) name
 
-        ( maybe_item, new_seed ) =
-            pick_random_item_from_db item_db (Random.initialSeed <| Time.posixToMillis ai_tick_time)
+        ( maybe_item, new_global_seed ) =
+            pick_random_item_from_db item_db global_seed
 
         held_items =
             case maybe_item of
@@ -1105,6 +1107,7 @@ handle_invite_trader model =
             List.append
                 characters
                 [ { invited_character | held_gold = 50, held_items = held_items } ]
+        , global_seed = new_global_seed
     }
 
 

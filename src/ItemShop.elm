@@ -1114,16 +1114,18 @@ handle_invite_trader model =
         invited_character =
             create_character (generate_uuid name) name
 
+        ( num_items, _ ) =
+            Random.step (Random.int 1 5) global_seed
+
         ( new_global_seed, held_maybe_item_frames ) =
             List.foldl
                 (pick_item item_db)
                 ( global_seed, [] )
-                [ 1, 2, 3, 4, 5 ]
+                (List.repeat num_items ())
 
         held_items : List ( Item, Int )
         held_items =
-            List.filterMap identity
-                held_maybe_item_frames
+            List.filterMap identity held_maybe_item_frames
     in
     { model
         | characters =

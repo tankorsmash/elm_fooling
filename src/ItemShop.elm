@@ -1079,6 +1079,21 @@ pick_random_item_from_db item_db seed =
     ( maybe_item, new_seed )
 
 
+pick_item :
+    ItemDb
+    ->
+        (a
+         -> ( Random.Seed, List ( Maybe Item, Int ) )
+         -> ( Random.Seed, List ( Maybe Item, Int ) )
+        )
+pick_item item_db _ ( prev_seed, folded_items ) =
+    let
+        ( maybe_item, seed_ ) =
+            pick_random_item_from_db item_db prev_seed
+    in
+    ( seed_, ( maybe_item, 1 ) :: folded_items )
+
+
 handle_invite_trader : Model -> Model
 handle_invite_trader model =
     let
@@ -1091,20 +1106,9 @@ handle_invite_trader model =
         invited_character =
             create_character (generate_uuid name) name
 
-        pick_item :
-            a
-            -> ( Random.Seed, List ( Maybe Item, Int ) )
-            -> ( Random.Seed, List ( Maybe Item, Int ) )
-        pick_item _ ( seed, folded_items ) =
-            let
-                ( maybe_item_, seed_ ) =
-                    pick_random_item_from_db item_db seed
-            in
-            ( seed_, [ ( maybe_item_, 1 ) ] ++ folded_items )
-
         ( new_global_seed, held_maybe_item_frames ) =
             List.foldl
-                pick_item
+                (pick_item item_db)
                 ( global_seed, [] )
                 [ 1, 2, 3, 4, 5 ]
 

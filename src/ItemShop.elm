@@ -1794,7 +1794,7 @@ render_single_item_for_sale ( historical_shop_trends, shop_trends, show_charts_i
         ]
         [ column [ Element.clip, width (fillPortion 2 |> Element.maximum 150), Font.size 16 ] [ text <| clipText item.name 25 ]
         , column [ portion 1 ] [ render_gp <| get_adjusted_item_cost shop_trends item 1 ]
-        , column [ portion 1 ]
+        , column [ width <| (fill |> Element.minimum 50) ]
             [ el [] <|
                 if qty == 1 then
                     text " "
@@ -1802,10 +1802,10 @@ render_single_item_for_sale ( historical_shop_trends, shop_trends, show_charts_i
                 else if qty == 0 then
                     case context of
                         ShopItems ->
-                            text "SOLD OUT"
+                            text "OUT"
 
                         InventoryItems ->
-                            text "NONE LEFT"
+                            text "NONE"
 
                         CharacterItems ->
                             text "NONE"
@@ -1813,7 +1813,7 @@ render_single_item_for_sale ( historical_shop_trends, shop_trends, show_charts_i
                 else
                     text <| "x" ++ String.fromInt qty
             ]
-        , column [ portion 1 ] [ render_item_type item.item_type ]
+        , column [ width <| (fill |> Element.minimum 150) ] [ render_item_type shop_trends item.item_type ]
         , column [ width <| (fillPortion 3 |> Element.maximum 200) ]
             [ el [] <| text <| clipText item.description 24 ]
         , column [ portion 1 ] [ controls_column ( item, qty ) ]

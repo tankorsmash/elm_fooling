@@ -373,7 +373,7 @@ initial_item_db =
               , description = "A small weapon that fits in your pocket"
               , id = UUID.forName "small dagger" UUID.dnsNamespace
               }
-            , { name = "Broad-headed xe"
+            , { name = "Broad-headed axe"
               , item_type = Weapon
               , raw_gold_cost = 19
               , description = "A broad-headed axe, commonly used to fell great trees"
@@ -394,7 +394,7 @@ initial_item_db =
             , { name = "Book of the Mender"
               , item_type = Spellbook
               , raw_gold_cost = 30
-              , description = "Light bounces off strangely, as if it imperceptibly shuddered"
+              , description = "Gently pulses."
               , id = UUID.forName "book of the mender" UUID.dnsNamespace
               }
             ]

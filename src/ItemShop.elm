@@ -1576,9 +1576,16 @@ update_ai_chars model =
     }
 
 
-render_item_type : ItemType -> Element.Element Msg
-render_item_type item_type =
-    text <| item_type_to_pretty_string item_type
+render_item_type : ShopTrends -> ItemType -> Element.Element Msg
+render_item_type shop_trends item_type =
+    let
+        trend =
+            get_item_type_trend shop_trends.item_type_sentiment item_type
+
+        pretty_trend =
+            String.fromInt (round (trend * 100)) ++ "%"
+    in
+    el [ Font.alignLeft, width fill ] <| text <| item_type_to_pretty_string item_type ++ " - " ++ pretty_trend
 
 
 clipText : String -> Int -> String

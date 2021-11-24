@@ -1965,7 +1965,10 @@ trends_display item_db shop_trends all_characters is_expanded =
             [ text <|
                 "There have been "
                     ++ (String.fromInt <| List.length shop_trends.item_trade_logs)
-                    ++ " trades"
+                    ++ " trades, and "
+                    ++ (String.fromInt <| List.length all_characters)
+                    ++ " traders."
+
             ]
 
         rendered_popularity : Element.Element msg

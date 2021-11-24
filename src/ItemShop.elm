@@ -1285,7 +1285,7 @@ ai_buy_item_from_shop ai_tick_time shop_trends character shop =
                 shop.held_items
 
         max_trend =
-            1.2
+            1.4
 
         get_desire_of_item_type_id_above_zero item_type_id =
             let

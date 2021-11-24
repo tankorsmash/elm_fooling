@@ -1443,6 +1443,96 @@ append_to_character_action_log character new_log =
     { character | action_log = character.action_log ++ [ new_log ] }
 
 
+
+-- loop through all the characters and..
+-- pass the updated shop trends and characters down
+-- if we use foldl, i am not sure how to iterate through all the characters
+--  without re-using them. Answer: iterate through character ids instead
+
+
+update_ai : Model -> UUID -> AiUpdateData -> AiUpdateData
+update_ai model char_id { shop_trends, historical_shop_trends, characters, ai_tick_seed } =
+    let
+        --TODO: make sure character isn't shop
+        maybe_character =
+            lookup_by_char_id char_id characters
+
+        maybe_shop =
+            lookup_by_char_id model.shop.char_id characters
+    in
+    case ( maybe_character, maybe_shop ) of
+        ( Just character, Just shop ) ->
+            let
+                ( ( maybe_chosen_action, _ ), new_seed ) =
+                    Random.step
+                        (Random.List.choose
+                            (List.repeat 10 WantsToSell
+                                ++ List.repeat 10 WantsToBuy
+                                ++ List.repeat 5 NoActionChoice
+                            )
+                        )
+                        ai_tick_seed
+
+                chosen_action =
+                    case maybe_chosen_action of
+                        Just action ->
+                            action
+
+                        Nothing ->
+                            NoActionChoice
+
+                ( new_shop_trends_, new_character, new_shop ) =
+                    case chosen_action of
+                        WantsToSell ->
+                            ai_sell_item_to_shop
+                                model.ai_tick_time
+                                shop_trends
+                                character
+                                shop
+
+                        WantsToBuy ->
+                            ai_buy_item_from_shop
+                                model.ai_tick_time
+                                shop_trends
+                                character
+                                shop
+
+                        NoActionChoice ->
+                            ( shop_trends
+                            , append_to_character_action_log character
+                                { log_type = DidNothing, time = model.ai_tick_time }
+                            , shop
+                            )
+
+                new_characters =
+                    List.map
+                        (\c ->
+                            if c.char_id == character.char_id then
+                                new_character
+
+                            else if c.char_id == shop.char_id then
+                                new_shop
+
+                            else
+                                c
+                        )
+                        characters
+
+                new_historical_shop_trends =
+                    List.append
+                        historical_shop_trends
+                        [ new_shop_trends_ ]
+            in
+            { shop_trends = new_shop_trends_
+            , historical_shop_trends = new_historical_shop_trends
+            , characters = new_characters
+            , ai_tick_seed = new_seed
+            }
+
+        _ ->
+            Debug.log "ERRORRRRR no matching characters" { shop_trends = shop_trends, historical_shop_trends = historical_shop_trends, characters = characters, ai_tick_seed = ai_tick_seed }
+
+
 update_ai_chars : Model -> Model
 update_ai_chars model =
     let
@@ -1458,87 +1548,10 @@ update_ai_chars model =
         ai_tick_time =
             Random.initialSeed <| Time.posixToMillis model.ai_tick_time
 
-        -- loop through all the characters and..
-        -- pass the updated shop trends and characters down
-        -- if we use foldl, i am not sure how to iterate through all the characters
-        --  without re-using them. Answer: iterate through character ids instead
-        update_ai : UUID -> AiUpdateData -> AiUpdateData
-        update_ai char_id { shop_trends, historical_shop_trends, characters, ai_tick_seed } =
-            let
-                --TODO: make sure character isn't shop
-                maybe_character =
-                    lookup_by_char_id char_id characters
-
-                maybe_shop =
-                    lookup_by_char_id model.shop.char_id characters
-            in
-            case ( maybe_character, maybe_shop ) of
-                ( Just character, Just shop ) ->
-                    let
-                        ( ( maybe_chosen_action, _ ), new_seed ) =
-                            Random.step
-                                (Random.List.choose
-                                    (List.repeat 10 WantsToSell
-                                        ++ List.repeat 10 WantsToBuy
-                                        ++ List.repeat 5 NoActionChoice
-                                    )
-                                )
-                                ai_tick_seed
-
-                        chosen_action =
-                            case maybe_chosen_action of
-                                Just action ->
-                                    action
-
-                                Nothing ->
-                                    NoActionChoice
-
-                        ( new_shop_trends_, new_character, new_shop ) =
-                            case chosen_action of
-                                WantsToSell ->
-                                    ai_sell_item_to_shop model.ai_tick_time shop_trends character shop
-
-                                WantsToBuy ->
-                                    ai_buy_item_from_shop model.ai_tick_time shop_trends character shop
-
-                                NoActionChoice ->
-                                    ( shop_trends
-                                    , append_to_character_action_log character { log_type = DidNothing, time = model.ai_tick_time }
-                                    , shop
-                                    )
-
-                        new_characters_ =
-                            List.map
-                                (\c ->
-                                    if c.char_id == character.char_id then
-                                        new_character
-
-                                    else if c.char_id == shop.char_id then
-                                        new_shop
-
-                                    else
-                                        c
-                                )
-                                characters
-
-                        new_historical_shop_trends =
-                            List.append
-                                historical_shop_trends
-                                [ new_shop_trends_ ]
-                    in
-                    { shop_trends = new_shop_trends_
-                    , historical_shop_trends = new_historical_shop_trends
-                    , characters = new_characters_
-                    , ai_tick_seed = new_seed
-                    }
-
-                _ ->
-                    { shop_trends = shop_trends, historical_shop_trends = historical_shop_trends, characters = characters, ai_tick_seed = ai_tick_seed }
-
         new_ai_data : AiUpdateData
         new_ai_data =
             List.foldl
-                update_ai
+                (update_ai model)
                 { shop_trends = old_shop_trends, historical_shop_trends = old_historical_shop_trends, characters = old_characters, ai_tick_seed = ai_tick_time }
             <|
                 List.map .char_id <|

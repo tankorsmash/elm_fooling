@@ -1485,8 +1485,14 @@ append_to_character_action_log character new_log =
     let
         _ =
             Debug.log "Appending new log" new_log
+
+        new_action_log =
+            (character.action_log ++ [ new_log ])
+                |> List.reverse
+                |> List.take 100
+                |> List.reverse
     in
-    { character | action_log = character.action_log ++ [ new_log ] }
+    { character | action_log = new_action_log }
 
 
 

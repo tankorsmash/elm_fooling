@@ -918,6 +918,11 @@ has_items_to_sell inventory_records item qty =
         > 0
 
 
+takeLast : Int -> List a -> List a
+takeLast count list =
+    list |> List.reverse |> List.take count |> List.reverse
+
+
 {-| Gives items from character to other
 
 NOTE: assumes the can\_afford checks etc have been done
@@ -966,7 +971,7 @@ trade_items_from_party_to_other shop_trends from_character to_character { item, 
     in
     ( { shop_trends
         | item_type_sentiment = new_its
-        , item_trade_logs = new_item_trade_logs
+        , item_trade_logs = takeLast 100 new_item_trade_logs
       }
     , { from_character | held_items = new_from_items }
     , { to_character | held_items = new_to_items }

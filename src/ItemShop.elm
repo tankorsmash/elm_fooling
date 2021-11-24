@@ -1392,8 +1392,8 @@ ai_sell_item_to_shop ai_tick_time shop_trends character shop =
                         ( nst, nc, ns ) =
                             sell_items_from_party_to_other
                                 shop_trends
-                                shop
                                 character
+                                shop
                                 { item = item, qty = 1 }
 
                         -- note that this assumes sell_items_from_party_to_other creates a single trade log
@@ -1471,8 +1471,8 @@ update_ai ai_tick_time shop_char_id char_id { shop_trends, historical_shop_trend
                     Random.step
                         (Random.List.choose
                             (List.repeat 10 WantsToSell
-                             ++ List.repeat 10 WantsToBuy
-                             ++ List.repeat 5 NoActionChoice
+                                ++ List.repeat 10 WantsToBuy
+                                ++ List.repeat 5 NoActionChoice
                             )
                         )
                         ai_tick_seed

@@ -522,6 +522,66 @@ hex_to_color hex_str =
             rgb255 255 0 0
 
 
+{-| lightest green at 1, darkest at 7
+-}
+color_pastel_green_1 =
+    hex_to_color "#b4ecb4"
+
+
+color_pastel_green_2 =
+    hex_to_color "#a0e7a0"
+
+
+color_pastel_green_3 =
+    hex_to_color "#8be28b"
+
+
+color_pastel_green_4 =
+    hex_to_color "#77dd77"
+
+
+color_pastel_green_5 =
+    hex_to_color "#63d863"
+
+
+color_pastel_green_6 =
+    hex_to_color "#4ed34e"
+
+
+color_pastel_green_7 =
+    hex_to_color "#3ace3a"
+
+
+{-| lightest red at 1, darkest at 7
+-}
+color_pastel_red_1 =
+    hex_to_color "#ecb4b4"
+
+
+color_pastel_red_2 =
+    hex_to_color "#e7a0a0"
+
+
+color_pastel_red_3 =
+    hex_to_color "#e28b8b"
+
+
+color_pastel_red_4 =
+    hex_to_color "#dd7777"
+
+
+color_pastel_red_5 =
+    hex_to_color "#d86363"
+
+
+color_pastel_red_6 =
+    hex_to_color "#d34e4e"
+
+
+color_pastel_red_7 =
+    hex_to_color "#ce3a3a"
+
+
 secondary_color : Color
 secondary_color =
     hex_to_color "#6c757d"
@@ -1556,8 +1616,59 @@ render_item_type shop_trends item_type =
 
         pretty_trend =
             String.fromInt (round (trend * 100)) ++ "%"
+
+        trend_color =
+            if trend > 1.65 then
+                color_pastel_red_7
+
+            else if trend > 1.55 then
+                color_pastel_red_6
+
+            else if trend > 1.45 then
+                color_pastel_red_5
+
+            else if trend > 1.35 then
+                color_pastel_red_4
+
+            else if trend > 1.25 then
+                color_pastel_red_3
+
+            else if trend > 1.15 then
+                color_pastel_red_2
+
+            else if trend > 1.0 then
+                color_pastel_red_1
+
+            else if trend < 0.45 then
+                color_pastel_green_1
+
+            else if trend < 0.15 then
+                color_pastel_green_2
+
+            else if trend < 0.25 then
+                color_pastel_green_3
+
+            else if trend < 0.35 then
+                color_pastel_green_4
+
+            else if trend < 0.45 then
+                color_pastel_green_5
+
+            else if trend < 0.55 then
+                color_pastel_green_6
+
+            else if trend < 0.65 then
+                color_pastel_green_7
+
+            else
+                color_pastel_green_1
     in
-    el [ Font.alignLeft, width fill ] <| text <| item_type_to_pretty_string item_type ++ " - " ++ pretty_trend
+    Element.paragraph [ Font.alignLeft, width fill ] <|
+        [ text <|
+            item_type_to_pretty_string item_type
+        , text " - "
+        , el [ Font.color trend_color, Font.shadow { offset = ( 1, 1 ), blur = 1, color = rgb 0 0 0 } ] <| text pretty_trend
+        ]
 
 
 clipText : String -> Int -> String

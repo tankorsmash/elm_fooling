@@ -506,9 +506,9 @@ white_color =
     rgb 1 1 1
 
 
-secondary_color : Color
-secondary_color =
-    case Convert.hexToColor "#6c757d" of
+hex_to_color : String -> Color
+hex_to_color hex_str =
+    case Convert.hexToColor hex_str of
         Ok color ->
             let
                 -- convert to a Color lib Color record
@@ -520,54 +520,26 @@ secondary_color =
 
         Err err ->
             rgb255 255 0 0
+
+
+secondary_color : Color
+secondary_color =
+    hex_to_color "#6c757d"
 
 
 danger_color : Color
 danger_color =
-    case Convert.hexToColor "#dc3545" of
-        Ok color ->
-            let
-                -- convert to a Color lib Color record
-                rgba =
-                    Color.toRgba color
-            in
-            -- from the Color record, call the ElmUI `rgb` func
-            rgb rgba.red rgba.green rgba.blue
-
-        Err err ->
-            rgb255 255 0 0
+    hex_to_color "#dc3545"
 
 
 primary_color : Color
 primary_color =
-    case Convert.hexToColor "#007bff" of
-        Ok color ->
-            let
-                -- convert to a Color lib Color record
-                rgba =
-                    Color.toRgba color
-            in
-            -- from the Color record, call the ElmUI `rgb` func
-            rgb rgba.red rgba.green rgba.blue
-
-        Err err ->
-            rgb255 255 0 0
+    hex_to_color "#007bff"
 
 
 primary_color_bright : Color
 primary_color_bright =
-    case Convert.hexToColor "#66b0ff" of
-        Ok color ->
-            let
-                -- convert to a Color lib Color record
-                rgba =
-                    Color.toRgba color
-            in
-            -- from the Color record, call the ElmUI `rgb` func
-            rgb rgba.red rgba.green rgba.blue
-
-        Err err ->
-            rgb255 255 0 0
+    hex_to_color "#66b0ff"
 
 
 primary_button_custom : List (Element.Attribute Msg) -> Msg -> Element Msg -> Element Msg
@@ -1968,7 +1940,6 @@ trends_display item_db shop_trends all_characters is_expanded =
                     ++ " trades, and "
                     ++ (String.fromInt <| List.length all_characters)
                     ++ " traders."
-
             ]
 
         rendered_popularity : Element.Element msg

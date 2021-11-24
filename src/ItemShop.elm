@@ -973,6 +973,11 @@ trade_items_from_party_to_other shop_trends from_character to_character { item, 
     )
 
 
+calc_transaction_fee : Int -> Int
+calc_transaction_fee total_cost =
+    1
+
+
 sell_items_from_party_to_other : ShopTrends -> Character -> Character -> TradeOrder -> ( ShopTrends, Character, Character )
 sell_items_from_party_to_other shop_trends from_party to_party { item, qty } =
     let
@@ -990,9 +995,14 @@ sell_items_from_party_to_other shop_trends from_party to_party { item, qty } =
             total_cost =
                 get_adjusted_item_cost shop_trends item qty
 
+            transaction_fee =
+                calc_transaction_fee total_cost
+
             new_from_party =
                 { new_from_party_
-                    | held_gold = new_from_party_.held_gold + total_cost
+                    | held_gold =
+                        new_from_party_.held_gold
+                            + (total_cost - transaction_fee)
                 }
 
             new_to_party =

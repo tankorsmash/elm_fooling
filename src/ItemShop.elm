@@ -1670,7 +1670,7 @@ render_item_type shop_trends item_type =
 
         trend_shadow =
             if trend /= 1.0 then
-                [ Font.shadow { offset = ( 1, 1 ), blur = 1, color = rgb 0 0 0 } ]
+                [ Font.shadow { offset = ( 1, 1 ), blur = 0.25, color = rgb 0 0 0 } ]
 
             else
                 []

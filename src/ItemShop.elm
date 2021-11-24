@@ -1608,6 +1608,54 @@ update_ai_chars model =
     }
 
 
+get_trend_color : Float -> Color
+get_trend_color trend =
+    if trend > 1.65 then
+        color_pastel_red_7
+
+    else if trend > 1.55 then
+        color_pastel_red_6
+
+    else if trend > 1.45 then
+        color_pastel_red_5
+
+    else if trend > 1.35 then
+        color_pastel_red_4
+
+    else if trend > 1.25 then
+        color_pastel_red_3
+
+    else if trend > 1.15 then
+        color_pastel_red_2
+
+    else if trend > 1.0 then
+        color_pastel_red_1
+
+    else if trend < 0.45 then
+        color_pastel_green_7
+
+    else if trend < 0.55 then
+        color_pastel_green_6
+
+    else if trend < 0.65 then
+        color_pastel_green_5
+
+    else if trend < 0.75 then
+        color_pastel_green_4
+
+    else if trend < 0.85 then
+        color_pastel_green_3
+
+    else if trend < 0.95 then
+        color_pastel_green_2
+
+    else if trend < 1.0 then
+        color_pastel_green_1
+
+    else
+        rgb 0 0 0
+
+
 render_item_type : ShopTrends -> ItemType -> Element.Element Msg
 render_item_type shop_trends item_type =
     let
@@ -1618,56 +1666,20 @@ render_item_type shop_trends item_type =
             String.fromInt (round (trend * 100)) ++ "%"
 
         trend_color =
-            if trend > 1.65 then
-                color_pastel_red_7
+            get_trend_color trend
 
-            else if trend > 1.55 then
-                color_pastel_red_6
-
-            else if trend > 1.45 then
-                color_pastel_red_5
-
-            else if trend > 1.35 then
-                color_pastel_red_4
-
-            else if trend > 1.25 then
-                color_pastel_red_3
-
-            else if trend > 1.15 then
-                color_pastel_red_2
-
-            else if trend > 1.0 then
-                color_pastel_red_1
-
-            else if trend < 0.45 then
-                color_pastel_green_1
-
-            else if trend < 0.15 then
-                color_pastel_green_2
-
-            else if trend < 0.25 then
-                color_pastel_green_3
-
-            else if trend < 0.35 then
-                color_pastel_green_4
-
-            else if trend < 0.45 then
-                color_pastel_green_5
-
-            else if trend < 0.55 then
-                color_pastel_green_6
-
-            else if trend < 0.65 then
-                color_pastel_green_7
+        trend_shadow =
+            if trend /= 1.0 then
+                [ Font.shadow { offset = ( 1, 1 ), blur = 1, color = rgb 0 0 0 } ]
 
             else
-                color_pastel_green_1
+                []
     in
     Element.paragraph [ Font.alignLeft, width fill ] <|
         [ text <|
             item_type_to_pretty_string item_type
         , text " - "
-        , el [ Font.color trend_color, Font.shadow { offset = ( 1, 1 ), blur = 1, color = rgb 0 0 0 } ] <| text pretty_trend
+        , el ([ Font.color trend_color ] ++ trend_shadow) <| text pretty_trend
         ]
 
 

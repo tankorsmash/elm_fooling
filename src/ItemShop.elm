@@ -1374,11 +1374,16 @@ ai_sell_item_to_shop ai_tick_time shop_trends character shop =
         untrendy_items =
             List.filter untrendy_enough sellable_items
 
+        wanted_to_sell_but_couldnt =
+            { log_type = WantedButCouldntTrade WantedToSell
+            , time = ai_tick_time
+            }
+
         ( new_shop_trends, new_character, new_shop ) =
             case List.head untrendy_items of
                 Nothing ->
                     ( shop_trends
-                    , append_to_character_action_log character { log_type = WantedButCouldntTrade WantedToSell, time = ai_tick_time }
+                    , append_to_character_action_log character wanted_to_sell_but_couldnt
                     , shop
                     )
 
@@ -1402,12 +1407,12 @@ ai_sell_item_to_shop ai_tick_time shop_trends character shop =
                     ( nst
                     , case maybe_item_trade_log of
                         Just item_trade_log ->
-                            append_to_character_action_log
-                                nc
+                            append_to_character_action_log nc
                                 { log_type = Traded item_trade_log, time = ai_tick_time }
 
                         Nothing ->
-                            nc
+                            append_to_character_action_log nc
+                                wanted_to_sell_but_couldnt
                     , ns
                     )
     in
@@ -1521,7 +1526,11 @@ update_ai_chars model =
                                 historical_shop_trends
                                 [ new_shop_trends_ ]
                     in
-                    { shop_trends = new_shop_trends_, historical_shop_trends = new_historical_shop_trends, characters = new_characters_, ai_tick_seed = new_seed }
+                    { shop_trends = new_shop_trends_
+                    , historical_shop_trends = new_historical_shop_trends
+                    , characters = new_characters_
+                    , ai_tick_seed = new_seed
+                    }
 
                 _ ->
                     { shop_trends = shop_trends, historical_shop_trends = historical_shop_trends, characters = characters, ai_tick_seed = ai_tick_seed }

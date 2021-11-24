@@ -937,10 +937,10 @@ trade_items_from_party_to_other shop_trends from_character to_character { item, 
 
         sentiment_delta =
             if from_character.party == ShopParty then
-                0.1
+                0.05
 
             else if to_character.party == ShopParty then
-                -0.1
+                -0.05
 
             else
                 0.0

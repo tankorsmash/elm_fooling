@@ -1305,7 +1305,17 @@ update_special_action : SpecialAction -> Model -> ( Model, Cmd Msg )
 update_special_action special_action model =
     case special_action of
         InviteTrader ->
-            ( handle_invite_trader model, Cmd.none )
+            ( model
+                |> handle_invite_trader
+                |> handle_invite_trader
+                |> handle_invite_trader
+                |> handle_invite_trader
+                |> handle_invite_trader
+                |> handle_invite_trader
+                |> handle_invite_trader
+                |> handle_invite_trader
+            , Cmd.none
+            )
 
         TriggerEvent event ->
             ( handle_special_event model event, Cmd.none )
@@ -2822,6 +2832,7 @@ primary_button_tooltip attrs on_press label { tooltip_id, tooltip_text, maybe_ho
                 Just hovered_tooltip_id ->
                     if hovered_tooltip_id == tooltip_id then
                         [ Element.above tooltip_el ]
+
                     else
                         []
 
@@ -2868,7 +2879,7 @@ special_actions_display model =
 
         button_high_desire =
             primary_button_tooltip []
-                (OnSpecialAction (TriggerEvent (EventVeryDesiredItemType (Nothing))))
+                (OnSpecialAction (TriggerEvent (EventVeryDesiredItemType Nothing)))
                 "Spread Good Rumour"
                 (buildTooltipConfig
                     "Sets a random Item Type to high value.\n\nSpreads a rumour that a given Item Type was the talk of the next town over."
@@ -2877,7 +2888,7 @@ special_actions_display model =
 
         button_low_desire =
             primary_button_tooltip []
-                (OnSpecialAction (TriggerEvent (EventLeastDesiredItemType (Nothing))))
+                (OnSpecialAction (TriggerEvent (EventLeastDesiredItemType Nothing)))
                 "Spread Bad Rumour"
                 (buildTooltipConfig
                     "Sets a random Item Type to low value.\n\nSpreads a rumour that a given Item Type has a surplus of sellers."

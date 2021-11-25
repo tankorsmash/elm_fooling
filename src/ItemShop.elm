@@ -170,8 +170,14 @@ type KeyEventMsg
     | KeyEventUnknown String
 
 
+type SpecialEvent
+    = EventVeryDesiredItemType ItemType
+    | EventLeastDesiredItemType ItemType
+
+
 type SpecialAction
     = InviteTrader
+    | TriggerEvent SpecialEvent
 
 
 type Msg
@@ -884,6 +890,7 @@ remove_item_from_inventory_records records item qty =
     List.map (reduce_if_matched item qty) records
 
 
+update_item_type_sentiment : ItemSentiments -> ItemType -> Float -> ItemSentiments
 update_item_type_sentiment item_type_sentiment item_type sentiment_delta =
     Dict.update
         (item_type_to_id item_type)
@@ -895,6 +902,14 @@ update_item_type_sentiment item_type_sentiment item_type sentiment_delta =
                 Nothing ->
                     Just (1.0 + sentiment_delta)
         )
+        item_type_sentiment
+
+
+set_item_type_sentiment : ItemSentiments -> ItemType -> Float -> ItemSentiments
+set_item_type_sentiment item_type_sentiment item_type new_val =
+    Dict.update
+        (item_type_to_id item_type)
+        (always <| Just new_val)
         item_type_sentiment
 
 
@@ -1203,11 +1218,24 @@ handle_invite_trader model =
     }
 
 
+handle_special_event : Model -> SpecialEvent -> Model
+handle_special_event model spec_event =
+    case spec_event of
+        EventVeryDesiredItemType item_type ->
+            model
+
+        EventLeastDesiredItemType item_type ->
+            model
+
+
 update_special_action : SpecialAction -> Model -> ( Model, Cmd Msg )
 update_special_action special_action model =
     case special_action of
         InviteTrader ->
             ( handle_invite_trader model, Cmd.none )
+
+        TriggerEvent event ->
+            ( handle_special_event model event, Cmd.none )
 
 
 {-| adds 1 gold per second. GPM is a misnomer

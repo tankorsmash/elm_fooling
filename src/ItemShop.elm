@@ -1213,12 +1213,56 @@ handle_invite_trader model =
 
 handle_special_event : Model -> SpecialEvent -> Model
 handle_special_event model spec_event =
-    case spec_event of
-        EventVeryDesiredItemType item_type ->
+    let
+        { shop_trends, historical_shop_trends } =
             model
 
+        { item_type_sentiment } =
+            shop_trends
+    in
+    case spec_event of
+        EventVeryDesiredItemType item_type ->
+            update_shop_trends model
+                (\st ->
+                    { st
+                        | item_type_sentiment =
+                            set_item_type_sentiment
+                                st.item_type_sentiment
+                                item_type
+                                1.5
+                    }
+                )
+
         EventLeastDesiredItemType item_type ->
-            model
+            update_shop_trends model
+                (\st ->
+                    { st
+                        | item_type_sentiment =
+                            set_item_type_sentiment
+                                st.item_type_sentiment
+                                item_type
+                                0.5
+                    }
+                )
+
+
+{-| Takes Model and sets its shop\_trends and appends the new one to the historical trends
+-}
+update_shop_trends : Model -> (ShopTrends -> ShopTrends) -> Model
+update_shop_trends model update_st_func =
+    let
+        new_shop_trends =
+            update_st_func model.shop_trends
+
+        new_historical_shop_trends =
+            List.append
+                model.historical_shop_trends
+                [ new_shop_trends ]
+    in
+    { model
+        | shop_trends = new_shop_trends
+        , historical_shop_trends = new_historical_shop_trends
+    }
 
 
 update_special_action : SpecialAction -> Model -> ( Model, Cmd Msg )
@@ -2782,10 +2826,30 @@ special_actions_display model =
                     "Invite a fellow Trader.\n\nThey may have new wares to sell, that you may buy up."
                     |> withHoveredId model.hovered_tooltip_id
                 )
+
+        button_high_desire =
+            primary_button_tooltip []
+                (OnSpecialAction (TriggerEvent (EventVeryDesiredItemType Weapon)))
+                "Spread Good Rumour"
+                (buildTooltipConfig
+                    "Sets a random Item Type to high value.\n\nSpreads a rumour that a given Item Type was the talk of the next town over."
+                    |> withHoveredId model.hovered_tooltip_id
+                )
+
+        button_low_desire =
+            primary_button_tooltip []
+                (OnSpecialAction (TriggerEvent (EventLeastDesiredItemType Weapon)))
+                "Spread Bad Rumour"
+                (buildTooltipConfig
+                    "Sets a random Item Type to low value.\n\nSpreads a rumour that a given Item Type has a surplus of sellers."
+                    |> withHoveredId model.hovered_tooltip_id
+                )
     in
     column [ width fill, spacing 10, paddingXY 0 10 ]
         [ el [ font_scaled 2, border_bottom 2 ] <| text "Special Actions"
-        , row [ width fill ]
+        , row [ width fill, spacingXY 10 0 ]
             [ button_search
+            , button_high_desire
+            , button_low_desire
             ]
         ]

@@ -61,6 +61,16 @@ type ItemType
     | Food
 
 
+allItemTypes : List ItemType
+allItemTypes =
+    [ Weapon
+    , Armor
+    , Spellbook
+    , Furniture
+    , Food
+    ]
+
+
 type alias ItemTypeId =
     Int
 
@@ -171,8 +181,8 @@ type KeyEventMsg
 
 
 type SpecialEvent
-    = EventVeryDesiredItemType ItemType
-    | EventLeastDesiredItemType ItemType
+    = EventVeryDesiredItemType (Maybe ItemType)
+    | EventLeastDesiredItemType (Maybe ItemType)
 
 
 type SpecialAction
@@ -1219,31 +1229,57 @@ handle_special_event model spec_event =
 
         { item_type_sentiment } =
             shop_trends
+
+        choose_item_type : Random.Seed -> ( ( Maybe ItemType, List ItemType ), Random.Seed )
+        choose_item_type seed =
+            Random.step
+                (Random.List.choose
+                    (List.repeat 10 Weapon
+                        ++ List.repeat 10 Armor
+                        ++ List.repeat 10 Spellbook
+                    )
+                )
+                model.global_seed
     in
     case spec_event of
         EventVeryDesiredItemType item_type ->
+            let
+                ( ( maybe_chosen_item_type, _ ), new_seed ) =
+                    choose_item_type model.global_seed
+            in
             update_shop_trends model
                 (\st ->
                     { st
                         | item_type_sentiment =
                             set_item_type_sentiment
                                 st.item_type_sentiment
-                                item_type
+                                (Maybe.withDefault Weapon maybe_chosen_item_type)
                                 1.5
                     }
                 )
+                |> setGlobalSeed new_seed
 
-        EventLeastDesiredItemType item_type ->
+        EventLeastDesiredItemType _ ->
+            let
+                ( ( maybe_chosen_item_type, _ ), new_seed ) =
+                    choose_item_type model.global_seed
+            in
             update_shop_trends model
                 (\st ->
                     { st
                         | item_type_sentiment =
                             set_item_type_sentiment
                                 st.item_type_sentiment
-                                item_type
+                                (Maybe.withDefault Weapon maybe_chosen_item_type)
                                 0.5
                     }
                 )
+                |> setGlobalSeed new_seed
+
+
+setGlobalSeed : Random.Seed -> Model -> Model
+setGlobalSeed new_seed model =
+    { model | global_seed = new_seed }
 
 
 {-| Takes Model and sets its shop\_trends and appends the new one to the historical trends
@@ -2829,7 +2865,7 @@ special_actions_display model =
 
         button_high_desire =
             primary_button_tooltip []
-                (OnSpecialAction (TriggerEvent (EventVeryDesiredItemType Weapon)))
+                (OnSpecialAction (TriggerEvent (EventVeryDesiredItemType (Nothing))))
                 "Spread Good Rumour"
                 (buildTooltipConfig
                     "Sets a random Item Type to high value.\n\nSpreads a rumour that a given Item Type was the talk of the next town over."
@@ -2838,7 +2874,7 @@ special_actions_display model =
 
         button_low_desire =
             primary_button_tooltip []
-                (OnSpecialAction (TriggerEvent (EventLeastDesiredItemType Weapon)))
+                (OnSpecialAction (TriggerEvent (EventLeastDesiredItemType (Nothing))))
                 "Spread Bad Rumour"
                 (buildTooltipConfig
                     "Sets a random Item Type to low value.\n\nSpreads a rumour that a given Item Type has a surplus of sellers."

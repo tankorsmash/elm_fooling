@@ -2820,7 +2820,10 @@ primary_button_tooltip attrs on_press label { tooltip_id, tooltip_text, maybe_ho
         tooltip_attr =
             case maybe_hovered_tooltip_id of
                 Just hovered_tooltip_id ->
-                    [ Element.above tooltip_el ]
+                    if hovered_tooltip_id == tooltip_id then
+                        [ Element.above tooltip_el ]
+                    else
+                        []
 
                 Nothing ->
                     []

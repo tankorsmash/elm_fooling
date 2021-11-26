@@ -201,6 +201,7 @@ type Msg
     | EndTrendsHover
     | TickSecond Time.Posix
       -- | OnTrendChartHover (List (CI.One TrendSnapshot CI.Dot))
+    | ToggleShowMainChart
     | OnTrendChartHover (List (CI.One TrendChartDatum CI.Dot))
     | ToggleShowDebugInventories
     | KeyPressedMsg KeyEventMsg
@@ -306,6 +307,7 @@ type alias Model =
     , historical_shop_trends : List ShopTrends
     , shop_trends_hovered : Bool
     , item_db : ItemDb
+    , show_main_chart : Bool
     , hovered_trend_chart : List (CI.One TrendChartDatum CI.Dot)
     , ai_tick_time : Time.Posix --used to seed the ai randomness
     , show_debug_inventories : Bool
@@ -814,6 +816,7 @@ init =
       , historical_shop_trends = []
       , shop_trends_hovered = False
       , ai_tick_time = Time.millisToPosix -1
+      , show_main_chart = True
       , hovered_trend_chart = []
       , show_debug_inventories = True
       , show_charts_in_hovered_item = False
@@ -1096,6 +1099,9 @@ update msg model =
 
         TickSecond time ->
             ( update_ai_chars <| update_player { model | ai_tick_time = time }, Cmd.none )
+
+        ToggleShowMainChart ->
+            ({model | show_main_chart = not model.show_main_chart}, Cmd.none)
 
         OnTrendChartHover hovered ->
             ( { model | hovered_trend_chart = hovered }, Cmd.none )
@@ -2757,7 +2763,12 @@ view model =
     <|
         Element.column [ width fill, font_scaled 1, height fill ] <|
             [ welcome_header
-            , Element.el [ paddingXY 0 10, width fill ] <| charts_display model.historical_shop_trends model.hovered_trend_chart
+            , secondary_button [] ToggleShowMainChart "Charts"
+            , if model.show_main_chart then
+                Element.el [ paddingXY 0 10, width fill ] <| charts_display model.historical_shop_trends model.hovered_trend_chart
+
+              else
+                Element.none
             , special_actions_display model
             , trends_display model.item_db model.shop_trends model.characters model.shop_trends_hovered
             , Element.el [ paddingXY 0 10, width fill ] <|

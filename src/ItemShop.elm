@@ -41,6 +41,7 @@ import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
+import Element.Keyed
 import Html
 import Html.Attributes
 import Html.Events
@@ -1954,7 +1955,7 @@ render_single_item_for_sale ( historical_shop_trends, shop_trends, show_charts_i
         --shown when hovered over item
         expanded_display =
             if is_hovered_item then
-                Element.el
+                Element.Keyed.el
                     [ width fill
                     , Background.color <| rgb 1 1 1
                     , Border.color <| rgb 0.35 0.35 0.35
@@ -1964,7 +1965,8 @@ render_single_item_for_sale ( historical_shop_trends, shop_trends, show_charts_i
                     , Element.moveDown 20
                     ]
                 <|
-                    column [ spacing 5, width fill ]
+                    ( UUID.toString item.id
+                    , column [ spacing 5, width fill ]
                         [ row [ width fill ]
                             [ paragraph []
                                 [ text item.name
@@ -2002,6 +2004,7 @@ render_single_item_for_sale ( historical_shop_trends, shop_trends, show_charts_i
                           else
                             Element.none
                         ]
+                    )
 
             else
                 Element.none
@@ -2736,8 +2739,9 @@ view model =
                 |> List.sortBy (.char_id >> UUID.toString)
                 |> List.map
                     (\character ->
-                        Element.el [ height fill, paddingXY 0 10, width fill ]
-                            (render_inventory
+                        Element.Keyed.el [ height fill, paddingXY 0 10, width fill ]
+                            ( UUID.toString character.char_id
+                            , render_inventory
                                 model
                                 (character.name ++ "'s Inventory")
                                 character

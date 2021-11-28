@@ -195,8 +195,8 @@ type Msg
     = Noop
     | MouseEnterShopItem ListContext ( CharacterId, Item )
     | MouseLeaveShopItem ListContext ( CharacterId, Item )
-    | BuyItem Item Int
-    | SellItem Item Int
+    | BuyItem Item Quantity
+    | SellItem Item Quantity
     | StartTrendsHover
     | EndTrendsHover
     | TickSecond Time.Posix
@@ -213,12 +213,52 @@ type Msg
 
 type alias TradeOrder =
     { item : Item
-    , qty : Int
+    , qty : Quantity
     }
 
 
+type Quantity
+    = Quantity Int
+
+
+getQuantity : Quantity -> Int
+getQuantity qty =
+    case qty of
+        Quantity val ->
+            val
+
+
+addQuantityInt : Quantity -> Int -> Quantity
+addQuantityInt qty val =
+    case qty of
+        Quantity orig_val ->
+            Quantity (orig_val + val)
+
+
+addQuantity : Quantity -> Quantity -> Quantity
+addQuantity qty other_qty =
+    case qty of
+        Quantity orig_val ->
+            Quantity (orig_val + getQuantity other_qty)
+
+subQuantity : Quantity -> Quantity -> Quantity
+subQuantity qty other_qty =
+    case qty of
+        Quantity orig_val ->
+            Quantity (orig_val - getQuantity other_qty)
+
+
+setQuantity : Int -> Quantity
+setQuantity qty =
+    Quantity qty
+
+
+type AvgPrice
+    = AvgPrice Float
+
+
 type alias InventoryRecord =
-    ( Item, Int )
+    ( Item, Quantity )
 
 
 type alias InventoryRecords =
@@ -262,7 +302,7 @@ type alias ActionLog =
 
 type alias ItemTradeLog =
     { item_id : ItemId
-    , quantity : Int
+    , quantity : Quantity
     , gold_cost : Int
     , from_party : TradeParty
     , to_party : TradeParty
@@ -432,15 +472,15 @@ initial_items_for_sale item_db =
         seed =
             Random.initialSeed 12345
 
-        maybe_items : List ( String, Int )
+        maybe_items : List ( String, Quantity )
         maybe_items =
-            [ ( "a41ae9d3-61f0-54f9-800e-56f53ed3ac98", 3 ) --boots
-            , ( "c3c38323-1743-5a47-a8e3-bf6ec28137f9", 5 )
-            , ( "6b7e301d-ab12-5e81-acfc-547e63004ffa", 4 )
-            , ( "48e66792-4c97-598f-8937-3a7042f00591", 1 )
+            [ ( "a41ae9d3-61f0-54f9-800e-56f53ed3ac98", Quantity 3 ) --boots
+            , ( "c3c38323-1743-5a47-a8e3-bf6ec28137f9", Quantity 5 )
+            , ( "6b7e301d-ab12-5e81-acfc-547e63004ffa", Quantity 4 )
+            , ( "48e66792-4c97-598f-8937-3a7042f00591", Quantity 1 )
             ]
 
-        just_items : List ( Item, Int )
+        just_items : InventoryRecords
         just_items =
             List.filterMap
                 (\( item_id_str, qty ) ->
@@ -466,7 +506,7 @@ initial_items_for_sale item_db =
 
 initial_owned_items : ItemDb -> InventoryRecords
 initial_owned_items item_db =
-    [ ( lookup_item_id_str_default item_db "a41ae9d3-61f0-54f9-800e-56f53ed3ac98", 12 )
+    [ ( lookup_item_id_str_default item_db "a41ae9d3-61f0-54f9-800e-56f53ed3ac98", Quantity 12 )
     ]
 
 
@@ -481,14 +521,14 @@ initial_characters item_db =
     in
     [ { base_character_1
         | held_items =
-            [ ( lookup_item_id_str_default item_db "6b7e301d-ab12-5e81-acfc-547e63004ffa", 8 )
+            [ ( lookup_item_id_str_default item_db "6b7e301d-ab12-5e81-acfc-547e63004ffa", setQuantity 8 )
             ]
         , held_gold = 100
         , item_types_desired = Dict.fromList [ ( item_type_to_id Weapon, 0.0 ) ]
       }
     , { base_character_2
         | held_items =
-            [ ( lookup_item_id_str_default item_db "a41ae9d3-61f0-54f9-800e-56f53ed3ac98", 12 )
+            [ ( lookup_item_id_str_default item_db "a41ae9d3-61f0-54f9-800e-56f53ed3ac98", setQuantity 12 )
             ]
         , held_gold = 200
         , item_types_desired = Dict.fromList [ ( item_type_to_id Spellbook, 0.0 ) ]
@@ -496,7 +536,7 @@ initial_characters item_db =
     ]
 
 
-get_adjusted_item_cost : ShopTrends -> Item -> Int -> Int
+get_adjusted_item_cost : ShopTrends -> Item -> Quantity -> Int
 get_adjusted_item_cost shop_trends item qty =
     let
         { item_type } =
@@ -515,7 +555,7 @@ get_adjusted_item_cost shop_trends item qty =
                     1.0
 
         scaled_raw_cost =
-            toFloat <| item.raw_gold_cost * qty
+            toFloat <| item.raw_gold_cost * getQuantity qty
     in
     round <| scaled_raw_cost * item_sentiment
 
@@ -881,11 +921,11 @@ can_afford_item shop_trends held_gold { item, qty } =
     held_gold >= get_adjusted_item_cost shop_trends item qty
 
 
-add_item_to_inventory_records : InventoryRecords -> Item -> Int -> InventoryRecords
+add_item_to_inventory_records : InventoryRecords -> Item -> Quantity -> InventoryRecords
 add_item_to_inventory_records records item qty =
     let
         updated_inv_items =
-            List.map (\( i, q ) -> ( i, q + qty )) <|
+            List.map (\( i, q ) -> ( i, addQuantity q qty )) <|
                 List.filter (find_matching_records item) records
 
         non_matching_inv_items =
@@ -899,7 +939,7 @@ add_item_to_inventory_records records item qty =
             non_matching_inv_items ++ updated_inv_items
 
 
-remove_item_from_inventory_records : InventoryRecords -> Item -> Int -> InventoryRecords
+remove_item_from_inventory_records : InventoryRecords -> Item -> Quantity -> InventoryRecords
 remove_item_from_inventory_records records item qty =
     List.map (reduce_if_matched item qty) records
 
@@ -920,20 +960,21 @@ set_item_type_sentiment item_type_sentiment item_type new_val =
         item_type_sentiment
 
 
+reduce_if_matched : Item -> Quantity -> InventoryRecord -> InventoryRecord
 reduce_if_matched item qty ( i, iq ) =
-    if i == item && iq >= qty then
-        ( i, iq - qty )
-        --TODO spend gp for buying
+    if i == item && getQuantity iq >= getQuantity qty then
+        ( i, subQuantity iq qty )
 
     else
         ( i, iq )
 
 
+has_items_to_sell : InventoryRecords -> Item -> Quantity -> Bool
 has_items_to_sell inventory_records item qty =
     List.length
         (List.filter
             (\( i, q ) ->
-                q >= qty && find_matching_records item ( i, q )
+                getQuantity q >= getQuantity qty && find_matching_records item ( i, q )
             )
             inventory_records
         )
@@ -1101,7 +1142,7 @@ update msg model =
             ( update_ai_chars <| update_player { model | ai_tick_time = time }, Cmd.none )
 
         ToggleShowMainChart ->
-            ({model | show_main_chart = not model.show_main_chart}, Cmd.none)
+            ( { model | show_main_chart = not model.show_main_chart }, Cmd.none )
 
         OnTrendChartHover hovered ->
             ( { model | hovered_trend_chart = hovered }, Cmd.none )
@@ -1169,7 +1210,7 @@ pick_item item_db _ ( prev_seed, folded_items ) =
             pick_random_item_from_db item_db prev_seed
 
         result =
-            Maybe.map (\item -> ( item, 1 )) maybe_item
+            Maybe.map (\item -> ( item, Quantity 1 )) maybe_item
     in
     ( seed_, result :: folded_items )
 
@@ -1195,19 +1236,24 @@ handle_invite_trader model =
                 ( global_seed, [] )
                 (List.repeat num_items ())
 
+        incr_if_matches : Item -> InventoryRecord -> InventoryRecord
         incr_if_matches item ( i, q ) =
             if i.id == item.id then
-                ( i, q + 1 )
+                ( i, addQuantityInt q 1 )
 
             else
                 ( i, q )
 
-        held_items : List ( Item, Int )
+        held_items : List ( Item, Quantity )
         held_items =
             List.filterMap identity held_maybe_item_frames
                 |> List.foldl
                     (\( item, qty ) prev_items ->
-                        if List.any (Tuple.first >> .id >> (==) item.id) prev_items then
+                        if
+                            List.any
+                                (Tuple.first >> .id >> (==) item.id)
+                                prev_items
+                        then
                             List.map (incr_if_matches item) prev_items
 
                         else
@@ -1378,7 +1424,7 @@ get_sentiment_for_item_type item_type_sentiment item_type =
 
 nonzero_qty : InventoryRecord -> Bool
 nonzero_qty ( item, qty ) =
-    qty > 0
+    getQuantity qty > 0
 
 
 ai_buy_item_from_shop : Time.Posix -> ShopTrends -> Character -> Character -> ( ShopTrends, Character, Character )
@@ -1391,7 +1437,7 @@ ai_buy_item_from_shop ai_tick_time shop_trends character shop =
             can_afford_item
                 shop_trends
                 character.held_gold
-                { item = item, qty = 1 }
+                { item = item, qty = Quantity 1 }
 
         check_nonzero_desire item =
             get_sentiment_for_item character.item_types_desired item
@@ -1494,7 +1540,7 @@ ai_buy_item_from_shop ai_tick_time shop_trends character shop =
                                 shop_trends
                                 shop
                                 character
-                                { item = item, qty = 1 }
+                                { item = item, qty = Quantity 1 }
 
                         -- note that this assumes sell_items_from_party_to_other creates a single trade log
                         maybe_item_trade_log : Maybe ItemTradeLog
@@ -1524,7 +1570,7 @@ ai_sell_item_to_shop ai_tick_time shop_trends character shop =
     let
         sellable_items : InventoryRecords
         sellable_items =
-            List.filter (\( i, qty ) -> qty > 0) character.held_items
+            List.filter (\( i, qty ) -> getQuantity qty > 0) character.held_items
 
         -- AI needs to trend to be at least above 80% to sell
         sellable_trend =
@@ -1559,7 +1605,7 @@ ai_sell_item_to_shop ai_tick_time shop_trends character shop =
                                 shop_trends
                                 character
                                 shop
-                                { item = item, qty = 1 }
+                                { item = item, qty = Quantity 1 }
 
                         -- note that this assumes sell_items_from_party_to_other creates a single trade log
                         maybe_item_trade_log : Maybe ItemTradeLog
@@ -1872,8 +1918,8 @@ shop_buy_button gold_cost gold_in_pocket ( item, qty ) =
                 secondary_button
     in
     button_type
-        [ Element.transparent <| qty < 1, width (fill |> Element.minimum 120) ]
-        (BuyItem item 1)
+        [ Element.transparent <| getQuantity qty < 1, width (fill |> Element.minimum 120) ]
+        (BuyItem item (Quantity 1))
     <|
         if can_afford then
             "BUY"
@@ -1896,7 +1942,7 @@ shop_sell_button has_items_to_sell_ ( item, qty ) =
         [ Element.transparent <| not has_items_to_sell_
         , width (fill |> Element.minimum 120)
         ]
-        (SellItem item 1)
+        (SellItem item (Quantity 1))
     <|
         if has_items_to_sell_ then
             "SELL"
@@ -1956,7 +2002,7 @@ render_single_item_for_sale ( historical_shop_trends, shop_trends, show_charts_i
                     False
 
         current_price =
-            get_adjusted_item_cost shop_trends item 1
+            get_adjusted_item_cost shop_trends item (Quantity 1)
 
         --shown when hovered over item
         expanded_display =
@@ -2026,13 +2072,13 @@ render_single_item_for_sale ( historical_shop_trends, shop_trends, show_charts_i
         , Element.below expanded_display
         ]
         [ column [ Element.clip, width (fillPortion 2 |> Element.maximum 150), Font.size 16 ] [ text <| clipText item.name 25 ]
-        , column [ portion 1 ] [ render_gp <| get_adjusted_item_cost shop_trends item 1 ]
+        , column [ portion 1 ] [ render_gp <| get_adjusted_item_cost shop_trends item (Quantity 1) ]
         , column [ width <| (fill |> Element.minimum 50) ]
             [ el [] <|
-                if qty == 1 then
+                if getQuantity qty == 1 then
                     text " "
 
-                else if qty == 0 then
+                else if getQuantity qty == 0 then
                     case context of
                         ShopItems ->
                             text "OUT"
@@ -2044,7 +2090,7 @@ render_single_item_for_sale ( historical_shop_trends, shop_trends, show_charts_i
                             text "NONE"
 
                 else
-                    text <| "x" ++ String.fromInt qty
+                    text <| "x" ++ (String.fromInt <| getQuantity qty)
             ]
         , column [ width <| (fill |> Element.minimum 150) ] [ render_item_type shop_trends item.item_type ]
         , column [ width <| (fillPortion 3 |> Element.maximum 200) ]
@@ -2078,7 +2124,7 @@ render_single_trade_log_entry item_db all_characters trade_log =
             lookup_item_id item_db item_id
 
         qty_str =
-            String.fromInt quantity |> (++) "x"
+            String.fromInt (getQuantity quantity) |> (++) "x"
 
         rendered_cost : Element msg
         rendered_cost =
@@ -2779,7 +2825,7 @@ view model =
                     model.shop_trends
                     model.hovered_item_in_character
                     ShopItems
-                    (\( item, qty ) -> shop_buy_button (get_adjusted_item_cost model.shop_trends item 1) model.player.held_gold ( item, qty ))
+                    (\( item, qty ) -> shop_buy_button (get_adjusted_item_cost model.shop_trends item (Quantity 1)) model.player.held_gold ( item, qty ))
             , Element.el [ paddingXY 0 10, width fill ] <|
                 render_inventory
                     model
@@ -2788,7 +2834,7 @@ view model =
                     model.shop_trends
                     model.hovered_item_in_character
                     InventoryItems
-                    (\( item, qty ) -> shop_sell_button (qty >= 1) ( item, 1 ))
+                    (\( item, qty ) -> shop_sell_button (getQuantity qty >= 1) ( item, setQuantity 1 ))
             ]
                 ++ (if model.show_debug_inventories then
                         [ column [ width fill ]

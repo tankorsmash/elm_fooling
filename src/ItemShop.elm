@@ -241,6 +241,7 @@ addQuantity qty other_qty =
         Quantity orig_val ->
             Quantity (orig_val + getQuantity other_qty)
 
+
 subQuantity : Quantity -> Quantity -> Quantity
 subQuantity qty other_qty =
     case qty of
@@ -921,8 +922,8 @@ can_afford_item shop_trends held_gold { item, qty } =
     held_gold >= get_adjusted_item_cost shop_trends item qty
 
 
-add_item_to_inventory_records : InventoryRecords -> Item -> Quantity -> InventoryRecords
-add_item_to_inventory_records records item qty =
+add_item_to_inventory_records : InventoryRecords -> Item -> Quantity -> Int -> InventoryRecords
+add_item_to_inventory_records records item qty total_cost =
     let
         updated_inv_items =
             List.map (\( i, q ) -> ( i, addQuantity q qty )) <|
@@ -939,8 +940,8 @@ add_item_to_inventory_records records item qty =
             non_matching_inv_items ++ updated_inv_items
 
 
-remove_item_from_inventory_records : InventoryRecords -> Item -> Quantity -> InventoryRecords
-remove_item_from_inventory_records records item qty =
+remove_item_from_inventory_records : InventoryRecords -> Item -> Quantity -> Int -> InventoryRecords
+remove_item_from_inventory_records records item qty total_cost =
     List.map (reduce_if_matched item qty) records
 
 
@@ -998,10 +999,10 @@ trade_items_from_party_to_other shop_trends from_character to_character { item, 
             get_adjusted_item_cost shop_trends item qty
 
         new_to_items =
-            add_item_to_inventory_records to_character.held_items item qty
+            add_item_to_inventory_records to_character.held_items item qty total_cost
 
         new_from_items =
-            remove_item_from_inventory_records from_character.held_items item qty
+            remove_item_from_inventory_records from_character.held_items item qty total_cost
 
         sentiment_delta =
             if from_character.party == ShopParty then
@@ -2825,7 +2826,12 @@ view model =
                     model.shop_trends
                     model.hovered_item_in_character
                     ShopItems
-                    (\( item, qty ) -> shop_buy_button (get_adjusted_item_cost model.shop_trends item (Quantity 1)) model.player.held_gold ( item, qty ))
+                    (\( item, qty ) ->
+                        shop_buy_button
+                            (get_adjusted_item_cost model.shop_trends item (Quantity 1))
+                            model.player.held_gold
+                            ( item, qty )
+                    )
             , Element.el [ paddingXY 0 10, width fill ] <|
                 render_inventory
                     model

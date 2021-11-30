@@ -521,7 +521,7 @@ initial_items_for_sale item_db =
                 (\( item_id_str, qty ) ->
                     case lookup_item_id_str item_db item_id_str of
                         Just item ->
-                            Just ( item, qty, setPrice 999 )
+                            Just ( item, qty, setPrice item.raw_gold_cost )
 
                         Nothing ->
                             Nothing
@@ -960,7 +960,7 @@ add_item_to_inventory_records : InventoryRecords -> Item -> Quantity -> Int -> I
 add_item_to_inventory_records records item qty total_cost =
     case List.filter (find_matching_records item) records of
         [] ->
-            records ++ [ ( item, qty, setPrice (total_cost // getQuantity qty) ) ]
+            records ++ [ ( item, qty, setPrice (total_cost // getQuantity qty) ) ] --FIXME this rounds down I think, so it'll cost lost money
 
         matching_records ->
             let
@@ -1249,7 +1249,7 @@ pick_item item_db _ ( prev_seed, folded_items ) =
 
         result =
             Maybe.map
-                (\item -> ( item, Quantity 1, setPrice 9999 ))
+                (\item -> ( item, Quantity 1, setPrice item.raw_gold_cost ))
                 maybe_item
     in
     ( seed_, result :: folded_items )

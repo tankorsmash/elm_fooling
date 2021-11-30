@@ -926,8 +926,8 @@ add_item_to_inventory_records : InventoryRecords -> Item -> Quantity -> Int -> I
 add_item_to_inventory_records records item qty total_cost =
     let
         updated_inv_items =
-            List.map (\( i, q ) -> ( i, addQuantity q qty )) <|
-                List.filter (find_matching_records item) records
+            List.filter (find_matching_records item) records
+                |> List.map (\( i, q ) -> ( i, addQuantity q qty ))
 
         non_matching_inv_items =
             List.filter (not << find_matching_records item) records

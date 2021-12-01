@@ -2139,6 +2139,7 @@ render_single_item_for_sale ( historical_shop_trends, shop_trends, show_charts_i
         ]
         [ column [ Element.clip, width (fillPortion 2 |> Element.maximum 150), Font.size 16 ] [ text <| clipText item.name 25 ]
         , column [ portion 1 ] [ render_gp <| get_adjusted_item_cost shop_trends item (Quantity 1) ]
+        , column [ portion 1 ] [ render_gp <| getPrice avg_price ]
         , column [ width <| (fill |> Element.minimum 50) ]
             [ el [] <|
                 if getQuantity qty == 1 then

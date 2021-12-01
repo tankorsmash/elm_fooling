@@ -956,17 +956,43 @@ can_afford_item shop_trends held_gold { item, qty } =
     held_gold >= get_adjusted_item_cost shop_trends item qty
 
 
+add_to_average : Int -> Int -> Int -> Int -> Int
+add_to_average old_avg old_count new_value new_count =
+    (old_count * old_avg + new_value) // (old_count + new_count)
+
+
 add_item_to_inventory_records : InventoryRecords -> Item -> Quantity -> Int -> InventoryRecords
 add_item_to_inventory_records records item qty total_cost =
     case List.filter (find_matching_records item) records of
         [] ->
-            records ++ [ ( item, qty, setPrice (total_cost // getQuantity qty) ) ] --FIXME this rounds down I think, so it'll cost lost money
+            -- records ++ [ ( item, qty, setPrice (total_cost // getQuantity qty) ) ]
+            records
+                ++ [ ( item
+                     , qty
+                     , setPrice
+                        (add_to_average 0 0 total_cost (getQuantity qty))
+                     )
+                   ]
 
+        --FIXME this rounds down I think, so it'll cost lost money
         matching_records ->
             let
+                updated_records : InventoryRecords
                 updated_records =
                     List.map
-                        (Tuple3.mapSecond (addQuantity qty))
+                        (Tuple3.mapSecond (addQuantity qty)
+                            >> (\( i, q, ap ) ->
+                                    ( i
+                                    , q
+                                    , setPrice <|
+                                        add_to_average
+                                            (getPrice ap)
+                                            (getQuantity q)
+                                            total_cost
+                                            (getQuantity qty)
+                                    )
+                               )
+                        )
                         matching_records
 
                 remaining_records =

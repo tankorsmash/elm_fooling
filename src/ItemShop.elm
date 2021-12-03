@@ -1,4 +1,4 @@
-module ItemShop exposing (Model, Msg, init, subscriptions, update, view, add_to_average, sub_from_average)
+module ItemShop exposing (Model, Msg, add_to_average, init, sub_from_average, subscriptions, suite, update, view)
 
 import Array
 import Browser.Events
@@ -42,6 +42,8 @@ import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Element.Keyed
+import Expect exposing (Expectation)
+import Fuzz exposing (Fuzzer, int, list, string)
 import Html
 import Html.Attributes
 import Html.Events
@@ -50,6 +52,7 @@ import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Random
 import Random.List
 import Task
+import Test exposing (..)
 import Time
 import Tuple3
 import UUID exposing (UUID)
@@ -3052,4 +3055,48 @@ special_actions_display model =
             , button_high_desire
             , button_low_desire
             ]
+        ]
+
+
+suite : Test
+suite =
+    -- todo "Implement our first test. See https://package.elm-lang.org/packages/elm-explorations/test/latest for how to do this!"
+    describe "Basic math check for changing averages"
+        [ test "SANITY: Make sure this fails" <|
+            \_ ->
+                Expect.equal False True
+        , test "Adding nothing changes nothing in average" <|
+            \_ ->
+                let
+                    orig_avg =
+                        10
+                in
+                Expect.equal orig_avg (add_to_average orig_avg 1 0 0)
+        , test "Adding a single item works to change the average" <|
+            \_ ->
+                let
+                    orig_avg =
+                        10
+
+                    orig_num =
+                        1
+                in
+                Expect.equal 15 (add_to_average orig_avg orig_num 20 1)
+        , test "Removing nothing changes nothing in average" <|
+            \_ ->
+                let
+                    orig_avg =
+                        10
+                in
+                Expect.equal orig_avg (sub_from_average orig_avg 1 0 0)
+        , test "Removing a single item changes the average as expected" <|
+            \_ ->
+                let
+                    orig_avg =
+                        20
+
+                    orig_num =
+                        2
+                in
+                Expect.equal 30 (sub_from_average orig_avg orig_num 10 1)
         ]

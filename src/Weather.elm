@@ -1,6 +1,6 @@
 module Weather exposing (..)
 
-import Api_keys exposing (..)
+import ApiKeys exposing (..)
 import Http
 import Json.Decode as Decode exposing (Decoder, field, float, int, list, string)
 import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)

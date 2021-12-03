@@ -1,4 +1,4 @@
-module ItemShop exposing (Model, Msg, init, subscriptions, update, view)
+module ItemShop exposing (Model, Msg, init, subscriptions, update, view, add_to_average, sub_from_average)
 
 import Array
 import Browser.Events

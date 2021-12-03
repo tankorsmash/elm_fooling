@@ -961,6 +961,11 @@ add_to_average old_avg old_count new_value new_count =
     (old_count * old_avg + new_value) // (old_count + new_count)
 
 
+sub_from_average : Int -> Int -> Int -> Int -> Int
+sub_from_average old_avg old_count new_value new_count =
+    (old_count * old_avg - new_value) // (old_count - new_count)
+
+
 add_item_to_inventory_records : InventoryRecords -> Item -> Quantity -> Int -> InventoryRecords
 add_item_to_inventory_records records item qty total_cost =
     case List.filter (find_matching_records item) records of
@@ -1003,7 +1008,7 @@ add_item_to_inventory_records records item qty total_cost =
 
 remove_item_from_inventory_records : InventoryRecords -> Item -> Quantity -> Int -> InventoryRecords
 remove_item_from_inventory_records records item qty total_cost =
-    List.map (reduce_if_matched item qty) records
+    List.map (reduce_if_matched item qty total_cost) records
 
 
 update_item_type_sentiment : ItemSentiments -> ItemType -> Float -> ItemSentiments
@@ -1022,10 +1027,18 @@ set_item_type_sentiment item_type_sentiment item_type new_val =
         item_type_sentiment
 
 
-reduce_if_matched : Item -> Quantity -> InventoryRecord -> InventoryRecord
-reduce_if_matched item qty ( i, iq, avg_price ) =
+reduce_if_matched : Item -> Quantity -> Int -> InventoryRecord -> InventoryRecord
+reduce_if_matched item qty total_cost ( i, iq, avg_price ) =
     if i == item && getQuantity iq >= getQuantity qty then
-        ( i, subQuantity iq qty, avg_price )
+        ( i
+        , subQuantity iq qty
+        , setPrice <|
+            sub_from_average
+                (getPrice avg_price)
+                (getQuantity iq)
+                total_cost
+                (getQuantity qty)
+        )
 
     else
         ( i, iq, avg_price )

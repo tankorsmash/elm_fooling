@@ -17,7 +17,7 @@ suite =
                         10
                 in
                 Expect.equal orig_avg (add_to_average orig_avg 1 0 0)
-        , test "Adding a single item works" <|
+        , test "Adding a single item works to change the average" <|
             \_ ->
                 let
                     orig_avg =
@@ -34,7 +34,7 @@ suite =
                         10
                 in
                 Expect.equal orig_avg (sub_from_average orig_avg 1 0 0)
-        , test "Removing a single item changes nothing in average" <|
+        , test "Removing a single item changes the average as expected" <|
             \_ ->
                 let
                     orig_avg =

@@ -1560,6 +1560,17 @@ ai_buy_item_from_shop ai_tick_time shop_trends character shop =
             in
             desire > 0
 
+        is_item_trendy_enough : ItemTypeIdSentiment -> Maybe ItemTypeSentiment
+        is_item_trendy_enough ( it_id, trd ) =
+            id_to_item_type it_id
+                |> Maybe.andThen
+                    (if trd < max_trend then
+                        \item_type -> Just ( item_type, trd )
+
+                     else
+                        always Nothing
+                    )
+
         -- item type trends sorted by least trendy
         least_trendy_items : List ( ItemType, Float )
         least_trendy_items =
@@ -1569,16 +1580,7 @@ ai_buy_item_from_shop ai_tick_time shop_trends character shop =
                 |> List.sortBy
                     Tuple.second
                 |> List.filterMap
-                    (\( it_id, trd ) ->
-                        id_to_item_type it_id
-                            |> Maybe.andThen
-                                (if trd < max_trend then
-                                    \item_type -> Just ( item_type, trd )
-
-                                 else
-                                    always Nothing
-                                )
-                    )
+                    is_item_trendy_enough
 
         is_buyable : ItemTypeSentiment -> Maybe Item -> Maybe Item
         is_buyable ( item_type, trend ) buyable_item =

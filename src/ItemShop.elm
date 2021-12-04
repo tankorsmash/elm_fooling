@@ -1140,12 +1140,16 @@ sell_items_from_party_to_other shop_trends from_party to_party { item, qty } =
             ( new_shop_trends, new_from_party_, new_to_party_ ) =
                 trade_items_from_party_to_other shop_trends from_party to_party { item = item, qty = qty }
 
+            total_cost : Int
             total_cost =
                 get_adjusted_item_cost shop_trends item qty
 
+
+            transaction_fee : Int
             transaction_fee =
                 calc_transaction_fee total_cost
 
+            new_from_party : Character
             new_from_party =
                 { new_from_party_
                     | held_gold =
@@ -1153,6 +1157,7 @@ sell_items_from_party_to_other shop_trends from_party to_party { item, qty } =
                             + (total_cost - transaction_fee)
                 }
 
+            new_to_party : Character
             new_to_party =
                 { new_to_party_
                     | held_gold = new_to_party_.held_gold - total_cost

@@ -1542,8 +1542,8 @@ ai_buy_item_from_shop ai_tick_time shop_trends character shop =
         max_trend =
             1.4
 
-        get_desire_of_item_type_id_above_zero : ItemTypeId -> Bool
-        get_desire_of_item_type_id_above_zero item_type_id =
+        sentiment_above_zero : ItemTypeId -> Bool
+        sentiment_above_zero item_type_id =
             let
                 maybe_item_type =
                     id_to_item_type item_type_id
@@ -1576,7 +1576,7 @@ ai_buy_item_from_shop ai_tick_time shop_trends character shop =
         least_trendy_items =
             Dict.toList shop_trends.item_type_sentiment
                 |> List.filter
-                    (Tuple.first >> get_desire_of_item_type_id_above_zero)
+                    (Tuple.first >> sentiment_above_zero)
                 |> List.sortBy
                     Tuple.second
                 |> List.filterMap

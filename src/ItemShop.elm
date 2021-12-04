@@ -1515,14 +1515,18 @@ ai_buy_item_from_shop ai_tick_time shop_trends character shop =
     -- Maybe, it would be based on the lowest trending one, or one the
     -- character strongly desired or something
     let
+        check_can_afford : Item -> Bool
         check_can_afford item =
             can_afford_item
                 shop_trends
                 character.held_gold
                 { item = item, qty = Quantity 1 }
 
+        check_nonzero_desire : Item -> Bool
         check_nonzero_desire item =
-            get_sentiment_for_item character.item_types_desired item
+            get_sentiment_for_item
+                character.item_types_desired
+                item
                 > 0.0
 
         wanted_items : InventoryRecords
@@ -1538,6 +1542,7 @@ ai_buy_item_from_shop ai_tick_time shop_trends character shop =
         max_trend =
             1.4
 
+        get_desire_of_item_type_id_above_zero : ItemTypeId -> Bool
         get_desire_of_item_type_id_above_zero item_type_id =
             let
                 maybe_item_type =
@@ -3062,10 +3067,7 @@ suite : Test
 suite =
     -- todo "Implement our first test. See https://package.elm-lang.org/packages/elm-explorations/test/latest for how to do this!"
     describe "Basic math check for changing averages"
-        [ test "SANITY: Make sure this fails" <|
-            \_ ->
-                Expect.equal False True
-        , test "Adding nothing changes nothing in average" <|
+        [ test "Adding nothing changes nothing in average" <|
             \_ ->
                 let
                     orig_avg =

@@ -1071,7 +1071,7 @@ takeLast count list =
 NOTE: assumes the can\_afford checks etc have been done
 
 -}
-trade_items_from_party_to_other : ShopTrends -> Character -> Character -> TradeOrder -> ( ShopTrends, Character, Character )
+trade_items_from_party_to_other : ShopTrends -> Character -> Character -> TradeOrder -> TradeRecord
 trade_items_from_party_to_other shop_trends from_character to_character { item, qty } =
     let
         total_cost =
@@ -1112,13 +1112,15 @@ trade_items_from_party_to_other shop_trends from_character to_character { item, 
             shop_trends.item_trade_logs
                 ++ [ log_entry ]
     in
-    ( { shop_trends
-        | item_type_sentiment = new_its
-        , item_trade_logs = takeLast 100 new_item_trade_logs
-      }
-    , { from_character | held_items = new_from_items }
-    , { to_character | held_items = new_to_items }
-    )
+    { shop_trends =
+        { shop_trends
+            | item_type_sentiment = new_its
+            , item_trade_logs = takeLast 100 new_item_trade_logs
+        }
+    , from_party = { from_character | held_items = new_from_items }
+    , to_party = { to_character | held_items = new_to_items }
+    , maybe_item_trade_log = Just log_entry
+    }
 
 
 calc_transaction_fee : Int -> Int
@@ -1126,9 +1128,22 @@ calc_transaction_fee total_cost =
     1
 
 
-sell_items_from_party_to_other : ShopTrends -> Character -> Character -> TradeOrder -> ( ShopTrends, Character, Character )
-sell_items_from_party_to_other shop_trends from_party to_party { item, qty } =
+{-| if the trade is successful, the trade log will be Just. Maybe made that a type
+-}
+type alias TradeRecord =
+    { shop_trends : ShopTrends
+    , from_party : Character
+    , to_party : Character
+    , maybe_item_trade_log : Maybe ItemTradeLog
+    }
+
+
+sell_items_from_party_to_other : TradeRecord -> TradeOrder -> TradeRecord
+sell_items_from_party_to_other orig_trade_record { item, qty } =
     let
+        { shop_trends, from_party, to_party } =
+            orig_trade_record
+
         has_items =
             has_items_to_sell from_party.held_items item qty
 
@@ -1137,13 +1152,19 @@ sell_items_from_party_to_other shop_trends from_party to_party { item, qty } =
     in
     if has_items && can_afford then
         let
-            ( new_shop_trends, new_from_party_, new_to_party_ ) =
+            -- ( new_shop_trends, new_from_party_, new_to_party_, trade_log ) =
+            trade_record =
                 trade_items_from_party_to_other shop_trends from_party to_party { item = item, qty = qty }
+
+            new_from_party_ =
+                trade_record.from_party
+
+            new_to_party_ =
+                trade_record.to_party
 
             total_cost : Int
             total_cost =
                 get_adjusted_item_cost shop_trends item qty
-
 
             transaction_fee : Int
             transaction_fee =
@@ -1163,10 +1184,14 @@ sell_items_from_party_to_other shop_trends from_party to_party { item, qty } =
                     | held_gold = new_to_party_.held_gold - total_cost
                 }
         in
-        ( new_shop_trends, new_from_party, new_to_party )
+        { shop_trends = trade_record.shop_trends
+        , from_party = new_from_party
+        , to_party = new_to_party
+        , maybe_item_trade_log = trade_record.maybe_item_trade_log
+        }
 
     else
-        ( shop_trends, from_party, to_party )
+        orig_trade_record
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -1183,36 +1208,42 @@ update msg model =
 
         BuyItem item qty ->
             let
-                ( new_shop_trends, new_shop, new_player ) =
+                -- ( new_shop_trends, new_shop, new_player ) =
+                trade_record =
                     sell_items_from_party_to_other
-                        model.shop_trends
-                        model.shop
-                        model.player
+                        { shop_trends = model.shop_trends
+                        , from_party = model.shop
+                        , to_party = model.player
+                        , maybe_item_trade_log = Nothing
+                        }
                         { item = item, qty = qty }
             in
             ( { model
-                | shop_trends = new_shop_trends
+                | shop_trends = trade_record.shop_trends
                 , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
-                , player = new_player
-                , shop = new_shop
+                , player = trade_record.to_party
+                , shop = trade_record.from_party
               }
             , Cmd.none
             )
 
         SellItem item qty ->
             let
-                ( new_shop_trends, new_player, new_shop ) =
+                -- ( new_shop_trends, new_player, new_shop ) =
+                trade_record =
                     sell_items_from_party_to_other
-                        model.shop_trends
-                        model.player
-                        model.shop
+                        { shop_trends = model.shop_trends
+                        , from_party = model.player
+                        , to_party = model.shop
+                        , maybe_item_trade_log = Nothing
+                        }
                         { item = item, qty = qty }
             in
             ( { model
-                | shop_trends = new_shop_trends
+                | shop_trends = trade_record.shop_trends
                 , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
-                , player = new_player
-                , shop = new_shop
+                , player = trade_record.from_party
+                , shop = trade_record.to_party
               }
             , Cmd.none
             )
@@ -1629,31 +1660,26 @@ ai_buy_item_from_shop ai_tick_time shop_trends character shop =
 
                 Just item ->
                     let
-                        ( nst, ns, nc ) =
+                        trade_record =
                             sell_items_from_party_to_other
-                                shop_trends
-                                shop
-                                character
+                                { shop_trends = shop_trends
+                                , from_party = shop
+                                , to_party = character
+                                , maybe_item_trade_log = Nothing
+                                }
                                 { item = item, qty = Quantity 1 }
 
                         -- note that this assumes sell_items_from_party_to_other creates a single trade log
-                        maybe_item_trade_log : Maybe ItemTradeLog
-                        maybe_item_trade_log =
-                            List.drop
-                                (List.length nst.item_trade_logs - 1)
-                                nst.item_trade_logs
-                                |> List.head
+                        -- maybe_item_trade_log : Maybe ItemTradeLog
+                        -- maybe_item_trade_log =
+                        --     List.drop
+                        --         (List.length nst.item_trade_logs - 1)
+                        --         nst.item_trade_logs
+                        --         |> List.head
                     in
-                    ( nst
-                    , ns
-                    , case maybe_item_trade_log of
-                        Just item_trade_log ->
-                            append_to_character_action_log
-                                nc
-                                { log_type = Traded item_trade_log, time = ai_tick_time }
-
-                        Nothing ->
-                            nc
+                    ( trade_record.shop_trends
+                    , trade_record.from_party
+                    , trade_record.to_party
                     )
     in
     ( new_shop_trends, new_character, new_shop )
@@ -1694,31 +1720,26 @@ ai_sell_item_to_shop ai_tick_time shop_trends character shop =
 
                 Just ( item, qty, avg_price ) ->
                     let
-                        ( nst, nc, ns ) =
+                        trade_record =
                             sell_items_from_party_to_other
-                                shop_trends
-                                character
-                                shop
+                                { shop_trends = shop_trends
+                                , from_party = character
+                                , to_party = shop
+                                , maybe_item_trade_log = Nothing
+                                }
                                 { item = item, qty = Quantity 1 }
-
-                        -- note that this assumes sell_items_from_party_to_other creates a single trade log
-                        maybe_item_trade_log : Maybe ItemTradeLog
-                        maybe_item_trade_log =
-                            List.drop
-                                (List.length nst.item_trade_logs - 1)
-                                nst.item_trade_logs
-                                |> List.head
                     in
-                    ( nst
-                    , case maybe_item_trade_log of
-                        Just item_trade_log ->
-                            append_to_character_action_log nc
-                                { log_type = Traded item_trade_log, time = ai_tick_time }
-
-                        Nothing ->
-                            append_to_character_action_log nc
-                                wanted_to_sell_but_couldnt
-                    , ns
+                    ( trade_record.shop_trends
+                    , trade_record.from_party
+                      -- , case maybe_item_trade_log of
+                      --     Just item_trade_log ->
+                      --         append_to_character_action_log nc
+                      --             { log_type = Traded item_trade_log, time = ai_tick_time }
+                      --
+                      --     Nothing ->
+                      --         append_to_character_action_log nc
+                      --             wanted_to_sell_but_couldnt
+                    , trade_record.to_party
                     )
     in
     ( new_shop_trends, new_character, new_shop )

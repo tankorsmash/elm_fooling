@@ -1679,9 +1679,6 @@ ai_buy_item_from_shop ai_tick_time shop_trends character shop =
                 Nothing
                 least_trendy_items
 
-        -- ai_update_record : AiUpdateRecord
-        -- trade_context : TradeContext
-        -- trade_context =
         trade_record : TradeRecord
         trade_record =
             case maybe_item_to_buy of
@@ -1698,47 +1695,13 @@ ai_buy_item_from_shop ai_tick_time shop_trends character shop =
                         }
 
                 Just item ->
-                    let
-                        potential_trade_record =
-                            sell_items_from_party_to_other
-                                { shop_trends = shop_trends
-                                , from_party = shop
-                                , to_party = character
-                                }
-                                { item = item, qty = Quantity 1 }
-
-                        -- note that this assumes sell_items_from_party_to_other creates a single trade log
-                        -- maybe_item_trade_log : Maybe ItemTradeLog
-                        -- maybe_item_trade_log =
-                        --     List.drop
-                        --         (List.length nst.item_trade_logs - 1)
-                        --         nst.item_trade_logs
-                        --         |> List.head
-                    in
-                    potential_trade_record
-
-        -- case potential_trade_record of
-        --     IncompleteTradeRecord trade_context_ ->
-        --         { shop_trends = trade_context_.shop_trends
-        --         , character = trade_context_.to_party
-        --         , shop = trade_context_.from_party
-        --         }
-        --
-        --     CompletedTradeRecord trade_context_ log ->
-        --         { shop_trends = trade_context_.shop_trends
-        --         , character = trade_context_.to_party
-        --         , shop = trade_context_.from_party
-        --         }
-        -- { shop_trends = new_shop_trends, character = new_character, shop = new_shop }
+                    sell_items_from_party_to_other
+                        { shop_trends = shop_trends
+                        , from_party = shop
+                        , to_party = character
+                        }
+                        { item = item, qty = Quantity 1 }
     in
-    -- ( new_shop_trends, new_character, new_shop )
-    -- ai_update_record
-    -- trade_context |> (\trade_context_ ->
-    --         { shop_trends = trade_context_.shop_trends
-    --         , character = trade_context_.to_party
-    --         , shop = trade_context_.from_party
-    --         }
-    --    )
     case trade_record of
         IncompleteTradeRecord trade_context_ ->
             { shop_trends = trade_context_.shop_trends
@@ -1783,50 +1746,25 @@ ai_sell_item_to_shop ai_tick_time shop_trends character shop =
 
         trade_record : TradeRecord
         trade_record =
-        -- trade_context =
-            -- ( new_shop_trends, new_character, new_shop ) =
             case List.head untrendy_items of
                 Nothing ->
-                    IncompleteTradeRecord { shop_trends = shop_trends
-                        , from_party = append_to_character_action_log
-                            character
-                            wanted_to_sell_but_couldnt
+                    IncompleteTradeRecord
+                        { shop_trends = shop_trends
+                        , from_party =
+                            append_to_character_action_log
+                                character
+                                wanted_to_sell_but_couldnt
                         , to_party = shop
                         }
 
                 Just ( item, qty, avg_price ) ->
-                    -- let
-                        -- potential_trade_record =
-                            sell_items_from_party_to_other
-                                { shop_trends = shop_trends
-                                , from_party = character
-                                , to_party = shop
-                                }
-                                { item = item, qty = Quantity 1 }
-
-                        -- potential_trade_context =
-                        --     getTradeContext potential_trade_record
-                    -- in
-                    -- { shop_trends = potential_trade_context.shop_trends
-                    -- , character = potential_trade_context.from_party
-                    -- , shop = potential_trade_context.to_party
-                    -- }
-
-        -- ( trade_record.shop_trends
-        -- , trade_record.from_party
-        --   -- , case maybe_item_trade_log of
-        --   --     Just item_trade_log ->
-        --   --         append_to_character_action_log nc
-        --   --             { log_type = Traded item_trade_log, time = ai_tick_time }
-        --   --
-        --   --     Nothing ->
-        --   --         append_to_character_action_log nc
-        --   --             wanted_to_sell_but_couldnt
-        -- , trade_record.to_party
-        -- )
+                    sell_items_from_party_to_other
+                        { shop_trends = shop_trends
+                        , from_party = character
+                        , to_party = shop
+                        }
+                        { item = item, qty = Quantity 1 }
     in
-    -- ( new_shop_trends, new_character, new_shop )
-    -- { shop_trends = trade_context.shop_trends, character = trade_context.character, shop = trade_context.shop }
     case trade_record of
         IncompleteTradeRecord trade_context_ ->
             { shop_trends = trade_context_.shop_trends

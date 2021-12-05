@@ -1651,8 +1651,8 @@ ai_buy_item_from_shop ai_tick_time shop_trends character shop =
                 |> List.filterMap
                     is_item_trendy_enough
 
-        is_buyable : ItemTypeSentiment -> Maybe Item -> Maybe Item
-        is_buyable ( item_type, trend ) buyable_item =
+        is_item_wanted : ItemTypeSentiment -> Maybe Item -> Maybe Item
+        is_item_wanted ( item_type, trend ) buyable_item =
             case buyable_item of
                 Just buyable ->
                     Just buyable
@@ -1672,10 +1672,12 @@ ai_buy_item_from_shop ai_tick_time shop_trends character shop =
                         ( xi, xq, xap ) :: xs ->
                             Just xi
 
+        -- for all the least trendy items in the shop,
+        --  are any of them wanted by the character?
         maybe_item_to_buy : Maybe Item
         maybe_item_to_buy =
             List.foldl
-                is_buyable
+                is_item_wanted
                 Nothing
                 least_trendy_items
 

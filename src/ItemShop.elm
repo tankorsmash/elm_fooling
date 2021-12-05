@@ -1748,7 +1748,10 @@ ai_buy_item_from_shop ai_tick_time shop_trends character shop =
 
         CompletedTradeRecord trade_context_ log ->
             { shop_trends = trade_context_.shop_trends
-            , character = trade_context_.to_party
+            , character =
+                append_to_character_action_log
+                    trade_context_.to_party
+                    { log_type = Traded log, time = ai_tick_time }
             , shop = trade_context_.from_party
             }
 

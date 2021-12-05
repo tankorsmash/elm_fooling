@@ -1669,8 +1669,8 @@ ai_buy_item_from_shop ai_tick_time shop_trends character shop =
                         [] ->
                             Nothing
 
-                        ( xi, xq, xap ) :: xs ->
-                            Just xi
+                        ( item, _, _ ) :: rest_sentiments ->
+                            Just item
 
         -- for all the least trendy items in the shop,
         --  are any of them wanted by the character?

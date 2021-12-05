@@ -1673,7 +1673,7 @@ ai_buy_item_from_shop ai_tick_time shop_trends character shop =
                             Just item
 
         -- for all the least trendy items in the shop,
-        --  are any of them wanted by the character?
+        --  find one that is in wanted_items
         maybe_item_to_buy : Maybe Item
         maybe_item_to_buy =
             List.foldl

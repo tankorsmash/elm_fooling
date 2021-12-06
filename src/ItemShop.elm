@@ -1599,7 +1599,7 @@ group_shuffle_items seed items =
             )
             ( seed, [] )
         <|
-            List.Extra.greedyGroupsOf 3 items
+            List.Extra.greedyGroupsOf 6 items
 
 
 ai_buy_item_from_shop : Time.Posix -> ShopTrends -> Character -> Character -> AiUpdateRecord

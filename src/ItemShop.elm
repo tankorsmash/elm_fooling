@@ -2166,6 +2166,11 @@ is_item_trending item_type_sentiments item =
             False
 
 
+html_title : String -> Element.Attribute msg
+html_title string =
+    string |> Html.Attributes.title |> Element.htmlAttribute
+
+
 render_single_item_for_sale :
     ( List ShopTrends, ShopTrends, Bool )
     -> Character
@@ -2254,10 +2259,10 @@ render_single_item_for_sale ( historical_shop_trends, shop_trends, show_charts_i
         , Events.onMouseLeave <| MouseLeaveShopItem context ( char_id, item )
         , Element.below expanded_display
         ]
-        [ column [ Element.clip, width (fillPortion 2 |> Element.maximum 150), Font.size 16 ] [ text <| clipText item.name 25 ]
-        , column [ portion 1 ] [ render_gp <| get_adjusted_item_cost shop_trends item (Quantity 1) ]
-        , column [ portion 1 ] [ render_gp <| getPrice avg_price ]
-        , column [ width <| (fill |> Element.minimum 50) ]
+        [ column [ Element.clip, width (fillPortion 2 |> Element.maximum 150), Font.size 16, html_title "Item Name" ] [ text <| clipText item.name 25 ]
+        , column [ portion 1, html_title "Current cost" ] [ render_gp <| get_adjusted_item_cost shop_trends item (Quantity 1) ]
+        , column [ portion 1, html_title "Average Cost" ] [ render_gp <| getPrice avg_price ]
+        , column [ width <| (fill |> Element.minimum 50), html_title "Quantity" ]
             [ el [] <|
                 if getQuantity qty == 1 then
                     text " "
@@ -2276,10 +2281,10 @@ render_single_item_for_sale ( historical_shop_trends, shop_trends, show_charts_i
                 else
                     text <| "x" ++ (String.fromInt <| getQuantity qty)
             ]
-        , column [ width <| (fill |> Element.minimum 150) ] [ render_item_type shop_trends item.item_type ]
-        , column [ width <| (fillPortion 3 |> Element.maximum 200) ]
+        , column [ width <| (fill |> Element.minimum 150), html_title "Item Type" ] [ render_item_type shop_trends item.item_type ]
+        , column [ width <| (fillPortion 3 |> Element.maximum 200), html_title "Item Description" ]
             [ el [] <| text <| clipText item.description 24 ]
-        , column [ portion 1 ] [ controls_column ( item, qty, avg_price ) ]
+        , column [ portion 1, html_title "Controls" ] [ controls_column ( item, qty, avg_price ) ]
         ]
 
 

@@ -1588,8 +1588,9 @@ group_shuffle_items : Random.Seed -> List a -> List a
 group_shuffle_items seed items =
     -- Shuffle around the items in groups of 3 to randomize their choices more
     -- TODO: figure out if this works better than shuffling groups of three starting from the first
-    Tuple.second <|
-        List.foldl
+    items
+        |> List.Extra.greedyGroupsOf 6
+        |> List.foldl
             (\grp ( old_seed, acc ) ->
                 let
                     ( shuffled, new_seed ) =
@@ -1598,8 +1599,7 @@ group_shuffle_items seed items =
                 ( new_seed, acc ++ shuffled )
             )
             ( seed, [] )
-        <|
-            List.Extra.greedyGroupsOf 6 items
+        |> Tuple.second
 
 
 ai_buy_item_from_shop : Time.Posix -> ShopTrends -> Character -> Character -> AiUpdateRecord

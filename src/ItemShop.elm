@@ -1584,6 +1584,24 @@ seed_from_time time =
     Random.initialSeed <| Time.posixToMillis time
 
 
+group_shuffle_items : Random.Seed -> List a -> List a
+group_shuffle_items seed items =
+    -- Shuffle around the items in groups of 3 to randomize their choices more
+    -- TODO: figure out if this works better than shuffling groups of three starting from the first
+    Tuple.second <|
+        List.foldl
+            (\grp ( old_seed, acc ) ->
+                let
+                    ( shuffled, new_seed ) =
+                        Random.step (Random.List.shuffle grp) old_seed
+                in
+                ( new_seed, acc ++ shuffled )
+            )
+            ( seed, [] )
+        <|
+            List.Extra.greedyGroupsOf 3 items
+
+
 ai_buy_item_from_shop : Time.Posix -> ShopTrends -> Character -> Character -> AiUpdateRecord
 ai_buy_item_from_shop ai_tick_time shop_trends character shop =
     --TODO decide on an item type to buy, and buy 1.
@@ -1678,25 +1696,6 @@ ai_buy_item_from_shop ai_tick_time shop_trends character shop =
                         ( item, _, _ ) :: rest_sentiments ->
                             Just item
 
-        shuffle_items : Random.Seed -> List ItemTypeSentiment -> List ItemTypeSentiment
-        shuffle_items seed items =
-            -- Shuffle around the items in groups of 3 to randomize their choices more
-            -- TODO: figure out if this works better than shuffling groups of three starting from the first
-            Tuple.second <|
-                List.foldl
-                    (\grp ( old_seed, acc ) ->
-                        let
-                            ( shuffled, new_seed ) =
-                                Random.step (Random.List.shuffle grp) old_seed
-                        in
-                        ( new_seed, acc ++ shuffled )
-                    )
-                    ( seed_from_time ai_tick_time
-                    , []
-                    )
-                <|
-                    List.Extra.greedyGroupsOf 3 items
-
         -- for all the least trendy items in the shop,
         --  find one that is in wanted_items
         maybe_item_to_buy : Maybe Item
@@ -1704,7 +1703,7 @@ ai_buy_item_from_shop ai_tick_time shop_trends character shop =
             List.foldl
                 is_item_wanted
                 Nothing
-                (shuffle_items (seed_from_time ai_tick_time) least_trendy_items)
+                (group_shuffle_items (seed_from_time ai_tick_time) least_trendy_items)
 
         trade_record : TradeRecord
         trade_record =
@@ -1771,9 +1770,12 @@ ai_sell_item_to_shop ai_tick_time shop_trends character shop =
             , time = ai_tick_time
             }
 
+        shuffled_items_to_buy =
+            group_shuffle_items (seed_from_time ai_tick_time) untrendy_items
+
         trade_record : TradeRecord
         trade_record =
-            case List.head untrendy_items of
+            case List.head shuffled_items_to_buy of
                 Nothing ->
                     IncompleteTradeRecord
                         { shop_trends = shop_trends

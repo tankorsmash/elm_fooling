@@ -194,6 +194,7 @@ type SpecialEvent
 type SpecialAction
     = InviteTrader
     | TriggerEvent SpecialEvent
+    | TogglePauseAi
 
 
 type Msg
@@ -393,6 +394,7 @@ type alias Model =
     , show_charts_in_hovered_item : Bool
     , hovered_tooltip_id : Maybe String
     , global_seed : Random.Seed --used to seed anything; will be constantly changed throughout the app
+    , ai_updates_paused : Bool
     }
 
 
@@ -934,6 +936,7 @@ init =
       , show_charts_in_hovered_item = False
       , hovered_tooltip_id = Nothing
       , global_seed = Random.initialSeed 4
+      , ai_updates_paused = False
       }
     , Task.perform TickSecond Time.now
     )
@@ -1315,7 +1318,11 @@ update msg model =
             ( { model | shop_trends_hovered = False }, Cmd.none )
 
         TickSecond time ->
-            ( update_ai_chars <| update_player { model | ai_tick_time = time }, Cmd.none )
+            if not model.ai_updates_paused then
+                ( update_ai_chars <| update_player { model | ai_tick_time = time }, Cmd.none )
+
+            else
+                ( model, Cmd.none )
 
         ToggleShowMainChart ->
             ( { model | show_main_chart = not model.show_main_chart }, Cmd.none )
@@ -1550,6 +1557,9 @@ update_special_action special_action model =
 
         TriggerEvent event ->
             ( handle_special_event model event, Cmd.none )
+
+        TogglePauseAi ->
+            ( { model | ai_updates_paused = not model.ai_updates_paused }, Cmd.none )
 
 
 {-| adds 1 gold per second. GPM is a misnomer
@@ -3166,6 +3176,15 @@ withHoveredId maybe_hovered_tooltip_id tooltip_config =
 special_actions_display : Model -> Element Msg
 special_actions_display model =
     let
+        button_toggle_ai_pause =
+            primary_button_tooltip []
+                (OnSpecialAction TogglePauseAi)
+                (if model.ai_updates_paused then "Resume Time" else "Pause Time")
+                (buildTooltipConfig
+                    "You tap your medallion, and time comes to a halt.\n\nYou take a breath, and feel a weight off your shoulders. You'll take your time with things."
+                    |> withHoveredId model.hovered_tooltip_id
+                )
+
         button_search =
             primary_button_tooltip []
                 (OnSpecialAction InviteTrader)
@@ -3196,7 +3215,8 @@ special_actions_display model =
     column [ width fill, spacing 10, paddingXY 0 10 ]
         [ el [ font_scaled 2, border_bottom 2 ] <| text "Special Actions"
         , row [ width fill, spacingXY 10 0 ]
-            [ button_search
+            [ button_toggle_ai_pause
+            , button_search
             , button_high_desire
             , button_low_desire
             ]

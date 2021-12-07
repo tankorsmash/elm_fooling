@@ -372,6 +372,10 @@ type alias Character =
     }
 
 
+type alias Characters =
+    List Character
+
+
 type alias TrendSnapshot =
     { time : Time.Posix, item_type : ItemType, value : Float }
 
@@ -381,8 +385,8 @@ type alias ItemDb =
 
 
 type alias Model =
-    { player : Character
-    , shop : Character
+    { player_id : CharacterId
+    , shop_id : CharacterId
     , characters : List Character
     , hovered_item_in_character : Maybe ( CharacterId, Item )
     , shop_trends : ShopTrends
@@ -935,9 +939,9 @@ init =
         characters =
             [ player, shop ] ++ initial_characters item_db
     in
-    ( { player = player
-      , shop = shop
-      , characters = characters
+    ( { player_id = player.char_id
+      , shop_id = shop.char_id
+      , characters = Debug.log "characters" characters
       , hovered_item_in_character = Nothing
       , shop_trends = initial_shop_trends
       , item_db = item_db
@@ -1280,50 +1284,71 @@ update msg model =
             ( { model | hovered_item_in_character = Nothing }, Cmd.none )
 
         BuyItem item qty ->
-            let
-                -- ( new_shop_trends, new_shop, new_player ) =
-                trade_record =
-                    sell_items_from_party_to_other
-                        { shop_trends = model.shop_trends
-                        , from_party = model.shop
-                        , to_party = model.player
-                        }
-                        { item = item, qty = qty }
+            case getShop model of
+                Just shop ->
+                    case getPlayer model of
+                        Just player ->
+                            let
+                                -- ( new_shop_trends, new_shop, new_player ) =
+                                trade_record =
+                                    sell_items_from_party_to_other
+                                        { shop_trends = model.shop_trends
+                                        , from_party = shop
+                                        , to_party = player
+                                        }
+                                        { item = item, qty = qty }
 
-                trade_context =
-                    getTradeContext trade_record
-            in
-            ( { model
-                | shop_trends = trade_context.shop_trends
-                , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
-                , player = trade_context.to_party
-                , shop = trade_context.from_party
-              }
-            , Cmd.none
-            )
+                                trade_context =
+                                    getTradeContext trade_record
+                            in
+                            ( { model
+                                | shop_trends = trade_context.shop_trends
+                                , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
+                              }
+                                --it doesn't matter who was what party, they're still getting updated
+                                |> withCharacter trade_context.to_party
+                                |> withCharacter trade_context.from_party
+                            , Cmd.none
+                            )
+
+                        Nothing ->
+                            ( model, Cmd.none )
+
+                Nothing ->
+                    ( model, Cmd.none )
 
         SellItem item qty ->
-            let
-                -- ( new_shop_trends, new_player, new_shop ) =
-                trade_record =
-                    sell_items_from_party_to_other
-                        { shop_trends = model.shop_trends
-                        , from_party = model.player
-                        , to_party = model.shop
-                        }
-                        { item = item, qty = qty }
+            case getShop model of
+                Just shop ->
+                    case getPlayer model of
+                        Just player ->
+                            let
+                                -- ( new_shop_trends, new_player, new_shop ) =
+                                trade_record =
+                                    sell_items_from_party_to_other
+                                        { shop_trends = model.shop_trends
+                                        , from_party = player
+                                        , to_party = shop
+                                        }
+                                        { item = item, qty = qty }
 
-                trade_context =
-                    getTradeContext trade_record
-            in
-            ( { model
-                | shop_trends = trade_context.shop_trends
-                , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
-                , player = trade_context.from_party
-                , shop = trade_context.to_party
-              }
-            , Cmd.none
-            )
+                                trade_context =
+                                    getTradeContext trade_record
+                            in
+                            ( { model
+                                | shop_trends = trade_context.shop_trends
+                                , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
+                              }
+                                |> withCharacter trade_context.from_party
+                                |> withCharacter trade_context.to_party
+                            , Cmd.none
+                            )
+
+                        Nothing ->
+                            ( model, Cmd.none )
+
+                Nothing ->
+                    ( model, Cmd.none )
 
         StartTrendsHover ->
             ( { model | shop_trends_hovered = True }, Cmd.none )
@@ -1613,14 +1638,17 @@ add_player_gpm player =
 
 update_player : Model -> Model
 update_player model =
-    let
-        { player } =
+    case getPlayer model of
+        Just player ->
+            let
+                { held_gold } =
+                    player
+            in
             model
+                |> withCharacter (add_player_gpm player)
 
-        { held_gold } =
-            player
-    in
-    { model | player = player |> add_player_gpm }
+        Nothing ->
+            Debug.log "error: cant find player" model
 
 
 get_trend_for_item : ShopTrends -> Item -> Float
@@ -2026,24 +2054,20 @@ update_ai_chars model =
         new_ai_data : AiUpdateData
         new_ai_data =
             List.foldl
-                (update_ai model.ai_tick_time model.shop.char_id)
-                { shop_trends = old_shop_trends, historical_shop_trends = old_historical_shop_trends, characters = old_characters, ai_tick_seed = ai_tick_time }
+                (update_ai model.ai_tick_time model.shop_id)
+                { shop_trends = old_shop_trends
+                , historical_shop_trends = old_historical_shop_trends
+                , characters = old_characters
+                , ai_tick_seed = ai_tick_time
+                }
             <|
                 List.map .char_id <|
                     exclude_player_and_shop model old_characters
-
-        final_shop =
-            Maybe.withDefault model.shop <|
-                List.head <|
-                    List.filter
-                        (\c -> c.char_id == model.shop.char_id)
-                        new_ai_data.characters
     in
     { model
         | shop_trends = new_ai_data.shop_trends
         , historical_shop_trends = new_ai_data.historical_shop_trends
         , characters = new_ai_data.characters
-        , shop = final_shop
     }
 
 
@@ -2795,10 +2819,10 @@ sort_func =
     Tuple3.first >> .name
 
 
-exclude_player_and_shop : { a | player : Character, shop : Character } -> List Character -> List Character
-exclude_player_and_shop { player, shop } characters =
+exclude_player_and_shop : { a | player_id : CharacterId, shop_id : CharacterId } -> List Character -> List Character
+exclude_player_and_shop { player_id, shop_id } characters =
     List.filter
-        (\c -> c.char_id /= player.char_id && c.char_id /= shop.char_id)
+        (\c -> c.char_id /= player_id && c.char_id /= shop_id)
         characters
 
 
@@ -3068,6 +3092,45 @@ charts_display historical_shop_trends hovered_trend_chart =
                 chart_elements
 
 
+getCharacter : Characters -> CharacterId -> Maybe Character
+getCharacter characters char_id =
+    let
+        _ =
+            Debug.log "char id im looking for" char_id
+    in
+    characters
+        |> List.filter (.char_id >> (==) char_id)
+        |> Debug.log "filtered characters"
+        |> List.head
+
+
+getPlayer : Model -> Maybe Character
+getPlayer { characters, player_id } =
+    getCharacter characters player_id
+
+
+getShop : Model -> Maybe Character
+getShop { characters, shop_id } =
+    getCharacter characters shop_id
+
+
+withCharacter : Character -> Model -> Model
+withCharacter new_char model =
+    let
+        new_characters =
+            List.map
+                (\char ->
+                    if char.char_id == new_char.char_id then
+                        new_char
+
+                    else
+                        new_char
+                )
+                model.characters
+    in
+    { model | characters = new_characters }
+
+
 view : Model -> Html.Html Msg
 view model =
     let
@@ -3092,6 +3155,14 @@ view model =
                                 (always Element.none)
                             )
                     )
+
+        maybe_shop : Maybe Character
+        maybe_shop =
+            getShop model
+
+        maybe_player : Maybe Character
+        maybe_player =
+            getPlayer model
     in
     Element.layoutWith { options = [] }
         []
@@ -3112,32 +3183,48 @@ view model =
             , special_actions_display model
             , trends_display model.item_db model.shop_trends model.characters model.shop_trends_hovered
             , Element.el [ paddingXY 0 10, width fill ] <|
-                render_inventory
-                    model
-                    "Items For Sale"
-                    model.shop
-                    model.shop_trends
-                    model.hovered_item_in_character
-                    ShopItems
-                    (\( item, qty, avg_price ) ->
-                        shop_buy_button
-                            (get_adjusted_item_cost model.shop_trends item (Quantity 1))
-                            model.player.held_gold
-                            ( item, qty, avg_price )
-                    )
+                case maybe_shop of
+                    Just shop ->
+                        render_inventory
+                            model
+                            "Items For Sale"
+                            shop
+                            model.shop_trends
+                            model.hovered_item_in_character
+                            ShopItems
+                            (\( item, qty, avg_price ) ->
+                                shop_buy_button
+                                    (get_adjusted_item_cost model.shop_trends item (Quantity 1))
+                                    (case maybe_player of
+                                        Just player ->
+                                            player.held_gold
+
+                                        Nothing ->
+                                            99999
+                                    )
+                                    ( item, qty, avg_price )
+                            )
+
+                    Nothing ->
+                        text "Can't find shop"
             , Element.el [ paddingXY 0 10, width fill ] <|
-                render_inventory
-                    model
-                    "Items In Inventory"
-                    model.player
-                    model.shop_trends
-                    model.hovered_item_in_character
-                    InventoryItems
-                    (\( item, qty, avg_price ) ->
-                        shop_sell_button
-                            (getQuantity qty >= 1)
-                            ( item, setQuantity 1, avg_price )
-                    )
+                case maybe_player of
+                    Just player ->
+                        render_inventory
+                            model
+                            "Items In Inventory"
+                            player
+                            model.shop_trends
+                            model.hovered_item_in_character
+                            InventoryItems
+                            (\( item, qty, avg_price ) ->
+                                shop_sell_button
+                                    (getQuantity qty >= 1)
+                                    ( item, setQuantity 1, avg_price )
+                            )
+
+                    Nothing ->
+                        text "Can't find player"
             ]
                 ++ (if model.show_debug_inventories then
                         [ column [ width fill ]

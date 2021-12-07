@@ -941,7 +941,7 @@ init =
     in
     ( { player_id = player.char_id
       , shop_id = shop.char_id
-      , characters = Debug.log "characters" characters
+      , characters = characters
       , hovered_item_in_character = Nothing
       , shop_trends = initial_shop_trends
       , item_db = item_db
@@ -1273,10 +1273,6 @@ sell_items_from_party_to_other orig_trade_context { item, qty } =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    let
-        _ =
-            Debug.log "model in update" model
-    in
     case msg of
         Noop ->
             ( model, Cmd.none )
@@ -1362,7 +1358,11 @@ update msg model =
 
         TickSecond time ->
             if not model.ai_updates_paused then
-                ( update_ai_chars <| update_player { model | ai_tick_time = time }, Cmd.none )
+                ( { model | ai_tick_time = time }
+                    |> update_player
+                    |> update_ai_chars
+                , Cmd.none
+                )
 
             else
                 ( model, Cmd.none )
@@ -1644,10 +1644,6 @@ update_player : Model -> Model
 update_player model =
     case getPlayer model of
         Just player ->
-            let
-                { held_gold } =
-                    player
-            in
             model
                 |> withCharacter (add_player_gpm player)
 
@@ -2024,7 +2020,8 @@ update_ai ai_tick_time shop_char_id char_id { shop_trends, historical_shop_trend
                             else
                                 c
                         )
-                        characters
+                    <|
+                        Debug.log "chars before new_characters" characters
 
                 new_historical_shop_trends =
                     List.append
@@ -2072,7 +2069,7 @@ update_ai_chars model =
     { model
         | shop_trends = new_ai_data.shop_trends
         , historical_shop_trends = new_ai_data.historical_shop_trends
-        , characters = Debug.log "Ai characters" new_ai_data.characters
+        , characters = new_ai_data.characters
     }
 
 
@@ -2987,7 +2984,6 @@ charts_display historical_shop_trends hovered_trend_chart =
         get_y_from_single_datum ( idx, it_val ) =
             Tuple.second it_val
 
-        -- render_tooltip : p -> CI.One TrendChartDatum CI.Dot -> a
         render_tooltip plane item =
             let
                 ( id, it_val ) =
@@ -2996,8 +2992,6 @@ charts_display historical_shop_trends hovered_trend_chart =
                 ( item_type_, val ) =
                     it_val
 
-                -- _ =
-                --     Debug.log "item" <| CI.getData item
                 item_type =
                     Weapon
             in
@@ -3124,7 +3118,7 @@ withCharacter new_char model =
                         new_char
 
                     else
-                        new_char
+                        char
                 )
                 model.characters
     in

@@ -435,7 +435,13 @@ initial_item_db : Dict.Dict String Item
 initial_item_db =
     let
         initial_items =
-            [ { name = "Boots"
+            [ { name = "Anklet"
+              , item_type = Armor
+              , raw_gold_cost = 6
+              , description = "An pair of anklets"
+              , id = UUID.forName "anklets" UUID.dnsNamespace
+              }
+            , { name = "Boots"
               , item_type = Armor
               , raw_gold_cost = 5
               , description = "An old pair of boots"
@@ -749,6 +755,33 @@ secondary_button_custom attrs on_press label =
 secondary_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
 secondary_button attrs on_press label =
     secondary_button_custom attrs on_press (text label)
+
+
+outline_button_custom : List (Element.Attribute Msg) -> Msg -> Element Msg -> Element Msg
+outline_button_custom attrs on_press label =
+    Input.button
+        ([ -- bs4-like values
+           Font.color secondary_color
+         , Font.size 16
+         , Font.center
+         , padding 6
+         , Background.color white_color
+         , Border.rounded 5
+         , Border.width 3
+         , Border.color secondary_color
+         , Element.mouseOver
+            [ Background.color <| secondary_color
+            , Font.color <| white_color
+            ]
+         ]
+            ++ attrs
+        )
+        { onPress = Just on_press, label = label }
+
+
+outline_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
+outline_button attrs on_press label =
+    outline_button_custom attrs on_press (text label)
 
 
 
@@ -2168,7 +2201,8 @@ is_item_trending item_type_sentiments item =
 
 html_title : String -> Element.Attribute msg
 html_title string =
-    string |> Html.Attributes.title |> Element.htmlAttribute
+    -- string |> Html.Attributes.title |> Element.htmlAttribute
+    Element.behindContent Element.none
 
 
 render_single_item_for_sale :
@@ -2998,7 +3032,12 @@ view model =
     <|
         Element.column [ width fill, font_scaled 1, height fill ] <|
             [ welcome_header
-            , secondary_button [] ToggleShowMainChart "Charts"
+            , outline_button [] ToggleShowMainChart <|
+                if model.show_main_chart then
+                    "Hide Charts"
+
+                else
+                    "Charts"
             , if model.show_main_chart then
                 Element.el [ paddingXY 0 10, width fill ] <| charts_display model.historical_shop_trends model.hovered_trend_chart
 

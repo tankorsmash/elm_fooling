@@ -551,10 +551,16 @@ initial_items_for_sale item_db =
     just_items
 
 
+reset_avg_price_to_default : InventoryRecord -> InventoryRecord
+reset_avg_price_to_default ( item, qty, avg_price ) =
+    ( item, qty, setPrice item.raw_gold_cost )
+
+
 initial_owned_items : ItemDb -> InventoryRecords
 initial_owned_items item_db =
     [ ( lookup_item_id_str_default item_db "a41ae9d3-61f0-54f9-800e-56f53ed3ac98", Quantity 12, setPrice 9999 )
     ]
+        |> List.map reset_avg_price_to_default
 
 
 initial_characters : ItemDb -> List Character
@@ -568,15 +574,17 @@ initial_characters item_db =
     in
     [ { base_character_1
         | held_items =
-            [ ( lookup_item_id_str_default item_db "6b7e301d-ab12-5e81-acfc-547e63004ffa", setQuantity 8, setPrice 20 ) --TODO use actual prices instead of madeup
+            [ ( lookup_item_id_str_default item_db "6b7e301d-ab12-5e81-acfc-547e63004ffa", setQuantity 8, setPrice 20 )
             ]
+                |> List.map reset_avg_price_to_default
         , held_gold = 100
         , item_types_desired = Dict.fromList [ ( item_type_to_id Weapon, 0.0 ) ]
       }
     , { base_character_2
         | held_items =
-            [ ( lookup_item_id_str_default item_db "a41ae9d3-61f0-54f9-800e-56f53ed3ac98", setQuantity 12, setPrice 25 ) --TODO use actual prices instead of madeup
+            [ ( lookup_item_id_str_default item_db "a41ae9d3-61f0-54f9-800e-56f53ed3ac98", setQuantity 12, setPrice 25 )
             ]
+                |> List.map reset_avg_price_to_default
         , held_gold = 200
         , item_types_desired = Dict.fromList [ ( item_type_to_id Spellbook, 0.0 ) ]
       }
@@ -3179,7 +3187,12 @@ special_actions_display model =
         button_toggle_ai_pause =
             primary_button_tooltip []
                 (OnSpecialAction TogglePauseAi)
-                (if model.ai_updates_paused then "Resume Time" else "Pause Time")
+                (if model.ai_updates_paused then
+                    "Resume Time"
+
+                 else
+                    "Pause Time"
+                )
                 (buildTooltipConfig
                     "You tap your medallion, and time comes to a halt.\n\nYou take a breath, and feel a weight off your shoulders. You'll take your time with things."
                     |> withHoveredId model.hovered_tooltip_id

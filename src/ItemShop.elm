@@ -1273,6 +1273,10 @@ sell_items_from_party_to_other orig_trade_context { item, qty } =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
+    let
+        _ =
+            Debug.log "model in update" model
+    in
     case msg of
         Noop ->
             ( model, Cmd.none )
@@ -1919,9 +1923,10 @@ type AiActionChoice
     | WantsToBuy
 
 
-lookup_by_char_id : UUID -> List Character -> Maybe Character
-lookup_by_char_id char_id characters =
-    List.head <| List.filter (\c -> c.char_id == char_id) characters
+
+-- lookup_by_char_id : UUID -> List Character -> Maybe Character
+-- lookup_by_char_id char_id characters =
+--     List.head <| List.filter (\c -> c.char_id == char_id) characters
 
 
 type alias AiUpdateData =
@@ -1951,15 +1956,15 @@ append_to_character_action_log character new_log =
 --  without re-using them. Answer: iterate through character ids instead
 
 
-update_ai : Time.Posix -> UUID -> UUID -> AiUpdateData -> AiUpdateData
+update_ai : Time.Posix -> CharacterId -> CharacterId -> AiUpdateData -> AiUpdateData
 update_ai ai_tick_time shop_char_id char_id { shop_trends, historical_shop_trends, characters, ai_tick_seed } =
     let
         --TODO: make sure character isn't shop
         maybe_character =
-            lookup_by_char_id char_id characters
+            getCharacter characters char_id
 
         maybe_shop =
-            lookup_by_char_id shop_char_id characters
+            getCharacter characters shop_char_id
     in
     case ( maybe_character, maybe_shop ) of
         ( Just character, Just shop ) ->
@@ -2067,7 +2072,7 @@ update_ai_chars model =
     { model
         | shop_trends = new_ai_data.shop_trends
         , historical_shop_trends = new_ai_data.historical_shop_trends
-        , characters = new_ai_data.characters
+        , characters = Debug.log "Ai characters" new_ai_data.characters
     }
 
 
@@ -3094,13 +3099,8 @@ charts_display historical_shop_trends hovered_trend_chart =
 
 getCharacter : Characters -> CharacterId -> Maybe Character
 getCharacter characters char_id =
-    let
-        _ =
-            Debug.log "char id im looking for" char_id
-    in
     characters
         |> List.filter (.char_id >> (==) char_id)
-        |> Debug.log "filtered characters"
         |> List.head
 
 

@@ -3206,7 +3206,7 @@ view model =
                             )
 
                     Nothing ->
-                        text "Can't find shop"
+                        el [Font.color <| rgb 1 0 0, font_scaled 5] <| text "ERR: Can't find shop"
             , Element.el [ paddingXY 0 10, width fill ] <|
                 case maybe_player of
                     Just player ->

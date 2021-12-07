@@ -215,6 +215,7 @@ type Msg
     | StartTooltipHover String
     | EndTooltipHover String
     | OnSpecialAction SpecialAction
+    | ToggleHideNonZeroRows CharacterId
 
 
 type alias TradeOrder =
@@ -367,6 +368,7 @@ type alias Character =
     , trend_tolerance : TrendTolerance
     , item_types_desired : ItemSentiments
     , action_log : List ActionLog
+    , hide_zero_qty_inv_rows : Bool
     }
 
 
@@ -882,18 +884,22 @@ empty_trend_tolerance =
 
 create_character : UUID -> String -> Character
 create_character char_id name =
-    { held_items = []
+    { -- inventory
+      held_items = []
     , held_gold = 0
 
-    -- , char_id = UUID.forName "player character" UUID.dnsNamespace
+    -- name and party
     , char_id = char_id
-
-    -- , name = "Player"
     , name = name
     , party = CharacterParty char_id
+
+    -- trading data
     , trend_tolerance = empty_trend_tolerance
     , item_types_desired = empty_item_sentiments
     , action_log = []
+
+    -- misc
+    , hide_zero_qty_inv_rows = False
     }
 
 
@@ -1365,6 +1371,23 @@ update msg model =
 
         OnSpecialAction special_action ->
             update_special_action special_action model
+
+        ToggleHideNonZeroRows char_id ->
+            let
+                new_characters =
+                    List.map
+                        (\char ->
+                            if char.char_id /= char_id then
+                                char
+
+                            else
+                                { char
+                                    | hide_zero_qty_inv_rows = not char.hide_zero_qty_inv_rows
+                                }
+                        )
+                        model.characters
+            in
+            ( { model | characters = new_characters }, Cmd.none )
 
 
 generate_uuid : String -> UUID.UUID
@@ -2635,7 +2658,7 @@ render_inventory :
     -> Element Msg
 render_inventory model header character shop_trends hovered_item context controls_column =
     let
-        { char_id, held_items, held_gold } =
+        { char_id, held_items, held_gold, hide_zero_qty_inv_rows } =
             character
 
         is_shop_context =
@@ -2656,7 +2679,12 @@ render_inventory model header character shop_trends hovered_item context control
                         controls_column
                 )
             <|
-                List.sortBy sort_func held_items
+                List.sortBy sort_func <|
+                    if hide_zero_qty_inv_rows then
+                        List.filter (\( i, q, ap ) -> getQuantity q > 0) held_items
+
+                    else
+                        held_items
 
         rendered_desires : List (Element Msg)
         rendered_desires =
@@ -2725,6 +2753,18 @@ render_inventory model header character shop_trends hovered_item context control
                     []
                 )
             ]
+
+        rendered_inventory_controls : List (Element Msg)
+        rendered_inventory_controls =
+            [ primary_button []
+                (ToggleHideNonZeroRows character.char_id)
+                (if hide_zero_qty_inv_rows then
+                    "Show Nonzero"
+
+                 else
+                    "Hide Nonzero"
+                )
+            ]
     in
     Element.column [ width fill, spacingXY 0 5, height fill ] <|
         [ Element.row [ font_scaled 2, width fill ]
@@ -2741,6 +2781,7 @@ render_inventory model header character shop_trends hovered_item context control
             ++ rendered_desires
             ++ rendered_dislikes
             ++ rendered_action_log
+            ++ rendered_inventory_controls
             ++ (if not is_shop_context && List.length character.action_log > 0 then
                     divider
 

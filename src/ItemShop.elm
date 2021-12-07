@@ -2058,16 +2058,16 @@ update_ai_chars model =
 
         new_ai_data : AiUpdateData
         new_ai_data =
-            List.foldl
-                (update_ai model.ai_tick_time model.shop_id)
-                { shop_trends = old_shop_trends
-                , historical_shop_trends = old_historical_shop_trends
-                , characters = old_characters
-                , ai_tick_seed = ai_tick_time
-                }
-            <|
-                List.map .char_id <|
-                    exclude_player_and_shop model old_characters
+            old_characters
+                |> exclude_player_and_shop model
+                |> List.map .char_id
+                |> List.foldl
+                    (update_ai model.ai_tick_time model.shop_id)
+                    { shop_trends = old_shop_trends
+                    , historical_shop_trends = old_historical_shop_trends
+                    , characters = old_characters
+                    , ai_tick_seed = ai_tick_time
+                    }
     in
     { model
         | shop_trends = new_ai_data.shop_trends
@@ -3206,7 +3206,7 @@ view model =
                             )
 
                     Nothing ->
-                        el [Font.color <| rgb 1 0 0, font_scaled 5] <| text "ERR: Can't find shop"
+                        el [ Font.color <| rgb 1 0 0, font_scaled 5 ] <| text "ERR: Can't find shop"
             , Element.el [ paddingXY 0 10, width fill ] <|
                 case maybe_player of
                     Just player ->

@@ -1,6 +1,7 @@
 module ItemShop exposing (Model, Msg, add_to_average, init, sub_from_average, subscriptions, suite, update, view)
 
 import Array
+import Browser.Dom
 import Browser.Events
 import Chart as C
 import Chart.Attributes as CA
@@ -8,6 +9,7 @@ import Chart.Events as CE
 import Chart.Item as CI
 import Color
 import Color.Convert as Convert
+import DOM exposing (offsetWidth, target)
 import Dict
 import Element
     exposing
@@ -47,7 +49,7 @@ import Fuzz exposing (Fuzzer, int, list, string)
 import Html
 import Html.Attributes
 import Html.Events
-import Json.Decode as Decode
+import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import List.Extra
 import Random
@@ -214,8 +216,10 @@ type Msg
     | KeyReleasedMsg KeyEventMsg
     | StartTooltipHover String
     | EndTooltipHover String
+    | GotTooltipSize (Result Browser.Dom.Error Browser.Dom.Element)
     | OnSpecialAction SpecialAction
     | ToggleHideNonZeroRows CharacterId
+    | Poop Float
 
 
 type alias TradeOrder =
@@ -1393,10 +1397,22 @@ update msg model =
                     ( model, Cmd.none )
 
         StartTooltipHover tooltip_id ->
-            ( { model | hovered_tooltip_id = Just tooltip_id }, Cmd.none )
+            ( { model | hovered_tooltip_id = Just tooltip_id }, Task.attempt GotTooltipSize (Browser.Dom.getElement ("tooltip__" ++ tooltip_id)) )
 
         EndTooltipHover tooltip_id ->
             ( { model | hovered_tooltip_id = Nothing }, Cmd.none )
+
+        GotTooltipSize tooltip_size_result ->
+            case tooltip_size_result of
+                Ok element ->
+                    let
+                        _ =
+                            Debug.log "element" element.element
+                    in
+                    ( model, Cmd.none )
+
+                Err error ->
+                    ( model, Cmd.none )
 
         OnSpecialAction special_action ->
             update_special_action special_action model
@@ -1417,6 +1433,13 @@ update msg model =
                         model.characters
             in
             ( { model | characters = new_characters }, Cmd.none )
+
+        Poop flt_val ->
+            let
+                _ =
+                    Debug.log "flt_val" flt_val
+            in
+            ( model, Cmd.none )
 
 
 generate_uuid : String -> UUID.UUID
@@ -3268,9 +3291,13 @@ primary_button_tooltip attrs on_press label { tooltip_id, tooltip_text, maybe_ho
                 , padding 10
                 , Element.moveUp 20
                 , centerX
+                , Element.htmlAttribute <| Html.Attributes.id ("tooltip__" ++ tooltip_id)
                 ]
             <|
                 text tooltip_text
+
+        offset_w =
+            target offsetWidth
 
         tooltip_attr =
             case maybe_hovered_tooltip_id of
@@ -3283,10 +3310,16 @@ primary_button_tooltip attrs on_press label { tooltip_id, tooltip_text, maybe_ho
 
                 Nothing ->
                     []
+
+        dec : Decoder Msg
+        -- dec = (Decode.succeed Poop |> (target >> offsetWidth >> Decode.float >> Poop))
+        -- dec =  (target >> offsetWidth >> Decode.float >> Poop) |> (Decode.succeed Poop )
+        dec =
+            (target <| offsetWidth) |> Decode.map Poop
     in
     primary_button
-        ([ Events.onMouseEnter <| StartTooltipHover tooltip_id
-         , Events.onMouseLeave <| EndTooltipHover tooltip_id
+        ([ Events.onMouseLeave <| EndTooltipHover tooltip_id
+         , Events.onMouseEnter <| StartTooltipHover tooltip_id
          ]
             ++ tooltip_attr
             ++ attrs

@@ -1402,7 +1402,9 @@ update msg model =
                     ( model, Cmd.none )
 
         StartTooltipHover tooltip_id ->
-            ( { model | hovered_tooltip = HoveredTooltipWithoutOffset tooltip_id }, Task.attempt GotTooltipSize (Browser.Dom.getElement ("tooltip__" ++ tooltip_id)) )
+            ( { model | hovered_tooltip = HoveredTooltipWithoutOffset tooltip_id }
+            , Task.attempt GotTooltipSize (Browser.Dom.getElement ("tooltip__" ++ tooltip_id))
+            )
 
         EndTooltipHover tooltip_id ->
             ( { model | hovered_tooltip = NoHoveredTooltip }, Cmd.none )
@@ -3381,7 +3383,6 @@ primary_button_tooltip attrs on_press label { tooltip_id, tooltip_text } hovered
 
                 NoHoveredTooltip ->
                     []
-
     in
     primary_button
         ([ Events.onMouseLeave <| EndTooltipHover tooltip_id

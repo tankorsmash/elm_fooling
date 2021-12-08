@@ -391,7 +391,7 @@ type alias ItemDb =
 type HoveredTooltip
     = NoHoveredTooltip
     | HoveredTooltipWithoutOffset String
-    | HoveredTooltipWithOffset { offset_x : Int, offset_y : Int, hovered_tooltip_id : String }
+    | HoveredTooltipWithOffset { offset_x : Float, offset_y : Float, hovered_tooltip_id : String }
 
 
 type alias Model =
@@ -1410,12 +1410,69 @@ update msg model =
 
         GotTooltipSize tooltip_size_result ->
             case tooltip_size_result of
-                Ok element ->
+                Ok sizes ->
                     let
                         _ =
-                            Debug.log "element" element.element
+                            Debug.log "whole size" sizes
+
+                        viewport_width =
+                            sizes.viewport.width
+
+                        viewport_height =
+                            sizes.viewport.height
+
+                        { x, y, width, height } =
+                            sizes.element
+
+                        offset_x : Float
+                        offset_x =
+                            if x < 0 then
+                                abs x + 10
+
+                            else if x + width > viewport_width then
+                                (viewport_width - (x + width)) - 10
+
+                            else
+                                0
+
+                        offset_y : Float
+                        offset_y =
+                            if y < 0 then
+                                abs y + 10
+
+                            else if y + height > viewport_height then
+                                (viewport_height - (y + height)) - 10
+
+                            else
+                                0
                     in
-                    ( model, Cmd.none )
+                    case model.hovered_tooltip of
+                        NoHoveredTooltip ->
+                            ( model, Cmd.none )
+
+                        HoveredTooltipWithoutOffset tooltip_id ->
+                            ( { model
+                                | hovered_tooltip =
+                                    HoveredTooltipWithOffset
+                                        { offset_x = offset_x
+                                        , offset_y = offset_y
+                                        , hovered_tooltip_id = tooltip_id
+                                        }
+                              }
+                            , Cmd.none
+                            )
+
+                        HoveredTooltipWithOffset tooltip_data ->
+                            ( { model
+                                | hovered_tooltip =
+                                    HoveredTooltipWithOffset
+                                        { tooltip_data
+                                            | offset_x = offset_x
+                                            , offset_y = offset_y
+                                        }
+                              }
+                            , Cmd.none
+                            )
 
                 Err error ->
                     ( model, Cmd.none )
@@ -3286,6 +3343,14 @@ primary_button_tooltip :
     -> Element Msg
 primary_button_tooltip attrs on_press label { tooltip_id, tooltip_text } hovered_tooltip =
     let
+        { offset_x, offset_y } =
+            case hovered_tooltip of
+                HoveredTooltipWithOffset data ->
+                    data
+
+                _ ->
+                    { offset_x = 0, offset_y = 0, hovered_tooltip_id = "UNUSED" }
+
         tooltip_el =
             Element.el
                 [ width Element.shrink
@@ -3294,7 +3359,12 @@ primary_button_tooltip attrs on_press label { tooltip_id, tooltip_text } hovered
                 , Border.rounded 3
                 , Border.width 2
                 , padding 10
-                , Element.moveUp 20
+                , if offset_y == 0 then
+                    Element.moveUp 20
+
+                  else
+                    Element.moveDown offset_y
+                , Element.moveRight offset_x
                 , centerX
                 , Element.htmlAttribute <| Html.Attributes.id ("tooltip__" ++ tooltip_id)
                 ]
@@ -3345,7 +3415,6 @@ buildTooltipConfig text =
     { tooltip_id = UUID.forName text UUID.dnsNamespace |> UUID.toString
     , tooltip_text = text
     }
-
 
 
 special_actions_display : Model -> Element Msg

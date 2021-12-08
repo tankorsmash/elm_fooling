@@ -219,7 +219,6 @@ type Msg
     | GotTooltipSize (Result Browser.Dom.Error Browser.Dom.Element)
     | OnSpecialAction SpecialAction
     | ToggleHideNonZeroRows CharacterId
-    | Poop Float
 
 
 type alias TradeOrder =
@@ -1412,9 +1411,6 @@ update msg model =
             case tooltip_size_result of
                 Ok sizes ->
                     let
-                        _ =
-                            Debug.log "whole size" sizes
-
                         viewport_width =
                             sizes.viewport.width
 
@@ -1496,13 +1492,6 @@ update msg model =
                         model.characters
             in
             ( { model | characters = new_characters }, Cmd.none )
-
-        Poop flt_val ->
-            let
-                _ =
-                    Debug.log "flt_val" flt_val
-            in
-            ( model, Cmd.none )
 
 
 generate_uuid : String -> UUID.UUID
@@ -3393,11 +3382,6 @@ primary_button_tooltip attrs on_press label { tooltip_id, tooltip_text } hovered
                 NoHoveredTooltip ->
                     []
 
-        dec : Decoder Msg
-        -- dec = (Decode.succeed Poop |> (target >> offsetWidth >> Decode.float >> Poop))
-        -- dec =  (target >> offsetWidth >> Decode.float >> Poop) |> (Decode.succeed Poop )
-        dec =
-            (target <| offsetWidth) |> Decode.map Poop
     in
     primary_button
         ([ Events.onMouseLeave <| EndTooltipHover tooltip_id

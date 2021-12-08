@@ -387,10 +387,17 @@ type alias ItemDb =
     Dict.Dict ItemIdStr Item
 
 
+type alias TooltipData =
+    { offset_x : Float
+    , offset_y : Float
+    , hovered_tooltip_id : String
+    }
+
+
 type HoveredTooltip
     = NoHoveredTooltip
-    | HoveredTooltipWithoutOffset String
-    | HoveredTooltipWithOffset { offset_x : Float, offset_y : Float, hovered_tooltip_id : String }
+    | HoveredTooltipWithoutOffset TooltipData
+    | HoveredTooltipWithOffset TooltipData
 
 
 type alias Model =
@@ -408,6 +415,7 @@ type alias Model =
     , show_debug_inventories : Bool
     , show_charts_in_hovered_item : Bool
     , hovered_tooltip : HoveredTooltip
+    , cached_tooltip_offsets : Dict.Dict String TooltipData
     , global_seed : Random.Seed --used to seed anything; will be constantly changed throughout the app
     , ai_updates_paused : Bool
     }
@@ -962,6 +970,7 @@ init =
       , show_debug_inventories = True
       , show_charts_in_hovered_item = False
       , hovered_tooltip = NoHoveredTooltip
+      , cached_tooltip_offsets = Dict.empty
       , global_seed = Random.initialSeed 4
       , ai_updates_paused = False
       }
@@ -1402,7 +1411,12 @@ update msg model =
                     ( model, Cmd.none )
 
         StartTooltipHover tooltip_id ->
-            ( { model | hovered_tooltip = HoveredTooltipWithoutOffset tooltip_id }
+            ( { model
+                | hovered_tooltip =
+                    Dict.get tooltip_id model.cached_tooltip_offsets
+                        |> Maybe.withDefault { offset_x = 0, offset_y = 0, hovered_tooltip_id = tooltip_id }
+                        |> HoveredTooltipWithoutOffset
+              }
             , Task.attempt GotTooltipSize (Browser.Dom.getElement ("tooltip__" ++ tooltip_id))
             )
 
@@ -1424,51 +1438,57 @@ update msg model =
 
                         offset_x : Float
                         offset_x =
-                            if x < 0 then
-                                abs x + 10
+                            toFloat <|
+                                if x < 0 then
+                                    floor <| abs x + 10
 
-                            else if x + width > viewport_width then
-                                (viewport_width - (x + width)) - 10
+                                else if x + width > viewport_width then
+                                    floor <| (viewport_width - (x + width)) - 10
 
-                            else
-                                0
+                                else
+                                    floor <| 0
 
                         offset_y : Float
                         offset_y =
-                            if y < 0 then
-                                abs y + 10
+                            toFloat <|
+                                if y < 0 then
+                                    floor <| abs y + 10
 
-                            else if y + height > viewport_height then
-                                (viewport_height - (y + height)) - 10
+                                else if y + height > viewport_height then
+                                    floor <| (viewport_height - (y + height)) - 10
 
-                            else
-                                0
+                                else
+                                    floor <| 0
                     in
                     case model.hovered_tooltip of
                         NoHoveredTooltip ->
                             ( model, Cmd.none )
 
-                        HoveredTooltipWithoutOffset tooltip_id ->
+                        HoveredTooltipWithoutOffset old_tooltip_data ->
+                            let
+                                new_tooltip_data =
+                                    -- have to add the old offsets back in, because the new tooltip_size_result includes the cached size, so it needs to be accounted for
+                                    { offset_x = offset_x + old_tooltip_data.offset_x
+                                    , offset_y = offset_y + old_tooltip_data.offset_y
+                                    , hovered_tooltip_id = old_tooltip_data.hovered_tooltip_id
+                                    }
+                            in
                             ( { model
-                                | hovered_tooltip =
-                                    HoveredTooltipWithOffset
-                                        { offset_x = offset_x
-                                        , offset_y = offset_y
-                                        , hovered_tooltip_id = tooltip_id
-                                        }
+                                | cached_tooltip_offsets = Dict.insert old_tooltip_data.hovered_tooltip_id new_tooltip_data model.cached_tooltip_offsets
+                                , hovered_tooltip = HoveredTooltipWithOffset new_tooltip_data
                               }
                             , Cmd.none
                             )
 
-                        HoveredTooltipWithOffset tooltip_data ->
-                            ( { model
-                                | hovered_tooltip =
-                                    HoveredTooltipWithOffset
-                                        { tooltip_data
-                                            | offset_x = offset_x
-                                            , offset_y = offset_y
-                                        }
-                              }
+                        HoveredTooltipWithOffset old_tooltip_data ->
+                            let
+                                new_tooltip_data =
+                                    { old_tooltip_data
+                                        | offset_x = offset_x
+                                        , offset_y = offset_y
+                                    }
+                            in
+                            ( { model | hovered_tooltip = HoveredTooltipWithOffset new_tooltip_data }
                             , Cmd.none
                             )
 
@@ -3339,6 +3359,9 @@ primary_button_tooltip attrs on_press label { tooltip_id, tooltip_text } hovered
                 HoveredTooltipWithOffset data ->
                     data
 
+                HoveredTooltipWithoutOffset cached_data ->
+                    cached_data
+
                 _ ->
                     { offset_x = 0, offset_y = 0, hovered_tooltip_id = "UNUSED" }
 
@@ -3367,8 +3390,8 @@ primary_button_tooltip attrs on_press label { tooltip_id, tooltip_text } hovered
 
         tooltip_attr =
             case hovered_tooltip of
-                HoveredTooltipWithoutOffset hovered_tooltip_id ->
-                    if hovered_tooltip_id == tooltip_id then
+                HoveredTooltipWithoutOffset tooltip_data ->
+                    if tooltip_data.hovered_tooltip_id == tooltip_id then
                         [ Element.above tooltip_el ]
 
                     else

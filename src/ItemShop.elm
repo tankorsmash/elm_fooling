@@ -388,6 +388,12 @@ type alias ItemDb =
     Dict.Dict ItemIdStr Item
 
 
+type HoveredTooltip
+    = NoHoveredTooltip
+    | HoveredTooltipWithoutOffset String
+    | HoveredTooltipWithOffset { offset_x : Int, offset_y : Int, hovered_tooltip_id : String }
+
+
 type alias Model =
     { player_id : CharacterId
     , shop_id : CharacterId
@@ -402,7 +408,7 @@ type alias Model =
     , ai_tick_time : Time.Posix --used to seed the ai randomness
     , show_debug_inventories : Bool
     , show_charts_in_hovered_item : Bool
-    , hovered_tooltip_id : Maybe String
+    , hovered_tooltip : HoveredTooltip
     , global_seed : Random.Seed --used to seed anything; will be constantly changed throughout the app
     , ai_updates_paused : Bool
     }
@@ -956,7 +962,7 @@ init =
       , hovered_trend_chart = []
       , show_debug_inventories = True
       , show_charts_in_hovered_item = False
-      , hovered_tooltip_id = Nothing
+      , hovered_tooltip = NoHoveredTooltip
       , global_seed = Random.initialSeed 4
       , ai_updates_paused = False
       }
@@ -1397,10 +1403,10 @@ update msg model =
                     ( model, Cmd.none )
 
         StartTooltipHover tooltip_id ->
-            ( { model | hovered_tooltip_id = Just tooltip_id }, Task.attempt GotTooltipSize (Browser.Dom.getElement ("tooltip__" ++ tooltip_id)) )
+            ( { model | hovered_tooltip = HoveredTooltipWithoutOffset tooltip_id }, Task.attempt GotTooltipSize (Browser.Dom.getElement ("tooltip__" ++ tooltip_id)) )
 
         EndTooltipHover tooltip_id ->
-            ( { model | hovered_tooltip_id = Nothing }, Cmd.none )
+            ( { model | hovered_tooltip = NoHoveredTooltip }, Cmd.none )
 
         GotTooltipSize tooltip_size_result ->
             case tooltip_size_result of
@@ -2043,8 +2049,7 @@ update_ai ai_tick_time shop_char_id char_id { shop_trends, historical_shop_trend
                             else
                                 c
                         )
-                    <|
-                        Debug.log "chars before new_characters" characters
+                        characters
 
                 new_historical_shop_trends =
                     List.append
@@ -3269,7 +3274,6 @@ font_scaled scale =
 type alias TooltipConfig =
     { tooltip_id : String
     , tooltip_text : String
-    , maybe_hovered_tooltip_id : Maybe String
     }
 
 
@@ -3278,8 +3282,9 @@ primary_button_tooltip :
     -> Msg
     -> String
     -> TooltipConfig
+    -> HoveredTooltip
     -> Element Msg
-primary_button_tooltip attrs on_press label { tooltip_id, tooltip_text, maybe_hovered_tooltip_id } =
+primary_button_tooltip attrs on_press label { tooltip_id, tooltip_text } hovered_tooltip =
     let
         tooltip_el =
             Element.el
@@ -3300,15 +3305,22 @@ primary_button_tooltip attrs on_press label { tooltip_id, tooltip_text, maybe_ho
             target offsetWidth
 
         tooltip_attr =
-            case maybe_hovered_tooltip_id of
-                Just hovered_tooltip_id ->
+            case hovered_tooltip of
+                HoveredTooltipWithoutOffset hovered_tooltip_id ->
                     if hovered_tooltip_id == tooltip_id then
                         [ Element.above tooltip_el ]
 
                     else
                         []
 
-                Nothing ->
+                HoveredTooltipWithOffset hovered_tooltip_data ->
+                    if hovered_tooltip_data.hovered_tooltip_id == tooltip_id then
+                        [ Element.above tooltip_el ]
+
+                    else
+                        []
+
+                NoHoveredTooltip ->
                     []
 
         dec : Decoder Msg
@@ -3332,15 +3344,8 @@ buildTooltipConfig : String -> TooltipConfig
 buildTooltipConfig text =
     { tooltip_id = UUID.forName text UUID.dnsNamespace |> UUID.toString
     , tooltip_text = text
-    , maybe_hovered_tooltip_id = Nothing
     }
 
-
-withHoveredId : Maybe String -> TooltipConfig -> TooltipConfig
-withHoveredId maybe_hovered_tooltip_id tooltip_config =
-    { tooltip_config
-        | maybe_hovered_tooltip_id = maybe_hovered_tooltip_id
-    }
 
 
 special_actions_display : Model -> Element Msg
@@ -3357,8 +3362,8 @@ special_actions_display model =
                 )
                 (buildTooltipConfig
                     "You tap your medallion, and time comes to a halt.\n\nYou take a breath, and feel a weight off your shoulders. You'll take your time with things."
-                    |> withHoveredId model.hovered_tooltip_id
                 )
+                model.hovered_tooltip
 
         button_search =
             primary_button_tooltip []
@@ -3366,8 +3371,8 @@ special_actions_display model =
                 "Invite Trader"
                 (buildTooltipConfig
                     "Invite a fellow Trader.\n\nThey may have new wares to sell, that you may buy up."
-                    |> withHoveredId model.hovered_tooltip_id
                 )
+                model.hovered_tooltip
 
         button_high_desire =
             primary_button_tooltip []
@@ -3375,8 +3380,8 @@ special_actions_display model =
                 "Spread Good Rumour"
                 (buildTooltipConfig
                     "Sets a random Item Type to high value.\n\nSpreads a rumour that a given Item Type was the talk of the next town over."
-                    |> withHoveredId model.hovered_tooltip_id
                 )
+                model.hovered_tooltip
 
         button_low_desire =
             primary_button_tooltip []
@@ -3384,8 +3389,8 @@ special_actions_display model =
                 "Spread Bad Rumour"
                 (buildTooltipConfig
                     "Sets a random Item Type to low value.\n\nSpreads a rumour that a given Item Type has a surplus of sellers."
-                    |> withHoveredId model.hovered_tooltip_id
                 )
+                model.hovered_tooltip
     in
     column [ width fill, spacing 10, paddingXY 0 10 ]
         [ el [ font_scaled 2, border_bottom 2 ] <| text "Special Actions"

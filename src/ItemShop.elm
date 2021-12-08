@@ -800,7 +800,7 @@ outline_button_custom attrs on_press label =
          , padding 6
          , Background.color white_color
          , Border.rounded 5
-         , Border.width 3
+         , Border.width 2
          , Border.color secondary_color
          , Element.mouseOver
             [ Background.color <| secondary_color

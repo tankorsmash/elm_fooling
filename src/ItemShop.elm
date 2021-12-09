@@ -1291,9 +1291,17 @@ update msg model =
             ( model, Cmd.none )
 
         MouseEnterShopItem context item ->
+            let
+                _ =
+                    Debug.log "mouse enter" 0
+            in
             ( { model | hovered_item_in_character = Just item }, Cmd.none )
 
         MouseLeaveShopItem context item ->
+            let
+                _ =
+                    Debug.log "mouse leave" 0
+            in
             ( { model | hovered_item_in_character = Nothing }, Cmd.none )
 
         BuyItem item qty ->
@@ -2883,6 +2891,83 @@ render_inventory_grid model header character shop_trends hovered_item context co
                 )
             ]
 
+        is_hovered_item item =
+            case hovered_item of
+                Just ( hovered_char_id, hovered_item_ ) ->
+                    char_id == hovered_char_id && item == hovered_item_
+
+                Nothing ->
+                    False
+
+        current_price item =
+            get_adjusted_item_cost shop_trends item (Quantity 1)
+
+        --shown when hovered over item
+        expanded_display item =
+            let
+                _ = Debug.log "is hovered? " <| is_hovered_item item
+            in
+            if is_hovered_item item then
+                Element.Keyed.el
+                    [ width fill
+                    , Background.color <| rgb 1 1 1
+                    , Border.color <| rgb 0.35 0.35 0.35
+                    , Border.rounded 3
+                    , Border.width 2
+                    , padding 10
+                    , Element.moveDown 20
+                    ]
+                <|
+                    ( UUID.toString item.id
+                    , column [ spacing 5, width fill ]
+                        [ row [ width fill ]
+                            [ paragraph []
+                                [ text item.name
+                                , text ": "
+                                , text item.description
+                                ]
+                            , if not show_charts_in_hovered_item then
+                                el [ Font.italic, alignRight, font_grey, Font.size 12 ] <| text "Hold Shift for more"
+
+                              else
+                                Element.none
+                            ]
+                        , paragraph [] <|
+                            [ text "Current Price: "
+                            , render_gp (current_price item)
+                            ]
+                                ++ (if
+                                        is_item_trending
+                                            shop_trends.item_type_sentiment
+                                            item
+                                            && item.raw_gold_cost
+                                            /= current_price item
+                                    then
+                                        [ text " (originally "
+                                        , render_gp item.raw_gold_cost
+                                        , text ")"
+                                        ]
+
+                                    else
+                                        []
+                                   )
+                        , if show_charts_in_hovered_item then
+                            el [ paddingXY 20 20 ] <| small_charts_display historical_shop_trends item.item_type
+
+                          else
+                            Element.none
+                        ]
+                    )
+
+            else
+                Element.none
+
+        mouse_hover_attrs item =
+            [ Events.onMouseEnter <| MouseEnterShopItem context ( char_id, item )
+            , Events.onMouseLeave <| MouseLeaveShopItem context ( char_id, item )
+            , Element.below (expanded_display item)
+            ]
+
         table_columns : List (Element.Column InventoryRecord Msg)
         table_columns =
             [ { header = text "Name:"
@@ -2890,7 +2975,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
               , view =
                     \( item, qty, avg_price ) ->
                         Element.el
-                            [ Element.clip, width (fillPortion 2 |> Element.maximum 150), Font.size 16, html_title "Item Name" ]
+                            (mouse_hover_attrs item ++ [ Element.clip, width (fillPortion 2 |> Element.maximum 150), Font.size 16, html_title "Item Name" ])
                             (text (clipText item.name 25))
               }
             , { header = text "Current Cost"

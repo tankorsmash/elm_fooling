@@ -1108,12 +1108,7 @@ reduce_if_matched item qty total_cost ( i, iq, avg_price ) =
     if i == item && getQuantity iq >= getQuantity qty then
         ( i
         , subQuantity iq qty
-        , setPrice <|
-            sub_from_average
-                (getPrice avg_price)
-                (getQuantity iq)
-                total_cost
-                (getQuantity qty)
+        , avg_price
         )
 
     else

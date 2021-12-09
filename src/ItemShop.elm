@@ -2371,127 +2371,6 @@ html_title string =
     Element.behindContent Element.none
 
 
-render_single_item_for_sale :
-    ( List ShopTrends, ShopTrends, Bool )
-    -> Character
-    -> Maybe ( CharacterId, Item )
-    -> InventoryRecord
-    -> ListContext
-    -> (InventoryRecord -> Element Msg)
-    -> Element.Element Msg
-render_single_item_for_sale ( historical_shop_trends, shop_trends, show_charts_in_hovered_item ) { char_id, held_gold } maybe_hovered_item ( item, qty, avg_price ) context controls_column =
-    let
-        is_hovered_item =
-            case maybe_hovered_item of
-                Just ( hovered_char_id, hovered_item ) ->
-                    char_id == hovered_char_id && item == hovered_item
-
-                Nothing ->
-                    False
-
-        current_price =
-            get_adjusted_item_cost shop_trends item (Quantity 1)
-
-        --shown when hovered over item
-        expanded_display =
-            if is_hovered_item then
-                Element.Keyed.el
-                    [ width fill
-                    , Background.color <| rgb 1 1 1
-                    , Border.color <| rgb 0.35 0.35 0.35
-                    , Border.rounded 3
-                    , Border.width 2
-                    , padding 10
-                    , Element.moveDown 20
-                    ]
-                <|
-                    ( UUID.toString item.id
-                    , column [ spacing 5, width fill ]
-                        [ row [ width fill ]
-                            [ paragraph []
-                                [ text item.name
-                                , text ": "
-                                , text item.description
-                                ]
-                            , if not show_charts_in_hovered_item then
-                                el [ Font.italic, alignRight, font_grey, Font.size 12 ] <| text "Hold Shift for more"
-
-                              else
-                                Element.none
-                            ]
-                        , paragraph [] <|
-                            [ text "Current Price: "
-                            , render_gp current_price
-                            ]
-                                ++ (if
-                                        is_item_trending
-                                            shop_trends.item_type_sentiment
-                                            item
-                                            && item.raw_gold_cost
-                                            /= current_price
-                                    then
-                                        [ text " (originally "
-                                        , render_gp item.raw_gold_cost
-                                        , text ")"
-                                        ]
-
-                                    else
-                                        []
-                                   )
-                        , if show_charts_in_hovered_item then
-                            el [ paddingXY 20 20 ] <| small_charts_display historical_shop_trends item.item_type
-
-                          else
-                            Element.none
-                        ]
-                    )
-
-            else
-                Element.none
-    in
-    row
-        [ font_scaled 1
-        , width fill
-        , spacingXY 5 0
-
-        -- , Element.spaceEvenly
-        , Events.onMouseEnter <| MouseEnterShopItem context ( char_id, item )
-        , Events.onMouseLeave <| MouseLeaveShopItem context ( char_id, item )
-        , Element.below expanded_display
-        ]
-        [ column [ Element.clip, width (fillPortion 2 |> Element.maximum 150), Font.size 16, html_title "Item Name" ] [ text <| clipText item.name 25 ]
-        , column [ portion 1, html_title "Current cost" ] [ render_gp <| get_adjusted_item_cost shop_trends item (Quantity 1) ]
-        , column [ portion 1, html_title "Average Cost" ]
-            [ case context of
-                ShopItems ->
-                    text ""
-
-                _ ->
-                    render_gp <| getPrice avg_price
-            ]
-        , column [ width <| (fill |> Element.minimum 50), html_title "Quantity" ]
-            [ el [] <|
-                if getQuantity qty == 0 then
-                    case context of
-                        ShopItems ->
-                            text "OUT"
-
-                        InventoryItems ->
-                            text "NONE"
-
-                        CharacterItems ->
-                            text "NONE"
-
-                else
-                    text <| "x" ++ (String.fromInt <| getQuantity qty)
-            ]
-        , column [ width <| (fill |> Element.minimum 150), html_title "Item Type" ] [ render_item_type shop_trends item.item_type ]
-        , column [ width <| (fillPortion 3 |> Element.maximum 200), html_title "Item Description" ]
-            [ el [] <| text <| clipText item.description 24 ]
-        , column [ portion 1, html_title "Controls" ] [ controls_column ( item, qty, avg_price ) ]
-        ]
-
-
 portion : Int -> Element.Attribute msg
 portion =
     width << fillPortion
@@ -2797,20 +2676,6 @@ render_inventory_grid model header character shop_trends hovered_item context co
                 else
                     held_items
 
-        rendered_items =
-            List.map
-                (\item ->
-                    render_single_item_for_sale
-                        ( historical_shop_trends, shop_trends, show_charts_in_hovered_item )
-                        character
-                        hovered_item
-                        item
-                        context
-                        controls_column
-                )
-            <|
-                items
-
         rendered_desires : List (Element Msg)
         rendered_desires =
             Dict.toList character.item_types_desired
@@ -2905,7 +2770,8 @@ render_inventory_grid model header character shop_trends hovered_item context co
         --shown when hovered over item
         expanded_display item =
             let
-                _ = Debug.log "is hovered? " <| is_hovered_item item
+                _ =
+                    Debug.log "is hovered? " <| is_hovered_item item
             in
             if is_hovered_item item then
                 Element.Keyed.el
@@ -2919,6 +2785,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                     ]
                 <|
                     ( UUID.toString item.id
+                      -- , text "POOPY"
                     , column [ spacing 5, width fill ]
                         [ row [ width fill ]
                             [ paragraph []
@@ -2975,7 +2842,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
               , view =
                     \( item, qty, avg_price ) ->
                         Element.el
-                            (mouse_hover_attrs item ++ [ Element.clip, width (fillPortion 2 |> Element.maximum 150), Font.size 16, html_title "Item Name" ])
+                            [ Element.clip, width (fillPortion 2 |> Element.maximum 150), Font.size 16, html_title "Item Name" ]
                             (text (clipText item.name 25))
               }
             , { header = text "Current Cost"

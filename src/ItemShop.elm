@@ -3521,8 +3521,11 @@ suite =
                     Expect.equal 30 (sub_from_average orig_avg orig_num 10 1)
             ]
         , describe "Item Shop stuff"
-            [ test "clipText test" <|
+            [ test "clipText test clips" <|
                 \_ ->
                     Expect.equal "abc..." <| clipText "abcdef" 3
+            , test "clipText test doesnt clip" <|
+                \_ ->
+                    Expect.equal "abcdef" <| clipText "abcdef" 30
             ]
         ]

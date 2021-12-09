@@ -3516,6 +3516,16 @@ suite =
                             2
                     in
                     Expect.equal 30 (sub_from_average orig_avg orig_num 10 1)
+            , test "Removing a single item at the same price doesnt change anything" <|
+                \_ ->
+                    let
+                        orig_avg =
+                            20
+
+                        orig_num =
+                            2
+                    in
+                    Expect.equal 30 (sub_from_average orig_avg orig_num 10 1)
             ]
         , describe "Item Shop stuff"
             [ test "clipText test clips" <|

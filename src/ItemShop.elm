@@ -3250,11 +3250,25 @@ view model =
         maybe_player : Maybe Character
         maybe_player =
             getPlayer model
+
+        paused_border_attrs =
+            [ Border.color light_grey_color, Border.width 2, Border.dashed ]
+        unpaused_border_attrs =
+            [ Border.color white_color, Border.width 2, Border.dashed ]
     in
     Element.layoutWith { options = [] }
         []
     <|
-        Element.column [ width fill, font_scaled 1, height fill ] <|
+        Element.column
+            ([ width fill, font_scaled 1, height fill, padding 1 ]
+                ++ (if model.ai_updates_paused then
+                        paused_border_attrs
+
+                    else
+                        unpaused_border_attrs
+                   )
+            )
+        <|
             [ welcome_header
             , outline_button [] ToggleShowMainChart <|
                 if model.show_main_chart then

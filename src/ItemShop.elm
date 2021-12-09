@@ -2468,10 +2468,7 @@ render_single_item_for_sale ( historical_shop_trends, shop_trends, show_charts_i
             ]
         , column [ width <| (fill |> Element.minimum 50), html_title "Quantity" ]
             [ el [] <|
-                if getQuantity qty == 1 then
-                    text " "
-
-                else if getQuantity qty == 0 then
+                if getQuantity qty == 0 then
                     case context of
                         ShopItems ->
                             text "OUT"

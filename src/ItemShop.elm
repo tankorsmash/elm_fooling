@@ -2761,7 +2761,7 @@ action_log_to_str item_db action_log =
             "Did nothing"
 
 
-render_inventory :
+render_inventory_grid :
     Model
     -> String
     -> Character
@@ -2770,7 +2770,7 @@ render_inventory :
     -> ListContext
     -> (InventoryRecord -> Element Msg)
     -> Element Msg
-render_inventory model header character shop_trends hovered_item context controls_column =
+render_inventory_grid model header character shop_trends hovered_item context controls_column =
     let
         { char_id, held_items, held_gold, hide_zero_qty_inv_rows } =
             character
@@ -2780,6 +2780,14 @@ render_inventory model header character shop_trends hovered_item context control
 
         { historical_shop_trends, item_db, show_charts_in_hovered_item } =
             model
+
+        items =
+            List.sortBy sort_func <|
+                if hide_zero_qty_inv_rows then
+                    List.filter (\( i, q, ap ) -> getQuantity q > 0) held_items
+
+                else
+                    held_items
 
         rendered_items =
             List.map
@@ -2793,12 +2801,7 @@ render_inventory model header character shop_trends hovered_item context control
                         controls_column
                 )
             <|
-                List.sortBy sort_func <|
-                    if hide_zero_qty_inv_rows then
-                        List.filter (\( i, q, ap ) -> getQuantity q > 0) held_items
-
-                    else
-                        held_items
+                items
 
         rendered_desires : List (Element Msg)
         rendered_desires =
@@ -2879,6 +2882,83 @@ render_inventory model header character shop_trends hovered_item context control
                     "Hide Nonzero"
                 )
             ]
+
+        table_columns : List (Element.Column InventoryRecord Msg)
+        table_columns =
+            [ { header = text "Name:"
+              , width = fillPortion 2
+              , view =
+                    \( item, qty, avg_price ) ->
+                        Element.el
+                            [ Element.clip, width (fillPortion 2 |> Element.maximum 150), Font.size 16, html_title "Item Name" ]
+                            (text (clipText item.name 25))
+              }
+            , { header = text "Current Cost"
+              , width = fillPortion 1
+              , view =
+                    \( item, qty, avg_price ) ->
+                        Element.el
+                            [ portion 1, html_title "Current cost" ]
+                        <|
+                            render_gp <|
+                                get_adjusted_item_cost shop_trends item (Quantity 1)
+              }
+            , { header = text "Average Price"
+              , width = fillPortion 1
+              , view =
+                    \( item, qty, avg_price ) ->
+                        Element.el
+                            [ portion 1, html_title "Average Cost" ]
+                        <|
+                            case context of
+                                ShopItems ->
+                                    text ""
+
+                                _ ->
+                                    render_gp <| getPrice avg_price
+              }
+            , { header = text "Quantity"
+              , width = fillPortion 1
+              , view =
+                    \( item, qty, avg_price ) ->
+                        Element.el
+                            []
+                        <|
+                            if getQuantity qty == 0 then
+                                case context of
+                                    ShopItems ->
+                                        text "OUT"
+
+                                    InventoryItems ->
+                                        text "NONE"
+
+                                    CharacterItems ->
+                                        text "NONE"
+
+                            else
+                                text <| "x" ++ (String.fromInt <| getQuantity qty)
+              }
+            , { header = text "Item Type"
+              , width = fillPortion 2
+              , view =
+                    \( item, qty, avg_price ) ->
+                        Element.el
+                            []
+                        <|
+                            render_item_type shop_trends item.item_type
+              }
+            , { header = text "Item Description"
+              , width = fillPortion 3
+              , view =
+                    \( item, qty, avg_price ) -> text <| clipText item.description 24
+              }
+            , { header = text "Controls"
+              , width = fillPortion 1
+              , view =
+                    \( item, qty, avg_price ) ->
+                        controls_column ( item, qty, avg_price )
+              }
+            ]
     in
     Element.column [ width fill, spacingXY 0 5, height fill ] <|
         [ Element.row [ font_scaled 2, width fill ]
@@ -2902,7 +2982,7 @@ render_inventory model header character shop_trends hovered_item context control
                 else
                     []
                )
-            ++ rendered_items
+            ++ [ Element.table [] { data = items, columns = table_columns } ]
 
 
 sort_func =
@@ -3227,7 +3307,7 @@ view model =
                     (\character ->
                         Element.Keyed.el [ height fill, paddingXY 0 10, width fill ]
                             ( UUID.toString character.char_id
-                            , render_inventory
+                            , render_inventory_grid
                                 model
                                 (character.name ++ "'s Inventory")
                                 character
@@ -3248,6 +3328,7 @@ view model =
 
         paused_border_attrs =
             [ Border.color light_grey_color, Border.width 2, Border.dashed ]
+
         unpaused_border_attrs =
             [ Border.color white_color, Border.width 2, Border.dashed ]
     in
@@ -3281,7 +3362,7 @@ view model =
             , Element.el [ paddingXY 0 10, width fill ] <|
                 case maybe_shop of
                     Just shop ->
-                        render_inventory
+                        render_inventory_grid
                             model
                             "Items For Sale"
                             shop
@@ -3306,7 +3387,7 @@ view model =
             , Element.el [ paddingXY 0 10, width fill ] <|
                 case maybe_player of
                     Just player ->
-                        render_inventory
+                        render_inventory_grid
                             model
                             "Items In Inventory"
                             player

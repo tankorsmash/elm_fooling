@@ -3351,7 +3351,12 @@ view model =
 
               else
                 Element.none
-            , special_actions_display model
+            , case maybe_player of
+                Just player ->
+                    special_actions_display model.hovered_tooltip player model.ai_updates_paused
+
+                Nothing ->
+                    Element.none
             , trends_display model.item_db model.shop_trends model.characters model.shop_trends_hovered
             , Element.el [ paddingXY 0 10, width fill ] <|
                 case maybe_shop of
@@ -3506,10 +3511,43 @@ buildTooltipConfig text =
     }
 
 
-build_special_action_button : HoveredTooltip -> SpecialAction -> String -> String -> Price -> Element Msg
-build_special_action_button hovered_tooltip special_action title tooltip price =
-    primary_button_tooltip []
-        (OnSpecialAction special_action)
+build_special_action_button : HoveredTooltip -> Character -> SpecialAction -> String -> String -> Price -> Element Msg
+build_special_action_button hovered_tooltip character special_action title tooltip price =
+    let
+        is_disabled =
+            case price of
+                Free ->
+                    False
+
+                Price cost ->
+                    if character.held_gold >= cost then
+                        False
+
+                    else
+                        True
+
+        button_attrs =
+            if is_disabled then
+                [ Background.color grey_color
+                , Border.color grey_color
+                , Element.mouseOver
+                    [ Background.color <| light_grey_color
+                    , Border.color <| light_grey_color
+                    ]
+                ]
+
+            else
+                []
+
+        msg =
+            if not is_disabled then
+                OnSpecialAction special_action
+
+            else
+                Noop
+    in
+    primary_button_tooltip button_attrs
+        msg
         title
         (buildTooltipConfig
             tooltip
@@ -3517,17 +3555,15 @@ build_special_action_button hovered_tooltip special_action title tooltip price =
         hovered_tooltip
 
 
-special_actions_display : Model -> Element Msg
-special_actions_display model =
+special_actions_display : HoveredTooltip -> Character -> Bool -> Element Msg
+special_actions_display hovered_tooltip player ai_updates_paused =
     let
-        { hovered_tooltip } =
-            model
-
         button_toggle_ai_pause =
             build_special_action_button
                 hovered_tooltip
+                player
                 TogglePauseAi
-                (if model.ai_updates_paused then
+                (if ai_updates_paused then
                     "Resume Time"
 
                  else
@@ -3539,14 +3575,16 @@ special_actions_display model =
         button_search =
             build_special_action_button
                 hovered_tooltip
+                player
                 InviteTrader
                 "Invite Trader"
                 "Invite a fellow Trader.\n\nThey may have new wares to sell, that you may buy up."
-                Free
+                (setPrice 50)
 
         button_high_desire =
             build_special_action_button
                 hovered_tooltip
+                player
                 (TriggerEvent (EventVeryDesiredItemType Nothing))
                 "Spread Good Rumour"
                 "Sets a random Item Type to high value.\n\nSpreads a rumour that a given Item Type was the talk of the next town over."
@@ -3555,6 +3593,7 @@ special_actions_display model =
         button_low_desire =
             build_special_action_button
                 hovered_tooltip
+                player
                 (TriggerEvent (EventLeastDesiredItemType Nothing))
                 "Spread Bad Rumour"
                 "Sets a random Item Type to low value.\n\nSpreads a rumour that a given Item Type has a surplus of sellers."

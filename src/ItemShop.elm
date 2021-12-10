@@ -266,6 +266,7 @@ setQuantity qty =
 
 type Price
     = Price Int
+    | Free
 
 
 getPrice : Price -> Int
@@ -274,12 +275,18 @@ getPrice qty =
         Price val ->
             val
 
+        Free ->
+            0
+
 
 addPriceInt : Price -> Int -> Price
 addPriceInt qty val =
     case qty of
         Price orig_val ->
             Price (orig_val + val)
+
+        Free ->
+            Price val
 
 
 addPrice : Price -> Price -> Price
@@ -288,17 +295,32 @@ addPrice qty other_qty =
         Price orig_val ->
             Price (orig_val + getPrice other_qty)
 
+        Free ->
+            Price (getPrice other_qty)
+
 
 subPrice : Price -> Price -> Price
 subPrice qty other_qty =
     case qty of
         Price orig_val ->
-            Price (orig_val - getPrice other_qty)
+            if (orig_val - getPrice other_qty) <= 0 then
+                Free
+
+            else
+                Price (orig_val - getPrice other_qty)
+
+        Free ->
+            Free
 
 
 setPrice : Int -> Price
 setPrice qty =
-    Price qty
+    case qty of
+        0 ->
+            Free
+
+        _ ->
+            Price qty
 
 
 type alias InventoryRecord =
@@ -3484,8 +3506,8 @@ buildTooltipConfig text =
     }
 
 
-build_special_action_button : HoveredTooltip -> SpecialAction -> String -> String -> Element Msg
-build_special_action_button hovered_tooltip special_action title tooltip =
+build_special_action_button : HoveredTooltip -> SpecialAction -> String -> String -> Price -> Element Msg
+build_special_action_button hovered_tooltip special_action title tooltip price =
     primary_button_tooltip []
         (OnSpecialAction special_action)
         title
@@ -3512,6 +3534,7 @@ special_actions_display model =
                     "Pause Time"
                 )
                 "You tap your medallion, and time comes to a halt.\n\nYou take a breath, and feel a weight off your shoulders. You'll take your time with things."
+                Free
 
         button_search =
             build_special_action_button
@@ -3519,6 +3542,7 @@ special_actions_display model =
                 InviteTrader
                 "Invite Trader"
                 "Invite a fellow Trader.\n\nThey may have new wares to sell, that you may buy up."
+                Free
 
         button_high_desire =
             build_special_action_button
@@ -3526,6 +3550,7 @@ special_actions_display model =
                 (TriggerEvent (EventVeryDesiredItemType Nothing))
                 "Spread Good Rumour"
                 "Sets a random Item Type to high value.\n\nSpreads a rumour that a given Item Type was the talk of the next town over."
+                Free
 
         button_low_desire =
             build_special_action_button
@@ -3533,6 +3558,7 @@ special_actions_display model =
                 (TriggerEvent (EventLeastDesiredItemType Nothing))
                 "Spread Bad Rumour"
                 "Sets a random Item Type to low value.\n\nSpreads a rumour that a given Item Type has a surplus of sellers."
+                Free
     in
     column [ width fill, spacing 10, paddingXY 0 10 ]
         [ el [ font_scaled 2, border_bottom 2 ] <| text "Special Actions"

@@ -1817,8 +1817,8 @@ check_nonzero_desire character item =
 
 {-| can the character afford the current price for the item
 -}
-check_can_afford : Character -> ShopTrends -> Item -> Bool
-check_can_afford character shop_trends item =
+check_can_afford_one : Character -> ShopTrends -> Item -> Bool
+check_can_afford_one character shop_trends item =
     can_afford_item
         shop_trends
         character.held_gold
@@ -1832,7 +1832,7 @@ get_wanted_items character shop shop_trends =
     List.filter
         (\( item, qty, avg_price ) ->
             nonzero_qty ( item, qty, avg_price )
-                && check_can_afford character shop_trends item
+                && check_can_afford_one character shop_trends item
                 && check_nonzero_desire character item
         )
         shop.held_items

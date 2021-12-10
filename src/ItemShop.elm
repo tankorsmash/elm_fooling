@@ -3617,5 +3617,29 @@ suite =
                             test_item
                             (setQuantity 1)
                         )
+            , test "getting adjusted item cost should return double item cost at 200% markup" <|
+                \_ ->
+                    let
+                        { item_type_sentiment } =
+                            test_shop_trends
+
+                        { item_type } =
+                            test_item
+
+                        item_type_id =
+                            item_type_to_id item_type
+
+                        new_test_shop_trends =
+                            { test_shop_trends
+                                | item_type_sentiment = Dict.update item_type_id (always <| Just 2.0) item_type_sentiment
+                            }
+                    in
+                    Expect.equal
+                        (test_item.raw_gold_cost * 2)
+                        (get_adjusted_item_cost
+                            new_test_shop_trends
+                            test_item
+                            (setQuantity 1)
+                        )
             ]
         ]

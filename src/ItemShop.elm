@@ -3699,5 +3699,48 @@ suite =
                             new_item.raw_gold_cost
                         )
                         |> Expect.notEqual orig_len
+            , test "test adding an existing item to inventory records updates the qty instead of appending a new item" <|
+                \_ ->
+                    let
+                        new_test_character =
+                            { test_character
+                                | held_items = ( test_item, setQuantity 1, setPrice 9999 ) :: test_character.held_items
+                            }
+
+                        orig_len =
+                            List.length new_test_character.held_items
+
+                        updated_records =
+                            add_item_to_inventory_records
+                                new_test_character.held_items
+                                test_item
+                                (setQuantity 1)
+                                test_item.raw_gold_cost
+
+                        many_updated_record : InventoryRecords
+                        many_updated_record =
+                            List.filter
+                                (Tuple3.first
+                                    >> .item_type
+                                    >> (==) test_item.item_type
+                                )
+                                updated_records
+                    in
+                    updated_records
+                        |> Expect.all
+                            [ Expect.equal orig_len << List.length
+                            , Expect.true "exists exactly one record"
+                                << always
+                                    (List.length many_updated_record == 1)
+                            , Expect.equal 2
+                                << always
+                                    (case many_updated_record of
+                                        ( i, q, ap ) :: rest ->
+                                            getQuantity q
+
+                                        _ ->
+                                            0
+                                    )
+                            ]
             ]
         ]

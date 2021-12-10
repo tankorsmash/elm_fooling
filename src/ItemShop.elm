@@ -3677,5 +3677,27 @@ suite =
                         }
                         test_item
                         |> Expect.false "Expected a desire of zero, so it should be false"
+            , test "test adding a totally new item to inventory records adds it" <|
+                \_ ->
+                    let
+                        new_item =
+                            { name = "Non-existant item"
+                            , item_type = Armor
+                            , raw_gold_cost = 60
+                            , description = "Used for testing"
+                            , id = UUID.forName "non-existant item" UUID.dnsNamespace
+                            }
+
+                        orig_len =
+                            List.length test_character.held_items
+                    in
+                    List.length
+                        (add_item_to_inventory_records
+                            test_character.held_items
+                            new_item
+                            (setQuantity 1)
+                            new_item.raw_gold_cost
+                        )
+                        |> Expect.notEqual orig_len
             ]
         ]

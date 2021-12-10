@@ -3484,49 +3484,55 @@ buildTooltipConfig text =
     }
 
 
+build_special_action_button : HoveredTooltip -> SpecialAction -> String -> String -> Element Msg
+build_special_action_button hovered_tooltip special_action title tooltip =
+    primary_button_tooltip []
+        (OnSpecialAction special_action)
+        title
+        (buildTooltipConfig
+            tooltip
+        )
+        hovered_tooltip
+
+
 special_actions_display : Model -> Element Msg
 special_actions_display model =
     let
+        { hovered_tooltip } =
+            model
+
         button_toggle_ai_pause =
-            primary_button_tooltip []
-                (OnSpecialAction TogglePauseAi)
+            build_special_action_button
+                hovered_tooltip
+                TogglePauseAi
                 (if model.ai_updates_paused then
                     "Resume Time"
 
                  else
                     "Pause Time"
                 )
-                (buildTooltipConfig
-                    "You tap your medallion, and time comes to a halt.\n\nYou take a breath, and feel a weight off your shoulders. You'll take your time with things."
-                )
-                model.hovered_tooltip
+                "You tap your medallion, and time comes to a halt.\n\nYou take a breath, and feel a weight off your shoulders. You'll take your time with things."
 
         button_search =
-            primary_button_tooltip []
-                (OnSpecialAction InviteTrader)
+            build_special_action_button
+                hovered_tooltip
+                InviteTrader
                 "Invite Trader"
-                (buildTooltipConfig
-                    "Invite a fellow Trader.\n\nThey may have new wares to sell, that you may buy up."
-                )
-                model.hovered_tooltip
+                "Invite a fellow Trader.\n\nThey may have new wares to sell, that you may buy up."
 
         button_high_desire =
-            primary_button_tooltip []
-                (OnSpecialAction (TriggerEvent (EventVeryDesiredItemType Nothing)))
+            build_special_action_button
+                hovered_tooltip
+                (TriggerEvent (EventVeryDesiredItemType Nothing))
                 "Spread Good Rumour"
-                (buildTooltipConfig
-                    "Sets a random Item Type to high value.\n\nSpreads a rumour that a given Item Type was the talk of the next town over."
-                )
-                model.hovered_tooltip
+                "Sets a random Item Type to high value.\n\nSpreads a rumour that a given Item Type was the talk of the next town over."
 
         button_low_desire =
-            primary_button_tooltip []
-                (OnSpecialAction (TriggerEvent (EventLeastDesiredItemType Nothing)))
+            build_special_action_button
+                hovered_tooltip
+                (TriggerEvent (EventLeastDesiredItemType Nothing))
                 "Spread Bad Rumour"
-                (buildTooltipConfig
-                    "Sets a random Item Type to low value.\n\nSpreads a rumour that a given Item Type has a surplus of sellers."
-                )
-                model.hovered_tooltip
+                "Sets a random Item Type to low value.\n\nSpreads a rumour that a given Item Type has a surplus of sellers."
     in
     column [ width fill, spacing 10, paddingXY 0 10 ]
         [ el [ font_scaled 2, border_bottom 2 ] <| text "Special Actions"

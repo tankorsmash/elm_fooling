@@ -762,7 +762,7 @@ primary_color_bright =
 
 
 primary_button_custom : List (Element.Attribute Msg) -> Msg -> Element Msg -> Element Msg
-primary_button_custom attrs on_press label =
+primary_button_custom custom_attrs on_press label =
     Input.button
         ([ -- bs4-like values
            Font.color white_color
@@ -779,18 +779,18 @@ primary_button_custom attrs on_press label =
             , Font.color <| rgb 0 0 0
             ]
          ]
-            ++ attrs
+            ++ custom_attrs
         )
         { onPress = Just on_press, label = label }
 
 
 primary_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
-primary_button attrs on_press label =
-    primary_button_custom attrs on_press (text label)
+primary_button custom_attrs on_press label =
+    primary_button_custom custom_attrs on_press (text label)
 
 
 secondary_button_custom : List (Element.Attribute Msg) -> Msg -> Element Msg -> Element Msg
-secondary_button_custom attrs on_press label =
+secondary_button_custom custom_attrs on_press label =
     Input.button
         ([ -- bs4-like values
            Font.color white_color
@@ -802,18 +802,18 @@ secondary_button_custom attrs on_press label =
          , Border.width 5
          , Border.color secondary_color
          ]
-            ++ attrs
+            ++ custom_attrs
         )
         { onPress = Just on_press, label = label }
 
 
 secondary_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
-secondary_button attrs on_press label =
-    secondary_button_custom attrs on_press (text label)
+secondary_button custom_attrs on_press label =
+    secondary_button_custom custom_attrs on_press (text label)
 
 
 outline_button_custom : List (Element.Attribute Msg) -> Msg -> Element Msg -> Element Msg
-outline_button_custom attrs on_press label =
+outline_button_custom custom_attrs on_press label =
     Input.button
         ([ -- bs4-like values
            Font.color secondary_color
@@ -829,14 +829,14 @@ outline_button_custom attrs on_press label =
             , Font.color <| white_color
             ]
          ]
-            ++ attrs
+            ++ custom_attrs
         )
         { onPress = Just on_press, label = label }
 
 
 outline_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
-outline_button attrs on_press label =
-    outline_button_custom attrs on_press (text label)
+outline_button custom_attrs on_press label =
+    outline_button_custom custom_attrs on_press (text label)
 
 
 
@@ -844,7 +844,7 @@ outline_button attrs on_press label =
 
 
 scrollbarYEl : List (Element.Attribute msg) -> Element msg -> Element msg
-scrollbarYEl attrs body =
+scrollbarYEl custom_attrs body =
     el [ height fill, width fill ] <|
         el
             ([ Element.htmlAttribute <| Html.Attributes.style "position" "absolute"
@@ -854,13 +854,13 @@ scrollbarYEl attrs body =
              , Element.htmlAttribute <| Html.Attributes.style "left" "0"
              , Element.scrollbarY
              ]
-                ++ attrs
+                ++ custom_attrs
             )
             body
 
 
 danger_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
-danger_button attrs on_press label =
+danger_button custom_attrs on_press label =
     Input.button
         ([ -- bs4-like values
            Font.color white_color
@@ -872,7 +872,7 @@ danger_button attrs on_press label =
          , Border.width 5
          , Border.color danger_color
          ]
-            ++ attrs
+            ++ custom_attrs
         )
         { onPress = Just on_press, label = text label }
 
@@ -3458,7 +3458,7 @@ primary_button_tooltip :
     -> TooltipConfig
     -> HoveredTooltip
     -> Element Msg
-primary_button_tooltip attrs on_press label { tooltip_id, tooltip_text } hovered_tooltip =
+primary_button_tooltip custom_attrs on_press label { tooltip_id, tooltip_text } hovered_tooltip =
     let
         { offset_x, offset_y } =
             case hovered_tooltip of
@@ -3508,7 +3508,7 @@ primary_button_tooltip attrs on_press label { tooltip_id, tooltip_text } hovered
          , Events.onMouseEnter <| StartTooltipHover tooltip_id
          ]
             ++ tooltip_attr
-            ++ attrs
+            ++ custom_attrs
         )
         on_press
         label

@@ -1804,35 +1804,49 @@ group_shuffle_items seed items =
         |> Tuple.second
 
 
+check_nonzero_desire : Character -> Item -> Bool
+check_nonzero_desire character item =
+    let
+        desire =
+            get_sentiment_for_item
+                character.item_types_desired
+                item
+    in
+    desire > 0.0
+
+
+{-| can the character afford the current price for the item
+-}
+check_can_afford : Character -> ShopTrends -> Item -> Bool
+check_can_afford character shop_trends item =
+    can_afford_item
+        shop_trends
+        character.held_gold
+        { item = item, qty = Quantity 1 }
+
+
+{-| items the character can afford and desires at least a little
+-}
+get_wanted_items : Character -> Character -> ShopTrends -> InventoryRecords
+get_wanted_items character shop shop_trends =
+    List.filter
+        (\( item, qty, avg_price ) ->
+            nonzero_qty ( item, qty, avg_price )
+                && check_can_afford character shop_trends item
+                && check_nonzero_desire character item
+        )
+        shop.held_items
+
+
 ai_buy_item_from_shop : Time.Posix -> ShopTrends -> Character -> Character -> AiUpdateRecord
 ai_buy_item_from_shop ai_tick_time shop_trends character shop =
     --TODO decide on an item type to buy, and buy 1.
     -- Maybe, it would be based on the lowest trending one, or one the
     -- character strongly desired or something
     let
-        check_can_afford : Item -> Bool
-        check_can_afford item =
-            can_afford_item
-                shop_trends
-                character.held_gold
-                { item = item, qty = Quantity 1 }
-
-        check_nonzero_desire : Item -> Bool
-        check_nonzero_desire item =
-            get_sentiment_for_item
-                character.item_types_desired
-                item
-                > 0.0
-
         wanted_items : InventoryRecords
         wanted_items =
-            List.filter
-                (\( i, q, avg_price ) ->
-                    nonzero_qty ( i, q, avg_price )
-                        && check_can_afford i
-                        && check_nonzero_desire i
-                )
-                shop.held_items
+            get_wanted_items character shop shop_trends
 
         max_trend =
             1.4
@@ -2829,11 +2843,12 @@ render_inventory_grid model header character shop_trends hovered_item context co
         mouse_hover_attrs item =
             [ Events.onMouseEnter <| MouseEnterShopItem context ( char_id, item )
             , Events.onMouseLeave <| MouseLeaveShopItem context ( char_id, item )
+
             -- , Element.below (expanded_display item)
             ]
 
-        small_header str = 
-            el [Font.size 10] <| text str
+        small_header str =
+            el [ Font.size 10 ] <| text str
 
         table_columns : List (Element.Column InventoryRecord Msg)
         table_columns =
@@ -2939,7 +2954,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                 else
                     []
                )
-            ++ [ Element.table [spacing 5] { data = items, columns = table_columns } ]
+            ++ [ Element.table [ spacing 5 ] { data = items, columns = table_columns } ]
 
 
 sort_func =
@@ -2956,6 +2971,7 @@ exclude_player_and_shop { player_id, shop_id } characters =
 float_to_percent : Float -> String
 float_to_percent flt =
     flt * 100 |> floor |> String.fromInt |> (\str -> str ++ "%")
+
 
 small_charts_display :
     List ShopTrends

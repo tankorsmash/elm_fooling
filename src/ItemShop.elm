@@ -3596,7 +3596,7 @@ special_actions_display hovered_tooltip player ai_updates_paused =
                 player
                 InviteTrader
                 "Invite Trader"
-                "Invite a fellow Trader.\n\nThey may have new wares to sell, that you may buy up."
+                "Invite a fellow Trader.\n\nThey may have new wares you've never seen."
                 (setPrice 50)
 
         button_high_desire =

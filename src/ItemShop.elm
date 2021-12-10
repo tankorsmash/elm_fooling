@@ -2832,9 +2832,12 @@ render_inventory_grid model header character shop_trends hovered_item context co
             -- , Element.below (expanded_display item)
             ]
 
+        small_header str = 
+            el [Font.size 10] <| text str
+
         table_columns : List (Element.Column InventoryRecord Msg)
         table_columns =
-            [ { header = text "Name:"
+            [ { header = small_header "Name:"
               , width = fillPortion 2
               , view =
                     \( item, qty, avg_price ) ->
@@ -2847,7 +2850,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                             )
                             (text (clipText item.name 25))
               }
-            , { header = text "Current Cost"
+            , { header = small_header "Price"
               , width = fillPortion 1
               , view =
                     \( item, qty, avg_price ) ->
@@ -2857,7 +2860,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                             render_gp <|
                                 get_adjusted_item_cost shop_trends item (Quantity 1)
               }
-            , { header = text "Average Price"
+            , { header = small_header "Avg Px"
               , width = fillPortion 1
               , view =
                     \( item, qty, avg_price ) ->
@@ -2871,7 +2874,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                                 _ ->
                                     render_gp <| getPrice avg_price
               }
-            , { header = text "Quantity"
+            , { header = small_header "Qty."
               , width = fillPortion 1
               , view =
                     \( item, qty, avg_price ) ->
@@ -2892,7 +2895,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                             else
                                 text <| "x" ++ (String.fromInt <| getQuantity qty)
               }
-            , { header = text "Item Type"
+            , { header = small_header "Item Type"
               , width = fillPortion 2
               , view =
                     \( item, qty, avg_price ) ->
@@ -2901,12 +2904,12 @@ render_inventory_grid model header character shop_trends hovered_item context co
                         <|
                             render_item_type shop_trends item.item_type
               }
-            , { header = text "Item Description"
+            , { header = small_header "Item Desc."
               , width = fillPortion 3
               , view =
                     \( item, qty, avg_price ) -> text <| clipText item.description 24
               }
-            , { header = text "Controls"
+            , { header = small_header "Controls"
               , width = fillPortion 1
               , view =
                     \( item, qty, avg_price ) ->
@@ -2936,7 +2939,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                 else
                     []
                )
-            ++ [ Element.table [] { data = items, columns = table_columns } ]
+            ++ [ Element.table [spacing 5] { data = items, columns = table_columns } ]
 
 
 sort_func =
@@ -2953,7 +2956,6 @@ exclude_player_and_shop { player_id, shop_id } characters =
 float_to_percent : Float -> String
 float_to_percent flt =
     flt * 100 |> floor |> String.fromInt |> (\str -> str ++ "%")
-
 
 small_charts_display :
     List ShopTrends

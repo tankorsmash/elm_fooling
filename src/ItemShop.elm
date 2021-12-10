@@ -3431,6 +3431,26 @@ type alias TooltipConfig =
     }
 
 
+hoveredTooltipMatchesId hovered_tooltip tooltip_id =
+    case hovered_tooltip of
+        HoveredTooltipWithoutOffset tooltip_data ->
+            if tooltip_data.hovered_tooltip_id == tooltip_id then
+                True
+
+            else
+                False
+
+        HoveredTooltipWithOffset hovered_tooltip_data ->
+            if hovered_tooltip_data.hovered_tooltip_id == tooltip_id then
+                True
+
+            else
+                False
+
+        NoHoveredTooltip ->
+            False
+
+
 primary_button_tooltip :
     List (Element.Attribute Msg)
     -> Msg
@@ -3454,6 +3474,7 @@ primary_button_tooltip attrs on_press label { tooltip_id, tooltip_text } hovered
         tooltip_el =
             Element.el
                 [ width Element.shrink
+                , Font.color <| rgb 0 0 0
                 , Background.color <| rgb 1 1 1
                 , Border.color <| rgb 0.35 0.35 0.35
                 , Border.rounded 3
@@ -3466,7 +3487,8 @@ primary_button_tooltip attrs on_press label { tooltip_id, tooltip_text } hovered
                     Element.moveDown offset_y
                 , Element.moveRight offset_x
                 , centerX
-                , Element.htmlAttribute <| Html.Attributes.id ("tooltip__" ++ tooltip_id)
+                , Element.htmlAttribute <|
+                    Html.Attributes.id ("tooltip__" ++ tooltip_id)
                 ]
             <|
                 text tooltip_text
@@ -3475,23 +3497,11 @@ primary_button_tooltip attrs on_press label { tooltip_id, tooltip_text } hovered
             target offsetWidth
 
         tooltip_attr =
-            case hovered_tooltip of
-                HoveredTooltipWithoutOffset tooltip_data ->
-                    if tooltip_data.hovered_tooltip_id == tooltip_id then
-                        [ Element.above tooltip_el ]
+            if hoveredTooltipMatchesId hovered_tooltip tooltip_id then
+                [ Element.above tooltip_el ]
 
-                    else
-                        []
-
-                HoveredTooltipWithOffset hovered_tooltip_data ->
-                    if hovered_tooltip_data.hovered_tooltip_id == tooltip_id then
-                        [ Element.above tooltip_el ]
-
-                    else
-                        []
-
-                NoHoveredTooltip ->
-                    []
+            else
+                []
     in
     primary_button
         ([ Events.onMouseLeave <| EndTooltipHover tooltip_id
@@ -3526,15 +3536,25 @@ build_special_action_button hovered_tooltip character special_action title toolt
                     else
                         True
 
+        tooltip_config =
+            buildTooltipConfig tooltip
+
         button_attrs =
             if is_disabled then
                 [ Background.color grey_color
                 , Border.color grey_color
-                , Element.mouseOver
-                    [ Background.color <| light_grey_color
-                    , Border.color <| light_grey_color
-                    ]
                 ]
+                    ++ (if hoveredTooltipMatchesId hovered_tooltip tooltip_config.tooltip_id then
+                            [ Background.color <| rgb 0 0 0
+                            , Border.color <| rgb 0 0 0
+
+                            --required mouseOver to override the default buttons behaviour
+                            , Element.mouseOver [ Background.color light_grey_color, Border.color light_grey_color ]
+                            ]
+
+                        else
+                            []
+                       )
 
             else
                 []
@@ -3549,7 +3569,7 @@ build_special_action_button hovered_tooltip character special_action title toolt
     primary_button_tooltip button_attrs
         msg
         title
-        (buildTooltipConfig tooltip)
+        tooltip_config
         hovered_tooltip
 
 

@@ -2829,6 +2829,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
             else
                 Element.none
 
+        mouse_hover_attrs : Item -> List (Element.Attribute Msg)
         mouse_hover_attrs item =
             [ Events.onMouseEnter <| MouseEnterShopItem context ( char_id, item )
             , Events.onMouseLeave <| MouseLeaveShopItem context ( char_id, item )
@@ -2842,7 +2843,12 @@ render_inventory_grid model header character shop_trends hovered_item context co
               , view =
                     \( item, qty, avg_price ) ->
                         Element.el
-                            [ Element.clip, width (fillPortion 2 |> Element.maximum 150), Font.size 16, html_title "Item Name" ]
+                            (mouse_hover_attrs item
+                                ++ [ width (fillPortion 2 |> Element.maximum 150)
+                                   , Font.size 16
+                                   , html_title "Item Name"
+                                   ]
+                            )
                             (text (clipText item.name 25))
               }
             , { header = text "Current Cost"

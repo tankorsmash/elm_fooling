@@ -3589,12 +3589,33 @@ suite =
                     in
                     Expect.equal 30 (sub_from_average orig_avg orig_num 10 1)
             ]
-        , describe "Item Shop stuff"
+        , describe "Item Shop stuff" <|
+            let
+                test_item_db : ItemDb
+                test_item_db =
+                    initial_item_db
+
+                test_shop_trends : ShopTrends
+                test_shop_trends =
+                    initial_shop_trends
+
+                ( test_item, test_item_qty, test_avg_price ) =
+                    ( lookup_item_id_str_default test_item_db "a41ae9d3-61f0-54f9-800e-56f53ed3ac98", Quantity 12, setPrice 9999 )
+            in
             [ test "clipText test clips" <|
                 \_ ->
                     Expect.equal "abc..." <| clipText "abcdef" 3
             , test "clipText test doesnt clip" <|
                 \_ ->
                     Expect.equal "abcdef" <| clipText "abcdef" 30
+            , test "getting adjusted item cost should return exact item cost" <|
+                \_ ->
+                    Expect.equal
+                        test_item.raw_gold_cost
+                        (get_adjusted_item_cost
+                            test_shop_trends
+                            test_item
+                            (setQuantity 1)
+                        )
             ]
         ]

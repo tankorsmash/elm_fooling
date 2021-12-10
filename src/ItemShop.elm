@@ -3652,6 +3652,6 @@ suite =
             , test "test making sure someone cannot afford something with 0 bucks" <|
                 \_ ->
                     check_can_afford_one { test_character | held_gold = 0 } test_shop_trends test_item
-                        |> Expect.false "Expected to be able to afford item"
+                        |> Expect.false "Expected to be not be able to afford item without any held gold"
             ]
         ]

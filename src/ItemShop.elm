@@ -3599,6 +3599,10 @@ suite =
                 test_shop_trends =
                     initial_shop_trends
 
+                test_character : Character
+                test_character =
+                    create_character (generate_uuid "Test Character !!") "Testy McTested"
+
                 ( test_item, test_item_qty, test_avg_price ) =
                     ( lookup_item_id_str_default test_item_db "a41ae9d3-61f0-54f9-800e-56f53ed3ac98", Quantity 12, setPrice 9999 )
             in
@@ -3641,5 +3645,13 @@ suite =
                             test_item
                             (setQuantity 1)
                         )
+            , test "test making sure someone can afford something" <|
+                \_ ->
+                    check_can_afford_one { test_character | held_gold = 99999 } test_shop_trends test_item
+                        |> Expect.true "Expected to be able to afford item"
+            , test "test making sure someone cannot afford something with 0 bucks" <|
+                \_ ->
+                    check_can_afford_one { test_character | held_gold = 0 } test_shop_trends test_item
+                        |> Expect.false "Expected to be able to afford item"
             ]
         ]

@@ -3734,12 +3734,9 @@ suite =
                                     (List.length many_updated_record == 1)
                             , Expect.equal 2
                                 << always
-                                    (case many_updated_record of
-                                        ( i, q, ap ) :: rest ->
-                                            getQuantity q
-
-                                        _ ->
-                                            0
+                                    (List.head many_updated_record
+                                        |> Maybe.map (Tuple3.second >> getQuantity)
+                                        |> Maybe.withDefault 0
                                     )
                             ]
             ]

@@ -3549,9 +3549,7 @@ build_special_action_button hovered_tooltip character special_action title toolt
     primary_button_tooltip button_attrs
         msg
         title
-        (buildTooltipConfig
-            tooltip
-        )
+        (buildTooltipConfig tooltip)
         hovered_tooltip
 
 

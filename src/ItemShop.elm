@@ -2769,10 +2769,6 @@ render_inventory_grid model header character shop_trends hovered_item context co
 
         --shown when hovered over item
         expanded_display item =
-            let
-                _ =
-                    Debug.log "is hovered? " <| is_hovered_item item
-            in
             if is_hovered_item item then
                 Element.Keyed.el
                     [ width fill
@@ -2833,7 +2829,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
         mouse_hover_attrs item =
             [ Events.onMouseEnter <| MouseEnterShopItem context ( char_id, item )
             , Events.onMouseLeave <| MouseLeaveShopItem context ( char_id, item )
-            , Element.below (expanded_display item)
+            -- , Element.below (expanded_display item)
             ]
 
         table_columns : List (Element.Column InventoryRecord Msg)

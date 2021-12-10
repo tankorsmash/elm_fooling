@@ -3653,5 +3653,29 @@ suite =
                 \_ ->
                     check_can_afford_one { test_character | held_gold = 0 } test_shop_trends test_item
                         |> Expect.false "Expected to be not be able to afford item without any held gold"
+            , test "test check_nonzero_desire" <|
+                \_ ->
+                    check_nonzero_desire
+                        { test_character
+                            | item_types_desired =
+                                Dict.update
+                                    (item_type_to_id test_item.item_type)
+                                    (always <| Just 1.0)
+                                    test_character.item_types_desired
+                        }
+                        test_item
+                        |> Expect.true "Expected a nonzero desire"
+            , test "test NOT check_nonzero_desire" <|
+                \_ ->
+                    check_nonzero_desire
+                        { test_character
+                            | item_types_desired =
+                                Dict.update
+                                    (item_type_to_id test_item.item_type)
+                                    (always <| Just 0.0)
+                                    test_character.item_types_desired
+                        }
+                        test_item
+                        |> Expect.false "Expected a desire of zero, so it should be false"
             ]
         ]

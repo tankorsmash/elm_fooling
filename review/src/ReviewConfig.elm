@@ -1,5 +1,9 @@
 module ReviewConfig exposing (config)
 
+import NoNameEndingWithColor
+import Review.Rule exposing (Rule)
+
+
 {-| Do not rename the ReviewConfig module or the config function, because
 `elm-review` will look for these.
 
@@ -10,10 +14,6 @@ To add packages that contain rules, add them to this review project using
 when inside the directory containing this file.
 
 -}
-
-import Review.Rule exposing (Rule)
-
-
 config : List Rule
 config =
-    []
+    [ NoNameEndingWithColor.rule ]

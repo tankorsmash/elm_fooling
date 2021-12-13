@@ -13,12 +13,11 @@ import Review.Rule as Rule exposing (Direction, Error, Rule)
 
 {-|
 
-@docs rule
+@docs Disallows variables ending with `_color`
 
 -}
-stub =
-    123
 
+stub = 123
 
 {-| dict of func names we're replacing
 -}
@@ -34,13 +33,7 @@ type alias Fixes =
     List ( Range, List Fix.Fix )
 
 
-
--- type AllFixesToApply
---     = All
---     | OnlySome (List String)
-
-
-{-| Reports... REPLACEME
+{-| Reports names ending with `_color` which should instead begin with `color_`.
 
     config =
         [ NoNameEndingWithColor.rule
@@ -49,20 +42,20 @@ type alias Fixes =
 
 ## Fail
 
-    a =
-        "REPLACEME example to replace"
+    red_color : Int
+    red_color = 123
 
 
 ## Success
 
-    a =
-        "REPLACEME example to replace"
+    color_red : Int
+    color_red = 123
 
 
 ## When (not) to enable this rule
 
-This rule is useful when REPLACEME.
-This rule is not useful when REPLACEME.
+This rule is useful when you've got several color helpers
+This rule is not useful when you've got several functions defined with _colors at the end of the name.
 
 
 ## Try it out
@@ -76,9 +69,7 @@ elm-review --template undefined/example --rules NoNameEndingWithColor
 -}
 rule : Rule
 rule =
-    -- Rule.newModuleRuleSchema "NoNameEndingWithColor" ()
     Rule.newModuleRuleSchema "NoNameEndingWithColor" Dict.empty
-        -- Add your visitors
         |> Rule.withModuleDefinitionVisitor moduleDefinitionVisitor
         |> Rule.withDeclarationVisitor declarationVisitor
         |> Rule.withFinalModuleEvaluation finalEvaluation
@@ -104,15 +95,6 @@ validate_exposing_node exposed_val =
                     Node.range exposed_val
             in
             if String.endsWith "_color" functionNameStr then
-                -- Return a single error, describing the problem
-                -- [ Rule.errorWithFix
-                --     { message = "Exposed names should start with color_, not end with it"
-                --     , details = [ "Having names start with color_ makes it easier to search for\nReplace `XYX_color` by `color_XYZ`" ]
-                --     }
-                --     -- This is the location of the problem in the source code
-                --     node_range
-                --     [ Fix.replaceRangeBy node_range (fix_color_str functionNameStr) ]
-                -- ]
                 Just ( functionNameStr, [ ( node_range, [ Fix.replaceRangeBy node_range (fix_color_str functionNameStr) ] ) ] )
 
             else
@@ -162,17 +144,6 @@ declarationVisitor node direction context =
                     Node.range functionName
             in
             if String.endsWith "_color" functionNameStr then
-                -- ( [ Rule.errorWithFix
-                --         { message = "Function names should start with color_, not end with it"
-                --         , details = [ "Having names start with color_ makes it easier to search for\nReplace `XYX_color` by `color_XYZ`" ]
-                --         }
-                --         -- This is the location of the problem in the source code
-                --         node_range
-                --         [ Fix.replaceRangeBy node_range (fix_color_str functionNameStr) ]
-                --   ]
-                --     ++ signatureError
-                -- , context
-                -- )
                 ( []
                 , Dict.update
                     functionNameStr
@@ -229,10 +200,6 @@ moduleDefinitionVisitor node context =
                 )
                 context
                 fixes_to_apply
-              -- fixes_to_apply
-              --   |> List.concatMap identity
-              --   |> List.reverse
-              --   |> List.append context
             )
 
 
@@ -244,7 +211,6 @@ fixes_to_apply_to_error ( functionNameStr, range_fixes ) =
                 { message = "Exposed names should start with color_, not end with it"
                 , details = [ "Having names start with color_ makes it easier to search for\nReplace `XYX_color` by `color_XYZ`" ]
                 }
-                -- This is the location of the problem in the source code
                 first_range
                 (first_fixes ++ (List.concatMap identity <| List.map Tuple.second rest_range_and_fixes))
             ]
@@ -260,16 +226,3 @@ finalEvaluation context =
         |> List.map
             fixes_to_apply_to_error
         |> List.concatMap identity
-
-
-
--- case ( Dict.get [ "Element" ] context, Dict.get [ "Html", "Styled" ] context ) of
---     ( Just elmUiRange, Just _ ) ->
---         [ Rule.error
---             { message = "Do not use both `elm-ui` and `elm-css`"
---             , details = [ "At fruits.com, we use `elm-ui` in the dashboard application, and `elm-css` in the rest of the code. We want to use `elm-ui` in our new projects, but in projects using `elm-css`, we don't want to use both libraries to keep things simple." ]
---             }
---             elmUiRange
---         ]
---     _ ->
---         []

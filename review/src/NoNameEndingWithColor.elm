@@ -1,10 +1,12 @@
 module NoNameEndingWithColor exposing (rule)
 
 import Elm.Syntax.Declaration as Declaration exposing (Declaration)
+import Elm.Syntax.Exposing as Exposing
 import Elm.Syntax.Expression as Expression exposing (Expression)
+import Elm.Syntax.Module as Module exposing (Module)
 import Elm.Syntax.Node as Node exposing (Node)
 import Review.Fix as Fix
-import Review.Rule as Rule exposing (Error, Rule)
+import Review.Rule as Rule exposing (Direction, Error, Rule)
 
 
 {-|
@@ -15,6 +17,10 @@ import Review.Rule as Rule exposing (Error, Rule)
 stub =
     123
 
+
+type ExposedFunctions
+    = All
+    | OnlySome (List String)
 
 {-| Reports... REPLACEME
 
@@ -53,7 +59,9 @@ elm-review --template undefined/example --rules NoNameEndingWithColor
 rule : Rule
 rule =
     Rule.newModuleRuleSchema "NoNameEndingWithColor" ()
+    -- Rule.newModuleRuleSchema "NoNameEndingWithColor" (OnlySome [])
         -- Add your visitors
+        -- |> Rule.withModuleDefinitionVisitor moduleDefinitionVisitor
         |> Rule.withSimpleDeclarationVisitor declarationVisitor
         -- |> Rule.withSimpleExpressionVisitor expressionVisitor
         |> Rule.fromModuleRuleSchema
@@ -85,6 +93,12 @@ declarationVisitor node =
                 functionNameStr : String
                 functionNameStr =
                     declaration |> Node.value |> .name |> Node.value
+
+                node_range = (Node.range (functionName))
+
+                -- _ = Debug.log "decl" declaration
+                _ = Debug.log "function name" functionNameStr
+                _ = Debug.log "node range" node_range
             in
             if String.endsWith "_color" functionNameStr then
                 -- Return a single error, describing the problem
@@ -93,15 +107,41 @@ declarationVisitor node =
                     , details = [ "Having names start with color_ makes it easier to search for\nReplace `XYX_color` by `color_XYZ`" ]
                     }
                     -- This is the location of the problem in the source code
-                    (Node.range (declaration |> Node.value |> .name))
-                    [ Fix.replaceRangeBy (Node.range functionName) (fix_color_str functionNameStr) ]
+                    node_range
+                    [ Fix.replaceRangeBy (node_range) (fix_color_str functionNameStr) ]
                 ]
 
             else
+                let
+                    _ = Debug.log "doesnt end with _color" ""
+                in
                 []
 
-        _ ->
+        ttt ->
+            let
+                _ = Debug.log "ttt" ttt
+            in
             []
+
+
+moduleDefinitionVisitor : Node Module -> ExposedFunctions -> ( List (Error {}), ExposedFunctions )
+moduleDefinitionVisitor node context =
+    case Node.value node |> Module.exposingList of
+        Exposing.All _ ->
+            ( [], All )
+
+        Exposing.Explicit exposedValues ->
+            ( [], OnlySome (List.filterMap exposedFunctionName exposedValues) )
+
+
+exposedFunctionName : Node Exposing.TopLevelExpose -> Maybe String
+exposedFunctionName value =
+    case Node.value value of
+        Exposing.FunctionExpose functionName ->
+            Just functionName
+
+        _ ->
+            Nothing
 
 
 

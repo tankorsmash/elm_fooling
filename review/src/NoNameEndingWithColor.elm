@@ -164,15 +164,11 @@ moduleDefinitionVisitor node context =
 
         Exposing.Explicit exposedValues ->
             ( let
-                _ =
-                    Debug.log "exposedValues" exposedValues
-
                 color_errors =
                     List.map
                         validate_exposing_node
                         exposedValues
 
-                _ = Debug.log "num color_errors" <| List.length color_errors
               in
               List.concatMap identity color_errors
             , OnlySome (List.filterMap exposedFunctionName exposedValues)

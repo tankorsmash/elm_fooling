@@ -84,20 +84,8 @@ validate_exposing_node exposed_val =
     case Node.value exposed_val of
         Exposing.FunctionExpose functionNameStr ->
             let
-                -- functionName =
-                --     node |> Node.value |> .name
-                --
-                -- functionNameStr : String
-                -- functionNameStr =
-                --     node |> Node.value |> .name |> Node.value
                 node_range =
                     Node.range exposed_val
-
-                _ =
-                    Debug.log "function name" functionNameStr
-
-                _ =
-                    Debug.log "node range" node_range
             in
             if String.endsWith "_color" functionNameStr then
                 -- Return a single error, describing the problem
@@ -124,65 +112,11 @@ validate_exposing_node exposed_val =
 
 
 
--- declarationVisitor : Node Declaration -> List (Error {})
--- declarationVisitor node =
---     case Node.value node of
---         Declaration.FunctionDeclaration { signature, declaration } ->
---             let
---                 functionName =
---                     declaration |> Node.value |> .name
---
---                 functionNameStr : String
---                 functionNameStr =
---                     declaration |> Node.value |> .name |> Node.value
---
---                 node_range =
---                     Node.range functionName
---
---                 -- _ = Debug.log "decl" declaration
---                 _ =
---                     Debug.log "function name" functionNameStr
---
---                 _ =
---                     Debug.log "node range" node_range
---             in
---             if String.endsWith "_color" functionNameStr then
---                 -- Return a single error, describing the problem
---                 ( [ Rule.errorWithFix
---                         { message = "Name should start with color_, not end with it"
---                         , details = [ "Having names start with color_ makes it easier to search for\nReplace `XYX_color` by `color_XYZ`" ]
---                         }
---                         -- This is the location of the problem in the source code
---                         node_range
---                         [ Fix.replaceRangeBy node_range (fix_color_str functionNameStr) ]
---                   ]
---                 , context
---                 )
---
---             else
---                 let
---                     _ =
---                         Debug.log "doesnt end with _color" ""
---                 in
---                 ( [], context )
---
---         ttt ->
---             let
---                 _ =
---                     Debug.log "ttt" ttt
---             in
---             ( [], context )
---
-
-
 declarationVisitor : Node Declaration -> Direction -> ExposedFunctions -> ( List (Error {}), ExposedFunctions )
 declarationVisitor node direction context =
     case ( direction, Node.value node ) of
         ( Rule.OnEnter, Declaration.FunctionDeclaration { documentation, declaration } ) ->
             let
-                -- functionName : String
-                -- functionName =
-                --     Node.value declaration |> .name |> Node.value
                 functionName =
                     declaration |> Node.value |> .name
 
@@ -193,8 +127,6 @@ declarationVisitor node direction context =
                 node_range =
                     Node.range functionName
 
-                _ =
-                    Debug.log "functionNameSTr" functionNameStr
             in
             if String.endsWith "_color" functionNameStr then
                 ( [ Rule.errorWithFix
@@ -210,20 +142,6 @@ declarationVisitor node direction context =
 
             else
                 ( [], context )
-
-        -- if documentation == Nothing && isExposed context functionNameStr then
-        --     ( [ Rule.error
-        --             { message = "Name should start with color_, not end with it"
-        --             , details =
-        --                 [ "Having names start with color_ makes it easier to search for\nReplace `XYX_color` by `color_XYZ`"
-        --                 ]
-        --             }
-        --             (node_range)
-        --       ]
-        --     , context
-        --     )
-        -- else
-        --     ( [], context )
         _ ->
             ( [], context )
 
@@ -252,9 +170,6 @@ moduleDefinitionVisitor node context =
                 color_errors =
                     List.map
                         validate_exposing_node
-                        -- (\ev ->
-                        --     Debug.log "exposed value" <| Node.value ev
-                        -- )
                         exposedValues
 
                 _ = Debug.log "num color_errors" <| List.length color_errors
@@ -273,34 +188,3 @@ exposedFunctionName value =
         _ ->
             Nothing
 
-
-
--- expressionVisitor : Node Expression -> List (Error {})
--- expressionVisitor node =
---     case Node.value node of
---         -- It will look at string literals (like "a", """a""")
---         Expression.FunctionOrValue mod_name str ->
---             -- let
---             --     _ =
---             --         if String.contains "color" str then
---             --             Debug.log "str" str
---             --
---             --         else
---             --             ""
---             -- in
---             if String.endsWith "_color" str then
---                 -- Return a single error, describing the problem
---                 [ Rule.errorWithFix
---                     { message = "Replace `XYX_color` by `color_XYZ`"
---                     , details = [ "Having names start with color_ makes it easier to search for" ]
---                     }
---                     -- This is the location of the problem in the source code
---                     (Node.range node)
---                     [ Fix.replaceRangeBy (Node.range node) str ]
---                 ]
---
---             else
---                 []
---
---         _ ->
---             []

@@ -2,6 +2,7 @@ module NoNameEndingWithColor exposing (rule)
 
 import Elm.Syntax.Expression as Expression exposing (Expression)
 import Elm.Syntax.Node as Node exposing (Node)
+import Review.Fix as Fix
 import Review.Rule as Rule exposing (Error, Rule)
 
 
@@ -76,12 +77,13 @@ expressionVisitor node =
             -- in
             if String.endsWith "_color" str then
                 -- Return a single error, describing the problem
-                [ Rule.error
+                [ Rule.errorWithFix
                     { message = "Replace `XYX_color` by `color_XYZ`"
                     , details = [ "Having names start with color_ makes it easier to search for" ]
                     }
                     -- This is the location of the problem in the source code
                     (Node.range node)
+                    [ Fix.replaceRangeBy (Node.range node) str ]
                 ]
 
             else

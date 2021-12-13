@@ -90,7 +90,7 @@ validate_exposing_node exposed_val =
             if String.endsWith "_color" functionNameStr then
                 -- Return a single error, describing the problem
                 [ Rule.errorWithFix
-                    { message = "Name should start with color_, not end with it"
+                    { message = "Exposed names should start with color_, not end with it"
                     , details = [ "Having names start with color_ makes it easier to search for\nReplace `XYX_color` by `color_XYZ`" ]
                     }
                     -- This is the location of the problem in the source code
@@ -111,12 +111,35 @@ validate_exposing_node exposed_val =
             []
 
 
-
 declarationVisitor : Node Declaration -> Direction -> ExposedFunctions -> ( List (Error {}), ExposedFunctions )
 declarationVisitor node direction context =
     case ( direction, Node.value node ) of
-        ( Rule.OnEnter, Declaration.FunctionDeclaration { documentation, declaration } ) ->
+        ( Rule.OnEnter, Declaration.FunctionDeclaration { signature, documentation, declaration } ) ->
             let
+                signatureError =
+                    case signature of
+                        Just sig_node ->
+                            sig_node
+                                |> Node.value
+                                |> .name
+                                |> (\sig_name_node ->
+                                        let
+                                            sig_name_range =
+                                                Node.range sig_name_node
+                                        in
+                                        [ Rule.errorWithFix
+                                            { message = "Names in signatures should start with color_, not end with it"
+                                            , details = [ "Having names start with color_ makes it easier to search for\nReplace `XYX_color` by `color_XYZ`" ]
+                                            }
+                                            -- This is the location of the problem in the source code
+                                            sig_name_range
+                                            [ Fix.replaceRangeBy sig_name_range (fix_color_str functionNameStr) ]
+                                        ]
+                                   )
+
+                        Nothing ->
+                            []
+
                 functionName =
                     declaration |> Node.value |> .name
 
@@ -126,22 +149,23 @@ declarationVisitor node direction context =
 
                 node_range =
                     Node.range functionName
-
             in
             if String.endsWith "_color" functionNameStr then
                 ( [ Rule.errorWithFix
-                        { message = "Name should start with color_, not end with it"
+                        { message = "Function names should start with color_, not end with it"
                         , details = [ "Having names start with color_ makes it easier to search for\nReplace `XYX_color` by `color_XYZ`" ]
                         }
                         -- This is the location of the problem in the source code
                         node_range
                         [ Fix.replaceRangeBy node_range (fix_color_str functionNameStr) ]
                   ]
+                    ++ signatureError
                 , context
                 )
 
             else
                 ( [], context )
+
         _ ->
             ( [], context )
 
@@ -168,9 +192,8 @@ moduleDefinitionVisitor node context =
                     List.map
                         validate_exposing_node
                         exposedValues
-
               in
-              List.concatMap identity color_errors
+              List.concatMap identity color_errors |> List.reverse
             , OnlySome (List.filterMap exposedFunctionName exposedValues)
             )
 
@@ -183,4 +206,3 @@ exposedFunctionName value =
 
         _ ->
             Nothing
-

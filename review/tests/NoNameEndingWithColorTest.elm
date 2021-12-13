@@ -25,7 +25,6 @@ red_color = 123"""
                             |> Review.Test.whenFixed """module SomeModule exposing (nothing)
 
 nothing = Nothing
-color_red = 123
-"""
+color_red = 123"""
                         ]
         ]

@@ -59,6 +59,16 @@ rule =
         |> Rule.fromModuleRuleSchema
 
 
+fix_color_str str =
+    if not <| String.endsWith "_color" str then
+        str
+
+    else
+        str
+            |> String.replace "_color" ""
+            |> String.append "color_"
+
+
 
 -- This function will visit all the expressions (like `1`, `"string"`, `foo bar`, `a + b`, ...)
 -- and report problems that it finds
@@ -84,7 +94,7 @@ declarationVisitor node =
                     }
                     -- This is the location of the problem in the source code
                     (Node.range (declaration |> Node.value |> .name))
-                    [ Fix.replaceRangeBy (Node.range functionName) functionNameStr ]
+                    [ Fix.replaceRangeBy (Node.range functionName) (fix_color_str functionNameStr) ]
                 ]
 
             else

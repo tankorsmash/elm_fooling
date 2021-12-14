@@ -16,8 +16,9 @@ import Review.Rule as Rule exposing (Direction, Error, Rule)
 @docs Disallows variables ending with `_color`
 
 -}
+stub =
+    123
 
-stub = 123
 
 {-| dict of func names we're replacing
 -}
@@ -43,19 +44,21 @@ type alias Fixes =
 ## Fail
 
     red_color : Int
-    red_color = 123
+    red_color =
+        123
 
 
 ## Success
 
     color_red : Int
-    color_red = 123
+    color_red =
+        123
 
 
 ## When (not) to enable this rule
 
 This rule is useful when you've got several color helpers
-This rule is not useful when you've got several functions defined with _colors at the end of the name.
+This rule is not useful when you've got several functions defined with \_colors at the end of the name.
 
 
 ## Try it out
@@ -72,6 +75,7 @@ rule =
     Rule.newModuleRuleSchema "NoNameEndingWithColor" Dict.empty
         |> Rule.withModuleDefinitionVisitor moduleDefinitionVisitor
         |> Rule.withDeclarationVisitor declarationVisitor
+        |> Rule.withExpressionExitVisitor expressionExitVisitor
         |> Rule.withFinalModuleEvaluation finalEvaluation
         |> Rule.fromModuleRuleSchema
 
@@ -84,6 +88,47 @@ fix_color_str str =
         str
             |> String.replace "_color" ""
             |> String.append "color_"
+
+
+expressionExitVisitor : Node Expression -> AllFixesToApply -> ( List (Error {}), AllFixesToApply )
+expressionExitVisitor node context =
+    -- ( [], context)
+    case Node.value node of
+        -- When exiting the let expression, report the variables that were not used.
+        -- Expression.LetExpression _ ->
+        --     ( unusedVariables context |> List.map createError, removeVariables context )
+        -- Expression.Function func ->
+        --     ( [], context )
+        -- Expression.FunctionImplementation { name, arguments, expression } ->
+        Expression.FunctionOrValue moduleName string ->
+            if String.endsWith "_color" string then
+                let
+                    node_range =
+                        Node.range node
+                in
+                ( []
+                , Dict.update
+                    string
+                    (\mb_existing_fixes ->
+                        let
+                            new_entry =
+                                [ ( node_range, [ Fix.replaceRangeBy node_range (fix_color_str string) ] ) ]
+                        in
+                        case mb_existing_fixes of
+                            Nothing ->
+                                Just new_entry
+
+                            Just existing_fixes ->
+                                Just <| List.append existing_fixes new_entry
+                    )
+                    context
+                )
+
+            else
+                ( [], context )
+
+        _ ->
+            ( [], context )
 
 
 validate_exposing_node : Node Exposing.TopLevelExpose -> Maybe FixesToApply
@@ -113,6 +158,8 @@ validate_exposing_node exposed_val =
 declarationVisitor : Node Declaration -> Direction -> AllFixesToApply -> ( List (Error {}), AllFixesToApply )
 declarationVisitor node direction context =
     case ( direction, Node.value node ) of
+        -- ( Rule.OnEnter, Declaration.FunctionImplementation {name, arguments, expression} ) ->
+        --     ([], context)
         ( Rule.OnEnter, Declaration.FunctionDeclaration { signature, documentation, declaration } ) ->
             let
                 signatureError : Fixes

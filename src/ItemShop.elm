@@ -217,7 +217,7 @@ type Msg
     | StartTooltipHover String
     | EndTooltipHover String
     | GotTooltipSize (Result Browser.Dom.Error Browser.Dom.Element)
-    | OnSpecialAction SpecialAction
+    | OnSpecialAction SpecialAction Price
     | ToggleHideNonZeroRows CharacterId
 
 
@@ -962,7 +962,7 @@ init =
         player =
             { player_base_char
                 | held_items = initial_owned_items item_db
-                , held_gold = 0
+                , held_gold = 25
                 , party = PlayerParty
             }
 
@@ -1520,8 +1520,8 @@ update msg model =
                 Err error ->
                     ( model, Cmd.none )
 
-        OnSpecialAction special_action ->
-            update_special_action special_action model
+        OnSpecialAction special_action price ->
+            update_special_action special_action price model
 
         ToggleHideNonZeroRows char_id ->
             let
@@ -1721,27 +1721,40 @@ update_shop_trends model update_st_func =
     }
 
 
-update_special_action : SpecialAction -> Model -> ( Model, Cmd Msg )
-update_special_action special_action model =
-    case special_action of
-        InviteTrader ->
-            ( model
-                |> handle_invite_trader
-                |> handle_invite_trader
-                |> handle_invite_trader
-                |> handle_invite_trader
-                |> handle_invite_trader
-                |> handle_invite_trader
-                |> handle_invite_trader
-                |> handle_invite_trader
-            , Cmd.none
-            )
+update_special_action : SpecialAction -> Price -> Model -> ( Model, Cmd Msg )
+update_special_action special_action price model =
+    case getPlayer model of
+        Just player ->
+            if player.held_gold >= getPrice price then
+                model
+                    |> withCharacter ((\p -> { p | held_gold = p.held_gold - getPrice price }) player)
+                    |> (\new_model ->
+                            case special_action of
+                                InviteTrader ->
+                                    ( new_model
+                                        |> handle_invite_trader
+                                        |> handle_invite_trader
+                                        |> handle_invite_trader
+                                        |> handle_invite_trader
+                                        |> handle_invite_trader
+                                        |> handle_invite_trader
+                                        |> handle_invite_trader
+                                        |> handle_invite_trader
+                                    , Cmd.none
+                                    )
 
-        TriggerEvent event ->
-            ( handle_special_event model event, Cmd.none )
+                                TriggerEvent event ->
+                                    ( handle_special_event new_model event, Cmd.none )
 
-        TogglePauseAi ->
-            ( { model | ai_updates_paused = not model.ai_updates_paused }, Cmd.none )
+                                TogglePauseAi ->
+                                    ( { new_model | ai_updates_paused = not new_model.ai_updates_paused }, Cmd.none )
+                       )
+
+            else
+                ( model, Cmd.none )
+
+        Nothing ->
+            ( model, Cmd.none )
 
 
 {-| adds 1 gold per second. GPM is a misnomer
@@ -3561,7 +3574,7 @@ build_special_action_button hovered_tooltip character special_action title toolt
 
         msg =
             if not is_disabled then
-                OnSpecialAction special_action
+                OnSpecialAction special_action price
 
             else
                 Noop
@@ -3692,6 +3705,10 @@ suite =
                 test_character =
                     create_character (generate_uuid "Test Character !!") "Testy McTested"
 
+                test_model : Model
+                test_model =
+                    init |> Tuple.first
+
                 ( test_item, test_item_qty, test_avg_price ) =
                     ( lookup_item_id_str_default test_item_db "a41ae9d3-61f0-54f9-800e-56f53ed3ac98", Quantity 12, setPrice 9999 )
             in
@@ -3788,6 +3805,30 @@ suite =
                             new_item.raw_gold_cost
                         )
                         |> Expect.notEqual orig_len
+            , test "make sure a special actions cost is removed from the player" <|
+                \_ ->
+                    let
+                        model =
+                            test_model
+                    in
+                    model
+                        |> getPlayer
+                        |> (\mb_player ->
+                                case mb_player of
+                                    Just orig_player ->
+                                        update_special_action InviteTrader (setPrice 10) test_model
+                                            |> (\( new_model, _ ) ->
+                                                    case getPlayer new_model of
+                                                        Just new_player ->
+                                                            Expect.equal (orig_player.held_gold - 10) <| new_player.held_gold
+
+                                                        Nothing ->
+                                                            Expect.fail "A player should be present in the model characters after a special action"
+                                               )
+
+                                    Nothing ->
+                                        Expect.fail "a player should exist in the initial model"
+                           )
             , test "test adding an existing item to inventory records updates the qty instead of appending a new item" <|
                 \_ ->
                     let

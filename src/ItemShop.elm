@@ -660,8 +660,8 @@ get_adjusted_item_cost shop_trends item qty =
     round <| scaled_raw_cost * item_sentiment
 
 
-white_color : Color
-white_color =
+color_white : Color
+color_white =
     rgb 1 1 1
 
 
@@ -741,18 +741,18 @@ color_pastel_red_7 =
     hex_to_color "#ce3a3a"
 
 
-secondary_color : Color
-secondary_color =
+color_secondary : Color
+color_secondary =
     hex_to_color "#6c757d"
 
 
-danger_color : Color
-danger_color =
+color_danger : Color
+color_danger =
     hex_to_color "#dc3545"
 
 
-primary_color : Color
-primary_color =
+color_primary : Color
+color_primary =
     hex_to_color "#007bff"
 
 
@@ -765,14 +765,14 @@ primary_button_custom : List (Element.Attribute Msg) -> Msg -> Element Msg -> El
 primary_button_custom custom_attrs on_press label =
     Input.button
         ([ -- bs4-like values
-           Font.color white_color
+           Font.color color_white
          , Font.size 16
          , Font.center
          , padding 6
-         , Background.color primary_color
+         , Background.color color_primary
          , Border.rounded 5
          , Border.width 5
-         , Border.color primary_color
+         , Border.color color_primary
          , Element.mouseOver
             [ Background.color <| primary_color_bright
             , Border.color <| primary_color_bright
@@ -793,14 +793,14 @@ secondary_button_custom : List (Element.Attribute Msg) -> Msg -> Element Msg -> 
 secondary_button_custom custom_attrs on_press label =
     Input.button
         ([ -- bs4-like values
-           Font.color white_color
+           Font.color color_white
          , Font.size 16
          , Font.center
          , padding 6
-         , Background.color secondary_color
+         , Background.color color_secondary
          , Border.rounded 5
          , Border.width 5
-         , Border.color secondary_color
+         , Border.color color_secondary
          ]
             ++ custom_attrs
         )
@@ -816,17 +816,17 @@ outline_button_custom : List (Element.Attribute Msg) -> Msg -> Element Msg -> El
 outline_button_custom custom_attrs on_press label =
     Input.button
         ([ -- bs4-like values
-           Font.color secondary_color
+           Font.color color_secondary
          , Font.size 16
          , Font.center
          , padding 6
-         , Background.color white_color
+         , Background.color color_white
          , Border.rounded 5
          , Border.width 2
-         , Border.color secondary_color
+         , Border.color color_secondary
          , Element.mouseOver
-            [ Background.color <| secondary_color
-            , Font.color <| white_color
+            [ Background.color <| color_secondary
+            , Font.color <| color_white
             ]
          ]
             ++ custom_attrs
@@ -863,14 +863,14 @@ danger_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
 danger_button custom_attrs on_press label =
     Input.button
         ([ -- bs4-like values
-           Font.color white_color
+           Font.color color_white
          , Font.size 16
          , Font.center
          , padding 6
-         , Background.color danger_color
+         , Background.color color_danger
          , Border.rounded 5
          , Border.width 5
-         , Border.color danger_color
+         , Border.color color_danger
          ]
             ++ custom_attrs
         )
@@ -2292,21 +2292,21 @@ clipText str length =
         str
 
 
-grey_color =
+color_grey =
     rgb 0.35 0.35 0.35
 
 
-very_light_grey_color =
+color_very_light_grey =
     rgb 0.75 0.75 0.75
 
 
-light_grey_color =
+color_light_grey =
     rgb 0.55 0.55 0.55
 
 
 font_grey : Element.Attribute msg
 font_grey =
-    Font.color <| grey_color
+    Font.color <| color_grey
 
 
 render_gp : Int -> Element msg
@@ -2618,7 +2618,7 @@ divider =
         Element.el
             [ width fill
             , border_bottom 1
-            , Border.color very_light_grey_color
+            , Border.color color_very_light_grey
             ]
         <|
             Element.none
@@ -3321,10 +3321,10 @@ view model =
             getPlayer model
 
         paused_border_attrs =
-            [ Border.color light_grey_color, Border.width 2, Border.dashed ]
+            [ Border.color color_light_grey, Border.width 2, Border.dashed ]
 
         unpaused_border_attrs =
-            [ Border.color white_color, Border.width 2, Border.dashed ]
+            [ Border.color color_white, Border.width 2, Border.dashed ]
     in
     Element.layoutWith { options = [] }
         []
@@ -3541,15 +3541,15 @@ build_special_action_button hovered_tooltip character special_action title toolt
 
         button_attrs =
             if is_disabled then
-                [ Background.color grey_color
-                , Border.color grey_color
+                [ Background.color color_grey
+                , Border.color color_grey
                 ]
                     ++ (if hoveredTooltipMatchesId hovered_tooltip tooltip_config.tooltip_id then
                             [ Background.color <| rgb 0 0 0
                             , Border.color <| rgb 0 0 0
 
                             --required mouseOver to override the default buttons behaviour
-                            , Element.mouseOver [ Background.color light_grey_color, Border.color light_grey_color ]
+                            , Element.mouseOver [ Background.color color_light_grey, Border.color color_light_grey ]
                             ]
 
                         else

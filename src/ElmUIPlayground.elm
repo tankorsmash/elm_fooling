@@ -47,8 +47,8 @@ type alias Model =
     { rounded_edges : Int, show_modal : Bool, modal_text : Maybe String }
 
 
-white_color : Color
-white_color =
+color_white : Color
+color_white =
     rgb 1 1 1
 
 
@@ -57,8 +57,8 @@ scaled val =
     modular 16 1.25 val |> round
 
 
-primary_color : Color
-primary_color =
+color_primary : Color
+color_primary =
     case Convert.hexToColor "#007bff" of
         Ok color ->
             let
@@ -105,14 +105,14 @@ primary_button attrs on_press label =
     Input.button
         (attrs
             ++ [ -- bs4-like values
-                 Font.color white_color
+                 Font.color color_white
                , Font.size 16
                , Font.center
                , padding 6
-               , Background.color primary_color
+               , Background.color color_primary
                , Border.rounded 5
                , Border.width 5
-               , Border.color primary_color
+               , Border.color color_primary
                ]
         )
         { onPress = Just on_press, label = text label }

@@ -125,4 +125,15 @@ color_primary = rgb 0 0 0
 color_purple = rgba 0 0 1 1"""
                     |> Review.Test.run rule
                     |> Review.Test.expectNoErrors
+        , test "Should not report an error at all, even with a let-block" <|
+            \() ->
+                """module SomeModule exposing (color_purple)
+
+color_purple =
+    let
+        value = 1
+    in
+        value"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectNoErrors
         ]

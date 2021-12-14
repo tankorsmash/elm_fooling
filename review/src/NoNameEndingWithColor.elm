@@ -262,7 +262,10 @@ validate_declaration declaration =
         node_range =
             Node.range functionName
     in
-    [ build_fix_value functionName functionNameStr ]
+    if is_invalid_color_str functionNameStr then
+        [ build_fix_value functionName functionNameStr ]
+    else
+        []
 
 
 validate_declaration_with_fix : Node Expression.FunctionImplementation -> FixesToApply

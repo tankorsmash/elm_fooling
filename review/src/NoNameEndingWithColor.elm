@@ -236,13 +236,16 @@ validate_signature signature =
                             name =
                                 Node.value sig_name_node
                         in
-                        [ ( sig_name_range
-                          , [ Fix.replaceRangeBy
-                                sig_name_range
-                                (fix_color_str name)
+                        if is_invalid_color_str name then
+                            [ ( sig_name_range
+                              , [ Fix.replaceRangeBy
+                                    sig_name_range
+                                    (fix_color_str name)
+                                ]
+                              )
                             ]
-                          )
-                        ]
+                        else
+                            []
                    )
 
         Nothing ->

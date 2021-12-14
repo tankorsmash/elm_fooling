@@ -136,4 +136,16 @@ color_purple =
         value"""
                     |> Review.Test.run rule
                     |> Review.Test.expectNoErrors
+        , test "Should not report an error at all, even with a let-block and a signature" <|
+            \() ->
+                """module SomeModule exposing (color_purple)
+
+color_purple =
+    let
+        value : Int
+        value = 1
+    in
+        value"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectNoErrors
         ]

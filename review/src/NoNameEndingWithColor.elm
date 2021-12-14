@@ -110,7 +110,16 @@ expressionExitVisitor node context =
                             (\ld ->
                                 case Node.value ld of
                                     Expression.LetFunction func ->
-                                        Just <| validate_declaration_with_fix func.declaration
+                                        Just <|
+                                            let
+                                                ( fname, decl_fixes ) =
+                                                    validate_declaration_with_fix
+                                                        func.declaration
+
+                                                sig_fixes =
+                                                    validate_signature func.signature
+                                            in
+                                            ( fname, decl_fixes ++ sig_fixes )
 
                                     Expression.LetDestructuring _ _ ->
                                         Nothing

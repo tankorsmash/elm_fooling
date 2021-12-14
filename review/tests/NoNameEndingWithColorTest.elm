@@ -68,6 +68,7 @@ color_green = 932133"""
 
 my_copy =
     let
+        red_copy_color : Int
         red_copy_color = 123
     in
     red_copy_color
@@ -79,11 +80,12 @@ my_copy =
                             , details = [ "Having names start with color_ makes it easier to search for\nReplace `XYX_color` by `color_XYZ`" ]
                             , under = "red_copy_color"
                             }
-                            |> Review.Test.atExactly { start = { row = 7, column = 5 }, end = { row = 7, column = 19 } }
+                            |> Review.Test.atExactly { start = { row = 8, column = 5 }, end = { row = 8, column = 19 } }
                             |> Review.Test.whenFixed """module SomeModule exposing (my_copy)
 
 my_copy =
     let
+        color_red_copy : Int
         color_red_copy = 123
     in
     color_red_copy

@@ -7,6 +7,7 @@ import Elm.Syntax.Expression as Expression exposing (Expression)
 import Elm.Syntax.Module as Module exposing (Module)
 import Elm.Syntax.Node as Node exposing (Node)
 import Elm.Syntax.Range exposing (Range)
+import Elm.Syntax.Signature as Signature exposing (Signature)
 import Review.Fix as Fix
 import Review.Rule as Rule exposing (Direction, Error, Rule)
 
@@ -74,14 +75,20 @@ rule : Rule
 rule =
     Rule.newModuleRuleSchema "NoNameEndingWithColor" Dict.empty
         |> Rule.withModuleDefinitionVisitor moduleDefinitionVisitor
-        |> Rule.withDeclarationVisitor declarationVisitor
+        |> Rule.withDeclarationExitVisitor declarationExitVisitor
         |> Rule.withExpressionExitVisitor expressionExitVisitor
         |> Rule.withFinalModuleEvaluation finalEvaluation
         |> Rule.fromModuleRuleSchema
 
 
+is_invalid_color_str : String -> Bool
+is_invalid_color_str str =
+    String.endsWith "_color" str
+
+
+fix_color_str : String -> String
 fix_color_str str =
-    if not <| String.endsWith "_color" str then
+    if not <| is_invalid_color_str str then
         str
 
     else
@@ -95,13 +102,46 @@ expressionExitVisitor node context =
     -- ( [], context)
     case Node.value node of
         -- When exiting the let expression, report the variables that were not used.
-        -- Expression.LetExpression _ ->
+        Expression.LetExpression { declarations, expression } ->
+            let
+                fixes_to_apply =
+                    declarations
+                        |> List.map
+                            (\ld ->
+                                case Node.value ld of
+                                    Expression.LetFunction func ->
+                                        Just <| validate_declaration_with_fix func.declaration
+
+                                    Expression.LetDestructuring _ _ ->
+                                        Nothing
+                            )
+                        |> List.filterMap identity
+            in
+            ( []
+            , List.foldl
+                (\( name, fixes ) c ->
+                    Dict.update
+                        name
+                        (\m ->
+                            case m of
+                                Nothing ->
+                                    Just fixes
+
+                                Just existing_fixes ->
+                                    Just <| List.append existing_fixes fixes
+                        )
+                        c
+                )
+                context
+                fixes_to_apply
+            )
+
         --     ( unusedVariables context |> List.map createError, removeVariables context )
         -- Expression.Function func ->
         --     ( [], context )
         -- Expression.FunctionImplementation { name, arguments, expression } ->
         Expression.FunctionOrValue moduleName string ->
-            if String.endsWith "_color" string then
+            if is_invalid_color_str string then
                 let
                     node_range =
                         Node.range node
@@ -112,7 +152,7 @@ expressionExitVisitor node context =
                     (\mb_existing_fixes ->
                         let
                             new_entry =
-                                [ ( node_range, [ Fix.replaceRangeBy node_range (fix_color_str string) ] ) ]
+                                [ build_fix_value node string ]
                         in
                         case mb_existing_fixes of
                             Nothing ->
@@ -131,6 +171,22 @@ expressionExitVisitor node context =
             ( [], context )
 
 
+build_fix_value node color_str =
+    let
+        node_range =
+            Node.range node
+    in
+    ( node_range
+    , [ Fix.replaceRangeBy node_range
+            (fix_color_str color_str)
+      ]
+    )
+
+
+build_fix node color_str =
+    ( color_str, [ build_fix_value node color_str ] )
+
+
 validate_exposing_node : Node Exposing.TopLevelExpose -> Maybe FixesToApply
 validate_exposing_node exposed_val =
     case Node.value exposed_val of
@@ -139,8 +195,8 @@ validate_exposing_node exposed_val =
                 node_range =
                     Node.range exposed_val
             in
-            if String.endsWith "_color" functionNameStr then
-                Just ( functionNameStr, [ ( node_range, [ Fix.replaceRangeBy node_range (fix_color_str functionNameStr) ] ) ] )
+            if is_invalid_color_str functionNameStr then
+                Just <| build_fix exposed_val functionNameStr
 
             else
                 Nothing
@@ -155,30 +211,76 @@ validate_exposing_node exposed_val =
             Nothing
 
 
-declarationVisitor : Node Declaration -> Direction -> AllFixesToApply -> ( List (Error {}), AllFixesToApply )
-declarationVisitor node direction context =
-    case ( direction, Node.value node ) of
-        -- ( Rule.OnEnter, Declaration.FunctionImplementation {name, arguments, expression} ) ->
-        --     ([], context)
-        ( Rule.OnEnter, Declaration.FunctionDeclaration { signature, documentation, declaration } ) ->
+validate_signature : Maybe (Node Signature) -> Fixes
+validate_signature signature =
+    case signature of
+        Just sig_node ->
+            sig_node
+                |> Node.value
+                |> .name
+                |> (\sig_name_node ->
+                        let
+                            sig_name_range =
+                                Node.range sig_name_node
+
+                            name : String
+                            name =
+                                Node.value sig_name_node
+                        in
+                        [ ( sig_name_range
+                          , [ Fix.replaceRangeBy
+                                sig_name_range
+                                (fix_color_str name)
+                            ]
+                          )
+                        ]
+                   )
+
+        Nothing ->
+            []
+
+
+validate_declaration : Node Expression.FunctionImplementation -> Fixes
+validate_declaration declaration =
+    let
+        functionName =
+            declaration |> Node.value |> .name
+
+        functionNameStr : String
+        functionNameStr =
+            declaration |> Node.value |> .name |> Node.value
+
+        node_range =
+            Node.range functionName
+    in
+    [ build_fix_value functionName functionNameStr ]
+
+
+validate_declaration_with_fix : Node Expression.FunctionImplementation -> FixesToApply
+validate_declaration_with_fix declaration =
+    let
+        functionName =
+            declaration |> Node.value |> .name
+
+        functionNameStr : String
+        functionNameStr =
+            declaration |> Node.value |> .name |> Node.value
+    in
+    ( functionNameStr, validate_declaration declaration )
+
+
+declarationExitVisitor : Node Declaration -> AllFixesToApply -> ( List (Error {}), AllFixesToApply )
+declarationExitVisitor node context =
+    case Node.value node of
+        Declaration.FunctionDeclaration { signature, documentation, declaration } ->
             let
                 signatureError : Fixes
                 signatureError =
-                    case signature of
-                        Just sig_node ->
-                            sig_node
-                                |> Node.value
-                                |> .name
-                                |> (\sig_name_node ->
-                                        let
-                                            sig_name_range =
-                                                Node.range sig_name_node
-                                        in
-                                        [ ( sig_name_range, [ Fix.replaceRangeBy sig_name_range (fix_color_str functionNameStr) ] ) ]
-                                   )
+                    validate_signature signature
 
-                        Nothing ->
-                            []
+                declarationError : Fixes
+                declarationError =
+                    validate_declaration declaration
 
                 functionName =
                     declaration |> Node.value |> .name
@@ -186,18 +288,15 @@ declarationVisitor node direction context =
                 functionNameStr : String
                 functionNameStr =
                     declaration |> Node.value |> .name |> Node.value
-
-                node_range =
-                    Node.range functionName
             in
-            if String.endsWith "_color" functionNameStr then
+            if is_invalid_color_str functionNameStr then
                 ( []
                 , Dict.update
                     functionNameStr
                     (\mb_existing_fixes ->
                         let
                             new_entry =
-                                [ ( node_range, [ Fix.replaceRangeBy node_range (fix_color_str functionNameStr) ] ) ] ++ signatureError
+                                declarationError ++ signatureError
                         in
                         case mb_existing_fixes of
                             Nothing ->

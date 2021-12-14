@@ -2,7 +2,7 @@ module NoNameEndingWithColorTest exposing (all)
 
 import NoNameEndingWithColor exposing (rule)
 import Review.Test
-import Test exposing (Test, describe, test)
+import Test exposing (Test, describe, only, test)
 
 
 all : Test
@@ -61,6 +61,33 @@ red_color : Int
 red_color = 123
 color_green : Int
 color_green = 932133"""
+                        ]
+        , test "renamed functions will be in let-blocks" <|
+            \() ->
+                """module SomeModule exposing (my_copy)
+
+my_copy =
+    let
+        red_copy_color = 123
+    in
+    red_copy_color
+"""
+                    |> Review.Test.run rule
+                    |> Review.Test.expectErrors
+                        [ Review.Test.error
+                            { message = "Exposed names should start with color_, not end with it"
+                            , details = [ "Having names start with color_ makes it easier to search for\nReplace `XYX_color` by `color_XYZ`" ]
+                            , under = "red_copy_color"
+                            }
+                            |> Review.Test.atExactly { start = { row = 7, column = 5 }, end = { row = 7, column = 19 } }
+                            |> Review.Test.whenFixed """module SomeModule exposing (my_copy)
+
+my_copy =
+    let
+        color_red_copy = 123
+    in
+    color_red_copy
+"""
                         ]
         , test "renamed functions will be renamed everywhere" <|
             \() ->

@@ -219,6 +219,7 @@ type Msg
     | GotTooltipSize (Result Browser.Dom.Error Browser.Dom.Element)
     | OnSpecialAction SpecialAction Price
     | ToggleHideNonZeroRows CharacterId
+    | ChangeTabType TabType
 
 
 type alias TradeOrder =
@@ -422,6 +423,11 @@ type HoveredTooltip
     | HoveredTooltipWithOffset TooltipData
 
 
+type TabType
+    = ShopTabType
+    | ItemsUnlockedTabType
+
+
 type alias Model =
     { player_id : CharacterId
     , shop_id : CharacterId
@@ -440,6 +446,7 @@ type alias Model =
     , cached_tooltip_offsets : Dict.Dict String TooltipData
     , global_seed : Random.Seed --used to seed anything; will be constantly changed throughout the app
     , ai_updates_paused : Bool
+    , tab_type : TabType
     }
 
 
@@ -995,6 +1002,7 @@ init hash =
       , cached_tooltip_offsets = Dict.empty
       , global_seed = Random.initialSeed 4
       , ai_updates_paused = False
+      , tab_type = ShopTabType
       }
     , Task.perform TickSecond Time.now
     )
@@ -1531,6 +1539,9 @@ update msg model =
                         model.characters
             in
             ( { model | characters = new_characters }, Cmd.none )
+
+        ChangeTabType tab_type ->
+            ( { model | tab_type = tab_type }, Cmd.none )
 
 
 generate_uuid : String -> UUID.UUID
@@ -3292,8 +3303,8 @@ withCharacter new_char model =
     { model | characters = new_characters }
 
 
-view : Model -> Html.Html Msg
-view model =
+view_shop_tab_type : Model -> Element Msg
+view_shop_tab_type model =
     let
         welcome_header =
             Element.el [ font_scaled 3, padding_bottom 10 ] <| text "Welcome to the Item Shop!"
@@ -3331,93 +3342,111 @@ view model =
         unpaused_border_attrs =
             [ Border.color color_white, Border.width 2, Border.dashed ]
     in
-    Element.layoutWith { options = [] }
-        []
-    <|
-        Element.column
-            ([ width fill, font_scaled 1, height fill, padding 1 ]
-                ++ (if model.ai_updates_paused then
-                        paused_border_attrs
+    Element.column
+        ([ width fill, font_scaled 1, height fill, padding 1 ]
+            ++ (if model.ai_updates_paused then
+                    paused_border_attrs
 
-                    else
-                        unpaused_border_attrs
-                   )
-            )
-        <|
-            [ welcome_header
+                else
+                    unpaused_border_attrs
+               )
+        )
+    <|
+        [ welcome_header
+        , row [ spacing 5 ]
+            [ secondary_button [] (ChangeTabType ItemsUnlockedTabType) "View Items"
             , outline_button [] ToggleShowMainChart <|
                 if model.show_main_chart then
                     "Hide Charts"
 
                 else
                     "Charts"
-            , if model.show_main_chart then
-                Element.el [ paddingXY 0 10, width fill ] <| charts_display model.historical_shop_trends model.hovered_trend_chart
+            ]
+        , if model.show_main_chart then
+            Element.el [ paddingXY 0 10, width fill ] <| charts_display model.historical_shop_trends model.hovered_trend_chart
 
-              else
+          else
+            Element.none
+        , case maybe_player of
+            Just player ->
+                special_actions_display model.hovered_tooltip player model.ai_updates_paused
+
+            Nothing ->
                 Element.none
-            , case maybe_player of
-                Just player ->
-                    special_actions_display model.hovered_tooltip player model.ai_updates_paused
+        , trends_display model.item_db model.shop_trends model.characters model.shop_trends_hovered
+        , Element.el [ paddingXY 0 10, width fill ] <|
+            case maybe_shop of
+                Just shop ->
+                    render_inventory_grid
+                        model
+                        "Items For Sale"
+                        shop
+                        model.shop_trends
+                        model.hovered_item_in_character
+                        ShopItems
+                        (\( item, qty, avg_price ) ->
+                            shop_buy_button
+                                (get_adjusted_item_cost model.shop_trends item (Quantity 1))
+                                (case maybe_player of
+                                    Just player ->
+                                        player.held_gold
+
+                                    Nothing ->
+                                        99999
+                                )
+                                ( item, qty, avg_price )
+                        )
 
                 Nothing ->
-                    Element.none
-            , trends_display model.item_db model.shop_trends model.characters model.shop_trends_hovered
-            , Element.el [ paddingXY 0 10, width fill ] <|
-                case maybe_shop of
-                    Just shop ->
-                        render_inventory_grid
-                            model
-                            "Items For Sale"
-                            shop
-                            model.shop_trends
-                            model.hovered_item_in_character
-                            ShopItems
-                            (\( item, qty, avg_price ) ->
-                                shop_buy_button
-                                    (get_adjusted_item_cost model.shop_trends item (Quantity 1))
-                                    (case maybe_player of
-                                        Just player ->
-                                            player.held_gold
+                    el [ Font.color <| rgb 1 0 0, font_scaled 5 ] <| text "ERR: Can't find shop"
+        , Element.el [ paddingXY 0 10, width fill ] <|
+            case maybe_player of
+                Just player ->
+                    render_inventory_grid
+                        model
+                        "Items In Inventory"
+                        player
+                        model.shop_trends
+                        model.hovered_item_in_character
+                        InventoryItems
+                        (\( item, qty, avg_price ) ->
+                            shop_sell_button
+                                (getQuantity qty >= 1)
+                                ( item, setQuantity 1, avg_price )
+                        )
 
-                                        Nothing ->
-                                            99999
-                                    )
-                                    ( item, qty, avg_price )
-                            )
+                Nothing ->
+                    text "Can't find player"
+        ]
+            ++ (if model.show_debug_inventories then
+                    [ column [ width fill ]
+                        ([ secondary_button [] ToggleShowDebugInventories "Hide Debug"
+                         ]
+                            ++ debug_inventories
+                        )
+                    ]
 
-                    Nothing ->
-                        el [ Font.color <| rgb 1 0 0, font_scaled 5 ] <| text "ERR: Can't find shop"
-            , Element.el [ paddingXY 0 10, width fill ] <|
-                case maybe_player of
-                    Just player ->
-                        render_inventory_grid
-                            model
-                            "Items In Inventory"
-                            player
-                            model.shop_trends
-                            model.hovered_item_in_character
-                            InventoryItems
-                            (\( item, qty, avg_price ) ->
-                                shop_sell_button
-                                    (getQuantity qty >= 1)
-                                    ( item, setQuantity 1, avg_price )
-                            )
+                else
+                    [ secondary_button [] ToggleShowDebugInventories "Show Debug" ]
+               )
 
-                    Nothing ->
-                        text "Can't find player"
-            ]
-                ++ (if model.show_debug_inventories then
-                        [ column [ width fill ]
-                            ([ secondary_button [] ToggleShowDebugInventories "Hide Debug"
-                             ]
-                                ++ debug_inventories
-                            )
-                        ]
 
-                    else
-                        [ secondary_button [] ToggleShowDebugInventories "Show Debug" ]
-                   )
+view_items_unlocked_tab_type : Model -> Element Msg
+view_items_unlocked_tab_type model =
+    danger_button [] (ChangeTabType ShopTabType) "Return to Shop"
+
+
+view : Model -> Html.Html Msg
+view model =
+    Element.layoutWith { options = [] }
+        []
+    <|
+        case model.tab_type of
+            ShopTabType ->
+                view_shop_tab_type model
+
+            ItemsUnlockedTabType ->
+                view_items_unlocked_tab_type model
 
 
 scaled : Int -> Int

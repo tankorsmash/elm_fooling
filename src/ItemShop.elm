@@ -1313,17 +1313,9 @@ update msg model =
             ( model, Cmd.none )
 
         MouseEnterShopItem context item ->
-            let
-                _ =
-                    Debug.log "mouse enter" 0
-            in
             ( { model | hovered_item_in_character = Just item }, Cmd.none )
 
         MouseLeaveShopItem context item ->
-            let
-                _ =
-                    Debug.log "mouse leave" 0
-            in
             ( { model | hovered_item_in_character = Nothing }, Cmd.none )
 
         BuyItem item qty ->

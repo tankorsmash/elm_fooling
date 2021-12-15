@@ -407,8 +407,19 @@ type alias TrendSnapshot =
     { time : Time.Posix, item_type : ItemType, value : Float }
 
 
+type alias ItemDbRecordTrades =
+    { times_you_sold : Int
+    , times_you_bought : Int
+    }
+
+
+createItemDbRecordTrades : ItemDbRecordTrades
+createItemDbRecordTrades =
+    ItemDbRecordTrades 0 0
+
+
 type alias ItemDbRecord =
-    { item : Item, is_unlocked : Bool }
+    { item : Item, is_unlocked : Bool, trade_stats : ItemDbRecordTrades }
 
 
 type alias ItemDb =
@@ -561,13 +572,19 @@ initial_item_db =
               , id = UUID.forName "book of the mender" UUID.dnsNamespace
               }
             ]
-    in
-    Dict.fromList <|
-        List.map
-            (\item ->
-                ( UUID.toString item.id, { item = item, is_unlocked = True } )
+
+        create_db_entry : Item -> ( String, ItemDbRecord )
+        create_db_entry item =
+            ( UUID.toString item.id
+            , { item = item
+              , is_unlocked = True
+              , trade_stats = createItemDbRecordTrades
+              }
             )
-            initial_items
+    in
+    initial_items
+        |> List.map create_db_entry
+        |> Dict.fromList
 
 
 initial_items_for_sale : ItemDb -> InventoryRecords

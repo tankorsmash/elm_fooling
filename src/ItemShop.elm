@@ -3456,7 +3456,7 @@ view_items_unlocked_tab_type : Model -> Element Msg
 view_items_unlocked_tab_type model =
     Element.link []
         { url = "#shop"
-        , label = danger_button [] (ChangeTabType ShopTabType) "OMG"
+        , label = danger_button [] (ChangeTabType ShopTabType) "Back to Shop"
         }
 
 

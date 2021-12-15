@@ -402,9 +402,10 @@ init _ url navKey =
         dota_hero_stats_page_info =
             Table.new_page_info (GotPageMsg DotaHeroStatsTable)
 
+        initial_tab : TabType
         initial_tab =
             case parsedRoute of
-                TabRoute tab_type hash ->
+                TabRoute tab_type hsh ->
                     tab_type
 
                 _ ->
@@ -415,19 +416,20 @@ init _ url navKey =
         dota_model =
             { player_data = Nothing, account_id = 24801519, hero_stats = Nothing }
 
-        fragment =
+        hash : String
+        hash =
             case parsedRoute of
-                TabRoute tab_type (Just hash) ->
-                    hash
+                TabRoute tab_type (Just hash_) ->
+                    hash_
 
                 _ ->
                     ""
 
         ( frame_view_model, frame_view_cmds ) =
-            Magnolia.FrameView.init fragment
+            Magnolia.FrameView.init hash
 
         ( item_shop_model, item_shop_cmds ) =
-            ItemShop.init
+            ItemShop.init hash
 
         initial_model : Model
         initial_model =

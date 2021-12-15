@@ -946,8 +946,8 @@ create_character char_id name =
     }
 
 
-init : ( Model, Cmd Msg )
-init =
+init : String -> ( Model, Cmd Msg )
+init hash =
     let
         player_base_char =
             create_character (UUID.forName "player character" UUID.dnsNamespace) "Player"
@@ -3699,7 +3699,7 @@ suite =
 
                 test_model : Model
                 test_model =
-                    init |> Tuple.first
+                    init "" |> Tuple.first
 
                 ( test_item, test_item_qty, test_avg_price ) =
                     ( lookup_item_id_str_default test_item_db "a41ae9d3-61f0-54f9-800e-56f53ed3ac98", Quantity 12, setPrice 9999 )

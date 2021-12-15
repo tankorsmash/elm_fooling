@@ -3473,8 +3473,12 @@ render_unlocked_item item =
     column [ width fill, height fill ]
         [ text <| item.name
         , row [ width (fill |> Element.maximum 200), spacingXY 10 0 ]
-            [ el [ Font.size 14 ] <| text <| item_type_to_pretty_string item.item_type
-            , el [ Font.size 14, alignRight ] <| render_gp item.raw_gold_cost
+            [ item_type_to_pretty_string item.item_type
+                |> text
+                |> el [ Font.size 14 ]
+            , item.raw_gold_cost
+                |> render_gp
+                |> el [ Font.size 14, alignRight ]
             ]
         ]
 

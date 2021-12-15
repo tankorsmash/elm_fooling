@@ -47,7 +47,7 @@ import Element.Keyed
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string)
 import Html
-import Html.Attributes
+import Html.Attributes exposing (attribute, classList, href, property, src, style, value)
 import Html.Events
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
@@ -866,8 +866,8 @@ scrollbarYEl custom_attrs body =
             body
 
 
-danger_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
-danger_button custom_attrs on_press label =
+danger_button_custom : List (Element.Attribute Msg) -> Msg -> Element Msg -> Element Msg
+danger_button_custom custom_attrs on_press label =
     Input.button
         ([ -- bs4-like values
            Font.color color_white
@@ -881,7 +881,12 @@ danger_button custom_attrs on_press label =
          ]
             ++ custom_attrs
         )
-        { onPress = Just on_press, label = text label }
+        { onPress = Just on_press, label = label }
+
+
+danger_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
+danger_button custom_attrs on_press label_str =
+    danger_button_custom custom_attrs on_press <| text label_str
 
 
 item_type_to_pretty_string : ItemType -> String
@@ -984,6 +989,18 @@ init hash =
         characters : List Character
         characters =
             [ player, shop ] ++ initial_characters item_db
+
+        initial_tab_type : TabType
+        initial_tab_type =
+            case hash of
+                "shop" ->
+                    ShopTabType
+
+                "items" ->
+                    ItemsUnlockedTabType
+
+                _ ->
+                    ShopTabType
     in
     ( { player_id = player.char_id
       , shop_id = shop.char_id
@@ -1002,7 +1019,7 @@ init hash =
       , cached_tooltip_offsets = Dict.empty
       , global_seed = Random.initialSeed 4
       , ai_updates_paused = False
-      , tab_type = ShopTabType
+      , tab_type = initial_tab_type
       }
     , Task.perform TickSecond Time.now
     )
@@ -3354,7 +3371,11 @@ view_shop_tab_type model =
     <|
         [ welcome_header
         , row [ spacing 5 ]
-            [ secondary_button [] (ChangeTabType ItemsUnlockedTabType) "View Items"
+            [ Element.link []
+                { url = "#items"
+                , label =
+                    secondary_button [] (ChangeTabType ItemsUnlockedTabType) "View Items"
+                }
             , outline_button [] ToggleShowMainChart <|
                 if model.show_main_chart then
                     "Hide Charts"
@@ -3433,7 +3454,10 @@ view_shop_tab_type model =
 
 view_items_unlocked_tab_type : Model -> Element Msg
 view_items_unlocked_tab_type model =
-    danger_button [] (ChangeTabType ShopTabType) "Return to Shop"
+    Element.link []
+        { url = "#shop"
+        , label = danger_button [] (ChangeTabType ShopTabType) "OMG"
+        }
 
 
 view : Model -> Html.Html Msg

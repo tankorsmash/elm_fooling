@@ -406,8 +406,12 @@ type alias TrendSnapshot =
     { time : Time.Posix, item_type : ItemType, value : Float }
 
 
+type alias ItemDbRecord =
+    { item : Item, is_unlocked : Bool }
+
+
 type alias ItemDb =
-    Dict.Dict ItemIdStr Item
+    Dict.Dict ItemIdStr ItemDbRecord
 
 
 type alias TooltipData =
@@ -485,7 +489,7 @@ unset_item_frame =
     }
 
 
-initial_item_db : Dict.Dict String Item
+initial_item_db : ItemDb
 initial_item_db =
     let
         initial_items =
@@ -560,7 +564,7 @@ initial_item_db =
     Dict.fromList <|
         List.map
             (\item ->
-                ( UUID.toString item.id, item )
+                ( UUID.toString item.id, { item = item, is_unlocked = True } )
             )
             initial_items
 
@@ -584,8 +588,8 @@ initial_items_for_sale item_db =
             List.filterMap
                 (\( item_id_str, qty ) ->
                     case lookup_item_id_str item_db item_id_str of
-                        Just item ->
-                            Just ( item, qty, setPrice item.raw_gold_cost )
+                        Just db_record ->
+                            Just ( db_record.item, qty, setPrice db_record.item.raw_gold_cost )
 
                         Nothing ->
                             Nothing
@@ -626,7 +630,12 @@ initial_characters item_db =
     in
     [ { base_character_1
         | held_items =
-            [ ( lookup_item_id_str_default item_db "6b7e301d-ab12-5e81-acfc-547e63004ffa", setQuantity 8, setPrice 20 )
+            [ ( lookup_item_id_str_default
+                    item_db
+                    "6b7e301d-ab12-5e81-acfc-547e63004ffa"
+              , setQuantity 8
+              , setPrice 20
+              )
             ]
                 |> List.map reset_avg_price_to_default
         , held_gold = 100
@@ -634,7 +643,12 @@ initial_characters item_db =
       }
     , { base_character_2
         | held_items =
-            [ ( lookup_item_id_str_default item_db "a41ae9d3-61f0-54f9-800e-56f53ed3ac98", setQuantity 12, setPrice 25 )
+            [ ( lookup_item_id_str_default
+                    item_db
+                    "a41ae9d3-61f0-54f9-800e-56f53ed3ac98"
+              , setQuantity 12
+              , setPrice 25
+              )
             ]
                 |> List.map reset_avg_price_to_default
         , held_gold = 200
@@ -967,6 +981,7 @@ init hash =
         shop_base_char =
             create_character (UUID.forName "shop character" UUID.dnsNamespace) "Shop"
 
+        item_db : ItemDb
         item_db =
             initial_item_db
 
@@ -1574,7 +1589,7 @@ pick_random_item_from_db item_db seed =
                 |> Random.List.choose
                 |> (\gen -> Random.step gen seed)
     in
-    ( maybe_item, new_seed )
+    ( Maybe.map .item maybe_item, new_seed )
 
 
 tuple_swap : ( a, b ) -> ( b, a )
@@ -2473,8 +2488,8 @@ render_single_trade_log_entry item_db all_characters trade_log =
 
         item_name =
             case maybe_item of
-                Just item ->
-                    item.name
+                Just db_record ->
+                    db_record.item.name
 
                 Nothing ->
                     "Unknown item"
@@ -2658,12 +2673,12 @@ divider =
     ]
 
 
-lookup_item_id_str : ItemDb -> String -> Maybe Item
+lookup_item_id_str : ItemDb -> String -> Maybe ItemDbRecord
 lookup_item_id_str item_db item_id_str =
     Dict.get item_id_str item_db
 
 
-lookup_item_id : ItemDb -> ItemId -> Maybe Item
+lookup_item_id : ItemDb -> ItemId -> Maybe ItemDbRecord
 lookup_item_id item_db item_id =
     -- Dict.get (UUID.toString item_id) item_db
     lookup_item_id_str item_db (UUID.toString item_id)
@@ -2672,8 +2687,8 @@ lookup_item_id item_db item_id =
 lookup_item_id_str_default : ItemDb -> ItemIdStr -> Item
 lookup_item_id_str_default item_db item_id_str =
     case Dict.get item_id_str item_db of
-        Just item ->
-            item
+        Just db_record ->
+            db_record.item
 
         Nothing ->
             unset_item_frame
@@ -2701,8 +2716,8 @@ action_log_to_str item_db action_log =
                         Nothing ->
                             "Unknown Item"
 
-                        Just item ->
-                            item.name
+                        Just db_record ->
+                            db_record.item.name
                    )
 
         WantedButCouldntTrade action ->

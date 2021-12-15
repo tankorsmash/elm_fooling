@@ -410,12 +410,13 @@ type alias TrendSnapshot =
 type alias ItemDbRecordTrades =
     { times_you_sold : Int
     , times_you_bought : Int
+    , times_others_traded: Int
     }
 
 
 createItemDbRecordTrades : ItemDbRecordTrades
 createItemDbRecordTrades =
-    ItemDbRecordTrades 0 0
+    ItemDbRecordTrades 0 0 0
 
 
 type alias ItemDbRecord =
@@ -3485,17 +3486,37 @@ view_shop_tab_type model =
                )
 
 
-render_unlocked_item : Item -> Element Msg
-render_unlocked_item item =
+render_unlocked_item : ItemDbRecord -> Element Msg
+render_unlocked_item { item, trade_stats } =
     column [ width fill, height fill ]
         [ text <| item.name
-        , row [ width (fill |> Element.maximum 200), spacingXY 10 0 ]
+        , row [ width (fill |> Element.maximum 200), Font.size 14, spacingXY 10 0 ]
             [ item_type_to_pretty_string item.item_type
                 |> text
-                |> el [ Font.size 14 ]
             , item.raw_gold_cost
                 |> render_gp
-                |> el [ Font.size 14, alignRight ]
+                |> el [ alignRight ]
+            ]
+        , row [ Font.size 12 ]
+            [ text "Num Bought: "
+            , trade_stats
+                |> .times_you_bought
+                |> String.fromInt
+                |> text
+            ]
+        , row [Font.size 12]
+            [ text "Num Sold: "
+            , trade_stats
+                |> .times_you_sold
+                |> String.fromInt
+                |> text
+            ]
+        , row [Font.size 12]
+            [ text "Others' Trades: "
+            , trade_stats
+                |> .times_others_traded
+                |> String.fromInt
+                |> text
             ]
         ]
 
@@ -3512,7 +3533,7 @@ view_items_unlocked_tab_type item_db =
         item_grid : Element Msg
         item_grid =
             Dict.values item_db
-                |> List.map (.item >> render_unlocked_item)
+                |> List.map render_unlocked_item
                 |> Element.wrappedRow [ width fill, spacing 20 ]
     in
     Debug.log "render view_items_unlocked_tab_type" <|

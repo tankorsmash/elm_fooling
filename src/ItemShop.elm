@@ -44,6 +44,7 @@ import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Element.Keyed
+import Element.Lazy as Lazy
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string)
 import Html
@@ -3467,12 +3468,13 @@ view_shop_tab_type model =
                )
 
 
-view_items_unlocked_tab_type : Model -> Element Msg
-view_items_unlocked_tab_type model =
+view_items_unlocked_tab_type : ItemDb -> Element Msg
+view_items_unlocked_tab_type item_db =
     Element.link []
         { url = "#shop"
         , label = danger_button [] (ChangeTabType ShopTabType) "Back to Shop"
         }
+        |> Debug.log "render view_items_unlocked_tab_type"
 
 
 view : Model -> Html.Html Msg
@@ -3485,7 +3487,7 @@ view model =
                 view_shop_tab_type model
 
             ItemsUnlockedTabType ->
-                view_items_unlocked_tab_type model
+                Lazy.lazy view_items_unlocked_tab_type model.item_db
 
 
 scaled : Int -> Int

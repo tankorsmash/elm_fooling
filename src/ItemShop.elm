@@ -3468,13 +3468,34 @@ view_shop_tab_type model =
                )
 
 
+render_unlocked_item : Item -> Element Msg
+render_unlocked_item item =
+    column [ width fill, height fill ]
+        [ text <| item.name
+        , row [ width (fill |> Element.maximum 200), spacingXY 10 0 ]
+            [ el [ Font.size 14 ] <| text <| item_type_to_pretty_string item.item_type
+            , el [ Font.size 14, alignRight ] <| render_gp item.raw_gold_cost
+            ]
+        ]
+
+
 view_items_unlocked_tab_type : ItemDb -> Element Msg
 view_items_unlocked_tab_type item_db =
-    Element.link []
-        { url = "#shop"
-        , label = danger_button [] (ChangeTabType ShopTabType) "Back to Shop"
-        }
-        |> Debug.log "render view_items_unlocked_tab_type"
+    let
+        back_btn =
+            Element.link []
+                { url = "#shop"
+                , label = danger_button [] (ChangeTabType ShopTabType) "Back to Shop"
+                }
+
+        item_grid : Element Msg
+        item_grid =
+            Dict.values item_db
+                |> List.map (.item >> render_unlocked_item)
+                |> Element.wrappedRow [ width fill, spacing 20 ]
+    in
+    Debug.log "render view_items_unlocked_tab_type" <|
+        column [ spacing 10 ] [ text "Item Codex", back_btn, item_grid ]
 
 
 view : Model -> Html.Html Msg

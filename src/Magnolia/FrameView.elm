@@ -1464,7 +1464,13 @@ update model msg =
                 new_frame_type =
                     frame_type_from_hash hash
             in
-            ( { model | active_tab_frame_type = new_frame_type }, Task.perform (\_ -> DoDownloadAllFrames new_frame_type) Time.now, Noop )
+            ( { model
+                | active_tab_frame_type = new_frame_type
+              }
+            -- , Task.perform (\_ -> DoDownloadAllFrames new_frame_type) Time.now
+            , Cmd.none
+            , Noop
+            )
 
         GotPageMsg frame_type page_msg ->
             let

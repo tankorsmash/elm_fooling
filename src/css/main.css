@@ -2,6 +2,11 @@
     color: red;
 }
 
+#elm-live\:elmErrorContainer {
+	font-size: 50%;
+}
+
 #elm-live\:elmError {
     white-space: break-spaces;
+	font-size:12px !important;
 }

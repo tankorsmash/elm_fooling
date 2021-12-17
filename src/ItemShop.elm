@@ -467,6 +467,50 @@ type alias Model =
     }
 
 
+type AiActionChoice
+    = NoActionChoice
+    | WantsToSell
+    | WantsToBuy
+
+
+{-| the result of what got updated during an AI Update call
+-}
+type alias AiUpdateData =
+    { shop_trends : ShopTrends
+    , historical_shop_trends : List ShopTrends
+    , characters : List Character
+    , ai_tick_seed : Random.Seed
+    }
+
+
+{-| the result of what happens during a ai\_sell/ai\_buy update.
+-}
+type alias AiUpdateRecord =
+    { shop_trends : ShopTrends
+    , character : Character
+    , shop : Character
+    , traded_items : InventoryRecords
+    }
+
+
+type alias TradeContext =
+    { shop_trends : ShopTrends
+    , from_party : Character
+    , to_party : Character
+    }
+
+
+type TradeRecord
+    = IncompleteTradeRecord TradeContext
+    | CompletedTradeRecord TradeContext ItemTradeLog
+
+
+type alias TooltipConfig =
+    { tooltip_id : String
+    , tooltip_text : String
+    }
+
+
 is_item_trade_log_to_shop : ItemTradeLog -> Bool
 is_item_trade_log_to_shop item_trade_log =
     item_trade_log.to_party == ShopParty
@@ -1278,18 +1322,6 @@ calc_transaction_fee total_cost =
     1
 
 
-type alias TradeContext =
-    { shop_trends : ShopTrends
-    , from_party : Character
-    , to_party : Character
-    }
-
-
-type TradeRecord
-    = IncompleteTradeRecord TradeContext
-    | CompletedTradeRecord TradeContext ItemTradeLog
-
-
 getTradeContext : TradeRecord -> TradeContext
 getTradeContext trade_record =
     case trade_record of
@@ -1863,14 +1895,6 @@ nonzero_qty ( item, qty, avg_price ) =
     getQuantity qty > 0
 
 
-type alias AiUpdateRecord =
-    { shop_trends : ShopTrends
-    , character : Character
-    , shop : Character
-    , traded_items : InventoryRecords
-    }
-
-
 seed_from_time : Time.Posix -> Random.Seed
 seed_from_time time =
     Random.initialSeed <| Time.posixToMillis time
@@ -2053,7 +2077,7 @@ ai_buy_item_from_shop ai_tick_time item_db shop_trends character shop =
                     trade_context_.to_party
                     { log_type = Traded log, time = ai_tick_time }
             , shop = trade_context_.from_party
-            , traded_items = 
+            , traded_items =
                 case lookup_item_id item_db log.item_id of
                     Just item_trade_log ->
                         [ ( item_trade_log.item, log.quantity, Price log.gold_cost ) ]
@@ -2139,26 +2163,6 @@ ai_sell_item_to_shop ai_tick_time item_db shop_trends character shop =
                     Nothing ->
                         Debug.todo "" []
             }
-
-
-type AiActionChoice
-    = NoActionChoice
-    | WantsToSell
-    | WantsToBuy
-
-
-
--- lookup_by_char_id : UUID -> List Character -> Maybe Character
--- lookup_by_char_id char_id characters =
---     List.head <| List.filter (\c -> c.char_id == char_id) characters
-
-
-type alias AiUpdateData =
-    { shop_trends : ShopTrends
-    , historical_shop_trends : List ShopTrends
-    , characters : List Character
-    , ai_tick_seed : Random.Seed
-    }
 
 
 append_to_character_action_log : Character -> ActionLog -> Character
@@ -3589,12 +3593,6 @@ scaled val =
 font_scaled : Int -> Element.Attribute msg
 font_scaled scale =
     Font.size <| scaled scale
-
-
-type alias TooltipConfig =
-    { tooltip_id : String
-    , tooltip_text : String
-    }
 
 
 hoveredTooltipMatchesId hovered_tooltip tooltip_id =

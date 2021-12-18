@@ -1408,9 +1408,12 @@ sell_items_from_party_to_other orig_trade_context { item, qty } =
     in
     if has_items && can_afford then
         let
-            -- ( new_shop_trends, new_from_party_, new_to_party_, trade_log ) =
             trade_record =
-                trade_items_from_party_to_other shop_trends from_party to_party { item = item, qty = qty }
+                trade_items_from_party_to_other
+                    shop_trends
+                    from_party
+                    to_party
+                    { item = item, qty = qty }
 
             trade_context =
                 getTradeContext trade_record

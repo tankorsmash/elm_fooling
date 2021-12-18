@@ -1442,16 +1442,16 @@ update msg model =
                                         }
                                         { item = item, qty = qty }
 
-                                trade_context =
+                                new_trade_context =
                                     getTradeContext trade_record
                             in
                             ( { model
-                                | shop_trends = trade_context.shop_trends
+                                | shop_trends = new_trade_context.shop_trends
                                 , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
                               }
                                 --it doesn't matter who was what party, they're still getting updated
-                                |> withCharacter trade_context.to_party
-                                |> withCharacter trade_context.from_party
+                                |> withCharacter new_trade_context.to_party
+                                |> withCharacter new_trade_context.from_party
                             , Cmd.none
                             )
 
@@ -1467,24 +1467,29 @@ update msg model =
                     case getPlayer model of
                         Just player ->
                             let
-                                -- ( new_shop_trends, new_player, new_shop ) =
+                                trade_order =
+                                    { item = item, qty = qty }
+
+                                orig_trade_context =
+                                    { shop_trends = model.shop_trends
+                                    , from_party = player
+                                    , to_party = shop
+                                    }
+
                                 trade_record =
                                     sell_items_from_party_to_other
-                                        { shop_trends = model.shop_trends
-                                        , from_party = player
-                                        , to_party = shop
-                                        }
-                                        { item = item, qty = qty }
+                                        orig_trade_context
+                                        trade_order
 
-                                trade_context =
+                                new_trade_context =
                                     getTradeContext trade_record
                             in
                             ( { model
-                                | shop_trends = trade_context.shop_trends
+                                | shop_trends = new_trade_context.shop_trends
                                 , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
                               }
-                                |> withCharacter trade_context.from_party
-                                |> withCharacter trade_context.to_party
+                                |> withCharacter new_trade_context.from_party
+                                |> withCharacter new_trade_context.to_party
                             , Cmd.none
                             )
 
@@ -2504,7 +2509,9 @@ shop_buy_button gold_cost gold_in_pocket { item, quantity, avg_price } =
                 secondary_button
     in
     button_type
-        [ Element.transparent <| getQuantity quantity < 1, width (fill |> Element.minimum 120) ]
+        [ getQuantity quantity < 1 |> Element.transparent
+        , width (fill |> Element.minimum 120)
+        ]
         (PlayerBuyItemFromShop item (Quantity 1))
     <|
         if can_afford then

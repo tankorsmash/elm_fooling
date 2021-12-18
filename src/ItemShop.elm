@@ -204,8 +204,8 @@ type Msg
     = Noop
     | MouseEnterShopItem ListContext ( CharacterId, Item )
     | MouseLeaveShopItem ListContext ( CharacterId, Item )
-    | BuyItem Item Quantity
-    | SellItem Item Quantity
+    | PlayerBuyItemFromShop Item Quantity
+    | PlayerSellItemToShop Item Quantity
     | StartTrendsHover
     | EndTrendsHover
     | TickSecond Time.Posix
@@ -1427,7 +1427,7 @@ update msg model =
         MouseLeaveShopItem context item ->
             ( { model | hovered_item_in_character = Nothing }, Cmd.none )
 
-        BuyItem item qty ->
+        PlayerBuyItemFromShop item qty ->
             case getShop model of
                 Just shop ->
                     case getPlayer model of
@@ -1461,7 +1461,7 @@ update msg model =
                 Nothing ->
                     ( model, Cmd.none )
 
-        SellItem item qty ->
+        PlayerSellItemToShop item qty ->
             case getShop model of
                 Just shop ->
                     case getPlayer model of
@@ -2505,7 +2505,7 @@ shop_buy_button gold_cost gold_in_pocket { item, quantity, avg_price } =
     in
     button_type
         [ Element.transparent <| getQuantity quantity < 1, width (fill |> Element.minimum 120) ]
-        (BuyItem item (Quantity 1))
+        (PlayerBuyItemFromShop item (Quantity 1))
     <|
         if can_afford then
             "BUY"
@@ -2528,7 +2528,7 @@ shop_sell_button has_items_to_sell_ { item } =
         [ Element.transparent <| not has_items_to_sell_
         , width (fill |> Element.minimum 120)
         ]
-        (SellItem item (Quantity 1))
+        (PlayerSellItemToShop item (Quantity 1))
     <|
         if has_items_to_sell_ then
             "SELL"

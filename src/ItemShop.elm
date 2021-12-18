@@ -407,20 +407,29 @@ type alias TrendSnapshot =
     { time : Time.Posix, item_type : ItemType, value : Float }
 
 
-type alias ItemDbRecordTrades =
+type alias ItemDbTradeStats =
     { times_you_sold : Int
     , times_you_bought : Int
     , times_others_traded : Int
     }
 
 
-createItemDbRecordTrades : ItemDbRecordTrades
-createItemDbRecordTrades =
-    ItemDbRecordTrades 0 0 0
+createItemDbTradeStats : ItemDbTradeStats
+createItemDbTradeStats =
+    ItemDbTradeStats 0 0 0
+
+
+updateTimesOthersTraded : ItemDbTradeStats -> Int -> ItemDbTradeStats
+updateTimesOthersTraded item_db_record_trades new_times_others_traded =
+    let
+        old_times_others_traded =
+            item_db_record_trades.times_others_traded
+    in
+    { item_db_record_trades | times_others_traded = old_times_others_traded + new_times_others_traded }
 
 
 type alias ItemDbRecord =
-    { item : Item, is_unlocked : Bool, trade_stats : ItemDbRecordTrades }
+    { item : Item, is_unlocked : Bool, trade_stats : ItemDbTradeStats }
 
 
 type alias ItemDb =
@@ -624,7 +633,7 @@ initial_item_db =
             ( UUID.toString item.id
             , { item = item
               , is_unlocked = True
-              , trade_stats = createItemDbRecordTrades
+              , trade_stats = createItemDbTradeStats
               }
             )
     in
@@ -2196,21 +2205,21 @@ increment_item_trade_count inventory_record item_db =
             Tuple3.first inventory_record
     in
     --set or update the traded quantity in the matching ItemDbRecord
-    Dict.update
-        (UUID.toString item.id)
+    update_item_db
+        item_db
+        item.id
         (\mb_item_db_record ->
             case mb_item_db_record of
-                Just item_db_record ->
-                    let
-                        trade_stats =
-                            item_db_record.trade_stats
-                    in
-                    Just { item_db_record | trade_stats = { trade_stats | times_others_traded = trade_stats.times_others_traded + added_qty } }
+                Just ({ trade_stats } as item_db_record) ->
+                    Just
+                        { item_db_record
+                            | trade_stats =
+                                updateTimesOthersTraded trade_stats added_qty
+                        }
 
                 Nothing ->
-                    Just { item = item, is_unlocked = False, trade_stats = { createItemDbRecordTrades | times_others_traded = added_qty } }
+                    Just { item = item, is_unlocked = False, trade_stats = { createItemDbTradeStats | times_others_traded = added_qty } }
         )
-        item_db
 
 
 update_ai : Time.Posix -> CharacterId -> CharacterId -> AiUpdateData -> AiUpdateData
@@ -2773,6 +2782,11 @@ divider =
         <|
             Element.none
     ]
+
+
+update_item_db : ItemDb -> ItemId -> (Maybe ItemDbRecord -> Maybe ItemDbRecord) -> ItemDb
+update_item_db item_db item_id updater =
+    Dict.update (UUID.toString item_id) updater item_db
 
 
 lookup_item_id_str : ItemDb -> String -> Maybe ItemDbRecord

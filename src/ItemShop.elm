@@ -608,80 +608,103 @@ unset_item_frame =
 initial_item_db : ItemDb
 initial_item_db =
     let
+        initial_items : List ( Bool, Item )
         initial_items =
-            [ { name = "Anklet"
-              , item_type = Armor
-              , raw_gold_cost = 6
-              , description = "An pair of anklets"
-              , id = UUID.forName "anklets" UUID.dnsNamespace
-              }
-            , { name = "Boots"
-              , item_type = Armor
-              , raw_gold_cost = 5
-              , description = "An old pair of boots"
-              , id = UUID.forName "boots" UUID.dnsNamespace
-              }
-            , { name = "Leather Armor"
-              , item_type = Armor
-              , raw_gold_cost = 15
-              , description = "Lightly-colored tanned leather"
-              , id = UUID.forName "leather armor" UUID.dnsNamespace
-              }
-            , { name = "Iron Armor"
-              , item_type = Armor
-              , raw_gold_cost = 23
-              , description = "Medium armor, afford some protection"
-              , id = UUID.forName "iron armor" UUID.dnsNamespace
-              }
-            , { name = "Iron Helm"
-              , item_type = Armor
-              , raw_gold_cost = 20
-              , description = "A helmet made of iron"
-              , id = UUID.forName "iron helm" UUID.dnsNamespace
-              }
-            , { name = "Sword"
-              , item_type = Weapon
-              , raw_gold_cost = 15
-              , description = "A rusted sword"
-              , id = UUID.forName "rusted sword" UUID.dnsNamespace
-              }
-            , { name = "Dagger"
-              , item_type = Weapon
-              , raw_gold_cost = 10
-              , description = "A small weapon that fits in your pocket"
-              , id = UUID.forName "small dagger" UUID.dnsNamespace
-              }
-            , { name = "Broad-headed axe"
-              , item_type = Weapon
-              , raw_gold_cost = 19
-              , description = "A broad-headed axe, commonly used to fell great trees"
-              , id = UUID.forName "broadheaded axe" UUID.dnsNamespace
-              }
-            , { name = "Book of the Dead"
-              , item_type = Spellbook
-              , raw_gold_cost = 20
-              , description = "Bound in leather, this book has a skull for a cover"
-              , id = UUID.forName "book of the dead" UUID.dnsNamespace
-              }
-            , { name = "Book of the Magi"
-              , item_type = Spellbook
-              , raw_gold_cost = 50
-              , description = "Light bounces off strangely, as if it imperceptibly shuddered"
-              , id = UUID.forName "book of the magi" UUID.dnsNamespace
-              }
-            , { name = "Book of the Mender"
-              , item_type = Spellbook
-              , raw_gold_cost = 30
-              , description = "Gently pulses."
-              , id = UUID.forName "book of the mender" UUID.dnsNamespace
-              }
+            [ ( False
+              , { name = "Anklet"
+                , item_type = Armor
+                , raw_gold_cost = 6
+                , description = "An pair of anklets"
+                , id = UUID.forName "anklets" UUID.dnsNamespace
+                }
+              )
+            , ( True
+              , { name = "Boots"
+                , item_type = Armor
+                , raw_gold_cost = 5
+                , description = "An old pair of boots"
+                , id = UUID.forName "boots" UUID.dnsNamespace
+                }
+              )
+            , ( True
+              , { name = "Leather Armor"
+                , item_type = Armor
+                , raw_gold_cost = 15
+                , description = "Lightly-colored tanned leather"
+                , id = UUID.forName "leather armor" UUID.dnsNamespace
+                }
+              )
+            , ( False
+              , { name = "Iron Armor"
+                , item_type = Armor
+                , raw_gold_cost = 23
+                , description = "Medium armor, afford some protection"
+                , id = UUID.forName "iron armor" UUID.dnsNamespace
+                }
+              )
+            , ( False
+              , { name = "Iron Helm"
+                , item_type = Armor
+                , raw_gold_cost = 20
+                , description = "A helmet made of iron"
+                , id = UUID.forName "iron helm" UUID.dnsNamespace
+                }
+              )
+            , ( True
+              , { name = "Sword"
+                , item_type = Weapon
+                , raw_gold_cost = 15
+                , description = "A rusted sword"
+                , id = UUID.forName "rusted sword" UUID.dnsNamespace
+                }
+              )
+            , ( False
+              , { name = "Dagger"
+                , item_type = Weapon
+                , raw_gold_cost = 10
+                , description = "A small weapon that fits in your pocket"
+                , id = UUID.forName "small dagger" UUID.dnsNamespace
+                }
+              )
+            , ( False
+              , { name = "Broad-headed axe"
+                , item_type = Weapon
+                , raw_gold_cost = 19
+                , description = "A broad-headed axe, commonly used to fell great trees"
+                , id = UUID.forName "broadheaded axe" UUID.dnsNamespace
+                }
+              )
+            , ( True
+              , { name = "Book of the Dead"
+                , item_type = Spellbook
+                , raw_gold_cost = 20
+                , description = "Bound in leather, this book has a skull for a cover"
+                , id = UUID.forName "book of the dead" UUID.dnsNamespace
+                }
+              )
+            , ( False
+              , { name = "Book of the Magi"
+                , item_type = Spellbook
+                , raw_gold_cost = 50
+                , description = "Light bounces off strangely, as if it imperceptibly shuddered"
+                , id = UUID.forName "book of the magi" UUID.dnsNamespace
+                }
+              )
+            , ( False
+              , { name = "Book of the Mender"
+                , item_type = Spellbook
+                , raw_gold_cost = 30
+                , description = "Gently pulses."
+                , id = UUID.forName "book of the mender" UUID.dnsNamespace
+                }
+              )
             ]
 
-        create_db_entry : Item -> ( String, ItemDbRecord )
-        create_db_entry item =
+        create_db_entry : ( Bool, Item ) -> ( String, ItemDbRecord )
+        create_db_entry ( is_unlocked, item ) =
             ( UUID.toString item.id
             , { item = item
-              , is_unlocked = True
+              , is_unlocked = is_unlocked
               , trade_stats = createItemDbTradeStats
               }
             )
@@ -711,7 +734,11 @@ initial_items_for_sale item_db =
                 (\( item_id_str, qty ) ->
                     case lookup_item_id_str item_db item_id_str of
                         Just db_record ->
-                            Just { item = db_record.item, quantity = qty, avg_price = setPrice db_record.item.raw_gold_cost }
+                            if db_record.is_unlocked then
+                                Just { item = db_record.item, quantity = qty, avg_price = setPrice db_record.item.raw_gold_cost }
+
+                            else
+                                Nothing
 
                         Nothing ->
                             Nothing
@@ -1737,11 +1764,12 @@ generate_uuid str =
     UUID.forName str UUID.dnsNamespace
 
 
-pick_random_item_from_db : ItemDb -> Random.Seed -> ( Maybe Item, Random.Seed )
-pick_random_item_from_db item_db seed =
+pick_random_unlocked_item_from_db : ItemDb -> Random.Seed -> ( Maybe Item, Random.Seed )
+pick_random_unlocked_item_from_db item_db seed =
     let
         ( ( maybe_item, _ ), new_seed ) =
             Dict.values item_db
+                |> List.filter .is_unlocked
                 |> Random.List.choose
                 |> (\gen -> Random.step gen seed)
     in
@@ -1763,7 +1791,7 @@ pick_item :
 pick_item item_db _ ( prev_seed, folded_items ) =
     let
         ( maybe_item, seed_ ) =
-            pick_random_item_from_db item_db prev_seed
+            pick_random_unlocked_item_from_db item_db prev_seed
 
         result =
             Maybe.map

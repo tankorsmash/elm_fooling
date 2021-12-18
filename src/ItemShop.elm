@@ -809,6 +809,11 @@ color_white =
     rgb 1 1 1
 
 
+color_black : Color
+color_black =
+    rgb 0 0 0
+
+
 hex_to_color : String -> Color
 hex_to_color hex_str =
     case Convert.hexToColor hex_str of
@@ -905,24 +910,42 @@ primary_color_bright =
     hex_to_color "#66b0ff"
 
 
+type alias ButtonConfig =
+    { font_color : Color
+    , button_color : Color
+    , hovered_button_color : Color
+    , hovered_font_color : Color
+    }
+
+
+common_button_attrs : ButtonConfig -> List (Element.Attribute Msg)
+common_button_attrs { font_color, button_color, hovered_button_color, hovered_font_color } =
+    [ -- bs4-like values
+      Font.color font_color
+    , Font.size 16
+    , Font.center
+    , padding 6
+    , Background.color button_color
+    , Border.rounded 5
+    , Border.width 5
+    , Border.color button_color
+    , Element.mouseOver
+        [ Background.color <| hovered_button_color
+        , Border.color <| primary_color_bright
+        , Font.color <| rgb 0 0 0
+        ]
+    ]
+
+
 primary_button_custom : List (Element.Attribute Msg) -> Msg -> Element Msg -> Element Msg
 primary_button_custom custom_attrs on_press label =
     Input.button
-        ([ -- bs4-like values
-           Font.color color_white
-         , Font.size 16
-         , Font.center
-         , padding 6
-         , Background.color color_primary
-         , Border.rounded 5
-         , Border.width 5
-         , Border.color color_primary
-         , Element.mouseOver
-            [ Background.color <| primary_color_bright
-            , Border.color <| primary_color_bright
-            , Font.color <| rgb 0 0 0
-            ]
-         ]
+        (common_button_attrs
+            { font_color = color_white
+            , button_color = color_primary
+            , hovered_button_color = primary_color_bright
+            , hovered_font_color = color_black
+            }
             ++ custom_attrs
         )
         { onPress = Just on_press, label = label }
@@ -936,16 +959,12 @@ primary_button custom_attrs on_press label =
 secondary_button_custom : List (Element.Attribute Msg) -> Msg -> Element Msg -> Element Msg
 secondary_button_custom custom_attrs on_press label =
     Input.button
-        ([ -- bs4-like values
-           Font.color color_white
-         , Font.size 16
-         , Font.center
-         , padding 6
-         , Background.color color_secondary
-         , Border.rounded 5
-         , Border.width 5
-         , Border.color color_secondary
-         ]
+        (common_button_attrs
+            { font_color = color_white
+            , button_color = color_secondary
+            , hovered_button_color = color_secondary --_bright
+            , hovered_font_color = color_black
+            }
             ++ custom_attrs
         )
         { onPress = Just on_press, label = label }

@@ -2185,6 +2185,34 @@ append_to_character_action_log character new_log =
 --  without re-using them. Answer: iterate through character ids instead
 
 
+increment_item_trade_count : InventoryRecord -> ItemDb -> ItemDb
+increment_item_trade_count inventory_record item_db =
+    let
+        added_qty =
+            Tuple3.second inventory_record |> getQuantity
+
+        item : Item
+        item =
+            Tuple3.first inventory_record
+    in
+    --set or update the traded quantity in the matching ItemDbRecord
+    Dict.update
+        (UUID.toString item.id)
+        (\mb_item_db_record ->
+            case mb_item_db_record of
+                Just item_db_record ->
+                    let
+                        trade_stats =
+                            item_db_record.trade_stats
+                    in
+                    Just { item_db_record | trade_stats = { trade_stats | times_others_traded = trade_stats.times_others_traded + added_qty } }
+
+                Nothing ->
+                    Just { item = item, is_unlocked = False, trade_stats = { createItemDbRecordTrades | times_others_traded = added_qty } }
+        )
+        item_db
+
+
 update_ai : Time.Posix -> CharacterId -> CharacterId -> AiUpdateData -> AiUpdateData
 update_ai ai_tick_time shop_char_id char_id ({ shop_trends, historical_shop_trends, characters, ai_tick_seed, item_db } as original_ai_update_data) =
     let
@@ -2265,7 +2293,15 @@ update_ai ai_tick_time shop_char_id char_id ({ shop_trends, historical_shop_tren
 
                 new_item_db =
                     --update item db with counts traded_items
-                    item_db
+                    case ai_update_record.traded_items of
+                        [] ->
+                            item_db
+
+                        inventory_records ->
+                            List.foldl
+                                increment_item_trade_count
+                                item_db
+                                inventory_records
             in
             { shop_trends = ai_update_record.shop_trends
             , historical_shop_trends = new_historical_shop_trends

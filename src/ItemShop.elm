@@ -419,13 +419,37 @@ createItemDbTradeStats =
     ItemDbTradeStats 0 0 0
 
 
+updateTimesYouSold : ItemDbTradeStats -> Int -> ItemDbTradeStats
+updateTimesYouSold item_db_record_trades new_times_you_sold =
+    let
+        old_times_you_sold =
+            item_db_record_trades.times_you_sold
+    in
+    { item_db_record_trades
+        | times_you_sold = old_times_you_sold + new_times_you_sold
+    }
+
+
+updateTimesYouBought : ItemDbTradeStats -> Int -> ItemDbTradeStats
+updateTimesYouBought item_db_record_trades new_times_you_bought =
+    let
+        old_times_you_bought =
+            item_db_record_trades.times_you_bought
+    in
+    { item_db_record_trades
+        | times_you_bought = old_times_you_bought + new_times_you_bought
+    }
+
+
 updateTimesOthersTraded : ItemDbTradeStats -> Int -> ItemDbTradeStats
 updateTimesOthersTraded item_db_record_trades new_times_others_traded =
     let
         old_times_others_traded =
             item_db_record_trades.times_others_traded
     in
-    { item_db_record_trades | times_others_traded = old_times_others_traded + new_times_others_traded }
+    { item_db_record_trades
+        | times_others_traded = old_times_others_traded + new_times_others_traded
+    }
 
 
 type alias ItemDbRecord =
@@ -441,8 +465,8 @@ type alias ItemDb =
     Dict.Dict ItemIdStr ItemDbRecord
 
 
-updateItemDbFromTradeRecord : ItemDb -> TradeRecord -> ItemDb
-updateItemDbFromTradeRecord item_db trade_record =
+updateItemDbFromTradeRecord : ItemDb -> (ItemDbTradeStats -> Int -> ItemDbTradeStats) -> TradeRecord -> ItemDb
+updateItemDbFromTradeRecord item_db record_updater trade_record =
     case trade_record of
         IncompleteTradeRecord _ ->
             item_db
@@ -457,7 +481,7 @@ updateItemDbFromTradeRecord item_db trade_record =
                    )
                 |> List.singleton
                 |> List.foldl
-                    increment_item_trade_count
+                    (increment_item_trade_count record_updater)
                     item_db
 
 
@@ -1466,7 +1490,7 @@ update msg model =
                                     getTradeContext trade_record
 
                                 new_item_db =
-                                    updateItemDbFromTradeRecord model.item_db trade_record
+                                    updateItemDbFromTradeRecord model.item_db updateTimesYouBought trade_record
                             in
                             ( { model
                                 | shop_trends = new_trade_context.shop_trends
@@ -1509,7 +1533,7 @@ update msg model =
                                     getTradeContext trade_record
 
                                 new_item_db =
-                                    updateItemDbFromTradeRecord model.item_db trade_record
+                                    updateItemDbFromTradeRecord model.item_db updateTimesYouSold trade_record
                             in
                             ( { model
                                 | shop_trends = new_trade_context.shop_trends
@@ -2239,8 +2263,8 @@ append_to_character_action_log character new_log =
 --  without re-using them. Answer: iterate through character ids instead
 
 
-increment_item_trade_count : InventoryRecord -> ItemDb -> ItemDb
-increment_item_trade_count inventory_record item_db =
+increment_item_trade_count : (ItemDbTradeStats -> Int -> ItemDbTradeStats) -> InventoryRecord -> ItemDb -> ItemDb
+increment_item_trade_count record_updater inventory_record item_db =
     let
         added_qty =
             inventory_record |> .quantity |> getQuantity
@@ -2257,7 +2281,7 @@ increment_item_trade_count inventory_record item_db =
             case mb_item_db_record of
                 Just ({ trade_stats } as item_db_record) ->
                     Just
-                        (updateTimesOthersTraded
+                        (record_updater
                             trade_stats
                             added_qty
                             |> updateTradeStats item_db_record
@@ -2354,7 +2378,7 @@ update_ai ai_tick_time shop_char_id char_id ({ shop_trends, historical_shop_tren
 
                         inventory_records ->
                             List.foldl
-                                increment_item_trade_count
+                                (increment_item_trade_count updateTimesOthersTraded)
                                 item_db
                                 inventory_records
             in

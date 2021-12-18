@@ -2284,8 +2284,18 @@ update_ai_chars model =
         old_historical_shop_trends =
             model.historical_shop_trends
 
-        ai_tick_time =
+        ai_tick_seed =
             Random.initialSeed <| Time.posixToMillis model.ai_tick_time
+
+        { ai_tick_time, item_db, shop_id } =
+            model
+
+        first_ai_update_data =
+            { shop_trends = old_shop_trends
+            , historical_shop_trends = old_historical_shop_trends
+            , characters = old_characters
+            , ai_tick_seed = ai_tick_seed
+            }
 
         new_ai_data : AiUpdateData
         new_ai_data =
@@ -2293,12 +2303,8 @@ update_ai_chars model =
                 |> exclude_player_and_shop model
                 |> List.map .char_id
                 |> List.foldl
-                    (update_ai model.ai_tick_time model.item_db model.shop_id)
-                    { shop_trends = old_shop_trends
-                    , historical_shop_trends = old_historical_shop_trends
-                    , characters = old_characters
-                    , ai_tick_seed = ai_tick_time
-                    }
+                    (update_ai ai_tick_time item_db shop_id)
+                    first_ai_update_data
     in
     { model
         | shop_trends = new_ai_data.shop_trends

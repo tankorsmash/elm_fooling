@@ -1878,7 +1878,7 @@ handle_special_event model spec_event =
                         ++ List.repeat 10 Spellbook
                     )
                 )
-                model.global_seed
+                seed
     in
     case spec_event of
         EventVeryDesiredItemType item_type ->

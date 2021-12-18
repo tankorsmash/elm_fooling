@@ -2216,7 +2216,8 @@ ai_buy_item_from_shop ai_tick_time item_db shop_trends character shop =
                         [ { item = item_trade_log.item, quantity = log.quantity, avg_price = Price log.gold_cost } ]
 
                     Nothing ->
-                        Debug.todo "" []
+                        -- []
+                        Debug.todo ""
             }
 
 
@@ -3716,7 +3717,7 @@ view_shop_tab_type model =
 
 
 render_unlocked_item : ItemDbRecord -> Element Msg
-render_unlocked_item { item, trade_stats } =
+render_unlocked_item { item, trade_stats, is_unlocked } =
     column [ width fill, height fill ]
         [ text <| item.name
         , row [ width (fill |> Element.maximum 200), Font.size 14, spacingXY 10 0 ]
@@ -3746,6 +3747,14 @@ render_unlocked_item { item, trade_stats } =
                 |> .times_others_traded
                 |> String.fromInt
                 |> text
+            ]
+        , row [ Font.size 12 ]
+            [ text "Unlocked? "
+            , if is_unlocked then
+                text "unlocked"
+
+              else
+                el [ Font.color color_primary ] <| text "LOCKED"
             ]
         ]
 

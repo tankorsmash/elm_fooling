@@ -3295,6 +3295,24 @@ render_inventory_grid model header character shop_trends hovered_item context co
             ++ [ Element.table [ spacing 5 ] { data = items, columns = table_columns } ]
 
 
+sort_by_bool_true_first : Bool -> Int
+sort_by_bool_true_first bool =
+    if bool then
+        1
+
+    else
+        0
+
+
+sort_by_bool_true_last : Bool -> Int
+sort_by_bool_true_last bool =
+    if bool then
+        0
+
+    else
+        1
+
+
 sort_func : InventoryRecord -> String
 sort_func =
     .item >> .name
@@ -3791,6 +3809,7 @@ view_items_unlocked_tab_type item_db =
         item_grid : Element Msg
         item_grid =
             Dict.values item_db
+                |> List.sortBy (.is_unlocked >> sort_by_bool_true_last)
                 |> List.map render_unlocked_item
                 |> Element.wrappedRow [ width fill, spacing 20 ]
     in

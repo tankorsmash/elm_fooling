@@ -859,60 +859,74 @@ hex_to_color hex_str =
 
 {-| lightest green at 1, darkest at 7
 -}
+color_pastel_green_1 : Color
 color_pastel_green_1 =
     hex_to_color "#b4ecb4"
 
 
+color_pastel_green_2 : Color
 color_pastel_green_2 =
     hex_to_color "#a0e7a0"
 
 
+color_pastel_green_3 : Color
 color_pastel_green_3 =
     hex_to_color "#8be28b"
 
 
+color_pastel_green_4 : Color
 color_pastel_green_4 =
     hex_to_color "#77dd77"
 
 
+color_pastel_green_5 : Color
 color_pastel_green_5 =
     hex_to_color "#63d863"
 
 
+color_pastel_green_6 : Color
 color_pastel_green_6 =
     hex_to_color "#4ed34e"
 
 
+color_pastel_green_7 : Color
 color_pastel_green_7 =
     hex_to_color "#3ace3a"
 
 
 {-| lightest red at 1, darkest at 7
 -}
+color_pastel_red_1 : Color
 color_pastel_red_1 =
     hex_to_color "#ecb4b4"
 
 
+color_pastel_red_2 : Color
 color_pastel_red_2 =
     hex_to_color "#e7a0a0"
 
 
+color_pastel_red_3 : Color
 color_pastel_red_3 =
     hex_to_color "#e28b8b"
 
 
+color_pastel_red_4 : Color
 color_pastel_red_4 =
     hex_to_color "#dd7777"
 
 
+color_pastel_red_5 : Color
 color_pastel_red_5 =
     hex_to_color "#d86363"
 
 
+color_pastel_red_6 : Color
 color_pastel_red_6 =
     hex_to_color "#d34e4e"
 
 
+color_pastel_red_7 : Color
 color_pastel_red_7 =
     hex_to_color "#ce3a3a"
 
@@ -1072,10 +1086,12 @@ danger_button custom_attrs on_press label_str =
     danger_button_custom custom_attrs on_press <| text label_str
 
 
+no_text_decoration : Element.Attribute msg
 no_text_decoration =
     Element.htmlAttribute <| Html.Attributes.style "text-decoration" "inherit"
 
 
+inherit_color : Element.Attribute msg
 inherit_color =
     Element.htmlAttribute <| Html.Attributes.style "color" "initial"
 
@@ -2580,14 +2596,17 @@ clipText str length =
         str
 
 
+color_grey : Color
 color_grey =
     rgb 0.35 0.35 0.35
 
 
+color_very_light_grey : Color
 color_very_light_grey =
     rgb 0.75 0.75 0.75
 
 
+color_light_grey : Color
 color_light_grey =
     rgb 0.55 0.55 0.55
 
@@ -2659,6 +2678,7 @@ shop_sell_button has_items_to_sell_ { item } =
             "Need GP"
 
 
+debug_explain : Element.Attribute msg
 debug_explain =
     let
         do_explain =
@@ -3801,6 +3821,7 @@ font_scaled scale =
     Font.size <| scaled scale
 
 
+hoveredTooltipMatchesId : HoveredTooltip -> String -> Bool
 hoveredTooltipMatchesId hovered_tooltip tooltip_id =
     case hovered_tooltip of
         HoveredTooltipWithoutOffset tooltip_data ->

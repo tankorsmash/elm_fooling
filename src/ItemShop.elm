@@ -822,7 +822,7 @@ hex_to_color hex_str =
             rgb rgba.red rgba.green rgba.blue
 
         Err err ->
-            rgb255 255 0 0
+            Debug.todo "NOOO" <| rgb255 255 0 0
 
 
 {-| lightest green at 1, darkest at 7
@@ -1024,6 +1024,14 @@ danger_button_custom custom_attrs on_press label =
 danger_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
 danger_button custom_attrs on_press label_str =
     danger_button_custom custom_attrs on_press <| text label_str
+
+
+no_text_decoration =
+    Element.htmlAttribute <| Html.Attributes.style "text-decoration" "inherit"
+
+
+inherit_color =
+    Element.htmlAttribute <| Html.Attributes.style "color" "initial"
 
 
 item_type_to_pretty_string : ItemType -> String

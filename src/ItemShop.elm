@@ -480,6 +480,7 @@ type alias AiUpdateData =
     , historical_shop_trends : List ShopTrends
     , characters : List Character
     , ai_tick_seed : Random.Seed
+    , item_db : ItemDb
     }
 
 
@@ -2184,8 +2185,8 @@ append_to_character_action_log character new_log =
 --  without re-using them. Answer: iterate through character ids instead
 
 
-update_ai : Time.Posix -> ItemDb -> CharacterId -> CharacterId -> AiUpdateData -> AiUpdateData
-update_ai ai_tick_time item_db shop_char_id char_id { shop_trends, historical_shop_trends, characters, ai_tick_seed } =
+update_ai : Time.Posix -> CharacterId -> CharacterId -> AiUpdateData -> AiUpdateData
+update_ai ai_tick_time shop_char_id char_id ({ shop_trends, historical_shop_trends, characters, ai_tick_seed, item_db } as original_ai_update_data) =
     let
         --TODO: make sure character isn't shop
         maybe_character =
@@ -2261,15 +2262,21 @@ update_ai ai_tick_time item_db shop_char_id char_id { shop_trends, historical_sh
                     List.append
                         historical_shop_trends
                         [ ai_update_record.shop_trends ]
+
+                new_item_db =
+                    --update item db with counts traded_items
+                    item_db
             in
             { shop_trends = ai_update_record.shop_trends
             , historical_shop_trends = new_historical_shop_trends
             , characters = new_characters
             , ai_tick_seed = new_seed
+            , item_db = new_item_db
             }
 
         _ ->
-            Debug.log "ERRORRRRR no matching characters" { shop_trends = shop_trends, historical_shop_trends = historical_shop_trends, characters = characters, ai_tick_seed = ai_tick_seed }
+            Debug.log "ERRORRRRR no matching characters" <|
+                original_ai_update_data
 
 
 update_ai_chars : Model -> Model
@@ -2295,6 +2302,7 @@ update_ai_chars model =
             , historical_shop_trends = old_historical_shop_trends
             , characters = old_characters
             , ai_tick_seed = ai_tick_seed
+            , item_db = item_db
             }
 
         new_ai_data : AiUpdateData
@@ -2303,13 +2311,14 @@ update_ai_chars model =
                 |> exclude_player_and_shop model
                 |> List.map .char_id
                 |> List.foldl
-                    (update_ai ai_tick_time item_db shop_id)
+                    (update_ai ai_tick_time shop_id)
                     first_ai_update_data
     in
     { model
         | shop_trends = new_ai_data.shop_trends
         , historical_shop_trends = new_ai_data.historical_shop_trends
         , characters = new_ai_data.characters
+        , item_db = new_ai_data.item_db
     }
 
 

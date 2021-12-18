@@ -326,7 +326,7 @@ setPrice qty =
 
 
 type alias InventoryRecord =
-    ( Item, Quantity, Price )
+    { item : Item, quantity : Quantity, avg_price : Price }
 
 
 type alias InventoryRecords =
@@ -667,7 +667,7 @@ initial_items_for_sale item_db =
                 (\( item_id_str, qty ) ->
                     case lookup_item_id_str item_db item_id_str of
                         Just db_record ->
-                            Just ( db_record.item, qty, setPrice db_record.item.raw_gold_cost )
+                            Just { item = db_record.item, quantity = qty, avg_price = setPrice db_record.item.raw_gold_cost }
 
                         Nothing ->
                             Nothing
@@ -686,13 +686,13 @@ initial_items_for_sale item_db =
 
 
 reset_avg_price_to_default : InventoryRecord -> InventoryRecord
-reset_avg_price_to_default ( item, qty, avg_price ) =
-    ( item, qty, setPrice item.raw_gold_cost )
+reset_avg_price_to_default ({ item } as inventory_record) =
+    { inventory_record | avg_price = setPrice item.raw_gold_cost }
 
 
 initial_owned_items : ItemDb -> InventoryRecords
 initial_owned_items item_db =
-    [ ( lookup_item_id_str_default item_db "a41ae9d3-61f0-54f9-800e-56f53ed3ac98", Quantity 12, setPrice 9999 )
+    [ { item = lookup_item_id_str_default item_db "a41ae9d3-61f0-54f9-800e-56f53ed3ac98", quantity = Quantity 12, avg_price = setPrice 9999 }
     ]
         |> List.map reset_avg_price_to_default
 
@@ -708,12 +708,12 @@ initial_characters item_db =
     in
     [ { base_character_1
         | held_items =
-            [ ( lookup_item_id_str_default
-                    item_db
-                    "6b7e301d-ab12-5e81-acfc-547e63004ffa"
-              , setQuantity 8
-              , setPrice 20
-              )
+            [ { item =
+                    lookup_item_id_str_default item_db
+                        "6b7e301d-ab12-5e81-acfc-547e63004ffa"
+              , quantity = setQuantity 8
+              , avg_price = setPrice 20
+              }
             ]
                 |> List.map reset_avg_price_to_default
         , held_gold = 100
@@ -721,12 +721,13 @@ initial_characters item_db =
       }
     , { base_character_2
         | held_items =
-            [ ( lookup_item_id_str_default
-                    item_db
-                    "a41ae9d3-61f0-54f9-800e-56f53ed3ac98"
-              , setQuantity 12
-              , setPrice 25
-              )
+            [ { item =
+                    lookup_item_id_str_default
+                        item_db
+                        "a41ae9d3-61f0-54f9-800e-56f53ed3ac98"
+              , quantity = setQuantity 12
+              , avg_price = setPrice 25
+              }
             ]
                 |> List.map reset_avg_price_to_default
         , held_gold = 200
@@ -1163,8 +1164,8 @@ toKey event_key_string =
 
 
 find_matching_records : Item -> InventoryRecord -> Bool
-find_matching_records to_match ( recorded_item, _, _ ) =
-    to_match == recorded_item
+find_matching_records to_match { item } =
+    to_match == item
 
 
 can_afford_item : ShopTrends -> Int -> TradeOrder -> Bool
@@ -1188,11 +1189,12 @@ add_item_to_inventory_records records item qty total_cost =
         [] ->
             -- records ++ [ ( item, qty, setPrice (total_cost // getQuantity qty) ) ]
             records
-                ++ [ ( item
-                     , qty
-                     , setPrice
-                        (add_to_average 0 0 total_cost (getQuantity qty))
-                     )
+                ++ [ { item = item
+                     , quantity = qty
+                     , avg_price =
+                        setPrice
+                            (add_to_average 0 0 total_cost (getQuantity qty))
+                     }
                    ]
 
         --FIXME this rounds down I think, so it'll cost lost money
@@ -1201,17 +1203,18 @@ add_item_to_inventory_records records item qty total_cost =
                 updated_records : InventoryRecords
                 updated_records =
                     List.map
-                        (Tuple3.mapSecond (addQuantity qty)
-                            >> (\( i, q, ap ) ->
-                                    ( i
-                                    , q
-                                    , setPrice <|
-                                        add_to_average
-                                            (getPrice ap)
-                                            (getQuantity q)
-                                            total_cost
-                                            (getQuantity qty)
-                                    )
+                        ((\ir -> { ir | quantity = addQuantity qty ir.quantity })
+                            >> (\({ quantity, avg_price } as ir) ->
+                                    { item = ir.item
+                                    , quantity = quantity
+                                    , avg_price =
+                                        setPrice <|
+                                            add_to_average
+                                                (getPrice avg_price)
+                                                (getQuantity quantity)
+                                                total_cost
+                                                (getQuantity quantity)
+                                    }
                                )
                         )
                         matching_records
@@ -1244,25 +1247,25 @@ set_item_type_sentiment item_type_sentiment item_type new_val =
 
 
 reduce_if_matched : Item -> Quantity -> Int -> InventoryRecord -> InventoryRecord
-reduce_if_matched item qty total_cost ( i, iq, avg_price ) =
-    if i == item && getQuantity iq >= getQuantity qty then
-        ( i
-        , subQuantity iq qty
-        , avg_price
-        )
+reduce_if_matched item qty total_cost ({ avg_price } as inventory_record) =
+    if inventory_record.item == item && getQuantity inventory_record.quantity >= getQuantity qty then
+        { item = inventory_record.item
+        , quantity = subQuantity inventory_record.quantity qty
+        , avg_price = avg_price
+        }
 
     else
-        ( i, iq, avg_price )
+        inventory_record
 
 
 has_items_to_sell : InventoryRecords -> Item -> Quantity -> Bool
 has_items_to_sell inventory_records item qty =
     List.length
         (List.filter
-            (\( i, q, avg_price ) ->
-                getQuantity q
+            (\ir ->
+                getQuantity ir.quantity
                     >= getQuantity qty
-                    && find_matching_records item ( i, q, avg_price )
+                    && find_matching_records item ir
             )
             inventory_records
         )
@@ -1677,7 +1680,7 @@ pick_item item_db _ ( prev_seed, folded_items ) =
 
         result =
             Maybe.map
-                (\item -> ( item, Quantity 1, setPrice item.raw_gold_cost ))
+                (\item -> { item = item, quantity = Quantity 1, avg_price = setPrice item.raw_gold_cost })
                 maybe_item
     in
     ( seed_, result :: folded_items )
@@ -1705,27 +1708,27 @@ handle_invite_trader model =
                 (List.repeat num_items ())
 
         incr_if_matches : Item -> InventoryRecord -> InventoryRecord
-        incr_if_matches item ( i, q, avg_price ) =
-            if i.id == item.id then
-                ( i, addQuantityInt q 1, avg_price )
+        incr_if_matches item ir =
+            if ir.item.id == item.id then
+                { item = ir.item, quantity = addQuantityInt ir.quantity 1, avg_price = ir.avg_price }
 
             else
-                ( i, q, avg_price )
+                { item = ir.item, quantity = ir.quantity, avg_price = ir.avg_price }
 
         held_items : InventoryRecords
         held_items =
             List.filterMap identity held_maybe_item_frames
                 |> List.foldl
-                    (\( item, qty, avg_price ) prev_items ->
+                    (\{ item, quantity, avg_price } prev_items ->
                         if
                             List.any
-                                (Tuple3.first >> .id >> (==) item.id)
+                                (.item >> .id >> (==) item.id)
                                 prev_items
                         then
                             List.map (incr_if_matches item) prev_items
 
                         else
-                            ( item, qty, avg_price ) :: prev_items
+                            { item = item, quantity = quantity, avg_price = avg_price } :: prev_items
                     )
                     []
     in
@@ -1906,8 +1909,8 @@ get_sentiment_for_item_type item_type_sentiment item_type =
 
 
 nonzero_qty : InventoryRecord -> Bool
-nonzero_qty ( item, qty, avg_price ) =
-    getQuantity qty > 0
+nonzero_qty inventory_record =
+    getQuantity inventory_record.quantity > 0
 
 
 seed_from_time : Time.Posix -> Random.Seed
@@ -1959,10 +1962,10 @@ check_can_afford_one character shop_trends item =
 get_wanted_items : Character -> Character -> ShopTrends -> InventoryRecords
 get_wanted_items character shop shop_trends =
     List.filter
-        (\( item, qty, avg_price ) ->
-            nonzero_qty ( item, qty, avg_price )
-                && check_can_afford_one character shop_trends item
-                && check_nonzero_desire character item
+        (\inventory_record ->
+            nonzero_qty inventory_record
+                && check_can_afford_one character shop_trends inventory_record.item
+                && check_nonzero_desire character inventory_record.item
         )
         shop.held_items
 
@@ -2029,7 +2032,7 @@ ai_buy_item_from_shop ai_tick_time item_db shop_trends character shop =
                 Nothing ->
                     case
                         List.filter
-                            (Tuple3.first
+                            (.item
                                 >> .item_type
                                 >> (==) item_type
                             )
@@ -2038,7 +2041,7 @@ ai_buy_item_from_shop ai_tick_time item_db shop_trends character shop =
                         [] ->
                             Nothing
 
-                        ( item, _, _ ) :: rest_sentiments ->
+                        { item } :: rest_sentiments ->
                             Just item
 
         qty_to_buy : Quantity
@@ -2095,7 +2098,7 @@ ai_buy_item_from_shop ai_tick_time item_db shop_trends character shop =
             , traded_items =
                 case lookup_item_id item_db log.item_id of
                     Just item_trade_log ->
-                        [ ( item_trade_log.item, log.quantity, Price log.gold_cost ) ]
+                        [ { item = item_trade_log.item, quantity = log.quantity, avg_price = Price log.gold_cost } ]
 
                     Nothing ->
                         Debug.todo "" []
@@ -2107,7 +2110,7 @@ ai_sell_item_to_shop ai_tick_time item_db shop_trends character shop =
     let
         sellable_items : InventoryRecords
         sellable_items =
-            List.filter (\( i, qty, avg_price ) -> getQuantity qty > 0) character.held_items
+            List.filter (\{ quantity } -> getQuantity quantity > 0) character.held_items
 
         -- AI needs to trend to be at least above 80% to sell
         sellable_trend =
@@ -2115,7 +2118,7 @@ ai_sell_item_to_shop ai_tick_time item_db shop_trends character shop =
 
         -- trend is high enough to sell
         untrendy_enough : InventoryRecord -> Bool
-        untrendy_enough ( item, qty, avg_price ) =
+        untrendy_enough { item } =
             get_trend_for_item shop_trends item >= sellable_trend
 
         untrendy_items : InventoryRecords
@@ -2147,7 +2150,7 @@ ai_sell_item_to_shop ai_tick_time item_db shop_trends character shop =
                         , to_party = shop
                         }
 
-                Just ( item, qty, avg_price ) ->
+                Just { item } ->
                     sell_items_from_party_to_other
                         { shop_trends = shop_trends
                         , from_party = character
@@ -2173,7 +2176,7 @@ ai_sell_item_to_shop ai_tick_time item_db shop_trends character shop =
             , traded_items =
                 case lookup_item_id item_db log.item_id of
                     Just item_trade_log ->
-                        [ ( item_trade_log.item, log.quantity, Price log.gold_cost ) ]
+                        [ { item = item_trade_log.item, quantity = log.quantity, avg_price = Price log.gold_cost } ]
 
                     Nothing ->
                         Debug.todo "" []
@@ -2203,11 +2206,11 @@ increment_item_trade_count : InventoryRecord -> ItemDb -> ItemDb
 increment_item_trade_count inventory_record item_db =
     let
         added_qty =
-            Tuple3.second inventory_record |> getQuantity
+            inventory_record |> .quantity |> getQuantity
 
         item : Item
         item =
-            Tuple3.first inventory_record
+            inventory_record.item
     in
     --set or update the traded quantity in the matching ItemDbRecord
     update_item_db
@@ -2488,7 +2491,7 @@ render_gp_sized count font_size =
 
 
 shop_buy_button : Int -> Int -> InventoryRecord -> Element Msg
-shop_buy_button gold_cost gold_in_pocket ( item, qty, avg_price ) =
+shop_buy_button gold_cost gold_in_pocket { item, quantity, avg_price } =
     let
         can_afford =
             gold_in_pocket >= gold_cost
@@ -2501,7 +2504,7 @@ shop_buy_button gold_cost gold_in_pocket ( item, qty, avg_price ) =
                 secondary_button
     in
     button_type
-        [ Element.transparent <| getQuantity qty < 1, width (fill |> Element.minimum 120) ]
+        [ Element.transparent <| getQuantity quantity < 1, width (fill |> Element.minimum 120) ]
         (BuyItem item (Quantity 1))
     <|
         if can_afford then
@@ -2512,7 +2515,7 @@ shop_buy_button gold_cost gold_in_pocket ( item, qty, avg_price ) =
 
 
 shop_sell_button : Bool -> InventoryRecord -> Element Msg
-shop_sell_button has_items_to_sell_ ( item, qty, avg_price ) =
+shop_sell_button has_items_to_sell_ { item } =
     let
         button_type =
             if has_items_to_sell_ then
@@ -2874,10 +2877,13 @@ render_inventory_grid model header character shop_trends hovered_item context co
         { historical_shop_trends, item_db, show_charts_in_hovered_item } =
             model
 
+        items : InventoryRecords
         items =
             List.sortBy sort_func <|
                 if hide_zero_qty_inv_rows then
-                    List.filter (\( i, q, ap ) -> getQuantity q > 0) held_items
+                    List.filter
+                        (\{ quantity } -> getQuantity quantity > 0)
+                        held_items
 
                 else
                     held_items
@@ -3047,7 +3053,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
             [ { header = small_header "Name:"
               , width = fillPortion 2
               , view =
-                    \( item, qty, avg_price ) ->
+                    \{ item, quantity, avg_price } ->
                         Element.el
                             (mouse_hover_attrs item
                                 ++ [ width (fillPortion 2 |> Element.maximum 150)
@@ -3060,7 +3066,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
             , { header = small_header "Price"
               , width = fillPortion 1
               , view =
-                    \( item, qty, avg_price ) ->
+                    \{ item } ->
                         Element.el
                             [ portion 1, html_title "Current cost" ]
                         <|
@@ -3070,7 +3076,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
             , { header = small_header "Avg Px"
               , width = fillPortion 1
               , view =
-                    \( item, qty, avg_price ) ->
+                    \{ avg_price } ->
                         Element.el
                             [ portion 1, html_title "Average Cost" ]
                         <|
@@ -3084,11 +3090,11 @@ render_inventory_grid model header character shop_trends hovered_item context co
             , { header = small_header "Qty."
               , width = fillPortion 1
               , view =
-                    \( item, qty, avg_price ) ->
+                    \{ quantity } ->
                         Element.el
                             []
                         <|
-                            if getQuantity qty == 0 then
+                            if getQuantity quantity == 0 then
                                 case context of
                                     ShopItems ->
                                         text "OUT"
@@ -3100,12 +3106,12 @@ render_inventory_grid model header character shop_trends hovered_item context co
                                         text "NONE"
 
                             else
-                                text <| "x" ++ (String.fromInt <| getQuantity qty)
+                                text <| "x" ++ (String.fromInt <| getQuantity quantity)
               }
             , { header = small_header "Item Type"
               , width = fillPortion 2
               , view =
-                    \( item, qty, avg_price ) ->
+                    \{ item } ->
                         Element.el
                             []
                         <|
@@ -3114,13 +3120,11 @@ render_inventory_grid model header character shop_trends hovered_item context co
             , { header = small_header "Item Desc."
               , width = fillPortion 3
               , view =
-                    \( item, qty, avg_price ) -> text <| clipText item.description 24
+                    \{ item } -> text <| clipText item.description 24
               }
             , { header = small_header "Controls"
               , width = fillPortion 1
-              , view =
-                    \( item, qty, avg_price ) ->
-                        controls_column ( item, qty, avg_price )
+              , view = controls_column
               }
             ]
     in
@@ -3149,8 +3153,9 @@ render_inventory_grid model header character shop_trends hovered_item context co
             ++ [ Element.table [ spacing 5 ] { data = items, columns = table_columns } ]
 
 
+sort_func : InventoryRecord -> String
 sort_func =
-    Tuple3.first >> .name
+    .item >> .name
 
 
 exclude_player_and_shop : { a | player_id : CharacterId, shop_id : CharacterId } -> List Character -> List Character
@@ -3542,7 +3547,7 @@ view_shop_tab_type model =
                         model.shop_trends
                         model.hovered_item_in_character
                         ShopItems
-                        (\( item, qty, avg_price ) ->
+                        (\{ item, quantity, avg_price } ->
                             shop_buy_button
                                 (get_adjusted_item_cost model.shop_trends item (Quantity 1))
                                 (case maybe_player of
@@ -3552,7 +3557,7 @@ view_shop_tab_type model =
                                     Nothing ->
                                         99999
                                 )
-                                ( item, qty, avg_price )
+                                { item = item, quantity = quantity, avg_price = avg_price }
                         )
 
                 Nothing ->
@@ -3567,10 +3572,10 @@ view_shop_tab_type model =
                         model.shop_trends
                         model.hovered_item_in_character
                         InventoryItems
-                        (\( item, qty, avg_price ) ->
+                        (\{ item, quantity, avg_price } ->
                             shop_sell_button
-                                (getQuantity qty >= 1)
-                                ( item, setQuantity 1, avg_price )
+                                (getQuantity quantity >= 1)
+                                { item = item, quantity = setQuantity 1, avg_price = avg_price }
                         )
 
                 Nothing ->
@@ -4056,7 +4061,7 @@ suite =
                     let
                         new_test_character =
                             { test_character
-                                | held_items = ( test_item, setQuantity 1, setPrice 9999 ) :: test_character.held_items
+                                | held_items = { item = test_item, quantity = setQuantity 1, avg_price = setPrice 9999 } :: test_character.held_items
                             }
 
                         orig_len =
@@ -4072,7 +4077,7 @@ suite =
                         many_updated_record : InventoryRecords
                         many_updated_record =
                             List.filter
-                                (Tuple3.first
+                                (.item
                                     >> .item_type
                                     >> (==) test_item.item_type
                                 )
@@ -4087,7 +4092,7 @@ suite =
                             , Expect.equal 2
                                 << always
                                     (List.head many_updated_record
-                                        |> Maybe.map (Tuple3.second >> getQuantity)
+                                        |> Maybe.map (.quantity >> getQuantity)
                                         |> Maybe.withDefault 0
                                     )
                             ]

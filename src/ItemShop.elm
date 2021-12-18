@@ -441,6 +441,26 @@ type alias ItemDb =
     Dict.Dict ItemIdStr ItemDbRecord
 
 
+updateItemDbFromTradeRecord : ItemDb -> TradeRecord -> ItemDb
+updateItemDbFromTradeRecord item_db trade_record =
+    case trade_record of
+        IncompleteTradeRecord _ ->
+            item_db
+
+        CompletedTradeRecord trade_context item_trade_log ->
+            item_trade_log
+                |> (\itr ->
+                        { item = lookup_item_id_default item_db itr.item_id
+                        , quantity = itr.quantity
+                        , avg_price = setPrice itr.gold_cost
+                        }
+                   )
+                |> List.singleton
+                |> List.foldl
+                    increment_item_trade_count
+                    item_db
+
+
 type alias TooltipData =
     { offset_x : Float
     , offset_y : Float
@@ -1444,10 +1464,14 @@ update msg model =
 
                                 new_trade_context =
                                     getTradeContext trade_record
+
+                                new_item_db =
+                                    updateItemDbFromTradeRecord model.item_db trade_record
                             in
                             ( { model
                                 | shop_trends = new_trade_context.shop_trends
                                 , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
+                                , item_db = new_item_db
                               }
                                 --it doesn't matter who was what party, they're still getting updated
                                 |> withCharacter new_trade_context.to_party
@@ -1483,10 +1507,14 @@ update msg model =
 
                                 new_trade_context =
                                     getTradeContext trade_record
+
+                                new_item_db =
+                                    updateItemDbFromTradeRecord model.item_db trade_record
                             in
                             ( { model
                                 | shop_trends = new_trade_context.shop_trends
                                 , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
+                                , item_db = new_item_db
                               }
                                 |> withCharacter new_trade_context.from_party
                                 |> withCharacter new_trade_context.to_party
@@ -2108,6 +2136,10 @@ ai_buy_item_from_shop ai_tick_time item_db shop_trends character shop =
                     Nothing ->
                         Debug.todo "" []
             }
+
+
+
+-- tradeRecordToAiUpdate
 
 
 ai_sell_item_to_shop : Time.Posix -> ItemDb -> ShopTrends -> Character -> Character -> AiUpdateRecord

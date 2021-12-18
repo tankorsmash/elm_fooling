@@ -432,6 +432,11 @@ type alias ItemDbRecord =
     { item : Item, is_unlocked : Bool, trade_stats : ItemDbTradeStats }
 
 
+updateTradeStats : ItemDbRecord -> ItemDbTradeStats -> ItemDbRecord
+updateTradeStats item_db_record new_trade_stats =
+    { item_db_record | trade_stats = new_trade_stats }
+
+
 type alias ItemDb =
     Dict.Dict ItemIdStr ItemDbRecord
 
@@ -2212,10 +2217,11 @@ increment_item_trade_count inventory_record item_db =
             case mb_item_db_record of
                 Just ({ trade_stats } as item_db_record) ->
                     Just
-                        { item_db_record
-                            | trade_stats =
-                                updateTimesOthersTraded trade_stats added_qty
-                        }
+                        (updateTimesOthersTraded
+                            trade_stats
+                            added_qty
+                            |> updateTradeStats item_db_record
+                        )
 
                 Nothing ->
                     Just { item = item, is_unlocked = False, trade_stats = { createItemDbTradeStats | times_others_traded = added_qty } }

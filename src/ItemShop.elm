@@ -198,6 +198,7 @@ type SpecialAction
     = InviteTrader
     | TriggerEvent SpecialEvent
     | TogglePauseAi
+    | UnlockItem
 
 
 type Msg
@@ -1983,6 +1984,9 @@ update_special_action special_action price model =
 
                                 TogglePauseAi ->
                                     ( { new_model | ai_updates_paused = not new_model.ai_updates_paused }, Cmd.none )
+
+                                UnlockItem ->
+                                    ( model, Cmd.none )
                        )
 
             else
@@ -4006,7 +4010,7 @@ special_actions_display hovered_tooltip player ai_updates_paused =
                 player
                 InviteTrader
                 "Invite Trader"
-                "Invite a fellow Trader.\n\nThey may have new wares you've never seen."
+                "Invite a fellow Trader.\n\nThey may or may not have new wares you've never seen!"
                 (setPrice 50)
 
         button_high_desire =
@@ -4026,12 +4030,22 @@ special_actions_display hovered_tooltip player ai_updates_paused =
                 "Spread Bad Rumour"
                 "Sets a random Item Type to low value.\n\nSpreads a rumour that a given Item Type has a surplus of sellers."
                 Free
+
+        button_unlock_item =
+            build_special_action_button
+                hovered_tooltip
+                player
+                UnlockItem
+                "Item Search"
+                "Spend cash to hire a mercenary to seek out items.\n\nAllows for invited traders to have new items."
+                Free
     in
     column [ width fill, spacing 10, paddingXY 0 10 ]
         [ el [ font_scaled 2, border_bottom 2 ] <| text "Special Actions"
         , row [ width fill, spacingXY 10 0 ]
             [ button_toggle_ai_pause
             , button_search
+            , button_unlock_item
             , button_high_desire
             , button_low_desire
             ]

@@ -721,38 +721,51 @@ initial_items_for_sale item_db =
         seed =
             Random.initialSeed 12345
 
-        maybe_items : List ( String, Quantity )
-        maybe_items =
+        item_configs : List ( String, Quantity )
+        item_configs =
             [ ( "a41ae9d3-61f0-54f9-800e-56f53ed3ac98", Quantity 3 ) --boots
             , ( "c3c38323-1743-5a47-a8e3-bf6ec28137f9", Quantity 5 )
             , ( "6b7e301d-ab12-5e81-acfc-547e63004ffa", Quantity 4 )
             , ( "48e66792-4c97-598f-8937-3a7042f00591", Quantity 1 )
             ]
 
-        just_items : InventoryRecords
-        just_items =
+        item_records : List ( ItemDbRecord, Quantity )
+        item_records =
             List.filterMap
                 (\( item_id_str, qty ) ->
                     case lookup_item_id_str item_db item_id_str of
                         Just db_record ->
-                            if db_record.is_unlocked then
-                                Just { item = db_record.item, quantity = qty, avg_price = setPrice db_record.item.raw_gold_cost }
-
-                            else
-                                Nothing
+                            Just ( db_record, qty )
 
                         Nothing ->
                             Nothing
                 )
-                maybe_items
+                item_configs
+
+        -- create the items from the ItemDbRecords
+        just_items : InventoryRecords
+        just_items =
+            List.filterMap
+                (\( db_record, qty ) ->
+                    if db_record.is_unlocked then
+                        Just
+                            { item = db_record.item
+                            , quantity = qty
+                            , avg_price = setPrice db_record.item.raw_gold_cost
+                            }
+
+                    else
+                        Nothing
+                )
+                item_records
 
         debug =
-            if List.length just_items == List.length maybe_items then
+            if List.length item_records == List.length item_configs then
                 Ok ""
 
             else
                 --TODO: handling this better, because this isn't elmy at all
-                Debug.log "THERE WAS AN ERROR IN INITIAL ITEM SETUP!!!!" <| Err ""
+                Debug.todo "THERE WAS AN ERROR IN INITIAL ITEM SETUP!!!!" <| Err ""
     in
     just_items
 

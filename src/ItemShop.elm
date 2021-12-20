@@ -3760,9 +3760,11 @@ player_action_log_display player_action_logs =
     if List.length player_action_logs > 0 then
         column [ paddingXY 0 10, spacing 5 ]
             ([ el [ font_scaled 2, border_bottom 2 ] <| text "Action Log" ]
-                ++ List.map
-                    render_single_player_action_log
-                    player_action_logs
+                ++ (player_action_logs
+                        |> List.reverse
+                        |> List.take 5
+                        |> List.map render_single_player_action_log
+                   )
             )
 
     else

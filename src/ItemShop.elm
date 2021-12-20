@@ -1922,7 +1922,7 @@ append_player_action_log new_player_action_log model =
         | historical_player_actions =
             List.append
                 model.historical_player_actions
-                [ TookSpecialAction InviteTrader ]
+                [ new_player_action_log ]
     }
 
 
@@ -2028,6 +2028,7 @@ special_action_unlock_item model =
                 Nothing ->
                     item_db
     }
+        |> append_player_action_log (TookSpecialAction UnlockItem)
 
 
 update_special_action : SpecialAction -> Price -> Model -> ( Model, Cmd Msg )
@@ -3723,6 +3724,36 @@ withCharacter new_char model =
     { model | characters = new_characters }
 
 
+render_single_player_action_log : PlayerActionLog -> Element Msg
+render_single_player_action_log (TookSpecialAction special_action) =
+    case special_action of
+        InviteTrader ->
+            text "Invited Trader"
+
+        TriggerEvent special_event ->
+            text "Something special happened!"
+
+        TogglePauseAi ->
+            text "Toggle Play/Pause"
+
+        UnlockItem ->
+            text "Searched for an item"
+
+
+player_action_log_display : List PlayerActionLog -> Element Msg
+player_action_log_display player_action_logs =
+    if List.length player_action_logs > 0 then
+        column [ paddingXY 0 10, spacing 5 ]
+            ([ el [ font_scaled 2, border_bottom 2 ] <| text "Action Log" ]
+                ++ List.map
+                    render_single_player_action_log
+                    player_action_logs
+            )
+
+    else
+        Element.none
+
+
 view_shop_tab_type : Model -> Element Msg
 view_shop_tab_type model =
     let
@@ -3791,6 +3822,7 @@ view_shop_tab_type model =
 
           else
             Element.none
+        , player_action_log_display model.historical_player_actions
         , case maybe_player of
             Just player ->
                 special_actions_display model.hovered_tooltip player model.ai_updates_paused

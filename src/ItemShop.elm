@@ -3837,7 +3837,7 @@ view_shop_tab_type model =
 
           else
             Element.none
-        , player_action_log_display model.historical_player_actions
+        , Lazy.lazy player_action_log_display model.historical_player_actions
         , case maybe_player of
             Just player ->
                 special_actions_display model.hovered_tooltip player model.ai_updates_paused

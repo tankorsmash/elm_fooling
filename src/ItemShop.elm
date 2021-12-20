@@ -2052,8 +2052,8 @@ update_special_action special_action price model =
 
 {-| adds 1 gold per second. GPM is a misnomer
 -}
-add_player_gpm : Character -> Character
-add_player_gpm player =
+add_player_gpm : Character -> Int -> Character
+add_player_gpm player to_add =
     let
         { held_gold } =
             player
@@ -2062,7 +2062,7 @@ add_player_gpm player =
             50
     in
     if held_gold < max_gold then
-        { player | held_gold = held_gold + 1 }
+        { player | held_gold = held_gold + to_add }
 
     else
         player
@@ -2072,7 +2072,9 @@ apply_upgrade : PlayerUpgrade -> ( Character, Model ) -> ( Character, Model )
 apply_upgrade upgrade ( player, model ) =
     let
         new_player =
-            add_player_gpm player
+            case upgrade of
+                AutomaticGPM to_add ->
+                    add_player_gpm player to_add
     in
     ( new_player, withCharacter new_player model )
 
@@ -4407,7 +4409,7 @@ suite =
                         |> List.length
                         |> (==) 1
                         |> Expect.true "contains an unlocked itemdbrecord, since we just asked to unlock it"
-            , test "adding gpm works" <|
+            , test "AutomaticGPM works with 1 level" <|
                 \_ ->
                     case getPlayer test_model of
                         Just player ->
@@ -4416,6 +4418,22 @@ suite =
                                         case getPlayer m of
                                             Just updated_player ->
                                                 Expect.equal (player.held_gold + 1) updated_player.held_gold
+
+                                            Nothing ->
+                                                Expect.fail "Couldnt find updated player"
+                                   )
+
+                        Nothing ->
+                            Expect.fail "Couldn't find player"
+            , test "AutomaticGPM works with 10 levels" <|
+                \_ ->
+                    case getPlayer test_model of
+                        Just player ->
+                            update_player ({test_model | player_upgrades = [AutomaticGPM 10]})
+                                |> (\m ->
+                                        case getPlayer m of
+                                            Just updated_player ->
+                                                Expect.equal (player.held_gold + 10) updated_player.held_gold
 
                                             Nothing ->
                                                 Expect.fail "Couldnt find updated player"

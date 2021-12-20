@@ -606,6 +606,16 @@ unset_item_frame =
     }
 
 
+create_db_entry : ( Bool, Item ) -> ( String, ItemDbRecord )
+create_db_entry ( is_unlocked, item ) =
+    ( UUID.toString item.id
+    , { item = item
+      , is_unlocked = is_unlocked
+      , trade_stats = createItemDbTradeStats
+      }
+    )
+
+
 initial_item_db : ItemDb
 initial_item_db =
     let
@@ -700,15 +710,6 @@ initial_item_db =
                 }
               )
             ]
-
-        create_db_entry : ( Bool, Item ) -> ( String, ItemDbRecord )
-        create_db_entry ( is_unlocked, item ) =
-            ( UUID.toString item.id
-            , { item = item
-              , is_unlocked = is_unlocked
-              , trade_stats = createItemDbTradeStats
-              }
-            )
     in
     initial_items
         |> List.map create_db_entry
@@ -1806,6 +1807,18 @@ pick_random_unlocked_item_from_db item_db seed =
     ( Maybe.map .item maybe_item, new_seed )
 
 
+pick_random_locked_item_from_db : ItemDb -> Random.Seed -> ( Maybe Item, Random.Seed )
+pick_random_locked_item_from_db item_db seed =
+    let
+        ( ( maybe_item, _ ), new_seed ) =
+            Dict.values item_db
+                |> List.filter (not << .is_unlocked)
+                |> Random.List.choose
+                |> (\gen -> Random.step gen seed)
+    in
+    ( Maybe.map .item maybe_item, new_seed )
+
+
 tuple_swap : ( a, b ) -> ( b, a )
 tuple_swap pair =
     ( Tuple.second pair, Tuple.first pair )
@@ -1970,6 +1983,38 @@ update_shop_trends model update_st_func =
     }
 
 
+special_action_unlock_item : Model -> Model
+special_action_unlock_item model =
+    let
+        seed =
+            seed_from_time model.ai_tick_time
+
+        { item_db } =
+            model
+
+        ( mb_item_to_unlock, new_seed ) =
+            pick_random_locked_item_from_db model.item_db seed
+    in
+    { model
+        | item_db =
+            case mb_item_to_unlock of
+                Just item_to_unlock ->
+                    update_item_db item_db
+                        item_to_unlock.id
+                        (\mb_idbr ->
+                            case mb_idbr of
+                                Just idbr ->
+                                    Just { idbr | is_unlocked = True }
+
+                                Nothing ->
+                                    Nothing
+                        )
+
+                Nothing ->
+                    item_db
+    }
+
+
 update_special_action : SpecialAction -> Price -> Model -> ( Model, Cmd Msg )
 update_special_action special_action price model =
     case getPlayer model of
@@ -1999,7 +2044,7 @@ update_special_action special_action price model =
                                     ( { new_model | ai_updates_paused = not new_model.ai_updates_paused }, Cmd.none )
 
                                 UnlockItem ->
-                                    ( model, Cmd.none )
+                                    ( special_action_unlock_item model, Cmd.none )
                        )
 
             else
@@ -4293,5 +4338,24 @@ suite =
                                         |> Maybe.withDefault 0
                                     )
                             ]
+            , test "SpecialAction: UnlockItem unlocks an item" <|
+                \_ ->
+                    let
+                        item_db : ItemDb
+                        item_db =
+                            Dict.fromList [ create_db_entry ( False, test_item ) ]
+
+                        model =
+                            { test_model | item_db = item_db }
+
+                        updated_model =
+                            special_action_unlock_item model
+
+                        updated_item_db =
+                            updated_model.item_db
+                    in
+                    Expect.true "contains an unlocked itemdbrecord, since we just asked to unlock it" <|
+                        List.all (\item_db_record -> item_db_record.is_unlocked) <|
+                            Dict.values updated_item_db
             ]
         ]

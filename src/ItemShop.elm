@@ -2062,7 +2062,7 @@ add_player_gpm player to_add =
             50
     in
     if held_gold < max_gold then
-        { player | held_gold = held_gold + to_add }
+        { player | held_gold = min max_gold <| held_gold + to_add }
 
     else
         player
@@ -4429,11 +4429,29 @@ suite =
                 \_ ->
                     case getPlayer test_model of
                         Just player ->
-                            update_player ({test_model | player_upgrades = [AutomaticGPM 10]})
+                            update_player { test_model | player_upgrades = [ AutomaticGPM 10 ] }
                                 |> (\m ->
                                         case getPlayer m of
                                             Just updated_player ->
                                                 Expect.equal (player.held_gold + 10) updated_player.held_gold
+
+                                            Nothing ->
+                                                Expect.fail "Couldnt find updated player"
+                                   )
+
+                        Nothing ->
+                            Expect.fail "Couldn't find player"
+            , fuzz int "AutomaticGPM doesn't go past 50" <|
+                \to_add ->
+                    case getPlayer test_model of
+                        Just player ->
+                            update_player { test_model | player_upgrades = [ AutomaticGPM to_add ] }
+                                |> (\m ->
+                                        case getPlayer m of
+                                            Just updated_player ->
+                                                Expect.true
+                                                    "Can't have more than 50 max gold"
+                                                    (updated_player.held_gold <= 50)
 
                                             Nothing ->
                                                 Expect.fail "Couldnt find updated player"

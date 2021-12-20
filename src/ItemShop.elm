@@ -3739,13 +3739,13 @@ render_single_player_action_log (TookSpecialAction special_action) =
                     in
                     text <|
                         ((Maybe.withDefault "Unknown" <| Maybe.map item_type_to_pretty_string mb_item_type)
-                            ++ "-- These became quite valuable."
+                            ++ " -- These became quite valuable."
                         )
 
                 EventLeastDesiredItemType mb_item_type ->
                     text <|
                         ((Maybe.withDefault "Unknown" <| Maybe.map item_type_to_pretty_string mb_item_type)
-                            ++ "-- Nobody is interested in this anymore."
+                            ++ " -- Nobody is interested in these anymore."
                         )
 
         TogglePauseAi ->

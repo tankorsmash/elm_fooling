@@ -1946,7 +1946,7 @@ handle_special_event model spec_event =
                 )
                 seed
     in
-    (case spec_event of
+    case spec_event of
         EventVeryDesiredItemType item_type ->
             let
                 ( ( maybe_chosen_item_type, _ ), new_seed ) =
@@ -1963,6 +1963,7 @@ handle_special_event model spec_event =
                     }
                 )
                 |> setGlobalSeed new_seed
+                |> append_player_action_log (TookSpecialAction <| TriggerEvent <| EventVeryDesiredItemType maybe_chosen_item_type)
 
         EventLeastDesiredItemType _ ->
             let
@@ -1980,8 +1981,7 @@ handle_special_event model spec_event =
                     }
                 )
                 |> setGlobalSeed new_seed
-    )
-        |> append_player_action_log (TookSpecialAction <| TriggerEvent spec_event)
+                |> append_player_action_log (TookSpecialAction <| TriggerEvent <| EventLeastDesiredItemType maybe_chosen_item_type)
 
 
 setGlobalSeed : Random.Seed -> Model -> Model
@@ -3731,7 +3731,22 @@ render_single_player_action_log (TookSpecialAction special_action) =
             text "Invited Trader"
 
         TriggerEvent special_event ->
-            text "Something special happened!"
+            case special_event of
+                EventVeryDesiredItemType mb_item_type ->
+                    let
+                        _ =
+                            Debug.log "mb_item_type" mb_item_type
+                    in
+                    text <|
+                        ((Maybe.withDefault "Unknown" <| Maybe.map item_type_to_pretty_string mb_item_type)
+                            ++ "-- These became quite valuable."
+                        )
+
+                EventLeastDesiredItemType mb_item_type ->
+                    text <|
+                        ((Maybe.withDefault "Unknown" <| Maybe.map item_type_to_pretty_string mb_item_type)
+                            ++ "-- Nobody is interested in this anymore."
+                        )
 
         TogglePauseAi ->
             text "Toggle Play/Pause"

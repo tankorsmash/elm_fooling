@@ -4170,6 +4170,9 @@ suite =
 
                 ( test_item, test_item_qty, test_avg_price ) =
                     ( lookup_item_id_str_default test_item_db "a41ae9d3-61f0-54f9-800e-56f53ed3ac98", Quantity 12, setPrice 9999 )
+
+                ( test_item2, test_item_qty2, test_avg_price2 ) =
+                    ( lookup_item_id_str_default test_item_db "c3c38323-1743-5a47-a8e3-bf6ec28137f9", Quantity 12, setPrice 9999 )
             in
             [ test "clipText test clips" <|
                 \_ ->
@@ -4328,15 +4331,15 @@ suite =
                                         |> Maybe.withDefault 0
                                     )
                             ]
-            , test "SpecialAction: UnlockItem unlocks an item" <|
-                \_ ->
+            , fuzz (Fuzz.map Time.millisToPosix int) "SpecialAction: UnlockItem unlocks an item" <|
+                \ai_tick_time ->
                     let
                         item_db : ItemDb
                         item_db =
                             Dict.fromList [ create_db_entry ( False, test_item ) ]
 
                         model =
-                            { test_model | item_db = item_db }
+                            { test_model | item_db = item_db, ai_tick_time = ai_tick_time }
 
                         updated_model =
                             special_action_unlock_item model
@@ -4347,5 +4350,27 @@ suite =
                     Expect.true "contains an unlocked itemdbrecord, since we just asked to unlock it" <|
                         List.all (\item_db_record -> item_db_record.is_unlocked) <|
                             Dict.values updated_item_db
+            , fuzz (Fuzz.map Time.millisToPosix int) "SpecialAction: UnlockItem unlocks only a single item" <|
+                \ai_tick_time ->
+                    let
+                        item_db : ItemDb
+                        item_db =
+                            Dict.fromList [ create_db_entry ( False, test_item ), create_db_entry ( False, test_item2 ) ]
+
+                        model =
+                            { test_model | item_db = item_db, ai_tick_time = ai_tick_time }
+
+                        updated_model =
+                            special_action_unlock_item model
+
+                        updated_item_db =
+                            updated_model.item_db
+                    in
+                    updated_item_db
+                        |> Dict.values
+                        |> List.filter (\item_db_record -> item_db_record.is_unlocked)
+                        |> List.length
+                        |> (==) 1
+                        |> Expect.true "contains an unlocked itemdbrecord, since we just asked to unlock it"
             ]
         ]

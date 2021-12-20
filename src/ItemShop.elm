@@ -4384,5 +4384,21 @@ suite =
                         |> List.length
                         |> (==) 1
                         |> Expect.true "contains an unlocked itemdbrecord, since we just asked to unlock it"
+            , test "adding gpm works" <|
+                \_ ->
+                    case getPlayer test_model of
+                        Just player ->
+                            update_player test_model
+                                |> (\m ->
+                                        case getPlayer m of
+                                            Just updated_player ->
+                                                Expect.equal (player.held_gold + 1) updated_player.held_gold
+
+                                            Nothing ->
+                                                Expect.fail "Couldnt find updated player"
+                                   )
+
+                        Nothing ->
+                            Expect.fail "Couldn't find player"
             ]
         ]

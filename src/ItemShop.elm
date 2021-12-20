@@ -1986,14 +1986,11 @@ update_shop_trends model update_st_func =
 special_action_unlock_item : Model -> Model
 special_action_unlock_item model =
     let
-        seed =
-            seed_from_time model.ai_tick_time
-
-        { item_db } =
+        { item_db, ai_tick_time } =
             model
 
         ( mb_item_to_unlock, new_seed ) =
-            pick_random_locked_item_from_db model.item_db seed
+            pick_random_locked_item_from_db item_db <| seed_from_time ai_tick_time
     in
     { model
         | item_db =

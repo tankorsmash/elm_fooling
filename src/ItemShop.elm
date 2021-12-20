@@ -504,8 +504,13 @@ type TabType
     | ItemsUnlockedTabType
 
 
+type PlayerUpgrade
+    = AutomaticGPM Int
+
+
 type alias Model =
     { player_id : CharacterId
+    , player_upgrades : List PlayerUpgrade
     , shop_id : CharacterId
     , characters : List Character
     , hovered_item_in_character : Maybe ( CharacterId, Item )
@@ -1226,6 +1231,7 @@ init hash =
                     ShopTabType
     in
     ( { player_id = player.char_id
+      , player_upgrades = [ AutomaticGPM 1 ]
       , shop_id = shop.char_id
       , characters = characters
       , hovered_item_in_character = Nothing
@@ -2062,12 +2068,29 @@ add_player_gpm player =
         player
 
 
+apply_upgrade : PlayerUpgrade -> ( Character, Model ) -> ( Character, Model )
+apply_upgrade upgrade ( player, model ) =
+    let
+        new_player =
+            add_player_gpm player
+    in
+    ( new_player, withCharacter new_player model )
+
+
+apply_upgrades : Character -> Model -> Model
+apply_upgrades player model =
+    let
+        ( new_player, new_model ) =
+            List.foldl apply_upgrade ( player, model ) model.player_upgrades
+    in
+    new_model
+
+
 update_player : Model -> Model
 update_player model =
     case getPlayer model of
         Just player ->
-            model
-                |> withCharacter (add_player_gpm player)
+            apply_upgrades player model
 
         Nothing ->
             Debug.log "error: cant find player" model

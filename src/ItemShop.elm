@@ -15,8 +15,10 @@ import Element
     exposing
         ( Color
         , Element
+        , alignBottom
         , alignLeft
         , alignRight
+        , alignTop
         , centerX
         , centerY
         , column
@@ -3755,6 +3757,15 @@ render_single_player_action_log (TookSpecialAction special_action) =
             text "Searched for an item"
 
 
+player_upgrades_display : List PlayerUpgrade -> Element Msg
+player_upgrades_display player_upgrades =
+    column [ paddingXY 0 10, spacing 5 ]
+        ([ el [ font_scaled 2, border_bottom 2 ] <| text "Upgrades" ]
+            ++ [ text "None yet"
+               ]
+        )
+
+
 player_action_log_display : List PlayerActionLog -> Element Msg
 player_action_log_display player_action_logs =
     if List.length player_action_logs > 0 then
@@ -3768,7 +3779,10 @@ player_action_log_display player_action_logs =
             )
 
     else
-        Element.none
+        column [ paddingXY 0 10, spacing 5 ]
+            ([ el [ font_scaled 2, border_bottom 2 ] <| text "Action Log" ]
+                ++ [ text "Welcome!" ]
+            )
 
 
 view_shop_tab_type : Model -> Element Msg
@@ -3839,7 +3853,10 @@ view_shop_tab_type model =
 
           else
             Element.none
-        , Lazy.lazy player_action_log_display model.historical_player_actions
+        , row [ width fill, spacingXY 10 0 ]
+            [ el [ width <| fillPortion 3, alignTop ] <| Lazy.lazy player_action_log_display model.historical_player_actions
+            , el [ width <| fillPortion 7, alignTop ] <| Lazy.lazy player_upgrades_display model.player_upgrades
+            ]
         , case maybe_player of
             Just player ->
                 special_actions_display model.hovered_tooltip player model.ai_updates_paused

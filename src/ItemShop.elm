@@ -3810,6 +3810,13 @@ render_unlocked_item : ItemDbRecord -> Element Msg
 render_unlocked_item { item, trade_stats, is_unlocked } =
     column [ width fill, height fill ]
         [ text <| item.name
+        , row [ Font.size 12 ]
+            [ if is_unlocked then
+                Element.none
+
+              else
+                el [ Font.color color_primary ] <| text "LOCKED"
+            ]
         , row [ width (fill |> Element.maximum 200), Font.size 14, spacingXY 10 0 ]
             [ item_type_to_pretty_string item.item_type
                 |> text
@@ -3837,14 +3844,6 @@ render_unlocked_item { item, trade_stats, is_unlocked } =
                 |> .times_others_traded
                 |> String.fromInt
                 |> text
-            ]
-        , row [ Font.size 12 ]
-            [ text "Unlocked? "
-            , if is_unlocked then
-                text "unlocked"
-
-              else
-                el [ Font.color color_primary ] <| text "LOCKED"
             ]
         ]
 

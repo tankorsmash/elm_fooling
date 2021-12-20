@@ -2673,6 +2673,11 @@ render_gp count =
     render_gp_sized count 12
 
 
+render_gp_string : Int -> String
+render_gp_string count =
+    String.fromInt count ++ "gp"
+
+
 render_gp_sized : Int -> Int -> Element msg
 render_gp_sized count font_size =
     paragraph []
@@ -3983,7 +3988,7 @@ buildTooltipConfig text =
 
 
 build_special_action_button : HoveredTooltip -> Character -> SpecialAction -> String -> String -> Price -> Element Msg
-build_special_action_button hovered_tooltip character special_action title tooltip price =
+build_special_action_button hovered_tooltip character special_action title tooltip_text price =
     let
         is_disabled =
             case price of
@@ -3998,7 +4003,15 @@ build_special_action_button hovered_tooltip character special_action title toolt
                         True
 
         tooltip_config =
-            buildTooltipConfig tooltip
+            tooltip_text
+                |> (\t ->
+                        if price /= Free then
+                            t ++ "\n\nCosts " ++ (render_gp_string <| getPrice price)
+
+                        else
+                            t
+                   )
+                |> buildTooltipConfig
 
         button_attrs =
             if is_disabled then

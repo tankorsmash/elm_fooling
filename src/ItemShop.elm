@@ -2001,14 +2001,7 @@ special_action_unlock_item model =
                 Just item_to_unlock ->
                     update_item_db item_db
                         item_to_unlock.id
-                        (\mb_idbr ->
-                            case mb_idbr of
-                                Just idbr ->
-                                    Just { idbr | is_unlocked = True }
-
-                                Nothing ->
-                                    Nothing
-                        )
+                        (Maybe.map (\idbr -> { idbr | is_unlocked = True }))
 
                 Nothing ->
                     item_db

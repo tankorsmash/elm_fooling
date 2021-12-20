@@ -508,6 +508,10 @@ type PlayerUpgrade
     = AutomaticGPM Int
 
 
+type PlayerActionLog
+    = TookSpecialAction SpecialAction
+
+
 type alias Model =
     { player_id : CharacterId
     , player_upgrades : List PlayerUpgrade
@@ -516,6 +520,7 @@ type alias Model =
     , hovered_item_in_character : Maybe ( CharacterId, Item )
     , shop_trends : ShopTrends
     , historical_shop_trends : List ShopTrends
+    , historical_player_actions : List PlayerActionLog
     , shop_trends_hovered : Bool
     , item_db : ItemDb
     , show_main_chart : Bool
@@ -1238,6 +1243,7 @@ init hash =
       , shop_trends = initial_shop_trends
       , item_db = item_db
       , historical_shop_trends = []
+      , historical_player_actions = []
       , shop_trends_hovered = False
       , ai_tick_time = Time.millisToPosix -1
       , show_main_chart = True
@@ -1907,6 +1913,17 @@ handle_invite_trader model =
                 ]
         , global_seed = new_global_seed
     }
+        |> append_player_action_log (TookSpecialAction InviteTrader)
+
+
+append_player_action_log : PlayerActionLog -> Model -> Model
+append_player_action_log new_player_action_log model =
+    { model
+        | historical_player_actions =
+            List.append
+                model.historical_player_actions
+                [ TookSpecialAction InviteTrader ]
+    }
 
 
 handle_special_event : Model -> SpecialEvent -> Model
@@ -1929,7 +1946,7 @@ handle_special_event model spec_event =
                 )
                 seed
     in
-    case spec_event of
+    (case spec_event of
         EventVeryDesiredItemType item_type ->
             let
                 ( ( maybe_chosen_item_type, _ ), new_seed ) =
@@ -1963,6 +1980,8 @@ handle_special_event model spec_event =
                     }
                 )
                 |> setGlobalSeed new_seed
+    )
+        |> append_player_action_log (TookSpecialAction <| TriggerEvent spec_event)
 
 
 setGlobalSeed : Random.Seed -> Model -> Model
@@ -2037,7 +2056,7 @@ update_special_action special_action price model =
                                     ( handle_special_event new_model event, Cmd.none )
 
                                 TogglePauseAi ->
-                                    ( { new_model | ai_updates_paused = not new_model.ai_updates_paused }, Cmd.none )
+                                    ( { new_model | ai_updates_paused = not new_model.ai_updates_paused } |> append_player_action_log (TookSpecialAction TogglePauseAi), Cmd.none )
 
                                 UnlockItem ->
                                     ( special_action_unlock_item model, Cmd.none )

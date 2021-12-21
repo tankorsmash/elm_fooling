@@ -511,7 +511,10 @@ type PlayerUpgrade
 
 
 type PlayerActionLog
-    = TookSpecialAction SpecialAction
+    = TookSpecialActionInviteTrader
+    | TookSpecialActionTriggerEvent SpecialEvent
+    | TookSpecialActionTogglePauseAi
+    | TookSpecialActionUnlockItem ItemId
 
 
 type alias Model =
@@ -1915,7 +1918,7 @@ handle_invite_trader model =
                 ]
         , global_seed = new_global_seed
     }
-        |> append_player_action_log (TookSpecialAction InviteTrader)
+        |> append_player_action_log TookSpecialActionInviteTrader
 
 
 append_player_action_log : PlayerActionLog -> Model -> Model
@@ -1965,7 +1968,7 @@ handle_special_event model spec_event =
                     }
                 )
                 |> setGlobalSeed new_seed
-                |> append_player_action_log (TookSpecialAction <| TriggerEvent <| EventVeryDesiredItemType maybe_chosen_item_type)
+                |> append_player_action_log (TookSpecialActionTriggerEvent <| EventVeryDesiredItemType maybe_chosen_item_type)
 
         EventLeastDesiredItemType _ ->
             let
@@ -1983,7 +1986,7 @@ handle_special_event model spec_event =
                     }
                 )
                 |> setGlobalSeed new_seed
-                |> append_player_action_log (TookSpecialAction <| TriggerEvent <| EventLeastDesiredItemType maybe_chosen_item_type)
+                |> append_player_action_log (TookSpecialActionTriggerEvent <| EventLeastDesiredItemType maybe_chosen_item_type)
 
 
 setGlobalSeed : Random.Seed -> Model -> Model
@@ -2030,7 +2033,13 @@ special_action_unlock_item model =
                 Nothing ->
                     item_db
     }
-        |> append_player_action_log (TookSpecialAction UnlockItem)
+        |> (case mb_item_to_unlock of
+                Just item_to_unlock ->
+                    append_player_action_log (TookSpecialActionUnlockItem item_to_unlock.id)
+
+                Nothing ->
+                    identity
+           )
 
 
 update_special_action : SpecialAction -> Price -> Model -> ( Model, Cmd Msg )
@@ -2059,7 +2068,7 @@ update_special_action special_action price model =
                                     ( handle_special_event new_model event, Cmd.none )
 
                                 TogglePauseAi ->
-                                    ( { new_model | ai_updates_paused = not new_model.ai_updates_paused } |> append_player_action_log (TookSpecialAction TogglePauseAi), Cmd.none )
+                                    ( { new_model | ai_updates_paused = not new_model.ai_updates_paused } |> append_player_action_log TookSpecialActionTogglePauseAi, Cmd.none )
 
                                 UnlockItem ->
                                     ( special_action_unlock_item model, Cmd.none )
@@ -3726,13 +3735,13 @@ withCharacter new_char model =
     { model | characters = new_characters }
 
 
-render_single_player_action_log : PlayerActionLog -> Element Msg
-render_single_player_action_log (TookSpecialAction special_action) =
-    case special_action of
-        InviteTrader ->
+render_single_player_action_log : ItemDb -> PlayerActionLog -> Element Msg
+render_single_player_action_log item_db player_action_log =
+    case player_action_log of
+        TookSpecialActionInviteTrader ->
             text "Invited Trader"
 
-        TriggerEvent special_event ->
+        TookSpecialActionTriggerEvent special_event ->
             case special_event of
                 EventVeryDesiredItemType mb_item_type ->
                     let
@@ -3750,11 +3759,11 @@ render_single_player_action_log (TookSpecialAction special_action) =
                             ++ " -- Nobody is interested in these anymore."
                         )
 
-        TogglePauseAi ->
+        TookSpecialActionTogglePauseAi ->
             text "Toggle Play/Pause"
 
-        UnlockItem ->
-            text "Searched for an item"
+        TookSpecialActionUnlockItem item_id ->
+            text <| "Found an item: " ++ (lookup_item_id_default item_db item_id).name
 
 
 player_upgrades_display : List PlayerUpgrade -> Element Msg
@@ -3766,15 +3775,15 @@ player_upgrades_display player_upgrades =
         )
 
 
-player_action_log_display : List PlayerActionLog -> Element Msg
-player_action_log_display player_action_logs =
+player_action_log_display : ItemDb -> List PlayerActionLog -> Element Msg
+player_action_log_display item_db player_action_logs =
     if List.length player_action_logs > 0 then
         column [ paddingXY 0 10, spacing 5 ]
             ([ el [ font_scaled 2, border_bottom 2 ] <| text "Action Log" ]
                 ++ (player_action_logs
                         |> List.reverse
                         |> List.take 5
-                        |> List.map render_single_player_action_log
+                        |> List.map (render_single_player_action_log item_db)
                    )
             )
 
@@ -3854,7 +3863,7 @@ view_shop_tab_type model =
           else
             Element.none
         , row [ width fill, spacingXY 10 0 ]
-            [ el [ width <| fillPortion 3, alignTop ] <| Lazy.lazy player_action_log_display model.historical_player_actions
+            [ el [ width <| fillPortion 3, alignTop ] <| Lazy.lazy2 player_action_log_display model.item_db model.historical_player_actions
             , el [ width <| fillPortion 7, alignTop ] <| Lazy.lazy player_upgrades_display model.player_upgrades
             ]
         , case maybe_player of

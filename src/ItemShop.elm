@@ -3872,6 +3872,7 @@ view_shop_tab_type model =
 
           else
             Element.none
+        , row [ width fill, height <| Element.px 10 ] []
         , row [ width fill, spacingXY 10 0 ]
             [ el [ width <| fillPortion 3, alignTop ] <| Lazy.lazy2 player_action_log_display model.item_db model.historical_player_actions
             , el [ width <| fillPortion 7, alignTop ] <| Lazy.lazy player_upgrades_display model.player_upgrades

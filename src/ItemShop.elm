@@ -3788,7 +3788,7 @@ player_action_log_display item_db player_action_logs =
     if List.length player_action_logs > 0 then
         column [ height fill ]
             ([ el [ font_scaled 2, border_bottom 2, alignTop ] <| text "Action Log" ]
-                ++ [ column [ paddingXY 0 10 ]
+                ++ [ column [ paddingXY 0 10, Element.spacing 4 ]
                         (player_action_logs
                             |> List.reverse
                             |> List.take 5

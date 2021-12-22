@@ -3737,54 +3737,64 @@ withCharacter new_char model =
 
 render_single_player_action_log : ItemDb -> PlayerActionLog -> Element Msg
 render_single_player_action_log item_db player_action_log =
-    case player_action_log of
-        TookSpecialActionInviteTrader ->
-            text "Invited Trader"
+    paragraph []
+        [ case player_action_log of
+            TookSpecialActionInviteTrader ->
+                text "Invited Trader"
 
-        TookSpecialActionTriggerEvent special_event ->
-            case special_event of
-                EventVeryDesiredItemType mb_item_type ->
-                    let
-                        _ =
-                            Debug.log "mb_item_type" mb_item_type
-                    in
-                    text <|
-                        ((Maybe.withDefault "Unknown" <| Maybe.map item_type_to_pretty_string mb_item_type)
-                            ++ " -- These became quite valuable."
-                        )
+            TookSpecialActionTriggerEvent special_event ->
+                case special_event of
+                    EventVeryDesiredItemType mb_item_type ->
+                        let
+                            _ =
+                                Debug.log "mb_item_type" mb_item_type
+                        in
+                        text <|
+                            ((Maybe.withDefault "Unknown" <| Maybe.map item_type_to_pretty_string mb_item_type)
+                                ++ " -- These became quite valuable."
+                            )
 
-                EventLeastDesiredItemType mb_item_type ->
-                    text <|
-                        ((Maybe.withDefault "Unknown" <| Maybe.map item_type_to_pretty_string mb_item_type)
-                            ++ " -- Nobody is interested in these anymore."
-                        )
+                    EventLeastDesiredItemType mb_item_type ->
+                        text <|
+                            ((Maybe.withDefault "Unknown" <| Maybe.map item_type_to_pretty_string mb_item_type)
+                                ++ " -- Nobody is interested in these anymore."
+                            )
 
-        TookSpecialActionTogglePauseAi ->
-            text "Toggle Play/Pause"
+            TookSpecialActionTogglePauseAi ->
+                text "Toggle Play/Pause"
 
-        TookSpecialActionUnlockItem item_id ->
-            text <| "Found an item: " ++ (lookup_item_id_default item_db item_id).name
+            TookSpecialActionUnlockItem item_id ->
+                text <| "Found an item: " ++ (lookup_item_id_default item_db item_id).name
+        ]
+
+
+render_single_player_upgrade : PlayerUpgrade -> Element Msg
+render_single_player_upgrade player_upgrade =
+    case player_upgrade of
+        AutomaticGPM gpm ->
+            paragraph [] [ text "Income: ", render_gp gpm ]
 
 
 player_upgrades_display : List PlayerUpgrade -> Element Msg
 player_upgrades_display player_upgrades =
-    column [ paddingXY 0 10, spacing 5 ]
-        ([ el [ font_scaled 2, border_bottom 2 ] <| text "Upgrades" ]
-            ++ [ text "None yet"
-               ]
+    column [ height fill ]
+        ([ el [ font_scaled 2, border_bottom 2, alignTop ] <| text "Upgrades" ]
+            ++ [ column [ paddingXY 0 10 ] <| List.map render_single_player_upgrade player_upgrades ]
         )
 
 
 player_action_log_display : ItemDb -> List PlayerActionLog -> Element Msg
 player_action_log_display item_db player_action_logs =
     if List.length player_action_logs > 0 then
-        column [ paddingXY 0 10, spacing 5 ]
-            ([ el [ font_scaled 2, border_bottom 2 ] <| text "Action Log" ]
-                ++ (player_action_logs
-                        |> List.reverse
-                        |> List.take 5
-                        |> List.map (render_single_player_action_log item_db)
-                   )
+        column [ height fill ]
+            ([ el [ font_scaled 2, border_bottom 2, alignTop ] <| text "Action Log" ]
+                ++ [ column [ paddingXY 0 10 ]
+                        (player_action_logs
+                            |> List.reverse
+                            |> List.take 5
+                            |> List.map (render_single_player_action_log item_db)
+                        )
+                   ]
             )
 
     else

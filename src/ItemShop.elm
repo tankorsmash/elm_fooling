@@ -545,6 +545,7 @@ type AiActionChoice
     = NoActionChoice
     | WantsToSell
     | WantsToBuy
+    | WantsToFetchItem
 
 
 {-| the result of what got updated during an AI Update call
@@ -1855,7 +1856,12 @@ pick_item item_db _ ( prev_seed, folded_items ) =
 
         result =
             Maybe.map
-                (\item -> { item = item, quantity = Quantity 1, avg_price = setPrice item.raw_gold_cost })
+                (\item ->
+                    { item = item
+                    , quantity = Quantity 1
+                    , avg_price = setPrice item.raw_gold_cost
+                    }
+                )
                 maybe_item
     in
     ( seed_, result :: folded_items )
@@ -2475,6 +2481,15 @@ increment_item_trade_count record_updater inventory_record item_db =
         )
 
 
+ai_fetch_item : Time.Posix -> ItemDb -> ShopTrends -> Character -> Character -> AiUpdateRecord
+ai_fetch_item ai_tick_time item_db shop_trends character shop =
+    { shop_trends = shop_trends
+    , character = character
+    , shop = shop
+    , traded_items = []
+    }
+
+
 update_ai : Time.Posix -> CharacterId -> CharacterId -> AiUpdateData -> AiUpdateData
 update_ai ai_tick_time shop_char_id char_id ({ shop_trends, historical_shop_trends, characters, ai_tick_seed, item_db } as original_ai_update_data) =
     let
@@ -2493,6 +2508,7 @@ update_ai ai_tick_time shop_char_id char_id ({ shop_trends, historical_shop_tren
                         (Random.List.choose
                             (List.repeat 10 WantsToSell
                                 ++ List.repeat 10 WantsToBuy
+                                ++ List.repeat 1 WantsToFetchItem
                                 ++ List.repeat 5 NoActionChoice
                             )
                         )
@@ -2519,6 +2535,14 @@ update_ai ai_tick_time shop_char_id char_id ({ shop_trends, historical_shop_tren
 
                         WantsToBuy ->
                             ai_buy_item_from_shop
+                                ai_tick_time
+                                item_db
+                                shop_trends
+                                character
+                                shop
+
+                        WantsToFetchItem ->
+                            ai_fetch_item
                                 ai_tick_time
                                 item_db
                                 shop_trends

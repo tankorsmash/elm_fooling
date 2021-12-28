@@ -201,6 +201,7 @@ type SpecialAction
     | TriggerEvent SpecialEvent
     | TogglePauseAi
     | UnlockItem
+    | IncreaseIncome
 
 
 type Msg
@@ -2019,6 +2020,11 @@ update_shop_trends model update_st_func =
     }
 
 
+special_action_increase_income : Model -> Model
+special_action_increase_income model =
+    model
+
+
 special_action_unlock_item : Model -> Model
 special_action_unlock_item model =
     let
@@ -2078,6 +2084,9 @@ update_special_action special_action price model =
 
                                 UnlockItem ->
                                     ( special_action_unlock_item model, Cmd.none )
+
+                                IncreaseIncome ->
+                                    ( special_action_increase_income model, Cmd.none )
                        )
 
             else
@@ -3903,7 +3912,7 @@ view_shop_tab_type model =
             ]
         , case maybe_player of
             Just player ->
-                special_actions_display model.hovered_tooltip player model.ai_updates_paused
+                special_actions_display model.player_upgrades model.hovered_tooltip player model.ai_updates_paused
 
             Nothing ->
                 Element.none
@@ -4201,8 +4210,13 @@ build_special_action_button hovered_tooltip character special_action title toolt
         hovered_tooltip
 
 
-special_actions_display : HoveredTooltip -> Character -> Bool -> Element Msg
-special_actions_display hovered_tooltip player ai_updates_paused =
+scale_increase_income_cost : Int -> Price
+scale_increase_income_cost current_level =
+    (20 + (5 * current_level * current_level) * 2) |> setPrice
+
+
+special_actions_display : List PlayerUpgrade -> HoveredTooltip -> Character -> Bool -> Element Msg
+special_actions_display player_upgrades hovered_tooltip player ai_updates_paused =
     let
         button_toggle_ai_pause =
             build_special_action_button
@@ -4253,11 +4267,32 @@ special_actions_display hovered_tooltip player ai_updates_paused =
                 "Item Search"
                 "Spend cash to hire a mercenary to seek out items.\n\nAllows for invited traders to have new items."
                 Free
+
+        button_increase_income =
+            let
+                income_level =
+                    List.foldl
+                        (\u acc ->
+                            case u of
+                                AutomaticGPM lvl ->
+                                    lvl
+                        )
+                        1
+                        player_upgrades
+            in
+            build_special_action_button
+                hovered_tooltip
+                player
+                IncreaseIncome
+                "Invest"
+                "Invest in another business, earning more income.\n\nIncreases the gold you get per second."
+                (scale_increase_income_cost income_level)
     in
     column [ width fill, spacing 10, paddingXY 0 10 ]
         [ el [ font_scaled 2, border_bottom 2 ] <| text "Special Actions"
         , row [ width fill, spacingXY 10 0 ]
             [ button_toggle_ai_pause
+            , button_increase_income
             , button_search
             , button_unlock_item
             , button_high_desire
@@ -4588,5 +4623,17 @@ suite =
 
                         Nothing ->
                             Expect.fail "Couldn't find player"
+            , test "scaling IncreaseIncome upgrade with level 2" <|
+                \_ ->
+                    Expect.equal (setPrice 60) <| scale_increase_income_cost 2
+            , test "scaling IncreaseIncome upgrade with level 3" <|
+                \_ ->
+                    Expect.equal (setPrice 110) <| scale_increase_income_cost 3
+            , test "scaling IncreaseIncome upgrade with level 4" <|
+                \_ ->
+                    Expect.equal (setPrice 180) <| scale_increase_income_cost 4
+            , test "scaling IncreaseIncome upgrade with level 5" <|
+                \_ ->
+                    Expect.equal (setPrice 270) <| scale_increase_income_cost 5
             ]
         ]

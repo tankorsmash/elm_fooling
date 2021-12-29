@@ -125,9 +125,13 @@ def torrent_search():
 	print("\njson:", request.json, "\n")
 
 	query = request.json["query"]
+	category = request.json["category"]
+	episode = request.json.get("episode")
+	season = request.json.get("season")
 
-	(new_query, category) = downloader.build_query(query, category="TV")
-	return { "success": True, "response": {"query": new_query}}
+	(new_query, new_category) = downloader.build_query(
+		query, category=category, episode=episode, season=season)
+	return { "success": True, "response": {"query": new_query, "category":new_category}}
 
 @route("/frames/<frame_type>")
 def frames(frame_type):

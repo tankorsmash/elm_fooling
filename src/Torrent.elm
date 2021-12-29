@@ -76,6 +76,9 @@ type alias Model =
 type Msg
     = OnChangeCategory Category
     | OnChangeTextSearch String
+    | OnChangeTvSeason (Maybe Int)
+    | OnChangeTvEpisode (Maybe Int)
+    | OnChangeTvComplete Bool
     | SubmitFilmSearch
     | SubmitTvSearch
     | ReceivedQueryResponse (Result Http.Error String)
@@ -107,6 +110,15 @@ update msg model =
 
         OnChangeTextSearch new_text_search ->
             ( { model | text_search = new_text_search }, Cmd.none )
+
+        OnChangeTvSeason newSeason ->
+            ( { model | tvSeason = newSeason }, Cmd.none )
+
+        OnChangeTvEpisode newEpisode ->
+            ( { model | tvEpisode = newEpisode }, Cmd.none )
+
+        OnChangeTvComplete newComplete ->
+            ( { model | tvComplete = newComplete }, Cmd.none )
 
         SubmitFilmSearch ->
             let
@@ -151,7 +163,7 @@ update msg model =
                                         Nothing ->
                                             Encode.null
                                   )
-                                , ( "episode", Encode.bool model.tvComplete )
+                                -- , ( "complete", Encode.bool model.tvComplete )
                                 ]
                                 |> Http.jsonBody
                         , expect =
@@ -202,7 +214,7 @@ viewTextSearch category model =
                             NoCategory ->
                                 "Name here"
         , label =
-            Input.labelLeft [] <|
+            Input.labelAbove [] <|
                 text <|
                     case category of
                         Film ->
@@ -222,9 +234,22 @@ viewFilmOptions model =
         ]
 
 
+viewTvOptions : Model -> Element Msg
 viewTvOptions model =
     row [ width fill ]
-        [ viewTextSearch Tv model
+        [ el [width <| fillPortion 3 ] <| viewTextSearch Tv model
+        , Input.text []
+            { onChange = String.toInt >> OnChangeTvSeason
+            , text = Maybe.withDefault "" (Maybe.map String.fromInt model.tvSeason)
+            , placeholder = Just <| Input.placeholder [] <| text "Season Number"
+            , label = Input.labelAbove [] <| text "Season"
+            }
+        , Input.text []
+            { onChange = String.toInt >> OnChangeTvEpisode
+            , text = Maybe.withDefault "" (Maybe.map String.fromInt model.tvEpisode)
+            , placeholder = Just <| Input.placeholder [] <| text "Episode Number"
+            , label = Input.labelAbove [] <| text "Episode"
+            }
         ]
 
 

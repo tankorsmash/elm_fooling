@@ -569,10 +569,10 @@ view model =
                 [ if model.text_search /= "" then
                     case model.category of
                         Film ->
-                            primary_button [] SubmitFilmSearch "Film Search"
+                            primary_button [width fill, height fill] SubmitFilmSearch "Film Search"
 
                         Tv ->
-                            primary_button [] SubmitTvSearch "TV Search"
+                            primary_button [width fill, height fill] SubmitTvSearch "TV Search"
 
                         NoCategory ->
                             Element.none

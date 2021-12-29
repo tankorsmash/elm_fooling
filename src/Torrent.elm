@@ -153,9 +153,13 @@ clearQueryAndSearchResults model =
     }
 
 
+
 -- url_root = "http://0.0.0.0:4126"
 -- url_root = "http://localhost:4126"
-url_root = "http://192.168.2.41:4126"
+
+
+url_root =
+    "http://192.168.2.41:4126"
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -484,12 +488,24 @@ viewQueryResponse model =
         ]
 
 
+categoryRadioOption str option_state =
+    case option_state of
+        Input.Idle ->
+            el [ Font.color color_secondary ] <| text <| "Search " ++ str
+
+        Input.Focused ->
+            el [ Font.color color_danger ] <| text <| "Search " ++ str
+
+        Input.Selected ->
+            el [ Font.color color_primary ] <| text <| "Search " ++ str
+
+
 view : Model -> Html.Html Msg
 view model =
     Element.layoutWith { options = [] }
         []
     <|
-        column [ width fill, spacingXY 0 20, Font.size 48]
+        column [ width fill, spacingXY 0 20, Font.size 48 ]
             [ text "TORRENTS"
             , row [ width fill ]
                 [ Input.radioRow [ spacing 20, width fill ]
@@ -497,8 +513,8 @@ view model =
                     , selected = Just model.category
                     , label = Input.labelAbove [] <| text "Category"
                     , options =
-                        [ Input.option Film (text "Film")
-                        , Input.option Tv (text "TV")
+                        [ Input.optionWith Film (categoryRadioOption "Film")
+                        , Input.optionWith Tv (categoryRadioOption "TV")
                         ]
                     }
                 , Input.checkbox [ spacing 20, width fill ]
@@ -512,7 +528,7 @@ view model =
                 [ case model.startedSuccessfully of
                     Just success ->
                         if success then
-                            el [Font.color <| rgb 0 1 0 ] <| text "Started download successfully!"
+                            el [ Font.color <| rgb 0 1 0 ] <| text "Started download successfully!"
 
                         else
                             text "Failed to start for some reason"

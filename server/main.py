@@ -37,8 +37,36 @@ class EnableCors:
         return _enable_cors
 
 
-app.install(EnableCors())
 
+@bottle.route('/<:re:.*>', method='OPTIONS')
+def enable_cors_generic_route():
+    """
+    This route takes priority over all others. So any request with an OPTIONS
+    method will be handled by this function.
+
+    See: https://github.com/bottlepy/bottle/issues/402
+
+    NOTE: This means we won't 404 any invalid path that is an OPTIONS request.
+    """
+    add_cors_headers()
+
+@bottle.hook('after_request')
+def enable_cors_after_request_hook():
+    """
+    This executes after every route. We use it to attach CORS headers when
+    applicable.
+    """
+    add_cors_headers()
+
+def add_cors_headers():
+	bottle.response.headers['Access-Control-Allow-Origin'] = '*'
+	bottle.response.headers['Access-Control-Allow-Methods'] = \
+		'GET, POST, PUT, OPTIONS'
+	bottle.response.headers['Access-Control-Allow-Headers'] = \
+		'Origin, Accept, Content-Type, X-Requested-With, X-CSRF-Token'
+
+
+app.install(EnableCors())
 
 def open_json_file(path):
     combo_path = root_static_asset_dir / (path)
@@ -88,15 +116,18 @@ class SetDirectory(object):
 	def __exit__(self, *exc):
 		os.chdir(self.origin)
 
-@get("/torrent/search")
+@post("/torrent/search")
 def torrent_search():
 	# with SetDirectory(r"C:/code/python/qbitorrent"):
 	# print("curdir", Path(os.curdir).absolute())
 	sys.path.append(r"C:/code/python/qbitorrent")
 	import downloader
-	print("\njson:", request.json)
-	(query, category) = downloader.build_query("my tv show", category="TV")
-	return { "success": True, "response": {"query": query}}
+	print("\njson:", request.json, "\n")
+
+	query = request.json["query"]
+
+	(new_query, category) = downloader.build_query(query, category="TV")
+	return { "success": True, "response": {"query": new_query}}
 
 @route("/frames/<frame_type>")
 def frames(frame_type):

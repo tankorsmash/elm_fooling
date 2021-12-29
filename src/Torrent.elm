@@ -49,6 +49,7 @@ import Html
 import Html.Attributes exposing (attribute, classList, href, property, src, style, value)
 import Html.Events
 import Http
+import Json.Encode as Encode
 import Json.Decode as Decode exposing (Decoder, field, string)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import List.Extra
@@ -103,8 +104,9 @@ update msg model =
         SubmitSearch ->
             let
                 http_request =
-                    Http.get
+                    Http.post
                         { url = "http://localhost:4126/torrent/search"
+                        , body = Http.jsonBody <| Encode.object [("query", Encode.string model.text_search)]
                         , expect =
                             Http.expectJson ReceivedQueryResponse
                                 (field "response" (field "query" Decode.string))

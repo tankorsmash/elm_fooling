@@ -378,7 +378,7 @@ viewSearchResponse model =
     column [ width fill ]
         [ case model.receivedSearch of
             Nothing ->
-                text "No search received"
+                text "Please choose an option above"
 
             Just items ->
                 -- column []

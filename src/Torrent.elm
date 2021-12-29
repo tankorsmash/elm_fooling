@@ -184,11 +184,12 @@ update msg model =
                 |> (\m ->
                         ( { m | tvComplete = newComplete }, Cmd.none )
                    )
+
         OnChangeAllowUntrustedUsers newAllowUntrustedUsers ->
             model
                 |> clearQueryAndSearchResults
                 |> (\m ->
-                        ( { m | allowUntrustedUsers = newAllowUntrustedUsers}, Cmd.none )
+                        ( { m | allowUntrustedUsers = newAllowUntrustedUsers }, Cmd.none )
                    )
 
         SubmitFilmSearch ->
@@ -387,17 +388,17 @@ viewSearchResponse model =
                     { data = items
                     , columns = torrentItemTableConfig
                     }
-        , text <|
+        , Element.el [ Font.color <| rgb 1 0 0 ] <|
             case model.receivedSearchError of
                 Nothing ->
-                    "No error"
+                    Element.none
 
                 error ->
                     let
                         _ =
                             Debug.log "search response error" error
                     in
-                    "Search error: " ++ Debug.toString error
+                    text <| "Search error: " ++ Debug.toString error
         ]
 
 
@@ -411,13 +412,16 @@ viewQueryResponse model =
 
                 Just query ->
                     "Query: " ++ query
-        , text <|
-            case model.receivedQueryError of
-                Nothing ->
-                    "No error"
+        , case model.receivedQueryError of
+            Nothing ->
+                Element.none
 
-                error ->
-                    "Error: " ++ Debug.toString error
+            error ->
+                let
+                    _ =
+                        Debug.log "search response error" error
+                in
+                text <| "Search error: " ++ Debug.toString error
         ]
 
 

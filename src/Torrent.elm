@@ -457,7 +457,7 @@ viewSearchResponse model =
                         -- column []
                         --     <| ( text <| "Search results length: " ++ (String.fromInt <| List.length items))
                         --     :: List.map renderTorrentItem items
-                        Element.table [ width fill, Font.size 16 ]
+                        Element.table [ width fill, Font.size 16, spacingXY 0 10 ]
                             { data = items
                             , columns = torrentItemTableConfig
                             }

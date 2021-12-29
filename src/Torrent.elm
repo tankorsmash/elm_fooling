@@ -167,6 +167,26 @@ viewTvOptions model =
         ]
 
 
+viewQueryResponse : Model -> Element Msg
+viewQueryResponse model =
+    column [ width fill ]
+        [ text <|
+            case model.receivedQuery of
+                Nothing ->
+                    "No query received"
+
+                Just query ->
+                    "Query: " ++ query
+        , text <|
+            case model.receivedQueryError of
+                Nothing ->
+                    "No error"
+
+                error ->
+                    "Error: " ++ Debug.toString error
+        ]
+
+
 view : Model -> Html.Html Msg
 view model =
     Element.layoutWith { options = [] }
@@ -203,8 +223,9 @@ view model =
                   else
                     Element.none
                 ]
-            , row [ width fill ]
-                []
+            , column [ width fill ]
+                [ viewQueryResponse model
+                ]
             ]
 
 

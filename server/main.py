@@ -95,8 +95,8 @@ def torrent_search():
 	sys.path.append(r"C:/code/python/qbitorrent")
 	import downloader
 	print("\njson:", request.json)
-	(query, category) = downloader.build_query("nothing", category="TV")
-	return { "success": True, "response": query}
+	(query, category) = downloader.build_query("my tv show", category="TV")
+	return { "success": True, "response": {"query": query}}
 
 @route("/frames/<frame_type>")
 def frames(frame_type):

@@ -170,4 +170,4 @@ def frames(frame_type):
     return {"success": True, "json_data": json_data}
 
 
-run(host="localhost", port=4126, debug=False, reloader=True)
+run(host="0.0.0.0", port=4126, debug=False, reloader=True)

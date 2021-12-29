@@ -153,6 +153,11 @@ clearQueryAndSearchResults model =
     }
 
 
+-- url_root = "http://0.0.0.0:4126"
+-- url_root = "http://localhost:4126"
+url_root = "http://192.168.2.41:4126"
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -202,7 +207,7 @@ update msg model =
             let
                 http_request =
                     Http.post
-                        { url = "http://localhost:4126/torrent/search"
+                        { url = url_root ++ "/torrent/search"
                         , body =
                             Encode.object
                                 [ ( "query", Encode.string model.text_search )
@@ -221,7 +226,7 @@ update msg model =
             let
                 http_request =
                     Http.post
-                        { url = "http://localhost:4126/torrent/search"
+                        { url = url_root ++ "/torrent/search"
                         , body =
                             Encode.object
                                 [ ( "query", Encode.string model.text_search )
@@ -293,7 +298,7 @@ update msg model =
         StartDownloadTorrent link ->
             ( model
             , Http.post
-                { url = "http://localhost:4126/torrent/download"
+                { url = url_root ++ "/torrent/download"
                 , body =
                     Encode.object
                         [ ( "link", Encode.string link )
@@ -438,7 +443,7 @@ viewSearchResponse model =
                 -- column []
                 --     <| ( text <| "Search results length: " ++ (String.fromInt <| List.length items))
                 --     :: List.map renderTorrentItem items
-                Element.table [ width fill ]
+                Element.table [ width fill, Font.size 16 ]
                     { data = items
                     , columns = torrentItemTableConfig
                     }
@@ -484,7 +489,7 @@ view model =
     Element.layoutWith { options = [] }
         []
     <|
-        column [ width fill, spacingXY 0 20 ]
+        column [ width fill, spacingXY 0 20, Font.size 48]
             [ text "TORRENTS"
             , row [ width fill ]
                 [ Input.radioRow [ spacing 20, width fill ]
@@ -507,7 +512,7 @@ view model =
                 [ case model.startedSuccessfully of
                     Just success ->
                         if success then
-                            text "Started download successfully"
+                            el [Font.color <| rgb 0 1 0 ] <| text "Started download successfully!"
 
                         else
                             text "Failed to start for some reason"

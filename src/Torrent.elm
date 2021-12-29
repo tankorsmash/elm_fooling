@@ -148,19 +148,39 @@ update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         OnChangeCategory new_category ->
-            ( { model | category = new_category }, Cmd.none )
+            model
+                |> clearQueryAndSearchResults
+                |> (\m ->
+                        ( { m | category = new_category }, Cmd.none )
+                   )
 
         OnChangeTextSearch new_text_search ->
-            ( { model | text_search = new_text_search }, Cmd.none )
+            model
+                |> clearQueryAndSearchResults
+                |> (\m ->
+                        ( { m | text_search = new_text_search }, Cmd.none )
+                   )
 
         OnChangeTvSeason newSeason ->
-            ( { model | tvSeason = newSeason }, Cmd.none )
+            model
+                |> clearQueryAndSearchResults
+                |> (\m ->
+                        ( { m | tvSeason = newSeason }, Cmd.none )
+                   )
 
         OnChangeTvEpisode newEpisode ->
-            ( { model | tvEpisode = newEpisode }, Cmd.none )
+            model
+                |> clearQueryAndSearchResults
+                |> (\m ->
+                        ( { m | tvEpisode = newEpisode }, Cmd.none )
+                   )
 
         OnChangeTvComplete newComplete ->
-            ( { model | tvComplete = newComplete }, Cmd.none )
+            model
+                |> clearQueryAndSearchResults
+                |> (\m ->
+                        ( { m | tvComplete = newComplete }, Cmd.none )
+                   )
 
         SubmitFilmSearch ->
             let

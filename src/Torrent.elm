@@ -49,9 +49,9 @@ import Html
 import Html.Attributes exposing (attribute, classList, href, property, src, style, value)
 import Html.Events
 import Http
-import Json.Encode as Encode
 import Json.Decode as Decode exposing (Decoder, field, string)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
+import Json.Encode as Encode
 import List.Extra
 import Random
 import Random.List
@@ -73,7 +73,8 @@ type alias Model =
 type Msg
     = OnChangeCategory Category
     | OnChangeTextSearch String
-    | SubmitSearch
+    | SubmitFilmSearch
+    | SubmitTvSearch
     | ReceivedQueryResponse (Result Http.Error String)
 
 
@@ -101,12 +102,31 @@ update msg model =
         OnChangeTextSearch new_text_search ->
             ( { model | text_search = new_text_search }, Cmd.none )
 
-        SubmitSearch ->
+        SubmitFilmSearch ->
             let
                 http_request =
                     Http.post
                         { url = "http://localhost:4126/torrent/search"
-                        , body = Http.jsonBody <| Encode.object [("query", Encode.string model.text_search)]
+                        , body =
+                            Encode.object
+                                [ ( "query", Encode.string model.text_search ) ]
+                                |> Http.jsonBody
+                        , expect =
+                            Http.expectJson ReceivedQueryResponse
+                                (field "response" (field "query" Decode.string))
+                        }
+            in
+            ( model, http_request )
+
+        SubmitTvSearch ->
+            let
+                http_request =
+                    Http.post
+                        { url = "http://localhost:4126/torrent/search"
+                        , body =
+                            Encode.object
+                                [ ( "query", Encode.string model.text_search ) ]
+                                |> Http.jsonBody
                         , expect =
                             Http.expectJson ReceivedQueryResponse
                                 (field "response" (field "query" Decode.string))
@@ -141,7 +161,19 @@ viewTextSearch category model =
     Input.search []
         { onChange = OnChangeTextSearch
         , text = model.text_search
-        , placeholder = Just <| Input.placeholder [] <| text "Movie/TV name here"
+        , placeholder =
+            Just <|
+                Input.placeholder [] <|
+                    text <|
+                        case category of
+                            Film ->
+                                "Film name here"
+
+                            Tv ->
+                                "Tv name here"
+
+                            NoCategory ->
+                                "Name here"
         , label =
             Input.labelLeft [] <|
                 text <|
@@ -220,7 +252,15 @@ view model =
                 ]
             , row [ width fill ]
                 [ if model.text_search /= "" then
-                    primary_button [] SubmitSearch "Search"
+                    case model.category of
+                        Film ->
+                            primary_button [] SubmitFilmSearch "Film Search"
+
+                        Tv ->
+                            primary_button [] SubmitTvSearch "TV Search"
+
+                        NoCategory ->
+                            Element.none
 
                   else
                     Element.none

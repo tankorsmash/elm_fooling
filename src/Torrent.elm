@@ -444,13 +444,21 @@ viewSearchResponse model =
                 text "Please choose an option above"
 
             Just items ->
-                -- column []
-                --     <| ( text <| "Search results length: " ++ (String.fromInt <| List.length items))
-                --     :: List.map renderTorrentItem items
-                Element.table [ width fill, Font.size 16 ]
-                    { data = items
-                    , columns = torrentItemTableConfig
-                    }
+                case items of
+                    [] ->
+                        if model.allowUntrustedUsers then
+                            text "No results found. Maybe allow sketchy users?"
+                        else
+                            text "No results found. Is there a typo?"
+
+                    _ ->
+                        -- column []
+                        --     <| ( text <| "Search results length: " ++ (String.fromInt <| List.length items))
+                        --     :: List.map renderTorrentItem items
+                        Element.table [ width fill, Font.size 16 ]
+                            { data = items
+                            , columns = torrentItemTableConfig
+                            }
         , Element.el [ Font.color <| rgb 1 0 0 ] <|
             case model.receivedSearchError of
                 Nothing ->
@@ -527,7 +535,7 @@ view model =
                                 text "Allowing everyone"
 
                             else
-                                text "Only allowing trusted uploaders"
+                                el [ Font.color <| rgb255 170 108 57 ] <| text "Only allowing trusted uploaders"
                     , checked = model.allowUntrustedUsers
                     , label = Input.labelAbove [] <| el [ Font.size 24 ] <| text "Allow Sketchy Users?"
                     }

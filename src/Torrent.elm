@@ -511,17 +511,25 @@ view model =
                 [ Input.radioRow [ spacing 20, width fill ]
                     { onChange = OnChangeCategory
                     , selected = Just model.category
-                    , label = Input.labelAbove [] <| text "Category"
+                    , label = Input.labelAbove [] <| el [ Font.size 24 ] <| text "Category"
                     , options =
                         [ Input.optionWith Film (categoryRadioOption "Film")
                         , Input.optionWith Tv (categoryRadioOption "TV")
                         ]
                     }
-                , Input.checkbox [ spacing 20, width fill ]
+                ]
+            , row [ width fill ]
+                [ Input.checkbox [ width fill ]
                     { onChange = OnChangeAllowUntrustedUsers
-                    , icon = Input.defaultCheckbox
+                    , icon =
+                        \checked ->
+                            if checked then
+                                text "Allowing everyone"
+
+                            else
+                                text "Only allowing trusted uploaders"
                     , checked = model.allowUntrustedUsers
-                    , label = Input.labelAbove [] <| text "Allow Sketchy Users"
+                    , label = Input.labelAbove [] <| el [ Font.size 24 ] <| text "Allow Sketchy Users?"
                     }
                 ]
             , row [ width fill ]

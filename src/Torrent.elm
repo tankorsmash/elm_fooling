@@ -82,6 +82,7 @@ type Msg
     | OnChangeTvSeason (Maybe Int)
     | OnChangeTvEpisode (Maybe Int)
     | OnChangeTvComplete Bool
+    | OnChangeAllowUntrustedUsers Bool
     | SubmitFilmSearch
     | SubmitTvSearch
     | ReceivedQueryResponse (Result Http.Error String)
@@ -182,6 +183,12 @@ update msg model =
                 |> clearQueryAndSearchResults
                 |> (\m ->
                         ( { m | tvComplete = newComplete }, Cmd.none )
+                   )
+        OnChangeAllowUntrustedUsers newAllowUntrustedUsers ->
+            model
+                |> clearQueryAndSearchResults
+                |> (\m ->
+                        ( { m | allowUntrustedUsers = newAllowUntrustedUsers}, Cmd.none )
                    )
 
         SubmitFilmSearch ->
@@ -355,6 +362,7 @@ torrentItemTableConfig =
       }
     ]
 
+
 clipText : String -> Int -> String
 clipText str length =
     if String.length str > length then
@@ -362,6 +370,7 @@ clipText str length =
 
     else
         str
+
 
 viewSearchResponse : Model -> Element Msg
 viewSearchResponse model =
@@ -374,7 +383,7 @@ viewSearchResponse model =
                 -- column []
                 --     <| ( text <| "Search results length: " ++ (String.fromInt <| List.length items))
                 --     :: List.map renderTorrentItem items
-                Element.table [width fill]
+                Element.table [ width fill ]
                     { data = items
                     , columns = torrentItemTableConfig
                     }
@@ -428,6 +437,12 @@ view model =
                         [ Input.option Film (text "Film")
                         , Input.option Tv (text "TV")
                         ]
+                    }
+                , Input.checkbox [ spacing 20, width fill ]
+                    { onChange = OnChangeAllowUntrustedUsers
+                    , icon = Input.defaultCheckbox
+                    , checked = model.allowUntrustedUsers
+                    , label = Input.labelAbove [] <| text "Allow Sketchy Users"
                     }
                 ]
             , row [ width fill ]

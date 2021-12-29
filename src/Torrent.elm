@@ -370,10 +370,10 @@ viewTextSearch category model =
                 text <|
                     case category of
                         Film ->
-                            "Movie:"
+                            "Movie"
 
                         Tv ->
-                            "Tv:"
+                            "Show name"
 
                         NoCategory ->
                             "Search:"
@@ -389,19 +389,20 @@ viewFilmOptions model =
 viewTvOptions : Model -> Element Msg
 viewTvOptions model =
     row [ width fill ]
-        [ el [ width <| fillPortion 3 ] <| viewTextSearch Tv model
-        , Input.text []
+        [ el [ width <| fillPortion 5 ] <| viewTextSearch Tv model
+        , Input.text [ alignBottom ]
             { onChange = String.toInt >> OnChangeTvSeason
             , text = Maybe.withDefault "" (Maybe.map String.fromInt model.tvSeason)
-            , placeholder = Just <| Input.placeholder [] <| text "Season Number"
-            , label = Input.labelAbove [] <| text "Season"
+            , placeholder = Just <| Input.placeholder [] <| text "123"
+            , label = Input.labelAbove [] <| Element.el [ Font.size 20 ] <| text "Season"
             }
-        , Input.text []
-            { onChange = String.toInt >> OnChangeTvEpisode
-            , text = Maybe.withDefault "" (Maybe.map String.fromInt model.tvEpisode)
-            , placeholder = Just <| Input.placeholder [] <| text "Episode Number"
-            , label = Input.labelAbove [] <| text "Episode"
-            }
+        , el [ alignBottom ] <|
+            Input.text []
+                { onChange = String.toInt >> OnChangeTvEpisode
+                , text = Maybe.withDefault "" (Maybe.map String.fromInt model.tvEpisode)
+                , placeholder = Just <| Input.placeholder [] <| text "321"
+                , label = Input.labelAbove [] <| Element.el [ Font.size 20 ] <| text "Episode"
+                }
         ]
 
 
@@ -448,6 +449,7 @@ viewSearchResponse model =
                     [] ->
                         if model.allowUntrustedUsers then
                             text "No results found. Maybe allow sketchy users?"
+
                         else
                             text "No results found. Is there a typo?"
 

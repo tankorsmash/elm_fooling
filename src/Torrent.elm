@@ -67,6 +67,8 @@ type alias Model =
     , text_search : String
     , receivedQuery : Maybe String
     , receivedQueryError : Maybe Http.Error
+    , receivedSearch : Maybe (List TorrentItem)
+    , receivedSearchError : Maybe Http.Error
     , tvSeason : Maybe Int
     , tvEpisode : Maybe Int
     , tvComplete : Bool
@@ -82,6 +84,7 @@ type Msg
     | SubmitFilmSearch
     | SubmitTvSearch
     | ReceivedQueryResponse (Result Http.Error String)
+    | ReceivedSearchResponse (Result Http.Error (List TorrentItem))
 
 
 type Category
@@ -96,9 +99,48 @@ init =
     , text_search = ""
     , receivedQuery = Nothing
     , receivedQueryError = Nothing
+    , receivedSearch = Nothing
+    , receivedSearchError = Nothing
     , tvSeason = Nothing
     , tvEpisode = Nothing
     , tvComplete = False
+    }
+
+
+type alias TorrentItem =
+    { name : String
+    , torrentId : String
+    , link : String
+    , seeders : String
+    , leechers : String
+    , size : String
+    , time : String
+    , uploader : String
+    , uploaderLink : String
+    }
+
+
+decode_torrent_item : Decoder TorrentItem
+decode_torrent_item =
+    Decode.succeed TorrentItem
+        |> required "name" Decode.string
+        |> required "torrentId" Decode.string
+        |> required "link" Decode.string
+        |> required "seeders" Decode.string
+        |> required "leechers" Decode.string
+        |> required "size" Decode.string
+        |> required "time" Decode.string
+        |> required "uploader" Decode.string
+        |> required "uploaderLink" Decode.string
+
+
+clearQueryAndSearchResults : Model -> Model
+clearQueryAndSearchResults model =
+    { model
+        | receivedQuery = Nothing
+        , receivedQueryError = Nothing
+        , receivedSearch = Nothing
+        , receivedSearchError = Nothing
     }
 
 
@@ -132,8 +174,8 @@ update msg model =
                                 ]
                                 |> Http.jsonBody
                         , expect =
-                            Http.expectJson ReceivedQueryResponse
-                                (field "response" (field "query" Decode.string))
+                            Http.expectJson ReceivedSearchResponse
+                                (field "response" (field "items" <| Decode.list decode_torrent_item))
                         }
             in
             ( model, http_request )
@@ -163,12 +205,13 @@ update msg model =
                                         Nothing ->
                                             Encode.null
                                   )
+
                                 -- , ( "complete", Encode.bool model.tvComplete )
                                 ]
                                 |> Http.jsonBody
                         , expect =
-                            Http.expectJson ReceivedQueryResponse
-                                (field "response" (field "query" Decode.string))
+                            Http.expectJson ReceivedSearchResponse
+                                (field "response" (field "items" <| Decode.list decode_torrent_item))
                         }
             in
             ( model, http_request )
@@ -187,6 +230,24 @@ update msg model =
                     ( { model
                         | receivedQueryError = Just err
                         , receivedQuery = Nothing
+                      }
+                    , Cmd.none
+                    )
+
+        ReceivedSearchResponse query_resp ->
+            case query_resp of
+                Ok query ->
+                    ( { model
+                        | receivedSearchError = Nothing
+                        , receivedSearch = Just query
+                      }
+                    , Cmd.none
+                    )
+
+                Err err ->
+                    ( { model
+                        | receivedSearchError = Just err
+                        , receivedSearch = Nothing
                       }
                     , Cmd.none
                     )
@@ -237,7 +298,7 @@ viewFilmOptions model =
 viewTvOptions : Model -> Element Msg
 viewTvOptions model =
     row [ width fill ]
-        [ el [width <| fillPortion 3 ] <| viewTextSearch Tv model
+        [ el [ width <| fillPortion 3 ] <| viewTextSearch Tv model
         , Input.text []
             { onChange = String.toInt >> OnChangeTvSeason
             , text = Maybe.withDefault "" (Maybe.map String.fromInt model.tvSeason)
@@ -250,6 +311,30 @@ viewTvOptions model =
             , placeholder = Just <| Input.placeholder [] <| text "Episode Number"
             , label = Input.labelAbove [] <| text "Episode"
             }
+        ]
+
+
+viewSearchResponse : Model -> Element Msg
+viewSearchResponse model =
+    column [ width fill ]
+        [ text <|
+            case model.receivedSearch of
+                Nothing ->
+                    "No search received"
+
+                Just items ->
+                    "Search results length: " ++ (String.fromInt <| List.length items)
+        , text <|
+            case model.receivedSearchError of
+                Nothing ->
+                    "No error"
+
+                error ->
+                    let
+                        _ =
+                            Debug.log "search response error" error
+                    in
+                    "Search error: " ++ Debug.toString error
         ]
 
 
@@ -318,7 +403,8 @@ view model =
                     Element.none
                 ]
             , column [ width fill ]
-                [ viewQueryResponse model
+                -- [ viewQueryResponse model
+                [ viewSearchResponse model
                 ]
             ]
 

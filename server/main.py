@@ -131,7 +131,10 @@ def torrent_search():
 
 	(new_query, new_category) = downloader.build_query(
 		query, category=category, episode=episode, season=season)
-	return { "success": True, "response": {"query": new_query, "category":new_category}}
+	# return { "success": True, "response": {"query": new_query, "category":new_category}}
+
+	results = downloader.search(new_query, new_category)
+	return { "success": True, "response": {"items": results.get('items', [])}}
 
 @route("/frames/<frame_type>")
 def frames(frame_type):

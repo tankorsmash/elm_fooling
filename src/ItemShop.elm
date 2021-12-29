@@ -1271,8 +1271,8 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     -- Sub.none
     Sub.batch
-        [ Time.every 1000 TickSecond
-        , Browser.Events.onKeyDown keyPressedDecoder
+        [ -- Time.every 1000 TickSecond
+        Browser.Events.onKeyDown keyPressedDecoder
         , Browser.Events.onKeyUp keyReleasedDecoder
         ]
 

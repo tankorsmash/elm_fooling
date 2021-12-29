@@ -1,7 +1,9 @@
+import os
+import sys
 import json
 
 import bottle
-from bottle import route, run, get, post, response
+from bottle import route, run, get, post, response, request
 
 from pathlib import Path
 
@@ -70,6 +72,31 @@ def test_post(data):
 def test_get():
     return {"success": True}
 
+class SetDirectory(object):
+	"""Sets the cwd within the context
+
+	  Args:
+		  path (Path): The path to the cwd
+	"""
+	def __init__(self, path: Path):
+		self.path = path
+		self.origin = Path().absolute()
+
+	def __enter__(self):
+		os.chdir(self.path)
+
+	def __exit__(self, *exc):
+		os.chdir(self.origin)
+
+@get("/torrent/search")
+def torrent_search():
+	# with SetDirectory(r"C:/code/python/qbitorrent"):
+	# print("curdir", Path(os.curdir).absolute())
+	sys.path.append(r"C:/code/python/qbitorrent")
+	import downloader
+	print("\njson:", request.json)
+	(query, category) = downloader.build_query("nothing", category="TV")
+	return { "success": True, "response": query}
 
 @route("/frames/<frame_type>")
 def frames(frame_type):

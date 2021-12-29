@@ -63,6 +63,7 @@ import String
 import Table exposing (ColumnDef, ColumnType(..), PageInfoMsg, TableDefinition, update_page_info, view)
 import Task
 import Time
+import Torrent
 import Url
 import Url.Parser exposing ((</>), Parser, fragment, int, map, oneOf, parse, s, string)
 import Utils exposing (add_class)
@@ -158,6 +159,7 @@ type Msg
     | TableRowClicked
     | GotVisualOutputMsg VisualOutput.Msg
     | GotItemShopMsg ItemShop.Msg
+    | GotTorrentMsg Torrent.Msg
 
 
 
@@ -248,6 +250,7 @@ type TabType
     | OpenDotaTab
     | ElmUIPlaygroundTab
     | ItemShopTab
+    | TorrentTab
 
 
 type alias Model =
@@ -283,6 +286,7 @@ type alias Model =
     , elm_ui_playground_model : ElmUIPlayground.Model
     , visual_output_model : VisualOutput.Model
     , item_shop_model : ItemShop.Model
+    , torrent_model : Torrent.Model
     }
 
 
@@ -333,6 +337,7 @@ matchRoute =
         , map (TabRoute OpenDotaTab) (s "open_dota_tab" </> fragment identity)
         , map (TabRoute ElmUIPlaygroundTab) (s "elm_ui_playground_tab" </> fragment identity)
         , map (TabRoute ItemShopTab) (s "item_shop_tab" </> fragment identity)
+        , map (TabRoute TorrentTab) (s "torrent_tab" </> fragment identity)
         ]
 
 
@@ -464,6 +469,7 @@ init _ url navKey =
             , elm_ui_playground_model = ElmUIPlayground.init
             , visual_output_model = VisualOutput.init
             , item_shop_model = item_shop_model
+            , torrent_model = Torrent.init
             }
 
         existingCmds : Cmd Msg
@@ -918,6 +924,17 @@ update msg model =
             , Cmd.map GotItemShopMsg sub_cmd
             )
 
+        GotTorrentMsg torrent_msg ->
+            let
+                ( sub_model, sub_cmd ) =
+                    Torrent.update torrent_msg model.torrent_model
+            in
+            ( { model
+                | torrent_model = sub_model
+              }
+            , Cmd.map GotTorrentMsg sub_cmd
+            )
+
 
 dota_update : DotaMsg -> DotaModel -> ( DotaModel, Cmd Msg )
 dota_update msg dota_model =
@@ -1170,6 +1187,9 @@ tab_type_to_str tab_type =
         ModalTab ->
             "Modal Example"
 
+        TorrentTab ->
+            "Torrent Download"
+
 
 navbar : Model -> Html Msg
 navbar model =
@@ -1179,7 +1199,7 @@ navbar model =
             [ ( HomeTab, "home" )
             , ( FrameViewTab, "frame_view_tab" )
             , ( OpenDotaTab, "open_dota_tab" )
-            , ( ElmUIPlaygroundTab, "elm_ui_playground_tab" )
+            , ( TorrentTab, "torrent_tab" )
             , ( ItemShopTab, "item_shop_tab" )
             ]
 
@@ -1189,6 +1209,7 @@ navbar model =
             , ( SinglePostDataTab, "single_post_data_tab" )
             , ( WeatherTab, "weather_tab" )
             , ( ModalTab, "modal_tab" )
+            , ( ElmUIPlaygroundTab, "elm_ui_playground_tab" )
             ]
 
         all_items =
@@ -1501,6 +1522,10 @@ homeView model =
                 ItemShopTab ->
                     Html.map GotItemShopMsg <|
                         ItemShop.view model.item_shop_model
+
+                TorrentTab ->
+                    Html.map GotTorrentMsg <|
+                        Torrent.view model.torrent_model
 
         bootstrap_stylesheet =
             CDN.stylesheet

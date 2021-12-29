@@ -334,16 +334,22 @@ viewTvOptions model =
         ]
 
 
+
+renderTorrentItem : TorrentItem -> Element Msg
+renderTorrentItem item = text item.name
+
+
 viewSearchResponse : Model -> Element Msg
 viewSearchResponse model =
     column [ width fill ]
-        [ text <|
-            case model.receivedSearch of
-                Nothing ->
-                    "No search received"
+        [ case model.receivedSearch of
+            Nothing ->
+                text "No search received"
 
-                Just items ->
-                    "Search results length: " ++ (String.fromInt <| List.length items)
+            Just items ->
+                column []
+                    <| ( text <| "Search results length: " ++ (String.fromInt <| List.length items))
+                    :: List.map renderTorrentItem items
         , text <|
             case model.receivedSearchError of
                 Nothing ->

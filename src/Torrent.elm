@@ -48,7 +48,8 @@ import Fuzz exposing (Fuzzer, int, list, string)
 import Html
 import Html.Attributes exposing (attribute, classList, href, property, src, style, value)
 import Html.Events
-import Json.Decode as Decode exposing (Decoder)
+import Http
+import Json.Decode as Decode exposing (Decoder, field, string)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import List.Extra
 import Random
@@ -61,13 +62,18 @@ import UUID exposing (UUID)
 
 
 type alias Model =
-    { category : Category, text_search : String }
+    { category : Category
+    , text_search : String
+    , receivedQuery : Maybe String
+    , receivedQueryError : Maybe Http.Error
+    }
 
 
 type Msg
     = OnChangeCategory Category
     | OnChangeTextSearch String
     | SubmitSearch
+    | ReceivedQueryResponse (Result Http.Error String)
 
 
 type Category
@@ -78,7 +84,11 @@ type Category
 
 init : Model
 init =
-    { category = NoCategory, text_search = "" }
+    { category = NoCategory
+    , text_search = ""
+    , receivedQuery = Nothing
+    , receivedQueryError = Nothing
+    }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -91,7 +101,34 @@ update msg model =
             ( { model | text_search = new_text_search }, Cmd.none )
 
         SubmitSearch ->
-            ( model, Cmd.none )
+            let
+                http_request =
+                    Http.get
+                        { url = "http://localhost:4126/torrent/search"
+                        , expect =
+                            Http.expectJson ReceivedQueryResponse
+                                (field "response" (field "query" Decode.string))
+                        }
+            in
+            ( model, http_request )
+
+        ReceivedQueryResponse query_resp ->
+            case query_resp of
+                Ok query ->
+                    ( { model
+                        | receivedQueryError = Nothing
+                        , receivedQuery = Just query
+                      }
+                    , Cmd.none
+                    )
+
+                Err err ->
+                    ( { model
+                        | receivedQueryError = Just err
+                        , receivedQuery = Nothing
+                      }
+                    , Cmd.none
+                    )
 
 
 explain =
@@ -166,6 +203,8 @@ view model =
                   else
                     Element.none
                 ]
+            , row [ width fill ]
+                []
             ]
 
 

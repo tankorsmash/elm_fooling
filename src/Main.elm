@@ -1560,7 +1560,7 @@ homeView model =
         , div [ add_class "row" ]
             [ div
                 [ add_class "col-md-12"
-                , Html.Events.on "keypress" (Json.Decode.succeed <| DownloadPostById 123)
+                -- , Html.Events.on "keypress" (Json.Decode.succeed <| DownloadPostById 123)
                 ]
                 [ tab_content ]
             ]

@@ -72,6 +72,7 @@ type alias Model =
     , tvSeason : Maybe Int
     , tvEpisode : Maybe Int
     , tvComplete : Bool
+    , allowUntrustedUsers : Bool
     }
 
 
@@ -104,6 +105,7 @@ init =
     , tvSeason = Nothing
     , tvEpisode = Nothing
     , tvComplete = False
+    , allowUntrustedUsers = False
     }
 
 
@@ -191,6 +193,7 @@ update msg model =
                             Encode.object
                                 [ ( "query", Encode.string model.text_search )
                                 , ( "category", Encode.string "movies" )
+                                , ( "allow_untrusted_users", Encode.bool model.allowUntrustedUsers )
                                 ]
                                 |> Http.jsonBody
                         , expect =
@@ -225,6 +228,7 @@ update msg model =
                                         Nothing ->
                                             Encode.null
                                   )
+                                , ( "allow_untrusted_users", Encode.bool model.allowUntrustedUsers )
 
                                 -- , ( "complete", Encode.bool model.tvComplete )
                                 ]
@@ -334,10 +338,30 @@ viewTvOptions model =
         ]
 
 
-
 renderTorrentItem : TorrentItem -> Element Msg
-renderTorrentItem item = text item.name
+renderTorrentItem item =
+    text item.name
 
+
+torrentItemTableConfig : List (Element.Column TorrentItem Msg)
+torrentItemTableConfig =
+    [ { header = text "Name"
+      , width = fillPortion 1
+      , view = .name >> (\name -> clipText name 50) >> text
+      }
+    , { header = text "Uploader"
+      , width = fillPortion 1
+      , view = .uploader >> text
+      }
+    ]
+
+clipText : String -> Int -> String
+clipText str length =
+    if String.length str > length then
+        String.left length str ++ "..."
+
+    else
+        str
 
 viewSearchResponse : Model -> Element Msg
 viewSearchResponse model =
@@ -347,9 +371,13 @@ viewSearchResponse model =
                 text "No search received"
 
             Just items ->
-                column []
-                    <| ( text <| "Search results length: " ++ (String.fromInt <| List.length items))
-                    :: List.map renderTorrentItem items
+                -- column []
+                --     <| ( text <| "Search results length: " ++ (String.fromInt <| List.length items))
+                --     :: List.map renderTorrentItem items
+                Element.table [width fill]
+                    { data = items
+                    , columns = torrentItemTableConfig
+                    }
         , text <|
             case model.receivedSearchError of
                 Nothing ->

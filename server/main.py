@@ -116,13 +116,28 @@ class SetDirectory(object):
 	def __exit__(self, *exc):
 		os.chdir(self.origin)
 
+@post("/torrent/download")
+def torrent_search():
+	# with SetDirectory(r"C:/code/python/qbitorrent"):
+	# print("curdir", Path(os.curdir).absolute())
+	sys.path.append(r"C:/code/python/qbitorrent")
+	import downloader
+	print("\ndownload json:", request.json, "\n")
+
+	category = request.json["category"]
+	link = request.json['link']
+	info = downloader.get_torrent_info(link)
+	downloader.start_api_download(info['magnetLink'], category=category)
+
+	return {"success": True}
+
 @post("/torrent/search")
 def torrent_search():
 	# with SetDirectory(r"C:/code/python/qbitorrent"):
 	# print("curdir", Path(os.curdir).absolute())
 	sys.path.append(r"C:/code/python/qbitorrent")
 	import downloader
-	print("\njson:", request.json, "\n")
+	print("\nsearch json:", request.json, "\n")
 
 	query = request.json["query"]
 	category = request.json["category"]

@@ -62,6 +62,19 @@ import Tuple3
 import UUID exposing (UUID)
 
 
+type alias TorrentItem =
+    { name : String
+    , torrentId : String
+    , link : String
+    , seeders : String
+    , leechers : String
+    , size : String
+    , time : String
+    , uploader : String
+    , uploaderLink : String
+    }
+
+
 type alias Model =
     { category : Category
     , text_search : String
@@ -73,6 +86,8 @@ type alias Model =
     , tvEpisode : Maybe Int
     , tvComplete : Bool
     , allowUntrustedUsers : Bool
+    , startedSuccessfully : Maybe Bool
+    , startedSuccessfullyError : Maybe Http.Error
     }
 
 
@@ -85,6 +100,8 @@ type Msg
     | OnChangeAllowUntrustedUsers Bool
     | SubmitFilmSearch
     | SubmitTvSearch
+    | StartDownloadTorrent String
+    | ReceivedStartedDownloadingTorrent (Result Http.Error Bool)
     | ReceivedQueryResponse (Result Http.Error String)
     | ReceivedSearchResponse (Result Http.Error (List TorrentItem))
 
@@ -107,19 +124,8 @@ init =
     , tvEpisode = Nothing
     , tvComplete = False
     , allowUntrustedUsers = False
-    }
-
-
-type alias TorrentItem =
-    { name : String
-    , torrentId : String
-    , link : String
-    , seeders : String
-    , leechers : String
-    , size : String
-    , time : String
-    , uploader : String
-    , uploaderLink : String
+    , startedSuccessfully = Nothing
+    , startedSuccessfullyError = Nothing
     }
 
 
@@ -284,6 +290,50 @@ update msg model =
                     , Cmd.none
                     )
 
+        StartDownloadTorrent link ->
+            ( model
+            , Http.post
+                { url = "http://localhost:4126/torrent/download"
+                , body =
+                    Encode.object
+                        [ ( "link", Encode.string link )
+                        , ( "category"
+                          , case model.category of
+                                Film ->
+                                    Encode.string "Movies"
+
+                                Tv ->
+                                    Encode.string "TV"
+
+                                NoCategory ->
+                                    Encode.string "Movies"
+                          )
+                        ]
+                        |> Http.jsonBody
+                , expect =
+                    Http.expectJson ReceivedStartedDownloadingTorrent
+                        (field "success" Decode.bool)
+                }
+            )
+
+        ReceivedStartedDownloadingTorrent started_resp ->
+            case started_resp of
+                Ok success ->
+                    ( { model
+                        | startedSuccessfully = Just success
+                        , startedSuccessfullyError = Nothing
+                      }
+                    , Cmd.none
+                    )
+
+                Err error ->
+                    ( { model
+                        | startedSuccessfully = Nothing
+                        , startedSuccessfullyError = Just error
+                      }
+                    , Cmd.none
+                    )
+
 
 explain =
     Element.explain Debug.todo
@@ -354,12 +404,16 @@ renderTorrentItem item =
 torrentItemTableConfig : List (Element.Column TorrentItem Msg)
 torrentItemTableConfig =
     [ { header = text "Name"
-      , width = fillPortion 1
+      , width = fillPortion 3
       , view = .name >> (\name -> clipText name 50) >> text
       }
     , { header = text "Uploader"
       , width = fillPortion 1
       , view = .uploader >> text
+      }
+    , { header = text "Download"
+      , width = fillPortion 1
+      , view = \item -> primary_button [] (StartDownloadTorrent item.link) "Download"
       }
     ]
 
@@ -448,6 +502,18 @@ view model =
                     , checked = model.allowUntrustedUsers
                     , label = Input.labelAbove [] <| text "Allow Sketchy Users"
                     }
+                ]
+            , row [ width fill ]
+                [ case model.startedSuccessfully of
+                    Just success ->
+                        if success then
+                            text "Started download successfully"
+
+                        else
+                            text "Failed to start for some reason"
+
+                    Nothing ->
+                        Element.none
                 ]
             , row [ width fill ]
                 [ case model.category of

@@ -67,6 +67,9 @@ type alias Model =
     , text_search : String
     , receivedQuery : Maybe String
     , receivedQueryError : Maybe Http.Error
+    , tvSeason : Maybe Int
+    , tvEpisode : Maybe Int
+    , tvComplete : Bool
     }
 
 
@@ -90,6 +93,9 @@ init =
     , text_search = ""
     , receivedQuery = Nothing
     , receivedQueryError = Nothing
+    , tvSeason = Nothing
+    , tvEpisode = Nothing
+    , tvComplete = False
     }
 
 
@@ -109,7 +115,9 @@ update msg model =
                         { url = "http://localhost:4126/torrent/search"
                         , body =
                             Encode.object
-                                [ ( "query", Encode.string model.text_search ) ]
+                                [ ( "query", Encode.string model.text_search )
+                                , ( "category", Encode.string "movies" )
+                                ]
                                 |> Http.jsonBody
                         , expect =
                             Http.expectJson ReceivedQueryResponse
@@ -125,7 +133,26 @@ update msg model =
                         { url = "http://localhost:4126/torrent/search"
                         , body =
                             Encode.object
-                                [ ( "query", Encode.string model.text_search ) ]
+                                [ ( "query", Encode.string model.text_search )
+                                , ( "category", Encode.string "TV" )
+                                , ( "season"
+                                  , case model.tvSeason of
+                                        Just season ->
+                                            Encode.int season
+
+                                        Nothing ->
+                                            Encode.null
+                                  )
+                                , ( "episode"
+                                  , case model.tvEpisode of
+                                        Just episode ->
+                                            Encode.int episode
+
+                                        Nothing ->
+                                            Encode.null
+                                  )
+                                , ( "episode", Encode.bool model.tvComplete )
+                                ]
                                 |> Http.jsonBody
                         , expect =
                             Http.expectJson ReceivedQueryResponse

@@ -436,6 +436,9 @@ init _ url navKey =
         ( item_shop_model, item_shop_cmds ) =
             ItemShop.init hash
 
+        ( torrent_model, torrent_cmds ) =
+            Torrent.init
+
         initial_model : Model
         initial_model =
             { count = 0
@@ -469,7 +472,7 @@ init _ url navKey =
             , elm_ui_playground_model = ElmUIPlayground.init
             , visual_output_model = VisualOutput.init
             , item_shop_model = item_shop_model
-            , torrent_model = Torrent.init
+            , torrent_model = torrent_model
             }
 
         existingCmds : Cmd Msg
@@ -478,6 +481,7 @@ init _ url navKey =
                 [ --Task.perform AdjustTimeZone Time.here,
                   Cmd.map GotFrameViewMsg frame_view_cmds
                 , Cmd.map GotItemShopMsg item_shop_cmds
+                , Cmd.map GotTorrentMsg torrent_cmds
 
                 -- , post_to_test_post
                 -- frame_view_cmds
@@ -1560,6 +1564,7 @@ homeView model =
         , div [ add_class "row" ]
             [ div
                 [ add_class "col-md-12"
+
                 -- , Html.Events.on "keypress" (Json.Decode.succeed <| DownloadPostById 123)
                 ]
                 [ tab_content ]

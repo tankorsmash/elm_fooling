@@ -6,6 +6,7 @@ import Browser.Events
 import Color
 import Color.Convert as Convert
 import DOM exposing (offsetWidth, target)
+import DateFormat.Relative as Relative
 import Dict
 import Element
     exposing
@@ -66,7 +67,7 @@ type alias QTorrentItem =
     { added_on : Int
     , amount_left : Int
     , auto_tmm : Bool
-    , availability : Int
+    , availability : Float
     , category : String
     , completed : Int
     , completion_on : Int
@@ -139,6 +140,7 @@ type alias Model =
     , startedSuccessfullyError : Maybe Http.Error
     , receivedAllTorrentInfo : Maybe (List QTorrentItem)
     , receivedAllTorrentInfoError : Maybe Http.Error
+    , now : Time.Posix
     }
 
 
@@ -157,6 +159,7 @@ type Msg
     | ReceivedSearchResponse (Result Http.Error (List TorrentItem))
     | StartAllTorrentsInfo
     | ReceivedStartAllTorrentsInfo (Result Http.Error (List QTorrentItem))
+    | GotTimeNow Time.Posix
 
 
 type Category
@@ -165,23 +168,26 @@ type Category
     | Tv
 
 
-init : Model
+init : ( Model, Cmd Msg )
 init =
-    { category = NoCategory
-    , text_search = ""
-    , receivedQuery = Nothing
-    , receivedQueryError = Nothing
-    , receivedSearch = Nothing
-    , receivedSearchError = Nothing
-    , tvSeason = Nothing
-    , tvEpisode = Nothing
-    , tvComplete = False
-    , allowUntrustedUsers = False
-    , startedSuccessfully = Nothing
-    , startedSuccessfullyError = Nothing
-    , receivedAllTorrentInfo = Nothing
-    , receivedAllTorrentInfoError = Nothing
-    }
+    ( { category = NoCategory
+      , text_search = ""
+      , receivedQuery = Nothing
+      , receivedQueryError = Nothing
+      , receivedSearch = Nothing
+      , receivedSearchError = Nothing
+      , tvSeason = Nothing
+      , tvEpisode = Nothing
+      , tvComplete = False
+      , allowUntrustedUsers = False
+      , startedSuccessfully = Nothing
+      , startedSuccessfullyError = Nothing
+      , receivedAllTorrentInfo = Nothing
+      , receivedAllTorrentInfoError = Nothing
+      , now = Time.millisToPosix 0
+      }
+    , Task.perform GotTimeNow Time.now
+    )
 
 
 decode_torrent_item : Decoder TorrentItem
@@ -204,7 +210,7 @@ decode_qtorrent_item =
         |> required "added_on" Decode.int
         |> required "amount_left" Decode.int
         |> required "auto_tmm" Decode.bool
-        |> required "availability" Decode.int
+        |> required "availability" Decode.float
         |> required "category" Decode.string
         |> required "completed" Decode.int
         |> required "completion_on" Decode.int
@@ -479,6 +485,9 @@ update msg model =
                     , Cmd.none
                     )
 
+        GotTimeNow new_now ->
+            ( { model | now = new_now }, Cmd.none )
+
 
 explain : Element.Attribute msg
 explain =
@@ -599,8 +608,8 @@ etaToString eta =
         String.fromInt (eta * 60 * 60 * 24) ++ "d"
 
 
-qTorrentsListColumnConfig : List (Element.Column QTorrentItem Msg)
-qTorrentsListColumnConfig =
+qTorrentsListColumnConfig : Time.Posix -> List (Element.Column QTorrentItem Msg)
+qTorrentsListColumnConfig now =
     [ { header = text "Name"
       , width = fillPortion 1
       , view =
@@ -649,6 +658,25 @@ qTorrentsListColumnConfig =
                 <|
                     text item.state
       }
+    , { header = Element.el [ Font.center ] <| text "Added on"
+      , width = fillPortion 1
+      , view =
+            \item ->
+                Element.el
+                    [ width fill
+                    , Font.center
+                    ]
+                <|
+                    text <|
+                        let
+                            rawAddedOn =
+                                round <| toFloat item.added_on * 1000
+
+                            added_on =
+                                Time.millisToPosix rawAddedOn
+                        in
+                        Relative.relativeTime now added_on
+      }
     ]
 
 
@@ -665,10 +693,11 @@ viewQTorrents model =
                 Element.table
                     [ width fill
                     , Font.size 24
-                    , spacingXY 10 0
+                    , spacingXY 10 10
+
                     ]
-                    { data = torrents_info
-                    , columns = qTorrentsListColumnConfig
+                    { data = List.reverse <| List.sortBy .added_on torrents_info
+                    , columns = qTorrentsListColumnConfig model.now
                     }
 
             Nothing ->

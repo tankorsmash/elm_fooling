@@ -626,70 +626,80 @@ viewTvOptions model =
         ]
 
 
+monospace attrs el =
+    Element.el (Font.family [ Font.monospace ] :: attrs) el
+
+
 renderTorrentInfo : TorrentNameInfo -> Element Msg
 renderTorrentInfo nameInfo =
     let
         title =
-            nameInfo.title |> Maybe.withDefault "???" |> (\t -> clipText t 50)
+            Element.el [ Font.size 24 ] <| text (nameInfo.title |> Maybe.withDefault "???" |> (\t -> clipText t 50))
 
         year =
             case nameInfo.year of
                 Nothing ->
-                    ""
+                    text ""
 
                 Just year_ ->
-                    "(" ++ String.fromInt year_ ++ ")"
+                    text <| "(" ++ String.fromInt year_ ++ ")"
 
         resolution =
             case nameInfo.resolution of
                 Nothing ->
-                    ""
+                    text ""
 
                 Just resolution_ ->
-                    resolution_
+                    text resolution_
 
         codec =
             case nameInfo.codec of
                 Nothing ->
-                    ""
+                    text ""
 
                 Just codec_ ->
-                    codec_
+                    text codec_
+
         quality =
             case nameInfo.quality of
                 Nothing ->
-                    ""
+                    text ""
 
                 Just quality_ ->
-                    quality_
+                    text quality_
     in
-    text <| title ++ year ++ " - " ++ resolution ++ " | " ++ quality ++ " " ++ codec
+    paragraph []
+        [ title
+        , year
+        , text " - "
+        , monospace [ Font.size 14 ] resolution
+        , text " | "
+        , monospace [ Font.size 14 ] quality
+        , text " "
+        , monospace [ Font.size 14 ] codec
+        ]
 
 
 torrentItemTableConfig : List (Element.Column TorrentItem Msg)
 torrentItemTableConfig =
-    [ { header = text "Has Extra info"
-      , width = fillPortion 3
+    [ { header = text "Name"
+      , width = fillPortion 5
       , view =
             \item ->
-                case item.torrentNameInfo of
-                    Just nameInfo ->
-                        renderTorrentInfo nameInfo
+                    case item.torrentNameInfo of
+                        Just nameInfo ->
+                            renderTorrentInfo nameInfo
 
-                    Nothing ->
-                        text (clipText item.name 50)
+                        Nothing ->
+                            text (clipText item.name 50)
       }
     , { header = text "Uploader"
       , width = fillPortion 1
-      , view = .uploader >> text
+      , view = \item -> el [ Font.size 14 ] <| text item.uploader
       }
     , { header = text "Download"
-      , width = fillPortion 1
+      , width = fillPortion 2
       , view = \item -> primary_button [] (StartDownloadTorrent item.link) "Download"
-      }
-    , { header = text "Parse"
-      , width = fillPortion 1
-      , view = \item -> primary_button [] (ParseTorrentName item.name) "Get name"
       }
     ]
 
@@ -1017,7 +1027,7 @@ view model =
             , column [ width fill ] [ viewSearchResponse model ]
             , row [ width fill, paddingXY 0 15, Border.width 2, Border.dotted, Border.widthEach { top = 4, bottom = 0, left = 0, right = 0 } ] [ text "CURRENT TORRENTS" ]
             , column [ width fill ] [ viewQTorrents model ]
-            , column [ width fill ] [ viewTorrentNameInfo model ]
+            -- , column [ width fill ] [ viewTorrentNameInfo model ]
             ]
 
 

@@ -147,11 +147,12 @@ type alias Model =
 
 
 type alias TorrentNameInfo =
-    { resolution : String
-    , quality : String
-    , codec : String
-    , group : String
-    , title : String
+    { resolution : Maybe String
+    , quality : Maybe String
+    , codec : Maybe String
+    , group : Maybe String
+    , title : Maybe String
+    , year : Maybe Int
     }
 
 
@@ -205,14 +206,23 @@ init =
     )
 
 
+optionalInt fieldStr =
+    optional fieldStr (Decode.nullable Decode.int) Nothing
+
+
+optionalString fieldStr =
+    optional fieldStr (Decode.nullable Decode.string) Nothing
+
+
 decode_torrent_name_info : Decoder TorrentNameInfo
 decode_torrent_name_info =
     Decode.succeed TorrentNameInfo
-        |> required "resolution" Decode.string
-        |> required "quality" Decode.string
-        |> required "codec" Decode.string
-        |> required "group" Decode.string
-        |> required "title" Decode.string
+        |> optionalString "resolution"
+        |> optionalString "quality"
+        |> optionalString "codec"
+        |> optionalString "group"
+        |> optionalString "title"
+        |> optionalInt "year"
 
 
 decode_torrent_item : Decoder TorrentItem
@@ -520,7 +530,7 @@ update msg model =
                 , body =
                     Encode.object
                         [ ( "filename"
-                          , Encode.string "Antlers.2021.1080p.WEBRip.x265-RARBG"
+                          , Encode.string torrent_name
                           )
                         ]
                         |> Http.jsonBody
@@ -633,6 +643,10 @@ torrentItemTableConfig =
       , width = fillPortion 1
       , view = \item -> primary_button [] (StartDownloadTorrent item.link) "Download"
       }
+    , { header = text "Parse"
+      , width = fillPortion 1
+      , view = \item -> primary_button [] (ParseTorrentName item.name) "Get name"
+      }
     ]
 
 
@@ -740,13 +754,20 @@ qTorrentsListColumnConfig now =
     ]
 
 
+nameRenderer : TorrentNameInfo -> Element Msg
 nameRenderer nameInfo =
-    column [ Font.family [Font.monospace] ] <|
-        [ text <| "res: " ++ nameInfo.resolution
-        , text <| "qua: " ++ nameInfo.quality
-        , text <| "cod: " ++ nameInfo.codec
-        , text <| "grp: " ++ nameInfo.group
-        , text <| "tit: " ++ nameInfo.title
+    column [ Font.family [ Font.monospace ] ] <|
+        [ text <| "res: " ++ (nameInfo.resolution |> Maybe.withDefault "???")
+        , text <| "qua: " ++ (nameInfo.quality |> Maybe.withDefault "???")
+        , text <| "cod: " ++ (nameInfo.codec |> Maybe.withDefault "???")
+        , text <| "grp: " ++ (nameInfo.group |> Maybe.withDefault "???")
+        , text <| "tit: " ++ (nameInfo.title |> Maybe.withDefault "???")
+        , text <|
+            "yr:  "
+                ++ (nameInfo.year
+                        |> Maybe.map String.fromInt
+                        |> Maybe.withDefault "--"
+                   )
         ]
 
 
@@ -770,7 +791,7 @@ viewTorrentNameInfo model =
         header =
             row []
                 [ text "Torrent name info"
-                , primary_button [] (ParseTorrentName "") "Get name"
+                , primary_button [] (ParseTorrentName "Antlers.2021.1080p.WEBRip.x265-RARBG") "Get name"
                 ]
     in
     column [ width fill ] <|

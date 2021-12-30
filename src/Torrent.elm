@@ -81,7 +81,7 @@ type alias QTorrentItem =
     , hash : String
     , last_activity : Int
     , magnet_uri : String
-    , max_ratio : Int
+    , max_ratio : Float
     , max_seeding_time : Int
     , name : String
     , num_complete : Int
@@ -90,8 +90,8 @@ type alias QTorrentItem =
     , num_seeds : Int
     , priority : Int
     , progress : Int
-    , ratio : Int
-    , ratio_limit : Int
+    , ratio : Float
+    , ratio_limit : Float
     , save_path : String
     , seeding_time : Int
     , seeding_time_limit : Int
@@ -197,6 +197,7 @@ decode_torrent_item =
         |> required "uploader" Decode.string
         |> required "uploaderLink" Decode.string
 
+
 decode_qtorrent_item : Decoder QTorrentItem
 decode_qtorrent_item =
     Decode.succeed QTorrentItem
@@ -218,7 +219,7 @@ decode_qtorrent_item =
         |> required "hash" Decode.string
         |> required "last_activity" Decode.int
         |> required "magnet_uri" Decode.string
-        |> required "max_ratio" Decode.int
+        |> required "max_ratio" Decode.float
         |> required "max_seeding_time" Decode.int
         |> required "name" Decode.string
         |> required "num_complete" Decode.int
@@ -227,8 +228,8 @@ decode_qtorrent_item =
         |> required "num_seeds" Decode.int
         |> required "priority" Decode.int
         |> required "progress" Decode.int
-        |> required "ratio" Decode.int
-        |> required "ratio_limit" Decode.int
+        |> required "ratio" Decode.float
+        |> required "ratio_limit" Decode.float
         |> required "save_path" Decode.string
         |> required "seeding_time" Decode.int
         |> required "seeding_time_limit" Decode.int
@@ -448,14 +449,15 @@ update msg model =
                       }
                     , Cmd.none
                     )
+
         StartAllTorrentsInfo ->
             ( model
             , Http.post
                 { url = url_root ++ "/torrent/info"
-                , body = Encode.object [ ] |> Http.jsonBody
+                , body = Encode.object [] |> Http.jsonBody
                 , expect =
                     Http.expectJson ReceivedStartAllTorrentsInfo
-                        (field "torrents" (Decode.list decode_qtorrent_item))
+                        (field "response" (field "torrents" (Decode.list decode_qtorrent_item)))
                 }
             )
 
@@ -572,6 +574,33 @@ clipText str length =
 
     else
         str
+
+
+qTorrentsListColumnConfig : List (Element.Column QTorrentItem Msg)
+qTorrentsListColumnConfig =
+    []
+
+
+viewQTorrents : Model -> Element Msg
+viewQTorrents model =
+    let
+        _ =
+            123
+    in
+    column [ width fill ]
+        [ primary_button [] StartAllTorrentsInfo "Update"
+        , case model.receivedAllTorrentInfo of
+            Just torrents_info ->
+                Element.table [] { data = torrents_info, columns = qTorrentsListColumnConfig }
+
+            Nothing ->
+                case model.receivedAllTorrentInfoError of
+                    Just error ->
+                        Element.el [ Font.color <| rgb 1 0 0 ] <| text <| Debug.toString error
+
+                    Nothing ->
+                        Element.none
+        ]
 
 
 viewSearchResponse : Model -> Element Msg
@@ -718,10 +747,9 @@ view model =
                   else
                     Element.none
                 ]
-            , column [ width fill ]
-                -- [ viewQueryResponse model
-                [ viewSearchResponse model
-                ]
+            , column [ width fill ] [ viewSearchResponse model ]
+            , row [ width fill, paddingXY 0 15, Border.width 2, Border.dotted, Border.widthEach { top = 4, bottom = 0, left = 0, right = 0 } ] [ text "CURRENT TORRENTS" ]
+            , column [ width fill ] [ viewQTorrents model ]
             ]
 
 

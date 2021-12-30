@@ -62,6 +62,55 @@ import Tuple3
 import UUID exposing (UUID)
 
 
+type alias QTorrentItem =
+    { added_on : Int
+    , amount_left : Int
+    , auto_tmm : Bool
+    , availability : Int
+    , category : String
+    , completed : Int
+    , completion_on : Int
+    , content_path : String
+    , dl_limit : Int
+    , dlspeed : Int
+    , downloaded : Int
+    , downloaded_session : Int
+    , eta : Int
+    , f_l_piece_prio : Bool
+    , force_start : Bool
+    , hash : String
+    , last_activity : Int
+    , magnet_uri : String
+    , max_ratio : Int
+    , max_seeding_time : Int
+    , name : String
+    , num_complete : Int
+    , num_incomplete : Int
+    , num_leechs : Int
+    , num_seeds : Int
+    , priority : Int
+    , progress : Int
+    , ratio : Int
+    , ratio_limit : Int
+    , save_path : String
+    , seeding_time : Int
+    , seeding_time_limit : Int
+    , seen_complete : Int
+    , seq_dl : Bool
+    , state : String
+    , super_seeding : Bool
+    , tags : String
+    , time_active : Int
+    , total_size : Int
+    , tracker : String
+    , trackers_count : Int
+    , up_limit : Int
+    , uploaded : Int
+    , uploaded_session : Int
+    , upspeed : Int
+    }
+
+
 type alias TorrentItem =
     { name : String
     , torrentId : String
@@ -88,6 +137,8 @@ type alias Model =
     , allowUntrustedUsers : Bool
     , startedSuccessfully : Maybe Bool
     , startedSuccessfullyError : Maybe Http.Error
+    , receivedAllTorrentInfo : Maybe (List QTorrentItem)
+    , receivedAllTorrentInfoError : Maybe Http.Error
     }
 
 
@@ -104,6 +155,8 @@ type Msg
     | ReceivedStartedDownloadingTorrent (Result Http.Error Bool)
     | ReceivedQueryResponse (Result Http.Error String)
     | ReceivedSearchResponse (Result Http.Error (List TorrentItem))
+    | StartAllTorrentsInfo
+    | ReceivedStartAllTorrentsInfo (Result Http.Error (List QTorrentItem))
 
 
 type Category
@@ -126,6 +179,8 @@ init =
     , allowUntrustedUsers = False
     , startedSuccessfully = Nothing
     , startedSuccessfullyError = Nothing
+    , receivedAllTorrentInfo = Nothing
+    , receivedAllTorrentInfoError = Nothing
     }
 
 
@@ -141,6 +196,55 @@ decode_torrent_item =
         |> required "time" Decode.string
         |> required "uploader" Decode.string
         |> required "uploaderLink" Decode.string
+
+decode_qtorrent_item : Decoder QTorrentItem
+decode_qtorrent_item =
+    Decode.succeed QTorrentItem
+        |> required "added_on" Decode.int
+        |> required "amount_left" Decode.int
+        |> required "auto_tmm" Decode.bool
+        |> required "availability" Decode.int
+        |> required "category" Decode.string
+        |> required "completed" Decode.int
+        |> required "completion_on" Decode.int
+        |> required "content_path" Decode.string
+        |> required "dl_limit" Decode.int
+        |> required "dlspeed" Decode.int
+        |> required "downloaded" Decode.int
+        |> required "downloaded_session" Decode.int
+        |> required "eta" Decode.int
+        |> required "f_l_piece_prio" Decode.bool
+        |> required "force_start" Decode.bool
+        |> required "hash" Decode.string
+        |> required "last_activity" Decode.int
+        |> required "magnet_uri" Decode.string
+        |> required "max_ratio" Decode.int
+        |> required "max_seeding_time" Decode.int
+        |> required "name" Decode.string
+        |> required "num_complete" Decode.int
+        |> required "num_incomplete" Decode.int
+        |> required "num_leechs" Decode.int
+        |> required "num_seeds" Decode.int
+        |> required "priority" Decode.int
+        |> required "progress" Decode.int
+        |> required "ratio" Decode.int
+        |> required "ratio_limit" Decode.int
+        |> required "save_path" Decode.string
+        |> required "seeding_time" Decode.int
+        |> required "seeding_time_limit" Decode.int
+        |> required "seen_complete" Decode.int
+        |> required "seq_dl" Decode.bool
+        |> required "state" Decode.string
+        |> required "super_seeding" Decode.bool
+        |> required "tags" Decode.string
+        |> required "time_active" Decode.int
+        |> required "total_size" Decode.int
+        |> required "tracker" Decode.string
+        |> required "trackers_count" Decode.int
+        |> required "up_limit" Decode.int
+        |> required "uploaded" Decode.int
+        |> required "uploaded_session" Decode.int
+        |> required "upspeed" Decode.int
 
 
 clearQueryAndSearchResults : Model -> Model
@@ -341,6 +445,34 @@ update msg model =
                     ( { model
                         | startedSuccessfully = Nothing
                         , startedSuccessfullyError = Just error
+                      }
+                    , Cmd.none
+                    )
+        StartAllTorrentsInfo ->
+            ( model
+            , Http.post
+                { url = url_root ++ "/torrent/info"
+                , body = Encode.object [ ] |> Http.jsonBody
+                , expect =
+                    Http.expectJson ReceivedStartAllTorrentsInfo
+                        (field "torrents" (Decode.list decode_qtorrent_item))
+                }
+            )
+
+        ReceivedStartAllTorrentsInfo started_resp ->
+            case started_resp of
+                Ok success ->
+                    ( { model
+                        | receivedAllTorrentInfo = Just success
+                        , receivedAllTorrentInfoError = Nothing
+                      }
+                    , Cmd.none
+                    )
+
+                Err error ->
+                    ( { model
+                        | receivedAllTorrentInfo = Nothing
+                        , receivedAllTorrentInfoError = Just error
                       }
                     , Cmd.none
                     )

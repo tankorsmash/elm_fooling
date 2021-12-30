@@ -686,12 +686,12 @@ torrentItemTableConfig =
       , width = fillPortion 5
       , view =
             \item ->
-                    case item.torrentNameInfo of
-                        Just nameInfo ->
-                            renderTorrentInfo nameInfo
+                case item.torrentNameInfo of
+                    Just nameInfo ->
+                        renderTorrentInfo nameInfo
 
-                        Nothing ->
-                            text (clipText item.name 50)
+                    Nothing ->
+                        text (clipText item.name 50)
       }
     , { header = text "Uploader"
       , width = fillPortion 1
@@ -749,7 +749,7 @@ qTorrentsListColumnConfig now =
                     , centerY
                     ]
                 <|
-                    text item.name
+                    text (clipText item.name 30)
       }
     , { header = Element.el [ Font.center ] <| text "Progress"
       , width = fillPortion 1
@@ -1025,8 +1025,16 @@ view model =
                     Element.none
                 ]
             , column [ width fill ] [ viewSearchResponse model ]
-            , row [ width fill, paddingXY 0 15, Border.width 2, Border.dotted, Border.widthEach { top = 4, bottom = 0, left = 0, right = 0 } ] [ text "CURRENT TORRENTS" ]
+            , row
+                [ width fill
+                , paddingXY 0 15
+                , Border.width 2
+                , Border.dotted
+                , Border.widthEach { top = 4, bottom = 0, left = 0, right = 0 }
+                ]
+                [ text "CURRENT TORRENTS" ]
             , column [ width fill ] [ viewQTorrents model ]
+
             -- , column [ width fill ] [ viewTorrentNameInfo model ]
             ]
 

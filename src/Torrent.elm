@@ -204,6 +204,7 @@ init =
     , Task.perform GotTimeNow Time.now
     )
 
+
 decode_torrent_name_info : Decoder TorrentNameInfo
 decode_torrent_name_info =
     Decode.succeed TorrentNameInfo
@@ -212,6 +213,7 @@ decode_torrent_name_info =
         |> required "codec" Decode.string
         |> required "group" Decode.string
         |> required "title" Decode.string
+
 
 decode_torrent_item : Decoder TorrentItem
 decode_torrent_item =
@@ -515,10 +517,16 @@ update msg model =
             ( model
             , Http.post
                 { url = url_root ++ "/torrent/parse"
-                , body = Encode.object [("filename", Encode.string "Antlers.2021.1080p.WEBRip.x265-RARBG")] |> Http.jsonBody
+                , body =
+                    Encode.object
+                        [ ( "filename"
+                          , Encode.string "Antlers.2021.1080p.WEBRip.x265-RARBG"
+                          )
+                        ]
+                        |> Http.jsonBody
                 , expect =
                     Http.expectJson ReceivedParseTorrentName
-                        (field "response" (field "torrents" (Decode.list decode_torrent_name_info)))
+                        (field "response" (field "torrent_names" (Decode.list decode_torrent_name_info)))
                 }
             )
 
@@ -732,6 +740,45 @@ qTorrentsListColumnConfig now =
     ]
 
 
+nameRenderer nameInfo =
+    column [ Font.family [Font.monospace] ] <|
+        [ text <| "res: " ++ nameInfo.resolution
+        , text <| "qua: " ++ nameInfo.quality
+        , text <| "cod: " ++ nameInfo.codec
+        , text <| "grp: " ++ nameInfo.group
+        , text <| "tit: " ++ nameInfo.title
+        ]
+
+
+viewTorrentNameInfo : Model -> Element Msg
+viewTorrentNameInfo model =
+    let
+        renderedInfos =
+            case model.receivedParsedTorrentName of
+                Just name_infos ->
+                    List.map nameRenderer name_infos
+
+                Nothing ->
+                    [ case model.receivedParsedTorrentNameError of
+                        Just error ->
+                            Element.el [ Font.color <| rgb 1 0 0 ] <| text <| Debug.toString error
+
+                        Nothing ->
+                            Element.none
+                    ]
+
+        header =
+            row []
+                [ text "Torrent name info"
+                , primary_button [] (ParseTorrentName "") "Get name"
+                ]
+    in
+    column [ width fill ] <|
+        [ header
+        ]
+            ++ renderedInfos
+
+
 viewQTorrents : Model -> Element Msg
 viewQTorrents model =
     let
@@ -908,6 +955,7 @@ view model =
             , column [ width fill ] [ viewSearchResponse model ]
             , row [ width fill, paddingXY 0 15, Border.width 2, Border.dotted, Border.widthEach { top = 4, bottom = 0, left = 0, right = 0 } ] [ text "CURRENT TORRENTS" ]
             , column [ width fill ] [ viewQTorrents model ]
+            , column [ width fill ] [ viewTorrentNameInfo model ]
             ]
 
 

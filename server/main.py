@@ -141,7 +141,7 @@ def torrent_search():
 
 def _parse_torrent(filename):
 	proc = subprocess.Popen(
-		["node.exe", "./server/torrent_name_parser.js", filename],
+		["node.exe", "./torrent_name_parser.js", filename],
 		shell=True,
 		stdout=subprocess.PIPE
 	)
@@ -160,10 +160,19 @@ def torrent_parse():
 	print("\nparse torrent name:", request.json, "\n")
 
 	filename = request.json["filename"]
+	assert(filename)
 
 	parsed = _parse_torrent(filename)
-
 	print("parsed:", parsed)
+
+	if parsed['success']:
+		return {
+			"success": True,
+			"response": {
+				"torrent_names": [parsed['result']]
+			}
+		}
+
 
 	#TODO fix this assuming _parse_torrent returns an exact type
 	return parsed

@@ -534,10 +534,10 @@ view model =
                     , icon =
                         \checked ->
                             if checked then
-                                text "Allowing everyone"
+                                el [ Font.color <| rgb255 170 108 57 ] <| text "Allowing everyone"
 
                             else
-                                el [ Font.color <| rgb255 170 108 57 ] <| text "Only allowing trusted uploaders"
+                                text "Only allowing trusted uploaders"
                     , checked = model.allowUntrustedUsers
                     , label = Input.labelAbove [] <| el [ Font.size 24 ] <| text "Allow Sketchy Users?"
                     }
@@ -569,10 +569,10 @@ view model =
                 [ if model.text_search /= "" then
                     case model.category of
                         Film ->
-                            primary_button [width fill, height fill] SubmitFilmSearch "Film Search"
+                            primary_button [ width fill, height fill ] SubmitFilmSearch "Film Search"
 
                         Tv ->
-                            primary_button [width fill, height fill] SubmitTvSearch "TV Search"
+                            primary_button [ width fill, height fill ] SubmitTvSearch "TV Search"
 
                         NoCategory ->
                             Element.none

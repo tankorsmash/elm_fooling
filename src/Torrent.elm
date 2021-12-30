@@ -89,7 +89,7 @@ type alias QTorrentItem =
     , num_leechs : Int
     , num_seeds : Int
     , priority : Int
-    , progress : Int
+    , progress : Float
     , ratio : Float
     , ratio_limit : Float
     , save_path : String
@@ -227,7 +227,7 @@ decode_qtorrent_item =
         |> required "num_leechs" Decode.int
         |> required "num_seeds" Decode.int
         |> required "priority" Decode.int
-        |> required "progress" Decode.int
+        |> required "progress" Decode.float
         |> required "ratio" Decode.float
         |> required "ratio_limit" Decode.float
         |> required "save_path" Decode.string
@@ -576,9 +576,80 @@ clipText str length =
         str
 
 
+float_to_percent : Float -> String
+float_to_percent flt =
+    flt * 100 |> floor |> String.fromInt |> (\str -> str ++ "%")
+
+
+etaToString : Int -> String
+etaToString eta =
+    if eta == 8640000 then
+        ""
+
+    else if eta < 60 * 5 then
+        String.fromInt eta ++ "sec"
+
+    else if eta < 60 * 60 then
+        String.fromInt (eta * 60) ++ "min"
+
+    else if eta < 60 * 60 * 24 then
+        String.fromInt (eta * 60 * 60) ++ "hr"
+
+    else
+        String.fromInt (eta * 60 * 60 * 24) ++ "d"
+
+
 qTorrentsListColumnConfig : List (Element.Column QTorrentItem Msg)
 qTorrentsListColumnConfig =
-    []
+    [ { header = text "Name"
+      , width = fillPortion 1
+      , view =
+            \item ->
+                Element.el
+                    [ Element.scrollbarX
+                    , Element.clipY
+                    , width (fillPortion 4 |> Element.maximum 700)
+                    , centerY
+                    ]
+                <|
+                    text item.name
+      }
+    , { header = Element.el [ Font.center ] <| text "Progress"
+      , width = fillPortion 1
+      , view =
+            \item ->
+                Element.el
+                    [ width fill
+                    , Font.center
+                    ]
+                <|
+                    text <|
+                        float_to_percent item.progress
+      }
+    , { header = Element.el [ Font.center ] <| text "ETA"
+      , width = fillPortion 1
+      , view =
+            \item ->
+                Element.el
+                    [ width fill
+                    , Font.center
+                    ]
+                <|
+                    text <|
+                        etaToString item.eta
+      }
+    , { header = Element.el [ Font.center ] <| text "State"
+      , width = fillPortion 1
+      , view =
+            \item ->
+                Element.el
+                    [ width fill
+                    , Font.center
+                    ]
+                <|
+                    text item.state
+      }
+    ]
 
 
 viewQTorrents : Model -> Element Msg
@@ -591,7 +662,14 @@ viewQTorrents model =
         [ primary_button [] StartAllTorrentsInfo "Update"
         , case model.receivedAllTorrentInfo of
             Just torrents_info ->
-                Element.table [] { data = torrents_info, columns = qTorrentsListColumnConfig }
+                Element.table
+                    [ width fill
+                    , Font.size 24
+                    , spacingXY 10 0
+                    ]
+                    { data = torrents_info
+                    , columns = qTorrentsListColumnConfig
+                    }
 
             Nothing ->
                 case model.receivedAllTorrentInfoError of

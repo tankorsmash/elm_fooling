@@ -158,6 +158,7 @@ clearQueryAndSearchResults model =
 -- url_root = "http://localhost:4126"
 
 
+url_root : String
 url_root =
     "http://192.168.2.41:4126"
 
@@ -228,6 +229,7 @@ update msg model =
 
         SubmitTvSearch ->
             let
+                http_request : Cmd Msg
                 http_request =
                     Http.post
                         { url = url_root ++ "/torrent/search"
@@ -344,10 +346,12 @@ update msg model =
                     )
 
 
+explain : Element.Attribute msg
 explain =
     Element.explain Debug.todo
 
 
+viewTextSearch : Category -> Model -> Element Msg
 viewTextSearch category model =
     Input.search []
         { onChange = OnChangeTextSearch
@@ -380,6 +384,7 @@ viewTextSearch category model =
         }
 
 
+viewFilmOptions : Model -> Element Msg
 viewFilmOptions model =
     row [ width fill ]
         [ viewTextSearch Film model
@@ -498,6 +503,7 @@ viewQueryResponse model =
         ]
 
 
+categoryRadioOption : String -> Input.OptionState -> Element msg
 categoryRadioOption str option_state =
     case option_state of
         Input.Idle ->

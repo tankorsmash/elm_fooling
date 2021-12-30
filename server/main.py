@@ -131,6 +131,18 @@ def torrent_search():
 
 	return {"success": True}
 
+@post("/torrent/info")
+def torrent_info():
+	# with SetDirectory(r"C:/code/python/qbitorrent"):
+	# print("curdir", Path(os.curdir).absolute())
+	sys.path.append(r"C:/code/python/qbitorrent")
+	import webui
+	print("\nget torrents info:", request.json, "\n")
+
+	torrents = webui.get_torrents()
+
+	return { "success": True, "response": {"torrents": torrents}}
+
 @post("/torrent/search")
 def torrent_search():
 	# with SetDirectory(r"C:/code/python/qbitorrent"):

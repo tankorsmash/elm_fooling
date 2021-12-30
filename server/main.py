@@ -217,6 +217,13 @@ def torrent_search():
 	if not allow_untrusted_users:
 		items = downloader.filter_by_trusted_users(items)
 
+
+	def parse_info(item):
+		item['torrent_name_info'] = _parse_torrent(item['name'])['result']
+		return item
+
+	items = list(map(parse_info, items))
+
 	return {"success": True, "response": {"items": items}}
 
 

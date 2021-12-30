@@ -112,6 +112,16 @@ type alias QTorrentItem =
     }
 
 
+type alias TorrentNameInfo =
+    { resolution : Maybe String
+    , quality : Maybe String
+    , codec : Maybe String
+    , group : Maybe String
+    , title : Maybe String
+    , year : Maybe Int
+    }
+
+
 type alias TorrentItem =
     { name : String
     , torrentId : String
@@ -122,6 +132,7 @@ type alias TorrentItem =
     , time : String
     , uploader : String
     , uploaderLink : String
+    , torrentNameInfo : Maybe TorrentNameInfo
     }
 
 
@@ -143,16 +154,6 @@ type alias Model =
     , now : Time.Posix
     , receivedParsedTorrentName : Maybe (List TorrentNameInfo)
     , receivedParsedTorrentNameError : Maybe Http.Error
-    }
-
-
-type alias TorrentNameInfo =
-    { resolution : Maybe String
-    , quality : Maybe String
-    , codec : Maybe String
-    , group : Maybe String
-    , title : Maybe String
-    , year : Maybe Int
     }
 
 
@@ -237,6 +238,7 @@ decode_torrent_item =
         |> required "time" Decode.string
         |> required "uploader" Decode.string
         |> required "uploaderLink" Decode.string
+        |> optional "torrent_name_info" (Decode.nullable decode_torrent_name_info) Nothing
 
 
 decode_qtorrent_item : Decoder QTorrentItem
@@ -624,16 +626,58 @@ viewTvOptions model =
         ]
 
 
-renderTorrentItem : TorrentItem -> Element Msg
-renderTorrentItem item =
-    text item.name
+renderTorrentInfo : TorrentNameInfo -> Element Msg
+renderTorrentInfo nameInfo =
+    let
+        title =
+            nameInfo.title |> Maybe.withDefault "???" |> (\t -> clipText t 50)
+
+        year =
+            case nameInfo.year of
+                Nothing ->
+                    ""
+
+                Just year_ ->
+                    "(" ++ String.fromInt year_ ++ ")"
+
+        resolution =
+            case nameInfo.resolution of
+                Nothing ->
+                    ""
+
+                Just resolution_ ->
+                    resolution_
+
+        codec =
+            case nameInfo.codec of
+                Nothing ->
+                    ""
+
+                Just codec_ ->
+                    codec_
+        quality =
+            case nameInfo.quality of
+                Nothing ->
+                    ""
+
+                Just quality_ ->
+                    quality_
+    in
+    text <| title ++ year ++ " - " ++ resolution ++ " | " ++ quality ++ " " ++ codec
 
 
 torrentItemTableConfig : List (Element.Column TorrentItem Msg)
 torrentItemTableConfig =
-    [ { header = text "Name"
+    [ { header = text "Has Extra info"
       , width = fillPortion 3
-      , view = .name >> (\name -> clipText name 50) >> text
+      , view =
+            \item ->
+                case item.torrentNameInfo of
+                    Just nameInfo ->
+                        renderTorrentInfo nameInfo
+
+                    Nothing ->
+                        text (clipText item.name 50)
       }
     , { header = text "Uploader"
       , width = fillPortion 1
@@ -846,9 +890,6 @@ viewSearchResponse model =
                             text "No results found. Is there a typo?"
 
                     _ ->
-                        -- column []
-                        --     <| ( text <| "Search results length: " ++ (String.fromInt <| List.length items))
-                        --     :: List.map renderTorrentItem items
                         Element.table [ width fill, Font.size 16, spacingXY 0 10 ]
                             { data = items
                             , columns = torrentItemTableConfig

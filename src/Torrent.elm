@@ -141,6 +141,17 @@ type alias Model =
     , receivedAllTorrentInfo : Maybe (List QTorrentItem)
     , receivedAllTorrentInfoError : Maybe Http.Error
     , now : Time.Posix
+    , receivedParsedTorrentName : Maybe (List TorrentNameInfo)
+    , receivedParsedTorrentNameError : Maybe Http.Error
+    }
+
+
+type alias TorrentNameInfo =
+    { resolution : String
+    , quality : String
+    , codec : String
+    , group : String
+    , title : String
     }
 
 
@@ -160,6 +171,8 @@ type Msg
     | StartAllTorrentsInfo
     | ReceivedStartAllTorrentsInfo (Result Http.Error (List QTorrentItem))
     | GotTimeNow Time.Posix
+    | ParseTorrentName String
+    | ReceivedParseTorrentName (Result Http.Error (List TorrentNameInfo))
 
 
 type Category
@@ -185,10 +198,20 @@ init =
       , receivedAllTorrentInfo = Nothing
       , receivedAllTorrentInfoError = Nothing
       , now = Time.millisToPosix 0
+      , receivedParsedTorrentName = Nothing
+      , receivedParsedTorrentNameError = Nothing
       }
     , Task.perform GotTimeNow Time.now
     )
 
+decode_torrent_name_info : Decoder TorrentNameInfo
+decode_torrent_name_info =
+    Decode.succeed TorrentNameInfo
+        |> required "resolution" Decode.string
+        |> required "quality" Decode.string
+        |> required "codec" Decode.string
+        |> required "group" Decode.string
+        |> required "title" Decode.string
 
 decode_torrent_item : Decoder TorrentItem
 decode_torrent_item =
@@ -488,6 +511,35 @@ update msg model =
         GotTimeNow new_now ->
             ( { model | now = new_now }, Cmd.none )
 
+        ParseTorrentName torrent_name ->
+            ( model
+            , Http.post
+                { url = url_root ++ "/torrent/parse"
+                , body = Encode.object [("filename", Encode.string "Antlers.2021.1080p.WEBRip.x265-RARBG")] |> Http.jsonBody
+                , expect =
+                    Http.expectJson ReceivedParseTorrentName
+                        (field "response" (field "torrents" (Decode.list decode_torrent_name_info)))
+                }
+            )
+
+        ReceivedParseTorrentName started_resp ->
+            case started_resp of
+                Ok success ->
+                    ( { model
+                        | receivedParsedTorrentName = Just success
+                        , receivedParsedTorrentNameError = Nothing
+                      }
+                    , Cmd.none
+                    )
+
+                Err error ->
+                    ( { model
+                        | receivedParsedTorrentName = Nothing
+                        , receivedParsedTorrentNameError = Just error
+                      }
+                    , Cmd.none
+                    )
+
 
 explain : Element.Attribute msg
 explain =
@@ -694,7 +746,6 @@ viewQTorrents model =
                     [ width fill
                     , Font.size 24
                     , spacingXY 10 10
-
                     ]
                     { data = List.reverse <| List.sortBy .added_on torrents_info
                     , columns = qTorrentsListColumnConfig model.now

@@ -1,6 +1,7 @@
 import os
 import sys
 import json
+import subprocess
 
 import bottle
 from bottle import route, run, get, post, response, request
@@ -138,6 +139,36 @@ def torrent_search():
 	return {"success": True}
 
 
+def _parse_torrent(filename):
+	proc = subprocess.Popen(
+		["node.exe", "./server/torrent_name_parser.js", filename],
+		shell=True,
+		stdout=subprocess.PIPE
+	)
+	raw = proc.stdout.read()
+	if proc.stderr:
+		result = json.loads(proc.stderr.read())
+	else:
+		result = json.loads(raw)
+
+	return result
+
+@post("/torrent/parse")
+def torrent_parse():
+	sys.path.append(r"C:/code/python/qbitorrent")
+
+	print("\nparse torrent name:", request.json, "\n")
+
+	filename = request.json["filename"]
+
+	parsed = _parse_torrent(filename)
+
+	print("parsed:", parsed)
+
+	#TODO fix this assuming _parse_torrent returns an exact type
+	return parsed
+
+
 @post("/torrent/info")
 def torrent_info():
 	# with SetDirectory(r"C:/code/python/qbitorrent"):
@@ -194,4 +225,5 @@ def frames(frame_type):
 	return {"success": True, "json_data": json_data}
 
 
-run(host="0.0.0.0", port=4126, debug=False, reloader=True)
+if __name__ == "__main__":
+	run(host="0.0.0.0", port=4126, debug=False, reloader=True)

@@ -157,6 +157,7 @@ type alias Model =
     }
 
 
+
 type Msg
     = OnChangeCategory Category
     | OnChangeTextSearch String

@@ -1,5 +1,7 @@
 module ItemShop exposing (Model, Msg, add_to_average, init, sub_from_average, subscriptions, suite, update, view)
 
+import Animator
+import Animator.Inline
 import Array
 import Browser.Dom
 import Browser.Events
@@ -225,6 +227,9 @@ type Msg
     | OnSpecialAction SpecialAction Price
     | ToggleHideNonZeroRows CharacterId
     | ChangeTabType TabType
+    | RuntimeTriggeredAnimationStep Time.Posix
+    | UserHoveredButton Id
+    | UserUnhoveredButton Id
 
 
 type alias TradeOrder =
@@ -539,7 +544,18 @@ type alias Model =
     , global_seed : Random.Seed --used to seed anything; will be constantly changed throughout the app
     , ai_updates_paused : Bool
     , tab_type : TabType
+    , buttonStates : Animator.Timeline (Dict.Dict Id ButtonType)
     }
+
+
+type alias Id =
+    String
+
+
+type ButtonType
+    = Primary
+    | Secondary
+    | Outline
 
 
 type AiActionChoice
@@ -1262,9 +1278,23 @@ init hash =
       , global_seed = Random.initialSeed 4
       , ai_updates_paused = False
       , tab_type = initial_tab_type
+      , buttonStates = Animator.init <| Dict.fromList [ ( "Primary", Primary ), ( "Secondary", Secondary ), ( "Outline", Primary ) ]
       }
     , Task.perform TickSecond Time.now
     )
+
+
+animator : Animator.Animator Model
+animator =
+    Animator.animator
+        |> Animator.watchingWith
+            .buttonStates
+            (\newButtonStates model ->
+                { model | buttonStates = newButtonStates }
+            )
+            (\buttonStates ->
+                List.any ((==) Secondary) <| Dict.values buttonStates
+            )
 
 
 subscriptions : Model -> Sub Msg
@@ -1272,8 +1302,9 @@ subscriptions model =
     -- Sub.none
     Sub.batch
         [ -- Time.every 1000 TickSecond
-        Browser.Events.onKeyDown keyPressedDecoder
+          Browser.Events.onKeyDown keyPressedDecoder
         , Browser.Events.onKeyUp keyReleasedDecoder
+        , Animator.toSubscription RuntimeTriggeredAnimationStep model animator
         ]
 
 
@@ -1568,6 +1599,14 @@ sell_items_from_party_to_other orig_trade_context { item, qty } =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
+    let
+        maybeAlways value =
+            Maybe.map (\_ -> value)
+
+        setButtonState id newState =
+            Dict.update id (maybeAlways newState) <|
+                Animator.current model.buttonStates
+    in
     case msg of
         Noop ->
             ( model, Cmd.none )
@@ -1807,6 +1846,27 @@ update msg model =
 
         ChangeTabType tab_type ->
             ( { model | tab_type = tab_type }, Cmd.none )
+
+        RuntimeTriggeredAnimationStep newTime ->
+            ( Animator.update newTime animator model
+            , Cmd.none
+            )
+
+        UserHoveredButton id ->
+            ( { model
+                | buttonStates =
+                    Animator.go Animator.veryQuickly (setButtonState id Outline) model.buttonStates
+              }
+            , Cmd.none
+            )
+
+        UserUnhoveredButton id ->
+            ( { model
+                | buttonStates =
+                    Animator.go Animator.veryQuickly (setButtonState id Primary) model.buttonStates
+              }
+            , Cmd.none
+            )
 
 
 generate_uuid : String -> UUID.UUID
@@ -3887,6 +3947,7 @@ view_shop_tab_type model =
         )
     <|
         [ welcome_header
+        , buttons model
         , row [ spacing 5 ]
             [ Element.link []
                 { url = "#items"
@@ -4034,6 +4095,85 @@ view_items_unlocked_tab_type item_db =
     in
     Debug.log "render view_items_unlocked_tab_type" <|
         column [ spacing 10 ] [ text "Item Codex", back_btn, item_grid ]
+
+
+buttons : Model -> Element Msg
+buttons model =
+    let
+        buttonState id =
+            Maybe.withDefault Primary <|
+                Dict.get id <|
+                    Animator.current model.buttonStates
+
+        borderColor id =
+            Element.fromRgb <|
+                Color.toRgba <|
+                    if buttonState id == Outline then
+                        Color.blue
+
+                    else
+                        Color.black
+
+        fontColor id =
+            Element.fromRgb <|
+                Color.toRgba <|
+                    if buttonState id == Outline then
+                        Color.white
+
+                    else
+                        Color.black
+
+        bgColor id =
+            Element.fromRgb <|
+                Color.toRgba <|
+                    Animator.color model.buttonStates <|
+                        \buttonStates ->
+                            if (Maybe.withDefault Primary <| Dict.get id buttonStates) == Outline then
+                                Color.lightBlue
+
+                            else
+                                Color.white
+
+        fontSize id =
+            round <|
+                Animator.move model.buttonStates <|
+                    \buttonStates ->
+                        if (Maybe.withDefault Primary <| Dict.get id buttonStates) == Outline then
+                            Animator.loop (Animator.millis 1000) <| Animator.wave 20.0 28.0
+
+                        else
+                            Animator.at 20.0
+
+        -- fontSize id =
+        --     round <|
+        --         Animator.linear model.buttonStates <|
+        --             \buttonStates ->
+        --                 Animator.at <|
+        --                     if (Maybe.withDefault Primary <| Dict.get id buttonStates) == Outline then
+        --                         28
+        --
+        --                     else
+        --                         20
+        button id =
+            el
+                [ width <| Element.px 200
+                , height <| Element.px 60
+                , Border.width 3
+                , Border.rounded 6
+                , Border.color <| borderColor id
+                , Background.color <| bgColor id
+                , Font.color <| fontColor id
+                , Font.size <| fontSize id
+                , padding 10
+                , Events.onMouseEnter <| UserHoveredButton id
+                , Events.onMouseLeave <| UserUnhoveredButton id
+                ]
+            <|
+                (el [ centerX, centerY ] <| text <| "Button " ++ id)
+    in
+    [ "Primary", "Secondary", "Outline" ]
+        |> List.map button
+        |> column [ spacing 10, centerX, centerY ]
 
 
 view : Model -> Html.Html Msg

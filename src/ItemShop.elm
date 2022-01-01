@@ -726,6 +726,94 @@ initial_item_db =
                 , id = UUID.forName "book of the mender" UUID.dnsNamespace
                 }
               )
+            , ( True
+              , { name = "Green Herb"
+                , item_type = Food
+                , raw_gold_cost = 10
+                , description = "Looks like grass."
+                , id = UUID.forName "green herb" UUID.dnsNamespace
+                }
+              )
+            , ( True
+              , { name = "Red Herb"
+                , item_type = Food
+                , raw_gold_cost = 30
+                , description = "Looks like angry grass."
+                , id = UUID.forName "red herb" UUID.dnsNamespace
+                }
+              )
+            , ( True
+              , { name = "Blue Herb"
+                , item_type = Food
+                , raw_gold_cost = 50
+                , description = "Looks like sad grass."
+                , id = UUID.forName "blue herb" UUID.dnsNamespace
+                }
+              )
+            , ( True
+              , { name = "Purple Herb"
+                , item_type = Food
+                , raw_gold_cost = 40
+                , description = "Looks like asphyxiated grass."
+                , id = UUID.forName "purple herb" UUID.dnsNamespace
+                }
+              )
+            , ( False
+              , { name = "Meatpie"
+                , item_type = Food
+                , raw_gold_cost = 25
+                , description = "You'd like to eat one of these."
+                , id = UUID.forName "meatpie" UUID.dnsNamespace
+                }
+              )
+            , ( False
+              , { name = "Veggiepie"
+                , item_type = Food
+                , raw_gold_cost = 15
+                , description = "You'd not like to eat one of these."
+                , id = UUID.forName "veggiepie" UUID.dnsNamespace
+                }
+              )
+            , ( True
+              , { name = "Iron Stool"
+                , item_type = Furniture
+                , raw_gold_cost = 32
+                , description = "Would be great to sit on."
+                , id = UUID.forName "iron stool" UUID.dnsNamespace
+                }
+              )
+            , ( True
+              , { name = "Wooden Stool"
+                , item_type = Furniture
+                , raw_gold_cost = 23
+                , description = "Would be okay to sit on."
+                , id = UUID.forName "wooden stool" UUID.dnsNamespace
+                }
+              )
+            , ( True
+              , { name = "Steel Stool"
+                , item_type = Furniture
+                , raw_gold_cost = 38
+                , description = "Would be better than great to sit on."
+                , id = UUID.forName "steel stool" UUID.dnsNamespace
+                }
+              )
+            , ( False
+              , { name = "Strong Stool"
+                , item_type = Furniture
+                , raw_gold_cost = 55
+                , description = "Would be the one sitting on you."
+                , id = UUID.forName "strong stool" UUID.dnsNamespace
+                }
+              )
+            , ( False
+              , { name = "Weak Stool"
+                , item_type = Furniture
+                , raw_gold_cost = 25
+                , description = "You'd crush this if you had to sit on it"
+                , id = UUID.forName "weak stool" UUID.dnsNamespace
+                }
+              )
             ]
     in
     initial_items

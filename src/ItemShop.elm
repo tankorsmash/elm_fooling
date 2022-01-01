@@ -3409,7 +3409,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
             , { header = small_header "Avg Px"
               , width = fillPortion 1
               , view =
-                    \{ avg_price } ->
+                    \{ quantity, avg_price } ->
                         Element.el
                             [ portion 1, html_title "Average Cost" ]
                         <|
@@ -3418,7 +3418,11 @@ render_inventory_grid model header character shop_trends hovered_item context co
                                     text ""
 
                                 _ ->
-                                    render_gp <| getPrice avg_price
+                                    if getQuantity quantity /= 0 then
+                                        render_gp <| getPrice avg_price
+
+                                    else
+                                        Element.none
               }
             , { header = small_header "Qty."
               , width = fillPortion 1

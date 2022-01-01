@@ -4332,7 +4332,7 @@ special_actions_display player_upgrades hovered_tooltip player ai_updates_paused
                 UnlockItem
                 "Item Search"
                 "Spend cash to hire a mercenary to seek out items.\n\nAllows for invited traders to have new items."
-                Free
+                (setPrice 25)
 
         button_increase_income =
             let

@@ -1271,8 +1271,8 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     -- Sub.none
     Sub.batch
-        [ -- Time.every 1000 TickSecond
-        Browser.Events.onKeyDown keyPressedDecoder
+        [ Time.every 1000 TickSecond
+        , Browser.Events.onKeyDown keyPressedDecoder
         , Browser.Events.onKeyUp keyReleasedDecoder
         ]
 
@@ -2209,6 +2209,32 @@ check_can_afford_one character shop_trends item =
         shop_trends
         character.held_gold
         { item = item, qty = Quantity 1 }
+
+
+signedFromInt : Int -> String
+signedFromInt int =
+    if int > 0 then
+        "+" ++ String.fromInt int
+
+    else
+        String.fromInt int
+
+
+convertColor : Color.Color -> Element.Color
+convertColor color =
+    Element.fromRgb <| Color.toRgba <| color
+
+
+colorFromInt : Int -> Color -> Color -> Color -> Color
+colorFromInt int positiveColor neutralColor negativeColor =
+    if int > 0 then
+        positiveColor
+
+    else if int == 0 then
+        neutralColor
+
+    else
+        negativeColor
 
 
 {-| items the character can afford and desires at least a little
@@ -3354,12 +3380,31 @@ render_inventory_grid model header character shop_trends hovered_item context co
             , { header = small_header "Price"
               , width = fillPortion 1
               , view =
-                    \{ item } ->
+                    \{ item, avg_price } ->
                         Element.el
                             [ portion 1, html_title "Current cost" ]
                         <|
-                            render_gp <|
-                                get_adjusted_item_cost shop_trends item (Quantity 1)
+                            let
+                                adjustedPrice =
+                                    get_adjusted_item_cost shop_trends item (Quantity 1)
+
+                                priceDiff =
+                                    adjustedPrice - getPrice avg_price
+                            in
+                            paragraph [] <|
+                                [ render_gp <|
+                                    get_adjusted_item_cost shop_trends item (Quantity 1)
+                                ]
+                                    ++ [ if context /= ShopItems && priceDiff /= 0 then
+                                            let
+                                                diffColor =
+                                                    colorFromInt priceDiff (convertColor Color.green) color_black color_danger
+                                            in
+                                            el [ Font.size 12, Font.color diffColor ] <| text <| " (" ++ signedFromInt priceDiff ++ ")"
+
+                                         else
+                                            Element.none
+                                       ]
               }
             , { header = small_header "Avg Px"
               , width = fillPortion 1

@@ -48,7 +48,7 @@ import Element.Input as Input
 import Element.Keyed
 import Element.Lazy as Lazy
 import Expect exposing (Expectation)
-import Fuzz exposing (Fuzzer, int, list, string)
+import Fuzz exposing (Fuzzer, int, list, string, tuple)
 import Html
 import Html.Attributes exposing (attribute, classList, href, property, src, style, value)
 import Html.Events
@@ -1397,9 +1397,18 @@ set_item_type_sentiment item_type_sentiment item_type new_val =
 reduce_if_matched : Item -> Quantity -> Int -> InventoryRecord -> InventoryRecord
 reduce_if_matched item qty total_cost ({ avg_price } as inventory_record) =
     if inventory_record.item == item && getQuantity inventory_record.quantity >= getQuantity qty then
+        let
+            newQty =
+                subQuantity inventory_record.quantity qty
+        in
         { item = inventory_record.item
-        , quantity = subQuantity inventory_record.quantity qty
-        , avg_price = avg_price
+        , quantity = newQty
+        , avg_price =
+            if getQuantity newQty == 0 then
+                setPrice 0
+
+            else
+                avg_price
         }
 
     else
@@ -1437,10 +1446,18 @@ trade_items_from_party_to_other shop_trends from_character to_character { item, 
             get_adjusted_item_cost shop_trends item qty
 
         new_to_items =
-            add_item_to_inventory_records to_character.held_items item qty total_cost
+            add_item_to_inventory_records
+                to_character.held_items
+                item
+                qty
+                total_cost
 
         new_from_items =
-            remove_item_from_inventory_records from_character.held_items item qty total_cost
+            remove_item_from_inventory_records
+                from_character.held_items
+                item
+                qty
+                total_cost
 
         sentiment_delta =
             if from_character.party == ShopParty then
@@ -4414,6 +4431,10 @@ suite =
                 test_character =
                     create_character (generate_uuid "Test Character !!") "Testy McTested"
 
+                test_character2 : Character
+                test_character2 =
+                    create_character (generate_uuid "Second test character") "Testa Mysticles"
+
                 test_model : Model
                 test_model =
                     init "" |> Tuple.first
@@ -4638,6 +4659,66 @@ suite =
 
                         Nothing ->
                             Expect.fail "Couldn't find player"
+            , fuzz (tuple ( int, Fuzz.intRange 1 Random.maxInt )) "removing all quantities leaves avg cost of 0" <|
+                \( qtyToAdd, totalCost ) ->
+                    let
+                        item =
+                            test_item
+
+                        qty =
+                            setQuantity qtyToAdd
+
+                        total_cost =
+                            totalCost
+
+                        origItems =
+                            add_item_to_inventory_records
+                                test_character.held_items
+                                item
+                                qty
+                                test_item.raw_gold_cost
+
+                        newItems =
+                            remove_item_from_inventory_records
+                                origItems
+                                item
+                                qty
+                                total_cost
+
+                        item_finder =
+                            find_matching_records item
+
+                        origRecord =
+                            List.head <| List.filter item_finder origItems
+
+
+                        newRecord =
+                            List.head <| List.filter item_finder newItems
+                    in
+                    -- Expect.equal origItems newItems
+                    case
+                        Maybe.map2
+                            (\orig new ->
+                                getPrice new.avg_price
+                                    |> Expect.all
+                                        -- TODO: figure out the correct handling for what the new avg should be (should it ever be 0?)
+                                        -- [ if qtyToAdd /= 0 then
+                                        --     Expect.notEqual (getPrice orig.avg_price)
+                                        --
+                                        --   else
+                                        --     Expect.true "" << (always True)
+                                        -- , Expect.equal 0
+                                        [ Expect.equal 0
+                                        ]
+                            )
+                            origRecord
+                            newRecord
+                    of
+                        Nothing ->
+                            Expect.fail "Idk"
+
+                        Just expectation ->
+                            expectation
             , test "AutomaticGPM works with 10 levels" <|
                 \_ ->
                     case getPlayer test_model of

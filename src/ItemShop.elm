@@ -534,6 +534,7 @@ type alias Model =
     , ai_tick_time : Time.Posix --used to seed the ai randomness
     , show_debug_inventories : Bool
     , show_charts_in_hovered_item : Bool
+    , shiftIsPressed : Bool
     , hovered_tooltip : HoveredTooltip
     , cached_tooltip_offsets : Dict.Dict String TooltipData
     , global_seed : Random.Seed --used to seed anything; will be constantly changed throughout the app
@@ -1345,6 +1346,7 @@ init hash =
       , hovered_trend_chart = []
       , show_debug_inventories = True
       , show_charts_in_hovered_item = False
+      , shiftIsPressed = False
       , hovered_tooltip = NoHoveredTooltip
       , cached_tooltip_offsets = Dict.empty
       , global_seed = Random.initialSeed 4
@@ -1792,7 +1794,7 @@ update msg model =
         KeyPressedMsg key_event_msg ->
             case key_event_msg of
                 KeyEventShift ->
-                    ( { model | show_charts_in_hovered_item = True }, Cmd.none )
+                    ( { model | show_charts_in_hovered_item = True, shiftIsPressed = True }, Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
@@ -1800,7 +1802,7 @@ update msg model =
         KeyReleasedMsg key_event_msg ->
             case key_event_msg of
                 KeyEventShift ->
-                    ( { model | show_charts_in_hovered_item = False }, Cmd.none )
+                    ( { model | show_charts_in_hovered_item = False, shiftIsPressed = False }, Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
@@ -3100,8 +3102,8 @@ render_single_trade_log_entry item_db all_characters trade_log =
                 ]
 
 
-trends_display : ItemDb -> ShopTrends -> List Character -> Bool -> Element.Element Msg
-trends_display item_db shop_trends all_characters is_expanded =
+trends_display : Bool -> ItemDb -> ShopTrends -> List Character -> Bool -> Element.Element Msg
+trends_display shiftIsPressed item_db shop_trends all_characters is_expanded =
     let
         render_single_popularity : ( Int, Float ) -> Element.Element msg
         render_single_popularity ( type_id, popularity ) =
@@ -3165,11 +3167,26 @@ trends_display item_db shop_trends all_characters is_expanded =
                     , Element.moveDown 20
                     ]
                 <|
-                    [ Element.el [ font_grey, Font.size 12 ] <| text "Latest first" ]
+                    [ row [ font_grey, Font.size 12, width fill, Element.spaceEvenly ]
+                        [ text "Latest first"
+                        , if shiftIsPressed then
+                            Element.none
+
+                          else
+                            text "Hold shift for more"
+                        ]
+                    ]
                         ++ (List.map
                                 (render_single_trade_log_entry item_db all_characters)
                             <|
-                                List.take 50 <|
+                                List.take
+                                    (if shiftIsPressed then
+                                        50
+
+                                     else
+                                        5
+                                    )
+                                <|
                                     List.reverse shop_trends.item_trade_logs
                            )
 
@@ -4070,7 +4087,7 @@ view_shop_tab_type model =
 
             Nothing ->
                 Element.none
-        , trends_display model.item_db model.shop_trends model.characters model.shop_trends_hovered
+        , trends_display model.shiftIsPressed model.item_db model.shop_trends model.characters model.shop_trends_hovered
         , Element.el [ paddingXY 0 10, width fill ] <|
             case maybe_shop of
                 Just shop ->
@@ -4778,7 +4795,6 @@ suite =
 
                         origRecord =
                             List.head <| List.filter item_finder origItems
-
 
                         newRecord =
                             List.head <| List.filter item_finder newItems

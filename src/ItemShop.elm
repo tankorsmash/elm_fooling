@@ -1360,7 +1360,11 @@ subscriptions : Model -> Sub Msg
 subscriptions model =
     -- Sub.none
     Sub.batch
-        [ Time.every 1000 TickSecond
+        [ if not model.ai_updates_paused then
+            Time.every 1000 TickSecond
+
+          else
+            Sub.none
         , Browser.Events.onKeyDown keyPressedDecoder
         , Browser.Events.onKeyUp keyReleasedDecoder
         ]

@@ -2129,7 +2129,44 @@ update_shop_trends model update_st_func =
 
 special_action_increase_income : Model -> Model
 special_action_increase_income model =
-    model
+    case getPlayer model of
+        Nothing ->
+            model
+
+        Just player ->
+            let
+                automaticGpmLevel =
+                    model.player_upgrades
+                        |> List.filterMap
+                            (\pu ->
+                                case pu of
+                                    AutomaticGPM level ->
+                                        Just level
+                            )
+                        |> List.head
+                        |> Maybe.withDefault 1
+
+                upgradeCost =
+                    getPrice <| scale_increase_income_cost automaticGpmLevel
+            in
+            if player.held_gold >= upgradeCost then
+                model
+                    |> withCharacter { player | held_gold = player.held_gold - upgradeCost }
+                    |> (\m ->
+                            { m
+                                | player_upgrades =
+                                    List.map
+                                        (\pu ->
+                                            case pu of
+                                                AutomaticGPM level ->
+                                                    AutomaticGPM <| level + 1
+                                        )
+                                        m.player_upgrades
+                            }
+                       )
+
+            else
+                model
 
 
 special_action_unlock_item : Model -> Model

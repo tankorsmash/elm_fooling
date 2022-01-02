@@ -1553,7 +1553,7 @@ homeView model =
                             }
                         ]
                     }
-                    []
+                    [Element.htmlAttribute <| Html.Attributes.id "hack"]
                   <|
                     Element.none
                 ]

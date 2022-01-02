@@ -9,6 +9,7 @@ import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
 import Html
+import Html.Attributes
 
 
 type alias Model =
@@ -61,6 +62,7 @@ view model =
             ]
         }
         [ in_front
+        , Element.htmlAttribute <| Html.Attributes.id "visualoutput"
 
         -- , Element.explain Debug.todo
         , Element.height (Element.fill |> Element.maximum 1)

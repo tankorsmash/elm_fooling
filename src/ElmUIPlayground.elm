@@ -182,7 +182,14 @@ view model =
     in
     -- Element.layout
     Element.layoutWith
-        { options = [ Element.noStaticStyleSheet ]
+        { options =
+            [ Element.noStaticStyleSheet
+            , Element.focusStyle
+                { borderColor = Nothing
+                , backgroundColor = Nothing
+                , shadow = Nothing
+                }
+            ]
         }
         [ in_front ]
     <|

@@ -1544,7 +1544,19 @@ homeView model =
         -- need the `noStaticStyleSheet` option set, and force its height to 0
         elm_ui_hack_layout =
             div [ Html.Attributes.style "height" "0" ]
-                [ Element.layout [] <| Element.none ]
+                [ Element.layoutWith
+                    { options =
+                        [ Element.focusStyle
+                            { borderColor = Nothing
+                            , backgroundColor = Nothing
+                            , shadow = Nothing
+                            }
+                        ]
+                    }
+                    []
+                  <|
+                    Element.none
+                ]
     in
     div [ add_class "container" ]
         [ elm_ui_hack_layout

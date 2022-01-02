@@ -4341,7 +4341,16 @@ view_items_unlocked_tab_type item_db =
 
 view : Model -> Html.Html Msg
 view model =
-    Element.layoutWith { options = [] }
+    Element.layoutWith
+        { options =
+            [ Element.noStaticStyleSheet
+            , Element.focusStyle
+                { borderColor = Nothing
+                , backgroundColor = Nothing
+                , shadow = Nothing
+                }
+            ]
+        }
         []
     <|
         case model.tab_type of

@@ -956,7 +956,15 @@ categoryRadioOption str option_state =
 
 view : Model -> Html.Html Msg
 view model =
-    Element.layoutWith { options = [] }
+    Element.layoutWith
+        { options =
+            [ Element.focusStyle
+                { borderColor = Nothing
+                , backgroundColor = Nothing
+                , shadow = Nothing
+                }
+            ]
+        }
         []
     <|
         column [ width fill, spacingXY 0 20, Font.size 48 ]

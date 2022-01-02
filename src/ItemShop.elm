@@ -4174,14 +4174,14 @@ view_shop_tab_type model =
             getPlayer model
 
         paused_border_attrs =
-            [ Border.color color_light_grey, Border.width 2, Border.dashed ]
+            [ Border.color color_light_grey, Border.width 10, Border.dashed ]
 
         unpaused_border_attrs =
-            [ Border.color color_white, Border.width 2, Border.dashed ]
+            [ Border.color color_white, Border.width 10, Border.dashed ]
     in
-    Element.column
-        ([ width fill, font_scaled 1, height fill, padding 1 ]
-            ++ (if model.ai_updates_paused then
+    Element.el
+        (padding 10
+            :: (if model.ai_updates_paused then
                     paused_border_attrs
 
                 else
@@ -4189,92 +4189,95 @@ view_shop_tab_type model =
                )
         )
     <|
-        [ welcome_header
-        , row [ spacing 5 ]
-            [ Element.link []
-                { url = "#items"
-                , label =
-                    secondary_button [] (ChangeTabType ItemsUnlockedTabType) "View Items"
-                }
-            , outline_button [] ToggleShowMainChart <|
-                if model.show_main_chart then
-                    "Hide Charts"
+        Element.column
+            [ width fill, font_scaled 1, height fill ]
+        <|
+            [ welcome_header
+            , row [ spacing 5 ]
+                [ Element.link []
+                    { url = "#items"
+                    , label =
+                        secondary_button [] (ChangeTabType ItemsUnlockedTabType) "View Items"
+                    }
+                , outline_button [] ToggleShowMainChart <|
+                    if model.show_main_chart then
+                        "Hide Charts"
 
-                else
-                    "Charts"
-            ]
-        , if model.show_main_chart then
-            Element.el [ paddingXY 0 10, width fill ] <| charts_display model.historical_shop_trends model.hovered_trend_chart
+                    else
+                        "Charts"
+                ]
+            , if model.show_main_chart then
+                Element.el [ paddingXY 0 10, width fill ] <| charts_display model.historical_shop_trends model.hovered_trend_chart
 
-          else
-            Element.none
-        , row [ width fill, height <| Element.px 10 ] []
-        , row [ width fill, spacingXY 10 0 ]
-            [ el [ width <| fillPortion 3, alignTop ] <| Lazy.lazy2 player_action_log_display model.item_db model.historical_player_actions
-            , el [ width <| fillPortion 7, alignTop ] <| Lazy.lazy player_upgrades_display model.player_upgrades
-            ]
-        , case maybe_player of
-            Just player ->
-                special_actions_display model.player_upgrades model.hovered_tooltip player model.ai_updates_paused
-
-            Nothing ->
+              else
                 Element.none
-        , trends_display model.shiftIsPressed model.item_db model.shop_trends model.characters model.shop_trends_hovered
-        , Element.el [ paddingXY 0 10, width fill ] <|
-            case maybe_shop of
-                Just shop ->
-                    render_inventory_grid
-                        model
-                        "Items For Sale"
-                        shop
-                        model.shop_trends
-                        model.hovered_item_in_character
-                        ShopItems
-                        (\{ item, quantity, avg_price } ->
-                            shop_buy_button
-                                (get_adjusted_item_cost model.shop_trends item (Quantity 1))
-                                (case maybe_player of
-                                    Just player ->
-                                        player.held_gold
-
-                                    Nothing ->
-                                        99999
-                                )
-                                { item = item, quantity = quantity, avg_price = avg_price }
-                        )
-
-                Nothing ->
-                    el [ Font.color <| rgb 1 0 0, font_scaled 5 ] <| text "ERR: Can't find shop"
-        , Element.el [ paddingXY 0 10, width fill ] <|
-            case maybe_player of
+            , row [ width fill, height <| Element.px 10 ] []
+            , row [ width fill, spacingXY 10 0 ]
+                [ el [ width <| fillPortion 3, alignTop ] <| Lazy.lazy2 player_action_log_display model.item_db model.historical_player_actions
+                , el [ width <| fillPortion 7, alignTop ] <| Lazy.lazy player_upgrades_display model.player_upgrades
+                ]
+            , case maybe_player of
                 Just player ->
-                    render_inventory_grid
-                        model
-                        "Items In Inventory"
-                        player
-                        model.shop_trends
-                        model.hovered_item_in_character
-                        InventoryItems
-                        (\{ item, quantity, avg_price } ->
-                            shop_sell_button
-                                (getQuantity quantity >= 1)
-                                { item = item, quantity = setQuantity 1, avg_price = avg_price }
-                        )
+                    special_actions_display model.player_upgrades model.hovered_tooltip player model.ai_updates_paused
 
                 Nothing ->
-                    text "Can't find player"
-        ]
-            ++ (if model.show_debug_inventories then
-                    [ column [ width fill ]
-                        ([ secondary_button [] ToggleShowDebugInventories "Hide Debug"
-                         ]
-                            ++ debug_inventories
-                        )
-                    ]
+                    Element.none
+            , trends_display model.shiftIsPressed model.item_db model.shop_trends model.characters model.shop_trends_hovered
+            , Element.el [ paddingXY 0 10, width fill ] <|
+                case maybe_shop of
+                    Just shop ->
+                        render_inventory_grid
+                            model
+                            "Items For Sale"
+                            shop
+                            model.shop_trends
+                            model.hovered_item_in_character
+                            ShopItems
+                            (\{ item, quantity, avg_price } ->
+                                shop_buy_button
+                                    (get_adjusted_item_cost model.shop_trends item (Quantity 1))
+                                    (case maybe_player of
+                                        Just player ->
+                                            player.held_gold
 
-                else
-                    [ secondary_button [] ToggleShowDebugInventories "Show Debug" ]
-               )
+                                        Nothing ->
+                                            99999
+                                    )
+                                    { item = item, quantity = quantity, avg_price = avg_price }
+                            )
+
+                    Nothing ->
+                        el [ Font.color <| rgb 1 0 0, font_scaled 5 ] <| text "ERR: Can't find shop"
+            , Element.el [ paddingXY 0 10, width fill ] <|
+                case maybe_player of
+                    Just player ->
+                        render_inventory_grid
+                            model
+                            "Items In Inventory"
+                            player
+                            model.shop_trends
+                            model.hovered_item_in_character
+                            InventoryItems
+                            (\{ item, quantity, avg_price } ->
+                                shop_sell_button
+                                    (getQuantity quantity >= 1)
+                                    { item = item, quantity = setQuantity 1, avg_price = avg_price }
+                            )
+
+                    Nothing ->
+                        text "Can't find player"
+            ]
+                ++ (if model.show_debug_inventories then
+                        [ column [ width fill ]
+                            ([ secondary_button [] ToggleShowDebugInventories "Hide Debug"
+                             ]
+                                ++ debug_inventories
+                            )
+                        ]
+
+                    else
+                        [ secondary_button [] ToggleShowDebugInventories "Show Debug" ]
+                   )
 
 
 render_unlocked_item : ItemDbRecord -> Element Msg
@@ -4351,11 +4354,11 @@ view model =
                 }
             ]
         }
-        [ Element.htmlAttribute <| Html.Attributes.id "itemshop", padding 20 ]
+        [ Element.htmlAttribute <| Html.Attributes.id "itemshop" ]
     <|
         case model.tab_type of
             ShopTabType ->
-                view_shop_tab_type model
+                Lazy.lazy view_shop_tab_type model
 
             ItemsUnlockedTabType ->
                 Lazy.lazy view_items_unlocked_tab_type model.item_db

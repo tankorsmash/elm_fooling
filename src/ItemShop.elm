@@ -225,6 +225,7 @@ type Msg
     | OnSpecialAction SpecialAction Price
     | ToggleHideNonZeroRows CharacterId
     | ChangeTabType TabType
+    | FilterDisplayedItems CharacterId (Maybe ItemType)
 
 
 type alias TradeOrder =
@@ -400,6 +401,7 @@ type alias Character =
     , item_types_desired : ItemSentiments
     , action_log : List ActionLog
     , hide_zero_qty_inv_rows : Bool
+    , displayedItemType : Maybe ItemType
     }
 
 
@@ -1283,6 +1285,7 @@ create_character char_id name =
 
     -- misc
     , hide_zero_qty_inv_rows = False
+    , displayedItemType = Nothing
     }
 
 
@@ -1914,6 +1917,37 @@ update msg model =
 
         ChangeTabType tab_type ->
             ( { model | tab_type = tab_type }, Cmd.none )
+
+        FilterDisplayedItems character_id mb_item_type ->
+            let
+                maybeCharacter =
+                    getCharacter model.characters character_id
+            in
+            case maybeCharacter of
+                Just character ->
+                    let
+                        getIdx : Int -> Maybe ItemType
+                        getIdx idx =
+                            List.Extra.getAt idx allItemTypes
+
+                        newItemType =
+                            case mb_item_type of
+                                Nothing ->
+                                    getIdx 0
+
+                                Just item_type ->
+                                    let
+                                        curIdx : Maybe Int
+                                        curIdx =
+                                            List.Extra.elemIndex item_type allItemTypes
+                                    in
+                                    Maybe.map ((+) 1) curIdx
+                                        |> Maybe.andThen getIdx
+                    in
+                    ( withCharacter { character | displayedItemType = newItemType } model, Cmd.none )
+
+                Nothing ->
+                    ( model, Cmd.none )
 
 
 generate_uuid : String -> UUID.UUID
@@ -3352,14 +3386,25 @@ render_inventory_grid model header character shop_trends hovered_item context co
 
         items : InventoryRecords
         items =
-            List.sortBy sort_func <|
-                if hide_zero_qty_inv_rows then
-                    List.filter
-                        (\{ quantity } -> getQuantity quantity > 0)
-                        held_items
-
-                else
+            (if hide_zero_qty_inv_rows then
+                List.filter
+                    (\{ quantity } -> getQuantity quantity > 0)
                     held_items
+
+             else
+                held_items
+            )
+                |> List.sortBy sort_func
+                |> (\irs ->
+                        case character.displayedItemType of
+                            Nothing ->
+                                irs
+
+                            Just item_type ->
+                                List.filter
+                                    (\ir -> ir.item.item_type == item_type)
+                                    irs
+                   )
 
         rendered_desires : List (Element Msg)
         rendered_desires =
@@ -3431,14 +3476,25 @@ render_inventory_grid model header character shop_trends hovered_item context co
 
         rendered_inventory_controls : List (Element Msg)
         rendered_inventory_controls =
-            [ primary_button []
-                (ToggleHideNonZeroRows character.char_id)
-                (if hide_zero_qty_inv_rows then
-                    "Show Nonzero"
+            [ row [ spacingXY 10 0 ]
+                [ primary_button []
+                    (ToggleHideNonZeroRows character.char_id)
+                    (if hide_zero_qty_inv_rows then
+                        "Show Nonzero"
 
-                 else
-                    "Hide Nonzero"
-                )
+                     else
+                        "Hide Nonzero"
+                    )
+                , secondary_button [] (FilterDisplayedItems character.char_id character.displayedItemType) <|
+                    "Filter: "
+                        ++ (case character.displayedItemType of
+                                Nothing ->
+                                    "All"
+
+                                Just itemType ->
+                                    item_type_to_pretty_string itemType
+                           )
+                ]
             ]
 
         is_hovered_item item =

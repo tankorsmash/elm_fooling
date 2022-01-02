@@ -2746,6 +2746,19 @@ ai_fetch_item ai_tick_time item_db shop_trends character shop =
     }
 
 
+pickAiActionChoice : Random.Seed -> ( AiActionChoice, Random.Seed )
+pickAiActionChoice ai_tick_seed =
+    (List.repeat 10 WantsToSell
+        ++ List.repeat 10 WantsToBuy
+        ++ List.repeat 1 WantsToFetchItem
+        ++ List.repeat 5 NoActionChoice
+    )
+        |> Random.List.choose
+        |> (\choices -> Random.step choices ai_tick_seed)
+        |> Tuple.mapFirst
+            (Tuple.first >> Maybe.withDefault NoActionChoice)
+
+
 update_ai : Time.Posix -> CharacterId -> CharacterId -> AiUpdateData -> AiUpdateData
 update_ai ai_tick_time shop_char_id char_id ({ shop_trends, historical_shop_trends, characters, ai_tick_seed, item_db } as original_ai_update_data) =
     let
@@ -2759,25 +2772,9 @@ update_ai ai_tick_time shop_char_id char_id ({ shop_trends, historical_shop_tren
     case ( maybe_character, maybe_shop ) of
         ( Just character, Just shop ) ->
             let
-                ( ( maybe_chosen_action, _ ), new_seed ) =
-                    Random.step
-                        (Random.List.choose
-                            (List.repeat 10 WantsToSell
-                                ++ List.repeat 10 WantsToBuy
-                                ++ List.repeat 1 WantsToFetchItem
-                                ++ List.repeat 5 NoActionChoice
-                            )
-                        )
-                        ai_tick_seed
-
-                chosen_action : AiActionChoice
-                chosen_action =
-                    case maybe_chosen_action of
-                        Just action ->
-                            action
-
-                        Nothing ->
-                            NoActionChoice
+                -- chosen_action, new_seed : (AiActionChoice, Random.Seed)
+                ( chosen_action, new_seed ) =
+                    pickAiActionChoice ai_tick_seed
 
                 ai_update_record : AiUpdateRecord
                 ai_update_record =
@@ -2814,8 +2811,6 @@ update_ai ai_tick_time shop_char_id char_id ({ shop_trends, historical_shop_tren
                             , shop = shop
                             , traded_items = []
                             }
-
-
 
                 new_characters : Characters
                 new_characters =

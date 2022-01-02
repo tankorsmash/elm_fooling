@@ -932,25 +932,15 @@ initial_characters item_db =
 
 
 get_adjusted_item_cost : ShopTrends -> Item -> Quantity -> Int
-get_adjusted_item_cost shop_trends item qty =
+get_adjusted_item_cost shop_trends { item_type, raw_gold_cost } qty =
     let
-        { item_type } =
-            item
-
         item_sentiment =
-            case
-                Dict.get
-                    (item_type_to_id item_type)
-                    shop_trends.item_type_sentiment
-            of
-                Just pop ->
-                    pop
-
-                Nothing ->
-                    1.0
+            shop_trends.item_type_sentiment
+                |> Dict.get (item_type_to_id item_type)
+                |> Maybe.withDefault 1.0
 
         scaled_raw_cost =
-            toFloat <| item.raw_gold_cost * getQuantity qty
+            toFloat <| raw_gold_cost * getQuantity qty
     in
     round <| scaled_raw_cost * item_sentiment
 

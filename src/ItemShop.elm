@@ -2770,6 +2770,7 @@ update_ai ai_tick_time shop_char_id char_id ({ shop_trends, historical_shop_tren
                         )
                         ai_tick_seed
 
+                chosen_action : AiActionChoice
                 chosen_action =
                     case maybe_chosen_action of
                         Just action ->
@@ -2778,7 +2779,7 @@ update_ai ai_tick_time shop_char_id char_id ({ shop_trends, historical_shop_tren
                         Nothing ->
                             NoActionChoice
 
-                -- ( new_shop_trends_, new_character, new_shop ) =
+                ai_update_record : AiUpdateRecord
                 ai_update_record =
                     case chosen_action of
                         WantsToSell ->
@@ -2814,6 +2815,9 @@ update_ai ai_tick_time shop_char_id char_id ({ shop_trends, historical_shop_tren
                             , traded_items = []
                             }
 
+
+
+                new_characters : Characters
                 new_characters =
                     List.map
                         (\c ->

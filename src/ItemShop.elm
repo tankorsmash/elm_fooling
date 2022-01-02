@@ -3252,6 +3252,10 @@ render_single_trade_log_entry item_db all_characters trade_log =
                 ]
 
 
+monospace attrs el =
+    Element.el (Font.family [ Font.monospace ] :: attrs) el
+
+
 trends_display : Bool -> ItemDb -> ShopTrends -> List Character -> Bool -> Element.Element Msg
 trends_display shiftIsPressed item_db shop_trends all_characters is_expanded =
     let
@@ -3267,7 +3271,11 @@ trends_display shiftIsPressed item_db shop_trends all_characters is_expanded =
                         Nothing ->
                             "Unknown Type (" ++ String.fromInt type_id ++ ")"
             in
-            text <| pretty_type ++ ": " ++ String.fromInt (round (popularity * 100)) ++ "%"
+            paragraph []
+                [ text <| pretty_type
+                , text ": "
+                , monospace [] <| text <| String.padLeft 3 '0' (String.fromInt (round (popularity * 100))) ++ "%"
+                ]
 
         has_active_trends =
             List.any (Tuple.second >> (/=) 1) <| Dict.toList shop_trends.item_type_sentiment
@@ -3283,8 +3291,8 @@ trends_display shiftIsPressed item_db shop_trends all_characters is_expanded =
         specific_trends : List (Element msg)
         specific_trends =
             List.map render_single_popularity <|
-                List.filter (Tuple.second >> (/=) 1) <|
-                    Dict.toList shop_trends.item_type_sentiment
+                -- List.filter (Tuple.second >> (/=) 1) <|
+                Dict.toList shop_trends.item_type_sentiment
 
         rendered_item_trade_logs : List (Element msg)
         rendered_item_trade_logs =
@@ -3296,12 +3304,11 @@ trends_display shiftIsPressed item_db shop_trends all_characters is_expanded =
                     ++ " traders."
             ]
 
-        rendered_popularity : Element.Element msg
+        rendered_popularity : Element.Element Msg
         rendered_popularity =
-            row [ spacing 15, paddingXY 0 10 ] <|
+            Element.column [ spacing 5, paddingXY 0 10, width fill ] <|
                 summarized
-                    :: specific_trends
-                    ++ [ Element.el [ font_scaled 2, centerY ] <| text "|" ]
+                    :: [ row [ Element.spaceEvenly, width fill ] specific_trends ]
                     ++ rendered_item_trade_logs
 
         expanded_trade_logs =
@@ -3344,7 +3351,7 @@ trends_display shiftIsPressed item_db shop_trends all_characters is_expanded =
             List.length shop_trends.item_trade_logs > 0
     in
     column
-        ([ paddingXY 0 5, width fill ]
+        ([ width fill ]
             ++ (if has_trades then
                     [ Events.onMouseEnter <| StartTrendsHover
                     , Events.onMouseLeave <| EndTrendsHover
@@ -4271,8 +4278,13 @@ view_shop_tab_type model =
 
                 Nothing ->
                     Element.none
-            , trends_display model.shiftIsPressed model.item_db model.shop_trends model.characters model.shop_trends_hovered
-            , Element.el [ paddingXY 0 10, width fill ] <|
+            , trends_display
+                model.shiftIsPressed
+                model.item_db
+                model.shop_trends
+                model.characters
+                model.shop_trends_hovered
+            , Element.el [ paddingXY 0 0, width fill ] <|
                 case maybe_shop of
                     Just shop ->
                         render_inventory_grid
@@ -4389,6 +4401,11 @@ view_items_unlocked_tab_type item_db =
     in
     Debug.log "render view_items_unlocked_tab_type" <|
         column [ spacing 10 ] [ text "Item Codex", back_btn, item_grid ]
+
+
+cssRule : String -> String -> Element.Attribute Msg
+cssRule name value =
+    Html.Attributes.style name value |> Element.htmlAttribute
 
 
 noUserSelect : Element.Attribute Msg

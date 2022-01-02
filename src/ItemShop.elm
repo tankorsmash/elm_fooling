@@ -3634,7 +3634,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
             , { header = small_header "Price"
               , width = fillPortion 1
               , view =
-                    \{ item, avg_price } ->
+                    \{ item, quantity, avg_price } ->
                         Element.el
                             [ portion 1, html_title "Current cost" ]
                         <|
@@ -3649,7 +3649,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                                 [ render_gp <|
                                     get_adjusted_item_cost shop_trends item (Quantity 1)
                                 ]
-                                    ++ [ if context /= ShopItems && priceDiff /= 0 then
+                                    ++ [ if context /= ShopItems && priceDiff /= 0 && getQuantity quantity /= 0 then
                                             let
                                                 diffColor =
                                                     colorFromInt priceDiff (convertColor Color.green) color_black color_danger

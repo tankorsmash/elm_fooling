@@ -4013,7 +4013,7 @@ render_single_player_upgrade : PlayerUpgrade -> Element Msg
 render_single_player_upgrade player_upgrade =
     case player_upgrade of
         AutomaticGPM gpm ->
-            paragraph [] [ text "Income: ", render_gp gpm ]
+            paragraph [] [ text "Income: ", render_gp gpm, text "/sec" ]
 
 
 player_upgrades_display : List PlayerUpgrade -> Element Msg

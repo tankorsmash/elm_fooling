@@ -750,7 +750,15 @@ update msg model =
                             ( Debug.log "Unknown error downloading" model, Cmd.none )
 
         ChangeTab new_tab ->
-            ( { model | current_tab = new_tab }, Cmd.none )
+            let
+                oldItemShopModel =
+                    model.item_shop_model
+
+                --force pausing the item shop, because its annoying to have model updates if the item shop isnt being worked on
+                newItemShopModel =
+                    { oldItemShopModel | ai_updates_paused = True }
+            in
+            ( { model | current_tab = new_tab, item_shop_model = newItemShopModel }, Cmd.none )
 
         NavbarMsg state ->
             ( { model | current_navbar_state = state }, Cmd.none )

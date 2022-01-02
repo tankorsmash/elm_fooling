@@ -4711,6 +4711,14 @@ special_actions_display player_upgrades hovered_tooltip player ai_updates_paused
         ]
 
 
+natural =
+    Fuzz.intRange 0 Random.maxInt
+
+
+positive =
+    Fuzz.intRange 0 Random.maxInt
+
+
 suite : Test
 suite =
     -- todo "Implement our first test. See https://package.elm-lang.org/packages/elm-explorations/test/latest for how to do this!"
@@ -4723,6 +4731,9 @@ suite =
                             10
                     in
                     Expect.equal orig_avg (add_to_average orig_avg 1 0 0)
+            , fuzz natural "Starting the average from nothing is just the number you add" <|
+                \val ->
+                    Expect.equal val (add_to_average 0 0 val 1)
             , test "Adding a single item works to change the average" <|
                 \_ ->
                     let

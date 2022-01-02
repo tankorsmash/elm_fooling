@@ -225,7 +225,8 @@ type Msg
     | OnSpecialAction SpecialAction Price
     | ToggleHideNonZeroRows CharacterId
     | ChangeTabType TabType
-    | FilterDisplayedItems CharacterId (Maybe ItemType)
+    | CycleFilterDisplayedItemsForward CharacterId (Maybe ItemType)
+    | CycleFilterDisplayedItemsBackward CharacterId (Maybe ItemType)
 
 
 type alias TradeOrder =
@@ -1918,7 +1919,7 @@ update msg model =
         ChangeTabType tab_type ->
             ( { model | tab_type = tab_type }, Cmd.none )
 
-        FilterDisplayedItems character_id mb_item_type ->
+        CycleFilterDisplayedItemsForward character_id mb_item_type ->
             let
                 maybeCharacter =
                     getCharacter model.characters character_id
@@ -1942,6 +1943,38 @@ update msg model =
                                             List.Extra.elemIndex item_type allItemTypes
                                     in
                                     Maybe.map ((+) 1) curIdx
+                                        |> Maybe.andThen getIdx
+                    in
+                    ( withCharacter { character | displayedItemType = newItemType } model, Cmd.none )
+
+                Nothing ->
+                    ( model, Cmd.none )
+
+        CycleFilterDisplayedItemsBackward character_id mb_item_type ->
+            let
+                maybeCharacter =
+                    getCharacter model.characters character_id
+            in
+            case maybeCharacter of
+                Just character ->
+                    let
+                        getIdx : Int -> Maybe ItemType
+                        getIdx idx =
+                            List.Extra.getAt idx allItemTypes
+
+                        newItemType =
+                            case mb_item_type of
+                                Nothing ->
+                                    getIdx 0
+
+                                Just item_type ->
+                                    let
+                                        curIdx : Maybe Int
+                                        curIdx =
+                                            List.Extra.elemIndex item_type allItemTypes
+                                    in
+                                    Maybe.map (\i -> i - 1) curIdx
+                                        |> Debug.log "curIdx"
                                         |> Maybe.andThen getIdx
                     in
                     ( withCharacter { character | displayedItemType = newItemType } model, Cmd.none )
@@ -3485,7 +3518,13 @@ render_inventory_grid model header character shop_trends hovered_item context co
                      else
                         "Hide Nonzero"
                     )
-                , secondary_button [] (FilterDisplayedItems character.char_id character.displayedItemType) <|
+                , secondary_button
+                    [ Html.Events.preventDefaultOn "contextmenu"
+                        (Decode.succeed <| ( CycleFilterDisplayedItemsBackward character.char_id character.displayedItemType, True ))
+                        |> Element.htmlAttribute
+                    ]
+                    (CycleFilterDisplayedItemsForward character.char_id character.displayedItemType)
+                  <|
                     "Filter: "
                         ++ (case character.displayedItemType of
                                 Nothing ->

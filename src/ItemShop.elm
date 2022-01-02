@@ -23,7 +23,6 @@ import Element
         , centerY
         , column
         , el
-        , explain
         , fill
         , fillPortion
         , height
@@ -3019,6 +3018,16 @@ color_very_light_grey =
     rgb 0.75 0.75 0.75
 
 
+color_very_very_light_grey : Color
+color_very_very_light_grey =
+    rgb 0.85 0.85 0.85
+
+
+color_ultra_light_grey : Color
+color_ultra_light_grey =
+    rgb 0.95 0.95 0.95
+
+
 color_light_grey : Color
 color_light_grey =
     rgb 0.55 0.55 0.55
@@ -3096,6 +3105,10 @@ shop_sell_button has_items_to_sell_ { item } =
             "Need GP"
 
 
+explain =
+    Element.explain Debug.todo
+
+
 debug_explain : Element.Attribute msg
 debug_explain =
     let
@@ -3103,7 +3116,7 @@ debug_explain =
             True
     in
     if do_explain then
-        explain Debug.todo
+        explain
 
     else
         Element.scale 1.0
@@ -4380,6 +4393,48 @@ view_items_unlocked_tab_type item_db =
         column [ spacing 10 ] [ text "Item Codex", back_btn, item_grid ]
 
 
+noUserSelect : Element.Attribute Msg
+noUserSelect =
+    Html.Attributes.style "userSelect" "none" |> Element.htmlAttribute
+
+
+pointerEventsNone : Element.Attribute Msg
+pointerEventsNone =
+    Html.Attributes.style "pointer-events" "none" |> Element.htmlAttribute
+
+
+pointerEventsAll : Element.Attribute Msg
+pointerEventsAll =
+    Html.Attributes.style "pointer-events" "all" |> Element.htmlAttribute
+
+
+viewOverlay : Model -> Element Msg
+viewOverlay model =
+    model
+        |> getPlayer
+        |> Maybe.map
+            (\player ->
+                el [ width fill, height fill, Font.size 12, pointerEventsNone, padding 1 ] <|
+                    el
+                        [ Font.alignRight
+                        , Element.alignRight
+                        , Element.alignBottom
+                        , Background.color color_white
+                        , Border.color color_ultra_light_grey
+                        , Border.width 1
+                        , Border.rounded 3
+                        , pointerEventsAll
+                        , padding 10
+                        ]
+                    <|
+                        row [ noUserSelect ]
+                            [ text "Gold: "
+                            , render_gp <| player.held_gold
+                            ]
+            )
+        |> Maybe.withDefault Element.none
+
+
 view : Model -> Html.Html Msg
 view model =
     Element.layoutWith
@@ -4392,7 +4447,9 @@ view model =
                 }
             ]
         }
-        [ Element.htmlAttribute <| Html.Attributes.id "itemshop" ]
+        [ Element.htmlAttribute <| Html.Attributes.id "itemshop"
+        , Element.inFront <| viewOverlay model
+        ]
     <|
         case model.tab_type of
             ShopTabType ->

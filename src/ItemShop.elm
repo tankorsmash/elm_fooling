@@ -1444,19 +1444,17 @@ add_item_to_inventory_records records item qty total_cost =
                 updated_records : InventoryRecords
                 updated_records =
                     List.map
-                        ((\ir -> { ir | quantity = addQuantity qty ir.quantity })
-                            >> (\({ quantity, avg_price } as ir) ->
-                                    { item = ir.item
-                                    , quantity = quantity
-                                    , avg_price =
-                                        setPrice <|
-                                            add_to_average
-                                                (getPrice avg_price)
-                                                (getQuantity quantity)
-                                                total_cost
-                                                (getQuantity quantity)
-                                    }
-                               )
+                        (\({ quantity, avg_price } as ir) ->
+                            { item = ir.item
+                            , quantity = addQuantity quantity qty
+                            , avg_price =
+                                setPrice <|
+                                    add_to_average
+                                        (getPrice avg_price)
+                                        (getQuantity quantity)
+                                        total_cost
+                                        (getQuantity <| addQuantity quantity qty)
+                            }
                         )
                         matching_records
 

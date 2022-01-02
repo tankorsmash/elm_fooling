@@ -365,6 +365,7 @@ type WantedAction
 type ActionLogType
     = Traded ItemTradeLog
     | WantedButCouldntTrade WantedAction
+    | FetchedItem ItemId
     | DidNothing
 
 
@@ -2738,9 +2739,34 @@ increment_item_trade_count record_updater inventory_record item_db =
 
 
 ai_fetch_item : Time.Posix -> ItemDb -> ShopTrends -> Character -> Character -> AiUpdateRecord
-ai_fetch_item ai_tick_time item_db shop_trends character shop =
+ai_fetch_item ai_tick_time item_db shop_trends ({ held_items } as character) shop =
+    let
+        --note we don't use the newSeed here. we should use global_seed, so that all AIs dont do the same thing
+        ( mbNewItem, newSeed ) =
+            pick_random_unlocked_item_from_db item_db (seed_from_time ai_tick_time)
+    in
     { shop_trends = shop_trends
-    , character = character
+    , character =
+        case mbNewItem of
+            Just newItem ->
+                character
+                    |> (\c ->
+                            { c
+                                | held_items =
+                                    add_item_to_inventory_records
+                                        held_items
+                                        newItem
+                                        (setQuantity 1)
+                                        newItem.raw_gold_cost
+                            }
+                       )
+                    |> (\c ->
+                            append_to_character_action_log c
+                                { log_type = FetchedItem newItem.id, time = ai_tick_time }
+                       )
+
+            Nothing ->
+                character
     , shop = shop
     , traded_items = []
     }
@@ -2750,7 +2776,7 @@ pickAiActionChoice : Random.Seed -> ( AiActionChoice, Random.Seed )
 pickAiActionChoice ai_tick_seed =
     (List.repeat 10 WantsToSell
         ++ List.repeat 10 WantsToBuy
-        ++ List.repeat 1 WantsToFetchItem
+        ++ List.repeat 2 WantsToFetchItem
         ++ List.repeat 5 NoActionChoice
     )
         |> Random.List.choose
@@ -3401,6 +3427,9 @@ action_log_to_str item_db action_log =
 
                 WantedToBuy ->
                     "Wanted to buy, but couldn't"
+
+        FetchedItem itemId ->
+            "Fetched an item"
 
         DidNothing ->
             "Did nothing"

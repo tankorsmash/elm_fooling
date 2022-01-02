@@ -1558,7 +1558,13 @@ homeView model =
                     Element.none
                 ]
     in
-    div [ add_class "container" ]
+    div
+        (if model.current_tab /= ItemShopTab then
+            [ add_class "container" ]
+
+         else
+            []
+        )
         [ elm_ui_hack_layout
         , div [ add_class "row" ]
             [ div [ add_class "col-md-12" ]

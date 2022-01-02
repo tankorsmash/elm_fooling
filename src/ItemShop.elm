@@ -4351,7 +4351,7 @@ view model =
                 }
             ]
         }
-        []
+        [ padding 20 ]
     <|
         case model.tab_type of
             ShopTabType ->

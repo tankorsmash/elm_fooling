@@ -955,8 +955,8 @@ get_adjusted_item_cost shop_trends item qty =
     round <| scaled_raw_cost * item_sentiment
 
 
-get_single_adjusted_cost : ShopTrends -> Item -> Int
-get_single_adjusted_cost shop_trends item =
+get_single_adjusted_item_cost : ShopTrends -> Item -> Int
+get_single_adjusted_item_cost shop_trends item =
     get_adjusted_item_cost shop_trends item (Quantity 1)
 
 
@@ -2624,7 +2624,7 @@ ai_sell_item_to_shop ai_tick_time item_db shop_trends character shop =
 
         profitable_enough : InventoryRecord -> Bool
         profitable_enough { item } =
-            get_single_adjusted_cost shop_trends item > 0
+            get_single_adjusted_item_cost shop_trends item > 0
 
         untrendy_items : InventoryRecords
         untrendy_items =
@@ -3561,7 +3561,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                     False
 
         current_price item =
-            get_adjusted_item_cost shop_trends item (Quantity 1)
+            get_single_adjusted_item_cost shop_trends item
 
         --shown when hovered over item
         expanded_display item =
@@ -3656,14 +3656,14 @@ render_inventory_grid model header character shop_trends hovered_item context co
                         <|
                             let
                                 adjustedPrice =
-                                    get_adjusted_item_cost shop_trends item (Quantity 1)
+                                    get_single_adjusted_item_cost shop_trends item
 
                                 priceDiff =
                                     adjustedPrice - getPrice avg_price
                             in
                             paragraph [] <|
                                 [ render_gp <|
-                                    get_adjusted_item_cost shop_trends item (Quantity 1)
+                                    get_single_adjusted_item_cost shop_trends item
                                 ]
                                     ++ [ if context /= ShopItems && priceDiff /= 0 && getQuantity quantity /= 0 then
                                             let
@@ -4251,7 +4251,7 @@ view_shop_tab_type model =
                             ShopItems
                             (\{ item, quantity, avg_price } ->
                                 shop_buy_button
-                                    (get_adjusted_item_cost model.shop_trends item (Quantity 1))
+                                    (get_single_adjusted_item_cost model.shop_trends item)
                                     (case maybe_player of
                                         Just player ->
                                             player.held_gold
@@ -4720,10 +4720,9 @@ suite =
                 \_ ->
                     Expect.equal
                         test_item.raw_gold_cost
-                        (get_adjusted_item_cost
+                        (get_single_adjusted_item_cost
                             test_shop_trends
                             test_item
-                            (setQuantity 1)
                         )
             , test "getting adjusted item cost should return double item cost at 200% markup" <|
                 \_ ->
@@ -4744,10 +4743,9 @@ suite =
                     in
                     Expect.equal
                         (test_item.raw_gold_cost * 2)
-                        (get_adjusted_item_cost
+                        (get_single_adjusted_item_cost
                             new_test_shop_trends
                             test_item
-                            (setQuantity 1)
                         )
             , test "test making sure someone can afford something" <|
                 \_ ->

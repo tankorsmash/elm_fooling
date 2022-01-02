@@ -955,6 +955,11 @@ get_adjusted_item_cost shop_trends item qty =
     round <| scaled_raw_cost * item_sentiment
 
 
+get_single_adjusted_cost : ShopTrends -> Item -> Int
+get_single_adjusted_cost shop_trends item =
+    get_adjusted_item_cost shop_trends item (Quantity 1)
+
+
 color_white : Color
 color_white =
     rgb 1 1 1
@@ -2617,6 +2622,10 @@ ai_sell_item_to_shop ai_tick_time item_db shop_trends character shop =
         untrendy_enough { item } =
             get_trend_for_item shop_trends item >= sellable_trend
 
+        profitable_enough : InventoryRecord -> Bool
+        profitable_enough { item } =
+            get_single_adjusted_cost shop_trends item > 0
+
         untrendy_items : InventoryRecords
         untrendy_items =
             List.filter untrendy_enough sellable_items
@@ -2626,8 +2635,15 @@ ai_sell_item_to_shop ai_tick_time item_db shop_trends character shop =
             , time = ai_tick_time
             }
 
-        shuffled_items_to_buy =
-            group_shuffle_items (seed_from_time ai_tick_time) untrendy_items
+        shuffled_items_to_sell =
+            (case untrendy_items of
+                [] ->
+                    List.filter profitable_enough sellable_items
+
+                _ ->
+                    untrendy_items
+            )
+                |> group_shuffle_items (seed_from_time ai_tick_time)
 
         qty_to_sell : Quantity
         qty_to_sell =
@@ -2635,7 +2651,7 @@ ai_sell_item_to_shop ai_tick_time item_db shop_trends character shop =
 
         trade_record : TradeRecord
         trade_record =
-            case List.head shuffled_items_to_buy of
+            case List.head shuffled_items_to_sell of
                 Nothing ->
                     IncompleteTradeRecord
                         { shop_trends = shop_trends

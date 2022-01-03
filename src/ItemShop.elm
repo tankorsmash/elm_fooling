@@ -2004,41 +2004,24 @@ update msg model =
                     ( model, Cmd.none )
 
         ScrollViewport ->
-            let
-                _ =
-                    Debug.log "Scroll" 123
-            in
             ( model, Task.perform GotViewport Browser.Dom.getViewport )
 
         GotViewport viewport ->
-            let
-                _ =
-                    Debug.log "got viewport" viewport
-            in
-            ( { model | globalViewport = Just viewport }, Task.attempt GotShowDebugElement (Browser.Dom.getElement "show_debug_inventories") )
+            ( { model | globalViewport = Just viewport }
+            , Task.attempt GotShowDebugElement
+                (Browser.Dom.getElement "show_debug_inventories")
+            )
 
         GotShowDebugElement attemptedElement ->
             let
-                _ =
-                    Debug.log "got debug viewport" attemptedElement
-
                 ( modelElement, shouldDisplayShowDebugInventoriesOverlay ) =
                     case attemptedElement of
                         Ok element ->
                             let
-                                _ =
-                                    Debug.log "element" element
-
-                                _ =
-                                    Debug.log "model.globalViewport" model.globalViewport
-
-                                _ =
-                                    Debug.log "bottom of element is offscreen" <| shouldDisplay
-
                                 shouldDisplay =
-                                    Maybe.map
-                                        (\gvp -> isElementOnScreen gvp element)
-                                        model.globalViewport
+                                    model.globalViewport
+                                        |> Maybe.map
+                                            (\gvp -> isElementOnScreen gvp element)
                                         |> Maybe.withDefault False
                             in
                             ( Just element, shouldDisplay )

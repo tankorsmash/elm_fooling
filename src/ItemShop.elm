@@ -3683,6 +3683,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                                 ++ [ width (fillPortion 2 |> Element.maximum 150)
                                    , Font.size 16
                                    , html_title "Item Name"
+                                   , centerY
                                    ]
                             )
                             (text (clipText item.name 25))
@@ -3692,7 +3693,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
               , view =
                     \{ item, quantity, avg_price } ->
                         Element.el
-                            [ portion 1, html_title "Current cost" ]
+                            [ portion 1, centerY, html_title "Current cost" ]
                         <|
                             let
                                 adjustedPrice =
@@ -3721,7 +3722,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
               , view =
                     \{ quantity, avg_price } ->
                         Element.el
-                            [ portion 1, html_title "Average Cost" ]
+                            [ portion 1, centerY, html_title "Average Cost" ]
                         <|
                             case context of
                                 ShopItems ->
@@ -3739,7 +3740,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
               , view =
                     \{ quantity } ->
                         Element.el
-                            []
+                            [ centerY ]
                         <|
                             if getQuantity quantity == 0 then
                                 case context of
@@ -3760,14 +3761,14 @@ render_inventory_grid model header character shop_trends hovered_item context co
               , view =
                     \{ item } ->
                         Element.el
-                            []
+                            [ centerY ]
                         <|
                             render_item_type shop_trends item.item_type
               }
             , { header = small_header "Item Desc."
               , width = fillPortion 3
               , view =
-                    \{ item } -> text <| clipText item.description 24
+                    \{ item } -> el [ centerY ] <| text <| clipText item.description 24
               }
             , { header = small_header "Controls"
               , width = fillPortion 1
@@ -3781,13 +3782,14 @@ render_inventory_grid model header character shop_trends hovered_item context co
                                 \item ->
                                     el
                                         (if getQuantity item.quantity == 0 then
-                                            [ cssRule "opacity" "0.5" ]
+                                            [ cssRule "opacity" "0.5", height fill ]
 
                                          else
-                                            [ cssRule "opacity" "1.0" ]
+                                            [ cssRule "opacity" "1.0", height fill ]
                                         )
                                     <|
-                                        col.view item
+                                        el [ height fill, centerY ] <|
+                                            col.view item
                         }
                     )
     in

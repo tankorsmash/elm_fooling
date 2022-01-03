@@ -226,6 +226,9 @@ type Msg
     | ChangeTabType TabType
     | CycleFilterDisplayedItemsForward CharacterId (Maybe ItemType)
     | CycleFilterDisplayedItemsBackward CharacterId (Maybe ItemType)
+    | ScrollViewport
+    | GotViewport Browser.Dom.Viewport
+    | GotShowDebugElement (Result Browser.Dom.Error Browser.Dom.Element)
 
 
 type alias TradeOrder =
@@ -543,6 +546,8 @@ type alias Model =
     , global_seed : Random.Seed --used to seed anything; will be constantly changed throughout the app
     , ai_updates_paused : Bool
     , tab_type : TabType
+    , globalViewport : Maybe Browser.Dom.Viewport
+    , showDebugInventoriesElement : Maybe Browser.Dom.Element
     }
 
 
@@ -1351,6 +1356,8 @@ init hash =
       , global_seed = Random.initialSeed 4
       , ai_updates_paused = False
       , tab_type = initial_tab_type
+      , globalViewport = Nothing
+      , showDebugInventoriesElement = Nothing
       }
     , Task.perform TickSecond Time.now
     )
@@ -1604,6 +1611,21 @@ getTradeContext trade_record =
 
         CompletedTradeRecord context _ ->
             context
+
+
+isElementOnScreen : Browser.Dom.Viewport -> Browser.Dom.Element -> Bool
+isElementOnScreen gvp { element } =
+    let
+        { y, height } =
+            gvp.viewport
+
+        -- _ =
+        --     Debug.log "gvp: y height" ( y, height )
+        --
+        -- _ =
+        --     Debug.log "elm: y height" ( element.element.y, element.element.height )
+    in
+    y > (element.y + element.height)
 
 
 sell_items_from_party_to_other : TradeContext -> TradeOrder -> TradeRecord
@@ -1978,6 +2000,56 @@ update msg model =
 
                 Nothing ->
                     ( model, Cmd.none )
+
+        ScrollViewport ->
+            let
+                _ =
+                    Debug.log "Scroll" 123
+            in
+            ( model, Task.perform GotViewport Browser.Dom.getViewport )
+
+        GotViewport viewport ->
+            let
+                _ =
+                    Debug.log "got viewport" viewport
+            in
+            ( { model | globalViewport = Just viewport }, Task.attempt GotShowDebugElement (Browser.Dom.getElement "show_debug_inventories") )
+
+        GotShowDebugElement attemptedElement ->
+            let
+                _ =
+                    Debug.log "got debug viewport" attemptedElement
+            in
+            ( { model
+                | showDebugInventoriesElement =
+                    case attemptedElement of
+                        Ok element ->
+                            let
+                                _ =
+                                    Debug.log "element" element
+
+                                _ =
+                                    Debug.log "model.globalViewport" model.globalViewport
+
+                                _ =
+                                    Debug.log "bottom of element is offscreen" <|
+                                        (Maybe.map
+                                            (\gvp -> isElementOnScreen gvp element)
+                                            model.globalViewport
+                                            |> Maybe.withDefault False
+                                        )
+                            in
+                            Just element
+
+                        Err _ ->
+                            Nothing
+              }
+            , Cmd.none
+            )
+
+
+
+--- END OF UPDATE
 
 
 generate_uuid : String -> UUID.UUID
@@ -3280,7 +3352,7 @@ trends_display shiftIsPressed item_db shop_trends all_characters is_expanded =
                             |> round
                             |> String.fromInt
                             |> String.padLeft 3 '\u{2003}'
-                            |> \pct -> pct ++ "%"
+                            |> (\pct -> pct ++ "%")
                         )
                 ]
 
@@ -4353,17 +4425,19 @@ view_shop_tab_type model =
                     Nothing ->
                         text "Can't find player"
             ]
-                ++ (if model.show_debug_inventories then
-                        [ column [ width fill ]
-                            ([ secondary_button [] ToggleShowDebugInventories "Hide Debug"
-                             ]
-                                ++ debug_inventories
-                            )
-                        ]
+                ++ [ column []
+                        (if model.show_debug_inventories then
+                            [ column [ width fill ]
+                                ([ danger_button [ defineHtmlId "show_debug_inventories" ] ToggleShowDebugInventories "Hide Debug"
+                                 ]
+                                    ++ debug_inventories
+                                )
+                            ]
 
-                    else
-                        [ secondary_button [] ToggleShowDebugInventories "Show Debug" ]
-                   )
+                         else
+                            [ danger_button [ defineHtmlId "show_debug_inventories" ] ToggleShowDebugInventories "Show Debug" ]
+                        )
+                   ]
 
 
 render_unlocked_item : ItemDbRecord -> Element Msg
@@ -4433,6 +4507,11 @@ cssRule name value =
     Html.Attributes.style name value |> Element.htmlAttribute
 
 
+defineHtmlId : String -> Element.Attribute Msg
+defineHtmlId name =
+    Html.Attributes.id name |> Element.htmlAttribute
+
+
 noUserSelect : Element.Attribute Msg
 noUserSelect =
     Html.Attributes.style "userSelect" "none" |> Element.htmlAttribute
@@ -4489,6 +4568,7 @@ view model =
         }
         [ Element.htmlAttribute <| Html.Attributes.id "itemshop"
         , Element.inFront <| viewOverlay model
+        , Element.htmlAttribute <| Html.Events.on "wheel" (Decode.succeed ScrollViewport)
         ]
     <|
         case model.tab_type of

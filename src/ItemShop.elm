@@ -3276,7 +3276,12 @@ trends_display shiftIsPressed item_db shop_trends all_characters is_expanded =
                 , text ": "
                 , monospace [] <|
                     text <|
-                        String.padLeft 3 '\u{2003}' (String.fromInt (round (popularity * 100))) ++ "%"
+                        ((popularity * 100)
+                            |> round
+                            |> String.fromInt
+                            |> String.padLeft 3 '\u{2003}'
+                            |> \pct -> pct ++ "%"
+                        )
                 ]
 
         has_active_trends =

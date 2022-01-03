@@ -63,9 +63,6 @@ view model =
         }
         [ in_front
         , Element.htmlAttribute <| Html.Attributes.id "visualoutput"
-
-        -- , Element.explain Debug.todo
-        , Element.height (Element.fill |> Element.maximum 1)
         ]
     <|
         Element.none

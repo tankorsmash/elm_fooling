@@ -1543,7 +1543,13 @@ homeView model =
             CDN.stylesheet
 
         visual_output_view =
-            div []
+            div
+                (if model.current_tab == ItemShopTab then
+                    [ Html.Attributes.style "height" "1px" ]
+
+                 else
+                    []
+                )
                 [ Html.map (\msg -> GotVisualOutputMsg msg) <|
                     VisualOutput.view model.visual_output_model
                 ]

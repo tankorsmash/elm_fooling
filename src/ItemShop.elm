@@ -2265,28 +2265,24 @@ special_action_increase_income model =
                 automaticGpmLevel =
                     model.player_upgrades
                         |> List.filterMap
-                            (\pu ->
-                                case pu of
-                                    AutomaticGPM level ->
-                                        Just level
+                            (\(AutomaticGPM level) ->
+                                Just level
                             )
                         |> List.head
                         |> Maybe.withDefault 1
 
                 upgradeCost =
-                    getPrice <| scale_increase_income_cost automaticGpmLevel
+                    scale_increase_income_cost automaticGpmLevel
             in
-            if player.held_gold >= upgradeCost then
+            if hasEnoughGold player upgradeCost then
                 model
-                    |> withCharacter { player | held_gold = player.held_gold - upgradeCost }
+                    |> withCharacter { player | held_gold = player.held_gold - getPrice upgradeCost }
                     |> (\m ->
                             { m
                                 | player_upgrades =
                                     List.map
-                                        (\pu ->
-                                            case pu of
-                                                AutomaticGPM level ->
-                                                    AutomaticGPM <| level + 1
+                                        (\(AutomaticGPM level) ->
+                                            AutomaticGPM (level + 1)
                                         )
                                         m.player_upgrades
                             }
@@ -2330,6 +2326,16 @@ hasEnoughGold character price =
     character.held_gold >= getPrice price
 
 
+addGold : Character -> Price -> Character
+addGold character price =
+    { character | held_gold = character.held_gold + getPrice price }
+
+
+subGold : Character -> Price -> Character
+subGold character price =
+    { character | held_gold = character.held_gold - getPrice price }
+
+
 update_special_action : SpecialAction -> Price -> Model -> ( Model, Cmd Msg )
 update_special_action special_action price model =
     getPlayer model
@@ -2344,7 +2350,7 @@ update_special_action special_action price model =
         |> Maybe.map
             (\player ->
                 model
-                    |> withCharacter { player | held_gold = player.held_gold - getPrice price }
+                    |> withCharacter (subGold player price)
                     |> (\new_model ->
                             case special_action of
                                 InviteTrader ->

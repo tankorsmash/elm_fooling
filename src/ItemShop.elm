@@ -2334,11 +2334,24 @@ special_action_unlock_item model =
            )
 
 
+hasEnoughGold : Character -> Price -> Bool
+hasEnoughGold character price =
+    character.held_gold >= getPrice price
+
+
 update_special_action : SpecialAction -> Price -> Model -> ( Model, Cmd Msg )
 update_special_action special_action price model =
-    case getPlayer model of
-        Just player ->
-            if player.held_gold >= getPrice price then
+    getPlayer model
+        |> Maybe.andThen
+            (\player ->
+                if hasEnoughGold player price then
+                    Just player
+
+                else
+                    Nothing
+            )
+        |> Maybe.map
+            (\player ->
                 model
                     |> withCharacter ((\p -> { p | held_gold = p.held_gold - getPrice price }) player)
                     |> (\new_model ->
@@ -2368,12 +2381,8 @@ update_special_action special_action price model =
                                 IncreaseIncome ->
                                     ( special_action_increase_income model, Cmd.none )
                        )
-
-            else
-                ( model, Cmd.none )
-
-        Nothing ->
-            ( model, Cmd.none )
+            )
+        |> Maybe.withDefault ( model, Cmd.none )
 
 
 {-| adds 1 gold per second. GPM is a misnomer

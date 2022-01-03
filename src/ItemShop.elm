@@ -3274,7 +3274,9 @@ trends_display shiftIsPressed item_db shop_trends all_characters is_expanded =
             paragraph []
                 [ text <| pretty_type
                 , text ": "
-                , monospace [] <| text <| String.padLeft 3 '0' (String.fromInt (round (popularity * 100))) ++ "%"
+                , monospace [] <|
+                    text <|
+                        String.padLeft 3 '\u{2003}' (String.fromInt (round (popularity * 100))) ++ "%"
                 ]
 
         has_active_trends =

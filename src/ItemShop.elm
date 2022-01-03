@@ -548,6 +548,7 @@ type alias Model =
     , tab_type : TabType
     , globalViewport : Maybe Browser.Dom.Viewport
     , showDebugInventoriesElement : Maybe Browser.Dom.Element
+    , shouldDisplayShowDebugInventoriesOverlay : Bool
     }
 
 
@@ -1358,6 +1359,7 @@ init hash =
       , tab_type = initial_tab_type
       , globalViewport = Nothing
       , showDebugInventoriesElement = Nothing
+      , shouldDisplayShowDebugInventoriesOverlay = False
       }
     , Task.perform TickSecond Time.now
     )
@@ -2019,9 +2021,8 @@ update msg model =
             let
                 _ =
                     Debug.log "got debug viewport" attemptedElement
-            in
-            ( { model
-                | showDebugInventoriesElement =
+
+                ( modelElement, shouldDisplayShowDebugInventoriesOverlay ) =
                     case attemptedElement of
                         Ok element ->
                             let
@@ -2032,17 +2033,24 @@ update msg model =
                                     Debug.log "model.globalViewport" model.globalViewport
 
                                 _ =
-                                    Debug.log "bottom of element is offscreen" <|
-                                        (Maybe.map
-                                            (\gvp -> isElementOnScreen gvp element)
-                                            model.globalViewport
-                                            |> Maybe.withDefault False
-                                        )
+                                    Debug.log "bottom of element is offscreen" <| shouldDisplay
+
+                                shouldDisplay =
+                                    Maybe.map
+                                        (\gvp -> isElementOnScreen gvp element)
+                                        model.globalViewport
+                                        |> Maybe.withDefault False
                             in
-                            Just element
+                            ( Just element, shouldDisplay )
 
                         Err _ ->
-                            Nothing
+                            ( Nothing, False )
+            in
+            ( { model
+                | showDebugInventoriesElement =
+                    modelElement
+                , shouldDisplayShowDebugInventoriesOverlay =
+                    shouldDisplayShowDebugInventoriesOverlay
               }
             , Cmd.none
             )

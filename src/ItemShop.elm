@@ -4302,6 +4302,21 @@ player_action_log_display item_db player_action_logs =
             )
 
 
+showHideDebugInventoriesButton : Bool -> Element Msg
+showHideDebugInventoriesButton show_debug_inventories =
+    let
+        buttonText =
+            if show_debug_inventories then
+                "Hide Debug"
+
+            else
+                "Show Debug"
+    in
+    danger_button [ defineHtmlId "show_debug_inventories" ]
+        ToggleShowDebugInventories
+        buttonText
+
+
 view_shop_tab_type : Model -> Element Msg
 view_shop_tab_type model =
     let
@@ -4434,18 +4449,14 @@ view_shop_tab_type model =
                     Nothing ->
                         text "Can't find player"
             ]
-                ++ [ column []
-                        (if model.show_debug_inventories then
-                            [ column [ width fill ]
-                                ([ danger_button [ defineHtmlId "show_debug_inventories" ] ToggleShowDebugInventories "Hide Debug"
-                                 ]
-                                    ++ debug_inventories
-                                )
-                            ]
+                ++ [ column [ width fill ] <|
+                        showHideDebugInventoriesButton model.show_debug_inventories
+                            :: (if model.show_debug_inventories then
+                                    debug_inventories
 
-                         else
-                            [ danger_button [ defineHtmlId "show_debug_inventories" ] ToggleShowDebugInventories "Show Debug" ]
-                        )
+                                else
+                                    []
+                               )
                    ]
 
 

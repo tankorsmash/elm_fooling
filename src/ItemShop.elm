@@ -4310,8 +4310,8 @@ player_action_log_display item_db player_action_logs =
             )
 
 
-showHideDebugInventoriesButton : Bool -> Element Msg
-showHideDebugInventoriesButton show_debug_inventories =
+showHideDebugInventoriesButton : List (Element.Attribute Msg) -> Bool -> Element Msg
+showHideDebugInventoriesButton attrs show_debug_inventories =
     let
         buttonText =
             if show_debug_inventories then
@@ -4320,7 +4320,7 @@ showHideDebugInventoriesButton show_debug_inventories =
             else
                 "Show Debug"
     in
-    danger_button [ defineHtmlId "show_debug_inventories" ]
+    danger_button (defineHtmlId "show_debug_inventories" :: attrs)
         ToggleShowDebugInventories
         buttonText
 
@@ -4458,7 +4458,7 @@ view_shop_tab_type model =
                         text "Can't find player"
             ]
                 ++ [ column [ width fill ] <|
-                        showHideDebugInventoriesButton model.show_debug_inventories
+                        showHideDebugInventoriesButton [] model.show_debug_inventories
                             :: (if model.show_debug_inventories then
                                     debug_inventories
 
@@ -4561,7 +4561,21 @@ viewOverlay model =
         |> getPlayer
         |> Maybe.map
             (\player ->
-                el [ width fill, height fill, Font.size 12, pointerEventsNone, padding 1 ] <|
+                el
+                    [ width fill
+                    , height fill
+                    , Font.size 12
+                    , pointerEventsNone
+                    , padding 1
+                    , Element.inFront <|
+                        if model.shouldDisplayShowDebugInventoriesOverlay then
+                            el [ width fill, padding 10 ] <|
+                                showHideDebugInventoriesButton [ width fill ] model.show_debug_inventories
+
+                        else
+                            Element.none
+                    ]
+                <|
                     el
                         [ Font.alignRight
                         , Element.alignRight
@@ -4597,6 +4611,7 @@ view model =
         [ Element.htmlAttribute <| Html.Attributes.id "itemshop"
         , Element.inFront <| viewOverlay model
         , Element.htmlAttribute <| Html.Events.on "wheel" (Decode.succeed ScrollViewport)
+        , Element.htmlAttribute <| Html.Events.on "scroll" (Decode.succeed ScrollViewport)
         ]
     <|
         case model.tab_type of

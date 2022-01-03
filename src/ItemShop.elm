@@ -2353,7 +2353,7 @@ update_special_action special_action price model =
         |> Maybe.map
             (\player ->
                 model
-                    |> withCharacter ((\p -> { p | held_gold = p.held_gold - getPrice price }) player)
+                    |> withCharacter { player | held_gold = player.held_gold - getPrice price }
                     |> (\new_model ->
                             case special_action of
                                 InviteTrader ->

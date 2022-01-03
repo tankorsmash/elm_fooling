@@ -3774,6 +3774,22 @@ render_inventory_grid model header character shop_trends hovered_item context co
               , view = controls_column
               }
             ]
+                |> List.map
+                    (\col ->
+                        { col
+                            | view =
+                                \item ->
+                                    el
+                                        (if getQuantity item.quantity == 0 then
+                                            [ cssRule "opacity" "0.5" ]
+
+                                         else
+                                            [ cssRule "opacity" "1.0" ]
+                                        )
+                                    <|
+                                        col.view item
+                        }
+                    )
     in
     Element.column [ width fill, spacingXY 0 5, height fill ] <|
         [ Element.row [ font_scaled 2, width fill ]

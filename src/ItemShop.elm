@@ -1058,22 +1058,26 @@ color_pastel_red_7 =
 
 color_secondary : Color
 color_secondary =
-    hex_to_color "#6c757d"
+    convertColor Color.charcoal
 
 
 color_danger : Color
 color_danger =
-    hex_to_color "#dc3545"
+    convertColor Color.red
+
+color_danger_bright : Color
+color_danger_bright =
+    convertColor Color.lightRed
 
 
 color_primary : Color
 color_primary =
-    hex_to_color "#007bff"
+    convertColor Color.blue
 
 
 primary_color_bright : Color
 primary_color_bright =
-    hex_to_color "#66b0ff"
+    convertColor Color.lightBlue
 
 
 type alias ButtonConfig =
@@ -1097,7 +1101,7 @@ common_button_attrs { font_color, button_color, hovered_button_color, hovered_fo
     , Border.color button_color
     , Element.mouseOver
         [ Background.color <| hovered_button_color
-        , Border.color <| primary_color_bright
+        , Border.color <| hovered_button_color
         , Font.color <| rgb 0 0 0
         ]
     ]
@@ -1191,16 +1195,12 @@ scrollbarYEl custom_attrs body =
 danger_button_custom : List (Element.Attribute Msg) -> Msg -> Element Msg -> Element Msg
 danger_button_custom custom_attrs on_press label =
     Input.button
-        ([ -- bs4-like values
-           Font.color color_white
-         , Font.size 16
-         , Font.center
-         , padding 6
-         , Background.color color_danger
-         , Border.rounded 5
-         , Border.width 5
-         , Border.color color_danger
-         ]
+        (common_button_attrs
+            { font_color = color_white
+            , button_color = color_danger
+            , hovered_button_color = color_danger_bright
+            , hovered_font_color = color_black
+            }
             ++ custom_attrs
         )
         { onPress = Just on_press, label = label }

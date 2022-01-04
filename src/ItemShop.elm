@@ -1670,22 +1670,17 @@ sell_items_from_party_to_other orig_trade_context { item, qty } =
 
             new_from_party : Character
             new_from_party =
-                { new_from_party_
-                    | held_gold =
-                        new_from_party_.held_gold
-                            + (total_cost - transaction_fee)
-                }
+                addGold new_from_party_ (setPrice <| total_cost - transaction_fee)
 
             new_to_party : Character
             new_to_party =
-                { new_to_party_
-                    | held_gold = new_to_party_.held_gold - total_cost
-                }
+                subGold new_to_party_ (setPrice total_cost)
 
             new_trade_context =
-                trade_context
-                    |> (\tc -> { tc | from_party = new_from_party })
-                    |> (\tc -> { tc | to_party = new_to_party })
+                { trade_context
+                    | from_party = new_from_party
+                    , to_party = new_to_party
+                }
         in
         case trade_record of
             CompletedTradeRecord tc tl ->
@@ -2271,12 +2266,14 @@ special_action_increase_income model =
                         |> List.head
                         |> Maybe.withDefault 1
 
+                upgradeCost : Price
                 upgradeCost =
                     scale_increase_income_cost automaticGpmLevel
             in
             if hasEnoughGold player upgradeCost then
                 model
-                    |> withCharacter { player | held_gold = player.held_gold - getPrice upgradeCost }
+                    |> withCharacter
+                        (subGold player upgradeCost)
                     |> (\m ->
                             { m
                                 | player_upgrades =

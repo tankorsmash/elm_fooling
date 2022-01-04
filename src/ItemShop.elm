@@ -4505,15 +4505,20 @@ view_items_unlocked_tab_type item_db =
                 , label = danger_button [] (ChangeTabType ShopTabType) "Back to Shop"
                 }
 
-        item_grid : Element Msg
-        item_grid =
-            Dict.values item_db
-                |> List.sortBy (.is_unlocked >> sort_by_bool_true_last)
-                |> List.map render_item_db_item
-                |> Element.wrappedRow [ width fill, spacing 20 ]
+        -- item_grid : Element Msg
+        render_item_grid =
+            List.map render_item_db_item
+                >> Element.wrappedRow [ width fill, spacing 20 ]
+
+        filterItemDb filterFn =
+            List.filter filterFn (Dict.values item_db)
     in
-    Debug.log "render view_items_unlocked_tab_type" <|
-        column [ spacing 10, padding 20 ] [ text "Item Codex", back_btn, item_grid ]
+    column [ spacing 10, padding 20 ]
+        [ text "Item Codex"
+        , back_btn
+        , render_item_grid <| filterItemDb .is_unlocked
+        , render_item_grid <| filterItemDb (not << .is_unlocked)
+        ]
 
 
 cssRule : String -> String -> Element.Attribute Msg

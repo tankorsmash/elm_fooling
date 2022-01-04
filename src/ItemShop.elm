@@ -1152,7 +1152,7 @@ outline_button_custom custom_attrs on_press label =
            Font.color color_secondary
          , Font.size 16
          , Font.center
-         , padding 6
+         , padding 9
          , Background.color color_white
          , Border.rounded 5
          , Border.width 2

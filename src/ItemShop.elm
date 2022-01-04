@@ -4456,7 +4456,7 @@ view_shop_tab_type model =
 
 render_item_db_item : ItemDbRecord -> Element Msg
 render_item_db_item { item, trade_stats, is_unlocked } =
-    column [ width fill, height fill ]
+    column [ width (fill |> Element.maximum 150), height fill ]
         [ text <| item.name
         , row [ Font.size 12 ]
             [ if is_unlocked then

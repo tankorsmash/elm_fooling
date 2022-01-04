@@ -4454,8 +4454,8 @@ view_shop_tab_type model =
                    ]
 
 
-render_unlocked_item : ItemDbRecord -> Element Msg
-render_unlocked_item { item, trade_stats, is_unlocked } =
+render_item_db_item : ItemDbRecord -> Element Msg
+render_item_db_item { item, trade_stats, is_unlocked } =
     column [ width fill, height fill ]
         [ text <| item.name
         , row [ Font.size 12 ]
@@ -4509,7 +4509,7 @@ view_items_unlocked_tab_type item_db =
         item_grid =
             Dict.values item_db
                 |> List.sortBy (.is_unlocked >> sort_by_bool_true_last)
-                |> List.map render_unlocked_item
+                |> List.map render_item_db_item
                 |> Element.wrappedRow [ width fill, spacing 20 ]
     in
     Debug.log "render view_items_unlocked_tab_type" <|

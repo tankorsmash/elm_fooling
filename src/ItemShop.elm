@@ -4513,7 +4513,7 @@ view_items_unlocked_tab_type item_db =
                 |> Element.wrappedRow [ width fill, spacing 20 ]
     in
     Debug.log "render view_items_unlocked_tab_type" <|
-        column [ spacing 10 ] [ text "Item Codex", back_btn, item_grid ]
+        column [ spacing 10, padding 20 ] [ text "Item Codex", back_btn, item_grid ]
 
 
 cssRule : String -> String -> Element.Attribute Msg

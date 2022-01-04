@@ -4465,33 +4465,39 @@ render_item_db_item { item, trade_stats, is_unlocked } =
               else
                 el [ Font.color color_primary ] <| text "LOCKED"
             ]
-        , row [ width (fill |> Element.maximum 200), Font.size 14, spacingXY 10 0 ]
+        , row [ width fill, Font.size 14, spacingXY 10 0 ]
             [ item_type_to_pretty_string item.item_type
                 |> text
             , item.raw_gold_cost
                 |> render_gp
                 |> el [ alignRight ]
             ]
-        , row [ Font.size 12 ]
+        , row [ width fill, Font.size 12 ]
             [ text "Num Bought: "
             , trade_stats
                 |> .times_you_bought
                 |> String.fromInt
+                |> String.padLeft 3 '\u{2003}'
                 |> text
+                |> monospace [ alignRight ]
             ]
-        , row [ Font.size 12 ]
+        , row [ width fill, Font.size 12 ]
             [ text "Num Sold: "
             , trade_stats
                 |> .times_you_sold
                 |> String.fromInt
+                |> String.padLeft 3 '\u{2003}'
                 |> text
+                |> monospace [ alignRight ]
             ]
-        , row [ Font.size 12 ]
+        , row [ width fill, Font.size 12 ]
             [ text "Others' Trades: "
             , trade_stats
                 |> .times_others_traded
                 |> String.fromInt
+                |> String.padLeft 3 '\u{2003}'
                 |> text
+                |> monospace [ alignRight ]
             ]
         ]
 

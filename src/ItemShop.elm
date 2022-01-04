@@ -4519,7 +4519,7 @@ view_items_unlocked_tab_type item_db =
         filterItemDb filterFn =
             List.filter filterFn (Dict.values item_db)
     in
-    column [ spacing 10, padding 20 ]
+    column [ spacing 10, padding 20]
         [ text "Item Codex"
         , back_btn
         , render_item_grid <| filterItemDb .is_unlocked

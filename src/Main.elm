@@ -1580,24 +1580,20 @@ homeView model =
             []
         )
         [ elm_ui_hack_layout
-        , div [ add_class "row" ]
-            [ div [ add_class "col-md-12" ]
+        , div []
+            [ div []
                 [ -- site_navigation model
                   bootstrap_stylesheet
                 ]
             ]
 
         -- , button_primary (RequestJSONP "ASDS") "Port Send"
-        , div [ add_class "row" ]
-            [ div [ add_class "col-md-12" ]
-                [ navbar model ]
-            ]
+        , div []
+            [ navbar model ]
         , br [] []
-        , div [ add_class "row" ]
+        , div []
             [ div
-                [ add_class "col-md-12"
-
-                -- , Html.Events.on "keypress" (Json.Decode.succeed <| DownloadPostById 123)
+                [-- , Html.Events.on "keypress" (Json.Decode.succeed <| DownloadPostById 123)
                 ]
                 [ tab_content ]
             ]

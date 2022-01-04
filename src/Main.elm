@@ -1580,23 +1580,10 @@ homeView model =
             []
         )
         [ elm_ui_hack_layout
-        , div []
-            [ div []
-                [ -- site_navigation model
-                  bootstrap_stylesheet
-                ]
-            ]
-
-        -- , button_primary (RequestJSONP "ASDS") "Port Send"
-        , div []
-            [ navbar model ]
+        , div [] [ bootstrap_stylesheet ]
+        , div [] [ navbar model ]
         , br [] []
-        , div []
-            [ div
-                [-- , Html.Events.on "keypress" (Json.Decode.succeed <| DownloadPostById 123)
-                ]
-                [ tab_content ]
-            ]
+        , div [] [ tab_content ]
         , visual_output_view
         ]
 

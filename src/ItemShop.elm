@@ -4761,12 +4761,23 @@ build_special_action_button hovered_tooltip character special_action title toolt
             tooltip_text
                 |> (\t ->
                         if price /= Free then
-                            t ++ "\n\nCosts " ++ (render_gp_string <| getPrice price)
+                            let
+                                renderedCost =
+                                    render_gp <| getPrice price
+                            in
+                            buildTooltipElementConfig t <|
+                                column []
+                                    [ text t
+                                    , el [ centerX, padding 1, Font.color color_grey ] <| text "___"
+                                    , paragraph [ padding 10, centerX, Font.size 14 ]
+                                        [ text "Costs: "
+                                        , renderedCost
+                                        ]
+                                    ]
 
                         else
-                            t
+                            buildTooltipTextConfig t
                    )
-                |> buildTooltipTextConfig
 
         button_attrs =
             if is_disabled then

@@ -495,6 +495,10 @@ updateItemDbFromTradeRecord item_db record_updater trade_record =
                     item_db
 
 
+type alias TooltipId =
+    String
+
+
 type alias TooltipData =
     { offset_x : Float
     , offset_y : Float
@@ -592,9 +596,14 @@ type TradeRecord
     | CompletedTradeRecord TradeContext ItemTradeLog
 
 
+type TooltipBody
+    = TooltipText String
+    | TooltipElement (Element Msg)
+
+
 type alias TooltipConfig =
     { tooltip_id : String
-    , tooltip_text : String
+    , tooltip_body : TooltipBody
     }
 
 
@@ -1064,6 +1073,7 @@ color_secondary =
 color_danger : Color
 color_danger =
     convertColor Color.red
+
 
 color_danger_bright : Color
 color_danger_bright =
@@ -4519,7 +4529,7 @@ view_items_unlocked_tab_type item_db =
         filterItemDb filterFn =
             List.filter filterFn (Dict.values item_db)
     in
-    column [ spacing 10, padding 20]
+    column [ spacing 10, padding 20 ]
         [ text "Item Codex"
         , back_btn
         , render_item_grid <| filterItemDb .is_unlocked
@@ -4657,7 +4667,7 @@ primary_button_tooltip :
     -> TooltipConfig
     -> HoveredTooltip
     -> Element Msg
-primary_button_tooltip custom_attrs on_press label { tooltip_id, tooltip_text } hovered_tooltip =
+primary_button_tooltip custom_attrs on_press label { tooltip_id, tooltip_body } hovered_tooltip =
     let
         { offset_x, offset_y } =
             case hovered_tooltip of
@@ -4673,9 +4683,9 @@ primary_button_tooltip custom_attrs on_press label { tooltip_id, tooltip_text } 
         tooltip_el =
             Element.el
                 [ width Element.shrink
-                , Font.color <| rgb 0 0 0
-                , Background.color <| rgb 1 1 1
-                , Border.color <| rgb 0.35 0.35 0.35
+                , Font.color <| convertColor Color.black
+                , Background.color <| convertColor Color.white
+                , Border.color <| convertColor Color.charcoal
                 , Border.rounded 3
                 , Border.width 2
                 , padding 10
@@ -4690,7 +4700,12 @@ primary_button_tooltip custom_attrs on_press label { tooltip_id, tooltip_text } 
                     Html.Attributes.id ("tooltip__" ++ tooltip_id)
                 ]
             <|
-                text tooltip_text
+                case tooltip_body of
+                    TooltipText tt_text ->
+                        text tt_text
+
+                    TooltipElement elem ->
+                        elem
 
         offset_w =
             target offsetWidth
@@ -4713,10 +4728,17 @@ primary_button_tooltip custom_attrs on_press label { tooltip_id, tooltip_text } 
         label
 
 
-buildTooltipConfig : String -> TooltipConfig
-buildTooltipConfig text =
+buildTooltipTextConfig : String -> TooltipConfig
+buildTooltipTextConfig text =
     { tooltip_id = UUID.forName text UUID.dnsNamespace |> UUID.toString
-    , tooltip_text = text
+    , tooltip_body = TooltipText text
+    }
+
+
+buildTooltipElementConfig : TooltipId -> Element Msg -> TooltipConfig
+buildTooltipElementConfig tooltip_id element =
+    { tooltip_id = UUID.forName tooltip_id UUID.dnsNamespace |> UUID.toString
+    , tooltip_body = TooltipElement element
     }
 
 
@@ -4744,7 +4766,7 @@ build_special_action_button hovered_tooltip character special_action title toolt
                         else
                             t
                    )
-                |> buildTooltipConfig
+                |> buildTooltipTextConfig
 
         button_attrs =
             if is_disabled then

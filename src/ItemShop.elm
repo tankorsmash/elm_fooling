@@ -1498,7 +1498,7 @@ update_item_type_sentiment item_type_sentiment item_type sentiment_delta =
         (Maybe.withDefault 1.0
             >> (+) sentiment_delta
             >> (\sent ->
-                    if sent <= 0 then
+                    if sent <= 0.1 then
                         0.1
 
                     else

@@ -1492,7 +1492,17 @@ update_item_type_sentiment : ItemSentiments -> ItemType -> Float -> ItemSentimen
 update_item_type_sentiment item_type_sentiment item_type sentiment_delta =
     Dict.update
         (item_type_to_id item_type)
-        (Maybe.withDefault 1.0 >> (+) sentiment_delta >> Just)
+        (Maybe.withDefault 1.0
+            >> (+) sentiment_delta
+            >> (\sent ->
+                    if sent <= 0 then
+                        0.1
+
+                    else
+                        sent
+               )
+            >> Just
+        )
         item_type_sentiment
 
 

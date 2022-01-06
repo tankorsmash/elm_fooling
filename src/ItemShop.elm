@@ -4331,6 +4331,27 @@ showHideDebugInventoriesButton attrs show_debug_inventories =
         buttonText
 
 
+shopInventoryControls : Maybe Character -> ShopTrends -> InventoryRecord -> Element Msg
+shopInventoryControls maybe_player shop_trends { item, quantity, avg_price } =
+    shop_buy_button
+        (get_single_adjusted_item_cost shop_trends item)
+        (case maybe_player of
+            Just player ->
+                player.held_gold
+
+            Nothing ->
+                99999
+        )
+        { item = item, quantity = quantity, avg_price = avg_price }
+
+
+playerInventoryControls : Character -> ShopTrends -> InventoryRecord -> Element Msg
+playerInventoryControls player shop_trends { item, quantity, avg_price } =
+    shop_sell_button
+        (getQuantity quantity >= 1)
+        { item = item, quantity = setQuantity 1, avg_price = avg_price }
+
+
 view_shop_tab_type : Model -> Element Msg
 view_shop_tab_type model =
     let
@@ -4429,18 +4450,7 @@ view_shop_tab_type model =
                             model.shop_trends
                             model.hovered_item_in_character
                             ShopItems
-                            (\{ item, quantity, avg_price } ->
-                                shop_buy_button
-                                    (get_single_adjusted_item_cost model.shop_trends item)
-                                    (case maybe_player of
-                                        Just player ->
-                                            player.held_gold
-
-                                        Nothing ->
-                                            99999
-                                    )
-                                    { item = item, quantity = quantity, avg_price = avg_price }
-                            )
+                            (shopInventoryControls maybe_player model.shop_trends)
 
                     Nothing ->
                         el [ Font.color <| rgb 1 0 0, font_scaled 5 ] <| text "ERR: Can't find shop"
@@ -4454,11 +4464,7 @@ view_shop_tab_type model =
                             model.shop_trends
                             model.hovered_item_in_character
                             InventoryItems
-                            (\{ item, quantity, avg_price } ->
-                                shop_sell_button
-                                    (getQuantity quantity >= 1)
-                                    { item = item, quantity = setQuantity 1, avg_price = avg_price }
-                            )
+                            (playerInventoryControls player model.shop_trends)
 
                     Nothing ->
                         text "Can't find player"

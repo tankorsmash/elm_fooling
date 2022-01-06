@@ -229,6 +229,7 @@ type Msg
     | ScrollViewport
     | GotViewport Browser.Dom.Viewport
     | GotShowDebugElement (Result Browser.Dom.Error Browser.Dom.Element)
+    | SacrificeItem Item
 
 
 type alias TradeOrder =
@@ -406,6 +407,7 @@ type alias Character =
     , action_log : List ActionLog
     , hide_zero_qty_inv_rows : Bool
     , displayedItemType : Maybe ItemType
+    , held_blood : Int
     }
 
 
@@ -1298,6 +1300,7 @@ create_character char_id name =
     -- misc
     , hide_zero_qty_inv_rows = False
     , displayedItemType = Nothing
+    , held_blood = 0
     }
 
 
@@ -2050,6 +2053,27 @@ update msg model =
                 , shouldDisplayShowDebugInventoriesOverlay =
                     shouldDisplayShowDebugInventoriesOverlay
               }
+            , Cmd.none
+            )
+
+        SacrificeItem item ->
+            ( getPlayer model
+                |> Maybe.map
+                    (\player ->
+                        let
+                            itemGoldCost =
+                                get_adjusted_item_cost model.shop_trends item (setQuantity 1)
+
+                            newItems =
+                                remove_item_from_inventory_records
+                                    player.held_items
+                                    item
+                                    (setQuantity 1)
+                                    itemGoldCost
+                        in
+                        withCharacter { player | held_items = newItems } model
+                    )
+                |> Maybe.withDefault model
             , Cmd.none
             )
 
@@ -4363,7 +4387,7 @@ playerInventoryControls player ( shiftIsPressed, shop_trends ) { item, quantity,
             [ Element.transparent <| not hasItemsToSell
             , width (fill |> Element.minimum 120)
             ]
-            Noop
+            (SacrificeItem item)
             "Sacrifice"
 
 

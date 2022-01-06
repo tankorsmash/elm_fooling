@@ -3184,18 +3184,20 @@ shop_sell_button has_items_to_sell_ { item } =
 
             else
                 secondary_button
+
+        buttonText =
+            if has_items_to_sell_ then
+                "SELL"
+
+            else
+                "Need GP"
     in
     button_type
         [ Element.transparent <| not has_items_to_sell_
         , width (fill |> Element.minimum 120)
         ]
         (PlayerSellItemToShop item (Quantity 1))
-    <|
-        if has_items_to_sell_ then
-            "SELL"
-
-        else
-            "Need GP"
+        buttonText
 
 
 explain =
@@ -4345,11 +4347,24 @@ shopInventoryControls maybe_player shop_trends { item, quantity, avg_price } =
         { item = item, quantity = quantity, avg_price = avg_price }
 
 
-playerInventoryControls : Character -> ShopTrends -> InventoryRecord -> Element Msg
-playerInventoryControls player shop_trends { item, quantity, avg_price } =
-    shop_sell_button
-        (getQuantity quantity >= 1)
-        { item = item, quantity = setQuantity 1, avg_price = avg_price }
+playerInventoryControls : Character -> ( Bool, ShopTrends ) -> InventoryRecord -> Element Msg
+playerInventoryControls player ( shiftIsPressed, shop_trends ) { item, quantity, avg_price } =
+    let
+        hasItemsToSell =
+            getQuantity quantity >= 1
+    in
+    if not shiftIsPressed then
+        shop_sell_button
+            hasItemsToSell
+            { item = item, quantity = setQuantity 1, avg_price = avg_price }
+
+    else
+        danger_button
+            [ Element.transparent <| not hasItemsToSell
+            , width (fill |> Element.minimum 120)
+            ]
+            Noop
+            "Sacrifice"
 
 
 view_shop_tab_type : Model -> Element Msg
@@ -4464,7 +4479,7 @@ view_shop_tab_type model =
                             model.shop_trends
                             model.hovered_item_in_character
                             InventoryItems
-                            (playerInventoryControls player model.shop_trends)
+                            (playerInventoryControls player ( model.shiftIsPressed, model.shop_trends ))
 
                     Nothing ->
                         text "Can't find player"

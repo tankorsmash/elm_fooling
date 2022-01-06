@@ -53,6 +53,7 @@ import Html.Attributes exposing (attribute, classList, href, property, src, styl
 import Html.Events
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
+import Json.Encode as Encode exposing (Value)
 import List.Extra
 import Random
 import Random.List
@@ -157,6 +158,20 @@ type TradeParty
     = ShopParty
     | PlayerParty
     | CharacterParty CharacterId
+
+
+encodeTradeParty : TradeParty -> Value
+encodeTradeParty trade_party =
+    Encode.string <|
+        case trade_party of
+            ShopParty ->
+                "ShopParty"
+
+            PlayerParty ->
+                "PlayerParty"
+
+            CharacterParty char_id ->
+                "CharacterParty__" ++ (UUID.toString char_id)
 
 
 trade_party_to_str : List Character -> TradeParty -> String
@@ -475,6 +490,33 @@ updateTradeStats item_db_record new_trade_stats =
 
 type alias ItemDb =
     Dict.Dict ItemIdStr ItemDbRecord
+
+
+encodeInventoryRecord : InventoryRecord -> Decode.Value
+encodeInventoryRecord { item, quantity, avg_price } =
+    Encode.object
+        [ ( "item_id", Encode.string <| UUID.toString item.id )
+        , ( "quantity", Encode.int <| getQuantity quantity )
+        , ( "avg_price", Encode.int <| getPrice avg_price )
+        ]
+
+
+encodeCharacter : Character -> Value
+encodeCharacter character =
+    Encode.object
+        [ ( "held_items", Encode.list encodeInventoryRecord character.held_items )
+        , ( "held_gold", Encode.int character.held_gold )
+        , ( "char_id", Encode.string <| UUID.toString character.char_id )
+        , ( "name", Encode.string character.name )
+        , ( "party", encodeTradeParty character.party )
+
+        -- , "trend_tolerance", Encode.TrendTolerance
+        -- , "item_types_desired", Encode.ItemSentiments
+        -- , "action_log", Encode.List ActionLog
+        , ("hide_zero_qty_inv_rows", Encode.bool character.hide_zero_qty_inv_rows)
+        -- , "displayedItemType", Encode.Maybe ItemType
+        , ("held_blood", Encode.int character.held_blood)
+        ]
 
 
 updateItemDbFromTradeRecord : ItemDb -> (ItemDbTradeStats -> Int -> ItemDbTradeStats) -> TradeRecord -> ItemDb

@@ -2071,7 +2071,12 @@ update msg model =
                                     (setQuantity 1)
                                     itemGoldCost
                         in
-                        withCharacter { player | held_items = newItems } model
+                        withCharacter
+                            { player
+                                | held_items = newItems
+                                , held_blood = player.held_blood + itemGoldCost
+                            }
+                            model
                     )
                 |> Maybe.withDefault model
             , Cmd.none
@@ -3155,6 +3160,11 @@ font_grey =
     Font.color <| color_grey
 
 
+font_blood : Element.Attribute msg
+font_blood =
+    Font.color <| color_danger
+
+
 render_gp : Int -> Element msg
 render_gp count =
     render_gp_sized count 12
@@ -3170,6 +3180,24 @@ render_gp_sized count font_size =
     paragraph []
         [ text <| String.fromInt count
         , Element.el [ Font.size font_size, font_grey ] (text "gp")
+        ]
+
+
+renderBlood : Int -> Element msg
+renderBlood count =
+    renderBlood_sized count 12
+
+
+renderBlood_string : Int -> String
+renderBlood_string count =
+    String.fromInt count ++ "gp"
+
+
+renderBlood_sized : Int -> Int -> Element msg
+renderBlood_sized count font_size =
+    paragraph []
+        [ text <| String.fromInt count
+        , Element.el [ Font.size font_size, font_blood ] (text "blood")
         ]
 
 
@@ -3598,6 +3626,9 @@ render_inventory_grid model header character shop_trends hovered_item context co
         is_shop_context =
             context == ShopItems
 
+        is_player_context =
+            context == InventoryItems
+
         { historical_shop_trends, item_db, show_charts_in_hovered_item } =
             model
 
@@ -3926,8 +3957,21 @@ render_inventory_grid model header character shop_trends hovered_item context co
             [ Element.el [ border_bottom 2 ] <| text header
             , text "   "
             , if not is_shop_context then
-                row [ font_scaled 1, centerX ] <|
-                    [ text "Held: ", render_gp held_gold ]
+                row [ width fill, font_scaled 1, centerX, spacingXY 10 0 ] <|
+                    [ row [ centerX, width Element.shrink, spacingXY 10 0 ]
+                        [ row [ Font.alignRight ]
+                            [ text "Held: "
+                            , render_gp held_gold
+                            ]
+                        , if is_player_context && character.held_blood > 0 then
+                            row [ width fill ]
+                                [ renderBlood character.held_blood
+                                ]
+
+                          else
+                            Element.none
+                        ]
+                    ]
 
               else
                 Element.none

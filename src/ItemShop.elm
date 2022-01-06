@@ -4861,7 +4861,7 @@ special_actions_display player_upgrades hovered_tooltip player ai_updates_paused
                 (TriggerEvent (EventVeryDesiredItemType Nothing))
                 "Spread Good Rumour"
                 "Sets a random Item Type to high value.\n\nSpreads a rumour that a given Item Type was the talk of the next town over."
-                Free
+                (setPrice 45)
 
         button_low_desire =
             build_special_action_button
@@ -4870,7 +4870,7 @@ special_actions_display player_upgrades hovered_tooltip player ai_updates_paused
                 (TriggerEvent (EventLeastDesiredItemType Nothing))
                 "Spread Bad Rumour"
                 "Sets a random Item Type to low value.\n\nSpreads a rumour that a given Item Type has a surplus of sellers."
-                Free
+                (setPrice 45)
 
         button_unlock_item =
             build_special_action_button

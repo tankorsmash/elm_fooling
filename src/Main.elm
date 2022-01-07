@@ -411,8 +411,7 @@ homeView model =
     in
     div []
         [ elm_ui_hack_layout
-        , br [] []
-        , div [] [ tab_content ]
+        , tab_content
         ]
 
 

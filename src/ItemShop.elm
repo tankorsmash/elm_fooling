@@ -171,7 +171,7 @@ encodeTradeParty trade_party =
                 "PlayerParty"
 
             CharacterParty char_id ->
-                "CharacterParty__" ++ (UUID.toString char_id)
+                "CharacterParty__" ++ UUID.toString char_id
 
 
 trade_party_to_str : List Character -> TradeParty -> String
@@ -513,9 +513,10 @@ encodeCharacter character =
         -- , "trend_tolerance", Encode.TrendTolerance
         -- , "item_types_desired", Encode.ItemSentiments
         -- , "action_log", Encode.List ActionLog
-        , ("hide_zero_qty_inv_rows", Encode.bool character.hide_zero_qty_inv_rows)
+        , ( "hide_zero_qty_inv_rows", Encode.bool character.hide_zero_qty_inv_rows )
+
         -- , "displayedItemType", Encode.Maybe ItemType
-        , ("held_blood", Encode.int character.held_blood)
+        , ( "held_blood", Encode.int character.held_blood )
         ]
 
 
@@ -4517,8 +4518,8 @@ view_shop_tab_type model =
             [ Border.color color_white, Border.width 10, Border.dashed ]
     in
     Element.el
-        (padding 10
-            :: (if model.ai_updates_paused then
+        ([ width fill, padding 10 ]
+            ++ (if model.ai_updates_paused then
                     paused_border_attrs
 
                 else
@@ -4760,6 +4761,8 @@ view model =
         , Element.inFront <| viewOverlay model
         , Element.htmlAttribute <| Html.Events.on "wheel" (Decode.succeed ScrollViewport)
         , Element.htmlAttribute <| Html.Events.on "scroll" (Decode.succeed ScrollViewport)
+        , width fill
+        , padding 20
         ]
     <|
         case model.tab_type of

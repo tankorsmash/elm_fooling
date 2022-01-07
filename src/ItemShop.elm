@@ -214,6 +214,10 @@ type SpecialAction
     | IncreaseIncome
 
 
+type BattleMsg
+    = Fight
+
+
 type Msg
     = Noop
     | MouseEnterShopItem ListContext ( CharacterId, Item )
@@ -242,6 +246,7 @@ type Msg
     | GotShowDebugElement (Result Browser.Dom.Error Browser.Dom.Element)
     | SacrificeItem Item
     | ToggleColorTheme
+    | GotBattleMsg BattleMsg
 
 
 type alias TradeOrder =
@@ -468,6 +473,10 @@ type alias Monster =
     }
 
 
+type alias BattleModel =
+    {}
+
+
 type alias TrendSnapshot =
     { time : Time.Posix, item_type : ItemType, value : Float }
 
@@ -643,6 +652,7 @@ type alias Model =
     , globalViewport : Maybe Browser.Dom.Viewport
     , showDebugInventoriesElement : Maybe Browser.Dom.Element
     , shouldDisplayShowDebugInventoriesOverlay : Bool
+    , battleModel : BattleModel
     }
 
 
@@ -1392,6 +1402,11 @@ create_character char_id name =
     }
 
 
+initBattleModel : BattleModel
+initBattleModel =
+    {}
+
+
 init : String -> ( Model, Cmd Msg )
 init hash =
     let
@@ -1439,6 +1454,9 @@ init hash =
 
                 _ ->
                     ShopTabType
+
+        battleModel =
+            initBattleModel
     in
     ( { colorTheme = BrightTheme
       , player_id = player.char_id
@@ -1465,6 +1483,7 @@ init hash =
       , globalViewport = Nothing
       , showDebugInventoriesElement = Nothing
       , shouldDisplayShowDebugInventoriesOverlay = False
+      , battleModel = battleModel
       }
     , Task.perform TickSecond Time.now
     )
@@ -2186,9 +2205,21 @@ update msg model =
             in
             ( { model | colorTheme = newColorTheme }, Cmd.none )
 
+        GotBattleMsg battleMsg ->
+            let
+                ( newBattleModel, newBattleCmds ) =
+                    updateBattleMsg model.battleModel
+            in
+            ( { model | battleModel = newBattleModel }, Cmd.map GotBattleMsg newBattleCmds )
+
 
 
 --- END OF UPDATE
+
+
+updateBattleMsg : BattleModel -> ( BattleModel, Cmd BattleMsg )
+updateBattleMsg battleModel =
+    ( battleModel, Cmd.none )
 
 
 generate_uuid : String -> UUID.UUID

@@ -147,10 +147,10 @@ parseUrl url =
                     TabRoute tab_type hash
 
                 _ ->
-                    NotFound
+                    TabRoute ItemShopTab Nothing
 
         Nothing ->
-            NotFound
+            TabRoute ItemShopTab Nothing
 
 
 matchRoute : Parser (Route -> a) a
@@ -169,7 +169,8 @@ init _ url navKey =
                 TabRoute tab_type hsh ->
                     tab_type
 
-                _ -> ItemShopTab
+                _ ->
+                    ItemShopTab
 
         parsedRoute : Route
         parsedRoute =

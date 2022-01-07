@@ -561,6 +561,7 @@ type HoveredTooltip
 type TabType
     = ShopTabType
     | ItemsUnlockedTabType
+    | BattleTabType
 
 
 type PlayerUpgrade
@@ -1395,6 +1396,9 @@ init hash =
 
                 "items" ->
                     ItemsUnlockedTabType
+
+                "battle" ->
+                    BattleTabType
 
                 _ ->
                     ShopTabType
@@ -4858,6 +4862,9 @@ defaultFontColor colorTheme =
     defaultTextColor colorTheme
         |> Font.color
 
+view_battle_tab_type : Model -> Element Msg
+view_battle_tab_type model =
+    text "Battle!"
 
 view : Model -> Html.Html Msg
 view model =
@@ -4887,6 +4894,9 @@ view model =
 
             ItemsUnlockedTabType ->
                 Lazy.lazy2 view_items_unlocked_tab_type model.colorTheme model.item_db
+
+            BattleTabType ->
+                Lazy.lazy view_battle_tab_type model
 
 
 scaled : Int -> Int

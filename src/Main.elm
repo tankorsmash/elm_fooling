@@ -157,12 +157,18 @@ matchRoute : Parser (Route -> a) a
 matchRoute =
     oneOf
         [ map (TabRoute ItemShopTab) (s "item_shop_tab" </> fragment identity)
+        , map (TabRoute ItemShopTab) (s "" </> fragment identity)
+        , map (TabRoute ItemShopTab) (fragment identity)
         ]
 
 
 init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init _ url navKey =
     let
+        parsedRoute : Route
+        parsedRoute =
+            parseUrl url
+
         initial_tab : TabType
         initial_tab =
             case parsedRoute of
@@ -171,10 +177,6 @@ init _ url navKey =
 
                 _ ->
                     ItemShopTab
-
-        parsedRoute : Route
-        parsedRoute =
-            Debug.log "parsedURL in init" <| parseUrl url
 
         page_info =
             UrlPageInfo navKey url parsedRoute UnsetPage

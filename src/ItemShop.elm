@@ -94,10 +94,6 @@ type alias ItemIdStr =
     String
 
 
-type alias CharacterId =
-    UUID
-
-
 item_type_to_id : ItemType -> ItemTypeId
 item_type_to_id item_type =
     case item_type of
@@ -429,6 +425,47 @@ type alias Character =
 
 type alias Characters =
     List Character
+
+
+type alias CharacterId =
+    UUID
+
+
+type alias IntStat =
+    { curVal : Int
+    , initialVal : Int
+    , maxVal : Int
+    }
+
+
+newStat : Int -> IntStat
+newStat maxVal =
+    { curVal = maxVal
+    , initialVal = maxVal
+    , maxVal = maxVal
+    }
+
+
+setStatCurVal : Int -> IntStat -> IntStat
+setStatCurVal newCurVal stat =
+    { stat | curVal = newCurVal }
+
+
+setStatMaxVal : Int -> IntStat -> IntStat
+setStatMaxVal newMaxVal stat =
+    { stat | maxVal = newMaxVal }
+
+
+setStatInitialVal : Int -> IntStat -> IntStat
+setStatInitialVal newInitialVal stat =
+    { stat | initialVal = newInitialVal }
+
+
+type alias Monster =
+    { name : String
+    , hpStat : IntStat
+    , spStat : IntStat
+    }
 
 
 type alias TrendSnapshot =
@@ -4873,30 +4910,53 @@ padRight str num =
     String.padRight num '\u{2003}' str
 
 
-padStatBar : String -> String -> String
-padStatBar leftNum rightNum =
+padStatBar : IntStat -> String
+padStatBar stat =
+    padStatStrBar (stat.curVal |> String.fromInt) (stat.maxVal |> String.fromInt)
+
+
+padStatStrBar : String -> String -> String
+padStatStrBar leftNum rightNum =
     padLeft leftNum 3 ++ "/" ++ padRight rightNum 3
+
+
+viewMonsterInBattle : Monster -> Element Msg
+viewMonsterInBattle monster =
+    column []
+        [ el [ Font.size 20 ] <| text monster.name
+        , monospace [] <| text <| "HP: " ++ padStatBar monster.hpStat
+        , monospace [] <| text <| "SP: " ++ padStatBar monster.spStat
+        ]
 
 
 view_battle_tab_type : Model -> Element Msg
 view_battle_tab_type model =
+    let
+        golem : Monster
+        golem =
+            { name = "Golem"
+            , hpStat = newStat 10
+            , spStat = newStat 10
+            }
+
+        slime : Monster
+        slime =
+            { name = "Slime"
+            , hpStat = newStat 10 |> setStatCurVal 4 |> setStatMaxVal 6
+            , spStat = newStat 2
+            }
+    in
     column [ width fill, Font.size 16 ]
         [ el [ Font.size 24, Element.paddingEach { bottom = 20, top = 0, left = 0, right = 0 } ] <| text "Battle!"
         , row [ width fill ]
             [ column [ alignLeft ]
-                [ el [ Font.size 20 ] <| text "Golem"
-                , monospace [] <| text <| "HP: " ++ padStatBar "10" "10"
-                , monospace [] <| text <| "SP: " ++ padStatBar "10" "10"
-                ]
+                [ viewMonsterInBattle golem ]
             , column [ centerX ]
                 [ primary_button [] Noop "Fight"
                 ]
             , column
                 [ alignRight ]
-                [ el [ Font.size 20 ] <| text "Slime"
-                , monospace [] <| text <| "HP: " ++ padStatBar "5" "7"
-                , monospace [] <| text <| "SP: " ++ padStatBar "2" "2"
-                ]
+                [ viewMonsterInBattle slime ]
             ]
         , column [ width fill, paddingXY 0 20 ]
             [ row [ width fill, centerX ]

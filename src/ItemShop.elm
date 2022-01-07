@@ -3552,7 +3552,18 @@ trends_display colorTheme shiftIsPressed item_db shop_trends all_characters is_e
                     , Element.moveDown 20
                     ]
                 <|
-                    [ row [ font_grey, Font.size 12, width fill, Element.spaceEvenly ]
+                    [ row
+                        [ Font.color <|
+                            case colorTheme of
+                                BrightTheme ->
+                                    color_grey
+
+                                DarkTheme ->
+                                    convertColor Color.lightGrey
+                        , Font.size 12
+                        , width fill
+                        , Element.spaceEvenly
+                        ]
                         [ text "Latest first"
                         , if shiftIsPressed then
                             Element.none
@@ -3857,7 +3868,20 @@ render_inventory_grid model header character shop_trends hovered_item context co
                                 , text item.description
                                 ]
                             , if not show_charts_in_hovered_item then
-                                el [ Font.italic, alignRight, font_grey, Font.size 12 ] <| text "Hold Shift for more"
+                                el
+                                    [ Font.italic
+                                    , alignRight
+                                    , Font.color <|
+                                        case model.colorTheme of
+                                            BrightTheme ->
+                                                color_grey
+
+                                            DarkTheme ->
+                                                convertColor Color.white
+                                    , Font.size 12
+                                    ]
+                                <|
+                                    text "Hold Shift for more"
 
                               else
                                 Element.none
@@ -4780,8 +4804,15 @@ viewOverlay model =
                         [ Font.alignRight
                         , Element.alignRight
                         , Element.alignBottom
-                        , Background.color color_white
-                        , Border.color color_ultra_light_grey
+                        , defaultBackgroundColor model.colorTheme
+                        , Border.color
+                            (case model.colorTheme of
+                                BrightTheme ->
+                                    color_ultra_light_grey
+
+                                DarkTheme ->
+                                    convertColor Color.lightCharcoal
+                            )
                         , Border.width 1
                         , Border.rounded 3
                         , pointerEventsAll

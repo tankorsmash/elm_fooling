@@ -245,6 +245,7 @@ type Msg
     | GotViewport Browser.Dom.Viewport
     | GotShowDebugElement (Result Browser.Dom.Error Browser.Dom.Element)
     | SacrificeItem Item
+    | ToggleColorTheme
 
 
 type alias TradeOrder =
@@ -573,8 +574,14 @@ type PlayerActionLog
     | TookSpecialActionUnlockItem ItemId
 
 
+type ColorTheme
+    = BrightTheme
+    | DarkTheme
+
+
 type alias Model =
-    { player_id : CharacterId
+    { colorTheme : ColorTheme
+    , player_id : CharacterId
     , player_upgrades : List PlayerUpgrade
     , shop_id : CharacterId
     , characters : List Character
@@ -1392,7 +1399,8 @@ init hash =
                 _ ->
                     ShopTabType
     in
-    ( { player_id = player.char_id
+    ( { colorTheme = BrightTheme
+      , player_id = player.char_id
       , player_upgrades = [ AutomaticGPM 1 ]
       , shop_id = shop.char_id
       , characters = characters
@@ -2124,6 +2132,18 @@ update msg model =
                 |> Maybe.withDefault model
             , Cmd.none
             )
+
+        ToggleColorTheme ->
+            let
+                newColorTheme =
+                    case model.colorTheme of
+                        BrightTheme ->
+                            DarkTheme
+
+                        DarkTheme ->
+                            BrightTheme
+            in
+            ( { model | colorTheme = newColorTheme }, Cmd.none )
 
 
 
@@ -3448,8 +3468,8 @@ monospace attrs el =
     Element.el (Font.family [ Font.monospace ] :: attrs) el
 
 
-trends_display : Bool -> ItemDb -> ShopTrends -> List Character -> Bool -> Element.Element Msg
-trends_display shiftIsPressed item_db shop_trends all_characters is_expanded =
+trends_display : ColorTheme -> Bool -> ItemDb -> ShopTrends -> List Character -> Bool -> Element.Element Msg
+trends_display colorTheme shiftIsPressed item_db shop_trends all_characters is_expanded =
     let
         render_single_popularity : ( Int, Float ) -> Element.Element msg
         render_single_popularity ( type_id, popularity ) =
@@ -3514,7 +3534,7 @@ trends_display shiftIsPressed item_db shop_trends all_characters is_expanded =
             Element.below <|
                 column
                     [ width fill
-                    , Background.color <| rgb 1 1 1
+                    , defaultBackgroundColor colorTheme
                     , Border.color <| rgb 0.35 0.35 0.35
                     , Border.rounded 3
                     , Border.width 2
@@ -4512,10 +4532,24 @@ view_shop_tab_type model =
             getPlayer model
 
         paused_border_attrs =
-            [ Border.color color_light_grey, Border.width 10, Border.dashed ]
+            [ Border.color
+                (case model.colorTheme of
+                    BrightTheme ->
+                        color_light_grey
+
+                    DarkTheme ->
+                        color_grey
+                )
+            , Border.width 10
+            , Border.dashed
+            ]
 
         unpaused_border_attrs =
-            [ Border.color color_white, Border.width 10, Border.dashed ]
+            [ Border.color
+                (defaultColor model.colorTheme)
+            , Border.width 10
+            , Border.dashed
+            ]
     in
     Element.el
         ([ width fill, padding 10 ]
@@ -4543,6 +4577,13 @@ view_shop_tab_type model =
 
                     else
                         "Charts"
+                , outline_button [] ToggleColorTheme <|
+                    case model.colorTheme of
+                        BrightTheme ->
+                            "Darken"
+
+                        DarkTheme ->
+                            "Brighten"
                 ]
             , if model.show_main_chart then
                 Element.el [ paddingXY 0 10, width fill ] <| charts_display model.historical_shop_trends model.hovered_trend_chart
@@ -4556,11 +4597,12 @@ view_shop_tab_type model =
                 ]
             , case maybe_player of
                 Just player ->
-                    special_actions_display model.player_upgrades model.hovered_tooltip player model.ai_updates_paused
+                    special_actions_display model.colorTheme model.player_upgrades model.hovered_tooltip player model.ai_updates_paused
 
                 Nothing ->
                     Element.none
             , trends_display
+                model.colorTheme
                 model.shiftIsPressed
                 model.item_db
                 model.shop_trends
@@ -4745,6 +4787,20 @@ viewOverlay model =
         |> Maybe.withDefault Element.none
 
 
+defaultColor colorTheme =
+    case colorTheme of
+        BrightTheme ->
+            convertColor Color.white
+
+        DarkTheme ->
+            convertColor Color.darkCharcoal
+
+
+defaultBackgroundColor colorTheme =
+    defaultColor colorTheme
+        |> Background.color
+
+
 view : Model -> Html.Html Msg
 view model =
     Element.layoutWith
@@ -4763,6 +4819,7 @@ view model =
         , Element.htmlAttribute <| Html.Events.on "scroll" (Decode.succeed ScrollViewport)
         , width fill
         , padding 20
+        , defaultBackgroundColor model.colorTheme
         ]
     <|
         case model.tab_type of
@@ -4805,13 +4862,14 @@ hoveredTooltipMatchesId hovered_tooltip tooltip_id =
 
 
 primary_button_tooltip :
-    List (Element.Attribute Msg)
+    ColorTheme
+    -> List (Element.Attribute Msg)
     -> Msg
     -> String
     -> TooltipConfig
     -> HoveredTooltip
     -> Element Msg
-primary_button_tooltip custom_attrs on_press label { tooltip_id, tooltip_body } hovered_tooltip =
+primary_button_tooltip colorTheme custom_attrs on_press label { tooltip_id, tooltip_body } hovered_tooltip =
     let
         { offset_x, offset_y } =
             case hovered_tooltip of
@@ -4828,7 +4886,7 @@ primary_button_tooltip custom_attrs on_press label { tooltip_id, tooltip_body } 
             Element.el
                 [ width Element.shrink
                 , Font.color <| convertColor Color.black
-                , Background.color <| convertColor Color.white
+                , defaultBackgroundColor colorTheme
                 , Border.color <| convertColor Color.charcoal
                 , Border.rounded 3
                 , Border.width 2
@@ -4886,8 +4944,8 @@ buildTooltipElementConfig tooltip_id element =
     }
 
 
-build_special_action_button : HoveredTooltip -> Character -> SpecialAction -> String -> String -> Price -> Element Msg
-build_special_action_button hovered_tooltip character special_action title tooltip_text price =
+build_special_action_button : ColorTheme -> HoveredTooltip -> Character -> SpecialAction -> String -> String -> Price -> Element Msg
+build_special_action_button colorTheme hovered_tooltip character special_action title tooltip_text price =
     let
         is_disabled =
             case price of
@@ -4950,7 +5008,8 @@ build_special_action_button hovered_tooltip character special_action title toolt
             else
                 Noop
     in
-    primary_button_tooltip button_attrs
+    primary_button_tooltip colorTheme
+        button_attrs
         msg
         title
         tooltip_config
@@ -4962,11 +5021,12 @@ scale_increase_income_cost current_level =
     (20 + (5 * current_level * current_level) * 2) |> setPrice
 
 
-special_actions_display : List PlayerUpgrade -> HoveredTooltip -> Character -> Bool -> Element Msg
-special_actions_display player_upgrades hovered_tooltip player ai_updates_paused =
+special_actions_display : ColorTheme -> List PlayerUpgrade -> HoveredTooltip -> Character -> Bool -> Element Msg
+special_actions_display colorTheme player_upgrades hovered_tooltip player ai_updates_paused =
     let
         button_toggle_ai_pause =
             build_special_action_button
+                colorTheme
                 hovered_tooltip
                 player
                 TogglePauseAi
@@ -4981,6 +5041,7 @@ special_actions_display player_upgrades hovered_tooltip player ai_updates_paused
 
         button_search =
             build_special_action_button
+                colorTheme
                 hovered_tooltip
                 player
                 InviteTrader
@@ -4990,6 +5051,7 @@ special_actions_display player_upgrades hovered_tooltip player ai_updates_paused
 
         button_high_desire =
             build_special_action_button
+                colorTheme
                 hovered_tooltip
                 player
                 (TriggerEvent (EventVeryDesiredItemType Nothing))
@@ -4999,6 +5061,7 @@ special_actions_display player_upgrades hovered_tooltip player ai_updates_paused
 
         button_low_desire =
             build_special_action_button
+                colorTheme
                 hovered_tooltip
                 player
                 (TriggerEvent (EventLeastDesiredItemType Nothing))
@@ -5008,6 +5071,7 @@ special_actions_display player_upgrades hovered_tooltip player ai_updates_paused
 
         button_unlock_item =
             build_special_action_button
+                colorTheme
                 hovered_tooltip
                 player
                 UnlockItem
@@ -5028,6 +5092,7 @@ special_actions_display player_upgrades hovered_tooltip player ai_updates_paused
                         player_upgrades
             in
             build_special_action_button
+                colorTheme
                 hovered_tooltip
                 player
                 IncreaseIncome

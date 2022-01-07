@@ -4862,9 +4862,41 @@ defaultFontColor colorTheme =
     defaultTextColor colorTheme
         |> Font.color
 
+
 view_battle_tab_type : Model -> Element Msg
 view_battle_tab_type model =
-    text "Battle!"
+    column [ width fill, Font.size 16 ]
+        [ el [ Font.size 24, Element.paddingEach { bottom = 20, top = 0, left = 0, right = 0 } ] <| text "Battle!"
+        , row [ width fill ]
+            [ column [ alignLeft ]
+                [ el [ Font.size 20 ] <| text "Golem"
+                , text "HP: 10/10"
+                , text "SP: 10/10"
+                ]
+            , column [ centerX ]
+                [ primary_button [] Noop "Fight"
+                ]
+            , column
+                [ alignRight ]
+                [ el [ Font.size 20 ] <| text "Slime"
+                , text "HP: 8/10"
+                , text "SP: 2/2"
+                ]
+            ]
+        , column [ width fill, paddingXY 0 20 ]
+            [ row [ width fill, centerX ]
+                [ row [ width <| fillPortion 1 ] []
+                , row [ width <| fillPortion 3, Border.widthEach { top = 1, bottom = 0, left = 0, right = 0 } ] []
+                , row [ width <| fillPortion 1 ] []
+                ]
+            ]
+        , column [ width fill, spacing 5 ]
+            [ paragraph [] [ text "The battle has begun!" ]
+            , paragraph [] [ text "Golem deals 2 damage to Slime." ]
+            , paragraph [] [ text "Slime attacks Golem, but misses." ]
+            ]
+        ]
+
 
 view : Model -> Html.Html Msg
 view model =

@@ -3228,21 +3228,30 @@ font_blood =
     Font.color <| color_danger
 
 
-render_gp : Int -> Element msg
-render_gp count =
-    render_gp_sized count 12
+render_gp : ColorTheme -> Int -> Element msg
+render_gp colorTheme count =
+    render_gp_sized colorTheme count 12
 
 
-render_gp_string : Int -> String
-render_gp_string count =
+render_gp_string : ColorTheme -> Int -> String
+render_gp_string colorTheme count =
     String.fromInt count ++ "gp"
 
 
-render_gp_sized : Int -> Int -> Element msg
-render_gp_sized count font_size =
+render_gp_sized : ColorTheme -> Int -> Int -> Element msg
+render_gp_sized colorTheme count font_size =
     paragraph []
         [ text <| String.fromInt count
-        , Element.el [ Font.size font_size, font_grey ] (text "gp")
+        , Element.el
+            [ Font.size font_size
+            , case colorTheme of
+                BrightTheme ->
+                    font_grey
+
+                DarkTheme ->
+                    Font.color <| hex_to_color "#777439"
+            ]
+            (text "gp")
         ]
 
 
@@ -3373,8 +3382,8 @@ border_bottom bord =
     Border.widthEach { bottom = bord, left = 0, right = 0, top = 0 }
 
 
-render_single_trade_log_entry : ItemDb -> List Character -> ItemTradeLog -> Element msg
-render_single_trade_log_entry item_db all_characters trade_log =
+render_single_trade_log_entry : ColorTheme -> ItemDb -> List Character -> ItemTradeLog -> Element msg
+render_single_trade_log_entry colorTheme item_db all_characters trade_log =
     let
         { from_party, to_party, item_id, quantity, gold_cost } =
             trade_log
@@ -3387,7 +3396,7 @@ render_single_trade_log_entry item_db all_characters trade_log =
 
         rendered_cost : Element msg
         rendered_cost =
-            render_gp gold_cost
+            render_gp colorTheme gold_cost
 
         item_name =
             case maybe_item of
@@ -3553,7 +3562,7 @@ trends_display colorTheme shiftIsPressed item_db shop_trends all_characters is_e
                         ]
                     ]
                         ++ (List.map
-                                (render_single_trade_log_entry item_db all_characters)
+                                (render_single_trade_log_entry colorTheme item_db all_characters)
                             <|
                                 List.take
                                     (if shiftIsPressed then
@@ -3855,7 +3864,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                             ]
                         , paragraph [] <|
                             [ text "Current Price: "
-                            , render_gp (current_price item)
+                            , render_gp model.colorTheme (current_price item)
                             ]
                                 ++ (if
                                         is_item_trending
@@ -3865,7 +3874,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                                             /= current_price item
                                     then
                                         [ text " (originally "
-                                        , render_gp item.raw_gold_cost
+                                        , render_gp model.colorTheme item.raw_gold_cost
                                         , text ")"
                                         ]
 
@@ -3925,7 +3934,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                                     adjustedPrice - getPrice avg_price
                             in
                             paragraph [] <|
-                                [ render_gp <|
+                                [ render_gp model.colorTheme <|
                                     get_single_adjusted_item_cost shop_trends item
                                 ]
                                     ++ [ if context /= ShopItems && priceDiff /= 0 && getQuantity quantity /= 0 then
@@ -3952,7 +3961,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
 
                                 _ ->
                                     if getQuantity quantity /= 0 then
-                                        render_gp <| getPrice avg_price
+                                        render_gp model.colorTheme <| getPrice avg_price
 
                                     else
                                         Element.none
@@ -4024,7 +4033,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                     [ row [ centerX, width Element.shrink, spacingXY 10 0 ]
                         [ row [ Font.alignRight ]
                             [ text "Held: "
-                            , render_gp held_gold
+                            , render_gp model.colorTheme held_gold
                             ]
                         , if is_player_context && character.held_blood > 0 then
                             row [ width fill ]
@@ -4413,18 +4422,18 @@ render_single_player_action_log item_db player_action_log =
         ]
 
 
-render_single_player_upgrade : PlayerUpgrade -> Element Msg
-render_single_player_upgrade player_upgrade =
+render_single_player_upgrade : ColorTheme -> PlayerUpgrade -> Element Msg
+render_single_player_upgrade colorTheme player_upgrade =
     case player_upgrade of
         AutomaticGPM gpm ->
-            paragraph [] [ text "Income: ", render_gp gpm, text "/sec" ]
+            paragraph [] [ text "Income: ", render_gp colorTheme gpm, text "/sec" ]
 
 
-player_upgrades_display : List PlayerUpgrade -> Element Msg
-player_upgrades_display player_upgrades =
+player_upgrades_display : ColorTheme -> List PlayerUpgrade -> Element Msg
+player_upgrades_display colorTheme player_upgrades =
     column [ height fill ]
         ([ el [ font_scaled 2, border_bottom 2, alignTop ] <| text "Upgrades" ]
-            ++ [ column [ paddingXY 0 10 ] <| List.map render_single_player_upgrade player_upgrades ]
+            ++ [ column [ paddingXY 0 10 ] <| List.map (render_single_player_upgrade colorTheme) player_upgrades ]
         )
 
 
@@ -4593,7 +4602,7 @@ view_shop_tab_type model =
             , row [ width fill, height <| Element.px 10 ] []
             , row [ width fill, spacingXY 10 0 ]
                 [ el [ width <| fillPortion 3, alignTop ] <| Lazy.lazy2 player_action_log_display model.item_db model.historical_player_actions
-                , el [ width <| fillPortion 7, alignTop ] <| Lazy.lazy player_upgrades_display model.player_upgrades
+                , el [ width <| fillPortion 7, alignTop ] <| Lazy.lazy2 player_upgrades_display model.colorTheme model.player_upgrades
                 ]
             , case maybe_player of
                 Just player ->
@@ -4648,8 +4657,8 @@ view_shop_tab_type model =
                    ]
 
 
-render_item_db_item : ItemDbRecord -> Element Msg
-render_item_db_item { item, trade_stats, is_unlocked } =
+render_item_db_item : ColorTheme -> ItemDbRecord -> Element Msg
+render_item_db_item colorTheme { item, trade_stats, is_unlocked } =
     column [ width (fill |> Element.maximum 150), height fill ]
         [ text <| item.name
         , row [ Font.size 12 ]
@@ -4663,7 +4672,7 @@ render_item_db_item { item, trade_stats, is_unlocked } =
             [ item_type_to_pretty_string item.item_type
                 |> text
             , item.raw_gold_cost
-                |> render_gp
+                |> render_gp colorTheme
                 |> el [ alignRight ]
             ]
         , row [ width fill, Font.size 12 ]
@@ -4696,8 +4705,8 @@ render_item_db_item { item, trade_stats, is_unlocked } =
         ]
 
 
-view_items_unlocked_tab_type : ItemDb -> Element Msg
-view_items_unlocked_tab_type item_db =
+view_items_unlocked_tab_type : ColorTheme -> ItemDb -> Element Msg
+view_items_unlocked_tab_type colorTheme item_db =
     let
         back_btn =
             Element.link []
@@ -4707,7 +4716,7 @@ view_items_unlocked_tab_type item_db =
 
         -- item_grid : Element Msg
         render_item_grid =
-            List.map render_item_db_item
+            List.map (render_item_db_item colorTheme)
                 >> Element.wrappedRow [ width fill, spacing 20 ]
 
         filterItemDb filterFn =
@@ -4781,7 +4790,7 @@ viewOverlay model =
                     <|
                         row [ noUserSelect ]
                             [ text "Gold: "
-                            , render_gp <| player.held_gold
+                            , render_gp model.colorTheme <| player.held_gold
                             ]
             )
         |> Maybe.withDefault Element.none
@@ -4801,13 +4810,18 @@ defaultBackgroundColor colorTheme =
         |> Background.color
 
 
-defaultTextColor colorTheme=
+defaultTextColor colorTheme =
     case colorTheme of
         BrightTheme ->
             convertColor Color.black
+
         DarkTheme ->
             hex_to_color "#ccc"
-            -- convertColor Color.grey
+
+
+
+-- convertColor Color.grey
+
 
 defaultFontColor colorTheme =
     defaultTextColor colorTheme
@@ -4841,7 +4855,7 @@ view model =
                 Lazy.lazy view_shop_tab_type model
 
             ItemsUnlockedTabType ->
-                Lazy.lazy view_items_unlocked_tab_type model.item_db
+                Lazy.lazy2 view_items_unlocked_tab_type model.colorTheme model.item_db
 
 
 scaled : Int -> Int
@@ -4979,7 +4993,7 @@ build_special_action_button colorTheme hovered_tooltip character special_action 
                         if price /= Free then
                             let
                                 renderedCost =
-                                    render_gp <| getPrice price
+                                    render_gp colorTheme <| getPrice price
                             in
                             buildTooltipElementConfig t <|
                                 column []

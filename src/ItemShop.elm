@@ -4546,7 +4546,7 @@ view_shop_tab_type model =
 
         unpaused_border_attrs =
             [ Border.color
-                (defaultColor model.colorTheme)
+                (defaultSolidColor model.colorTheme)
             , Border.width 10
             , Border.dashed
             ]
@@ -4787,7 +4787,7 @@ viewOverlay model =
         |> Maybe.withDefault Element.none
 
 
-defaultColor colorTheme =
+defaultSolidColor colorTheme =
     case colorTheme of
         BrightTheme ->
             convertColor Color.white
@@ -4797,8 +4797,21 @@ defaultColor colorTheme =
 
 
 defaultBackgroundColor colorTheme =
-    defaultColor colorTheme
+    defaultSolidColor colorTheme
         |> Background.color
+
+
+defaultTextColor colorTheme=
+    case colorTheme of
+        BrightTheme ->
+            convertColor Color.black
+        DarkTheme ->
+            hex_to_color "#ccc"
+            -- convertColor Color.grey
+
+defaultFontColor colorTheme =
+    defaultTextColor colorTheme
+        |> Font.color
 
 
 view : Model -> Html.Html Msg
@@ -4820,6 +4833,7 @@ view model =
         , width fill
         , padding 20
         , defaultBackgroundColor model.colorTheme
+        , defaultFontColor model.colorTheme
         ]
     <|
         case model.tab_type of
@@ -4885,7 +4899,7 @@ primary_button_tooltip colorTheme custom_attrs on_press label { tooltip_id, tool
         tooltip_el =
             Element.el
                 [ width Element.shrink
-                , Font.color <| convertColor Color.black
+                , defaultFontColor colorTheme
                 , defaultBackgroundColor colorTheme
                 , Border.color <| convertColor Color.charcoal
                 , Border.rounded 3

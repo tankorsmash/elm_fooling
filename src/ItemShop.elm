@@ -4598,7 +4598,7 @@ view_shop_tab_type model =
             [ width fill, font_scaled 1, height fill ]
         <|
             [ welcome_header
-            , row [ spacing 5 ]
+            , row [ spacing 5, width fill ]
                 [ Element.link []
                     { url = "#items"
                     , label =
@@ -4610,7 +4610,7 @@ view_shop_tab_type model =
 
                     else
                         "Charts"
-                , outline_button [] ToggleColorTheme <|
+                , outline_button [ alignRight ] ToggleColorTheme <|
                     case model.colorTheme of
                         BrightTheme ->
                             "Darken"

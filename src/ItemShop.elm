@@ -4863,6 +4863,21 @@ defaultFontColor colorTheme =
         |> Font.color
 
 
+padLeft : String -> Int -> String
+padLeft str num =
+    String.padLeft num '\u{2003}' str
+
+
+padRight : String -> Int -> String
+padRight str num =
+    String.padRight num '\u{2003}' str
+
+
+padStatBar : String -> String -> String
+padStatBar leftNum rightNum =
+    padLeft leftNum 3 ++ "/" ++ padRight rightNum 3
+
+
 view_battle_tab_type : Model -> Element Msg
 view_battle_tab_type model =
     column [ width fill, Font.size 16 ]
@@ -4870,8 +4885,8 @@ view_battle_tab_type model =
         , row [ width fill ]
             [ column [ alignLeft ]
                 [ el [ Font.size 20 ] <| text "Golem"
-                , text "HP: 10/10"
-                , text "SP: 10/10"
+                , monospace [] <| text <| "HP: " ++ padStatBar "10" "10"
+                , monospace [] <| text <| "SP: " ++ padStatBar "10" "10"
                 ]
             , column [ centerX ]
                 [ primary_button [] Noop "Fight"
@@ -4879,8 +4894,8 @@ view_battle_tab_type model =
             , column
                 [ alignRight ]
                 [ el [ Font.size 20 ] <| text "Slime"
-                , text "HP: 8/10"
-                , text "SP: 2/2"
+                , monospace [] <| text <| "HP: " ++ padStatBar "5" "7"
+                , monospace [] <| text <| "SP: " ++ padStatBar "2" "2"
                 ]
             ]
         , column [ width fill, paddingXY 0 20 ]

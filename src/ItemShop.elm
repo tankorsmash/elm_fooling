@@ -479,9 +479,14 @@ type alias Monster =
     }
 
 
+type DamagedMonster
+    = LivingMonster Monster
+    | DeadMonster Monster
+
+
 type alias BattleModel =
-    { golem : Monster
-    , slime : Monster
+    { golem : DamagedMonster
+    , enemyMonster : DamagedMonster
     }
 
 
@@ -1421,10 +1426,11 @@ createMonster name hpMax spMax pwrMax =
 
 initBattleModel : BattleModel
 initBattleModel =
-    { golem = createMonster "Golem" 10 10 10
-    , slime =
+    { golem = LivingMonster <| createMonster "Golem" 10 10 10
+    , enemyMonster =
         createMonster "Slime" 10 2 5
             |> (\s -> { s | hpStat = s.hpStat |> setStatCurVal 4 |> setStatMaxVal 6 })
+            |> LivingMonster
     }
 
 
@@ -2238,11 +2244,6 @@ update msg model =
 --- END OF UPDATE
 
 
-type DamagedMonster
-    = LivingMonster Monster
-    | DeadMonster Monster
-
-
 monsterTakeDamage : Int -> Monster -> DamagedMonster
 monsterTakeDamage damageToTake monster =
     let
@@ -2257,14 +2258,14 @@ monsterTakeDamage damageToTake monster =
         DeadMonster newMonster
 
 
-monsterFightsMonster : Monster -> Monster -> ( Monster, DamagedMonster )
+monsterFightsMonster : Monster -> Monster -> ( DamagedMonster, DamagedMonster )
 monsterFightsMonster attacker defender =
     let
         damageToTake =
             attacker.powerStat.curVal
 
         newAttacker =
-            attacker
+            LivingMonster attacker
 
         newDefender =
             monsterTakeDamage damageToTake defender
@@ -2276,19 +2277,34 @@ updateBattleMsg : BattleModel -> BattleMsg -> ( BattleModel, Cmd BattleMsg )
 updateBattleMsg battleModel battleMsg =
     case battleMsg of
         Fight ->
-            let
-                ( newGolem, damagedSlime ) =
-                    monsterFightsMonster battleModel.golem battleModel.slime
+            case battleModel.golem of
+                LivingMonster golem ->
+                    case battleModel.enemyMonster of
+                        LivingMonster enemyMonster ->
+                            let
+                                ( newGolem, damagedEnemyMonster ) =
+                                    monsterFightsMonster golem enemyMonster
 
-                newSlime =
-                    case damagedSlime of
-                        LivingMonster monster ->
-                            monster
+                                -- newEnemyMonster =
+                                --     case damagedEnemyMonster of
+                                --         LivingMonster monster ->
+                                --             monster
+                                --
+                                --         DeadMonster monster ->
+                                --             monster
+                            in
+                            ( { battleModel
+                                | golem = newGolem
+                                , enemyMonster = damagedEnemyMonster
+                              }
+                            , Cmd.none
+                            )
 
-                        DeadMonster monster ->
-                            monster
-            in
-            ( { battleModel | golem = newGolem, slime = newSlime }, Cmd.none )
+                        DeadMonster enemyMonster ->
+                            ( battleModel, Cmd.none )
+
+                DeadMonster golem ->
+                    ( battleModel, Cmd.none )
 
 
 generate_uuid : String -> UUID.UUID
@@ -5020,13 +5036,22 @@ padStatStrBar leftNum rightNum =
     padLeft leftNum 3 ++ "/" ++ padRight rightNum 3
 
 
-viewMonsterInBattle : Monster -> Element Msg
-viewMonsterInBattle monster =
-    column []
-        [ el [ Font.size 20 ] <| text monster.name
-        , monospace [] <| text <| "HP: " ++ padStatBar monster.hpStat
-        , monospace [] <| text <| "SP: " ++ padStatBar monster.spStat
-        ]
+viewMonsterInBattle : DamagedMonster -> Element Msg
+viewMonsterInBattle damagedMonster =
+    case damagedMonster of
+        LivingMonster monster ->
+            column []
+                [ el [ Font.size 20 ] <| text monster.name
+                , monospace [] <| text <| "HP: " ++ padStatBar monster.hpStat
+                , monospace [] <| text <| "SP: " ++ padStatBar monster.spStat
+                ]
+
+        DeadMonster monster ->
+            column []
+                [ el [ Font.size 20 ] <| text monster.name
+                , monospace [] <| text <| "HP: " ++ "DEAD!"
+                , monospace [] <| text <| "SP: " ++ padStatBar monster.spStat
+                ]
 
 
 view_battle_tab_type : Model -> Element Msg
@@ -5041,7 +5066,7 @@ view_battle_tab_type { battleModel } =
                 ]
             , column
                 [ alignRight ]
-                [ viewMonsterInBattle battleModel.slime ]
+                [ viewMonsterInBattle battleModel.enemyMonster ]
             ]
         , column [ width fill, paddingXY 0 20 ]
             [ row [ width fill, centerX ]

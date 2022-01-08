@@ -477,6 +477,7 @@ type alias Monster =
     , hpStat : IntStat
     , spStat : IntStat
     , powerStat : IntStat
+    , xp : Int
     }
 
 
@@ -1422,6 +1423,7 @@ createMonster name hpMax spMax pwrMax =
     , hpStat = newStat hpMax
     , spStat = newStat spMax
     , powerStat = newStat pwrMax
+    , xp = 0
     }
 
 
@@ -5049,6 +5051,7 @@ viewMonsterInBattle damagedMonster =
                 [ el [ Font.size 20 ] <| text monster.name
                 , monospace [] <| text <| "HP: " ++ padStatBar monster.hpStat
                 , monospace [] <| text <| "SP: " ++ padStatBar monster.spStat
+                , monospace [] <| text <| "XP: " ++ padLeft (String.fromInt monster.xp) 6
                 ]
 
         DeadMonster monster ->
@@ -5056,6 +5059,7 @@ viewMonsterInBattle damagedMonster =
                 [ el [ Font.size 20 ] <| text monster.name
                 , monospace [] <| text <| "HP: " ++ "DEAD!"
                 , monospace [] <| text <| "SP: " ++ padStatBar monster.spStat
+                , monospace [] <| text <| "XP: " ++ padLeft (String.fromInt monster.xp) 6
                 ]
 
 

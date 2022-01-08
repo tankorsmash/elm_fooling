@@ -5043,15 +5043,19 @@ padStatStrBar leftNum rightNum =
     padLeft leftNum 3 ++ "/" ++ padRight rightNum 3
 
 
-viewMonsterInBattle : DamagedMonster -> Element Msg
-viewMonsterInBattle damagedMonster =
+viewMonsterInBattle : DamagedMonster -> Bool -> Element Msg
+viewMonsterInBattle damagedMonster showXp =
     case damagedMonster of
         LivingMonster monster ->
             column []
                 [ el [ Font.size 20 ] <| text monster.name
                 , monospace [] <| text <| "HP: " ++ padStatBar monster.hpStat
                 , monospace [] <| text <| "SP: " ++ padStatBar monster.spStat
-                , monospace [] <| text <| "XP: " ++ padLeft (String.fromInt monster.xp) 6
+                , if showXp then
+                    monospace [ width fill ] <| text <| "XP: " ++ padLeft (String.fromInt monster.xp) 6
+
+                  else
+                    Element.none
                 ]
 
         DeadMonster monster ->
@@ -5069,7 +5073,7 @@ view_battle_tab_type { battleModel } =
         [ el [ Font.size 24, Element.paddingEach { bottom = 20, top = 0, left = 0, right = 0 } ] <| text "Battle!"
         , row [ width fill ]
             [ column [ alignLeft ]
-                [ viewMonsterInBattle battleModel.golem ]
+                [ viewMonsterInBattle battleModel.golem True ]
             , column [ centerX ]
                 [ case battleModel.enemyMonster of
                     LivingMonster _ ->
@@ -5080,7 +5084,7 @@ view_battle_tab_type { battleModel } =
                 ]
             , column
                 [ alignRight ]
-                [ viewMonsterInBattle battleModel.enemyMonster ]
+                [ viewMonsterInBattle battleModel.enemyMonster False ]
             ]
         , column [ width fill, paddingXY 0 20 ]
             [ row [ width fill, centerX ]

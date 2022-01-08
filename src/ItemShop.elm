@@ -1505,7 +1505,7 @@ init hash =
       , hovered_tooltip = NoHoveredTooltip
       , cached_tooltip_offsets = Dict.empty
       , global_seed = Random.initialSeed 4
-      , ai_updates_paused = False
+      , ai_updates_paused = if initial_tab_type == ShopTabType then False else True
       , tab_type = initial_tab_type
       , globalViewport = Nothing
       , showDebugInventoriesElement = Nothing
@@ -2284,14 +2284,6 @@ updateBattleMsg battleModel battleMsg =
                             let
                                 ( newGolem, damagedEnemyMonster ) =
                                     monsterFightsMonster golem enemyMonster
-
-                                -- newEnemyMonster =
-                                --     case damagedEnemyMonster of
-                                --         LivingMonster monster ->
-                                --             monster
-                                --
-                                --         DeadMonster monster ->
-                                --             monster
                             in
                             ( { battleModel
                                 | golem = newGolem

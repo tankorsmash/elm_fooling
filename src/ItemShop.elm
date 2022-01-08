@@ -2293,10 +2293,10 @@ updateBattleMsg battleModel battleMsg =
                             )
 
                         DeadMonster enemyMonster ->
-                            ( battleModel, Cmd.none )
+                            Debug.log "dead enemy" ( battleModel, Cmd.none )
 
                 DeadMonster golem ->
-                    ( battleModel, Cmd.none )
+                    Debug.log "dead golem" ( battleModel, Cmd.none )
 
 
 generate_uuid : String -> UUID.UUID

@@ -456,6 +456,11 @@ setStatCurVal newCurVal stat =
     { stat | curVal = newCurVal }
 
 
+addStatCurVal : Int -> IntStat -> IntStat
+addStatCurVal addedCurVal stat =
+    { stat | curVal = stat.curVal + addedCurVal }
+
+
 setStatMaxVal : Int -> IntStat -> IntStat
 setStatMaxVal newMaxVal stat =
     { stat | maxVal = newMaxVal }
@@ -470,11 +475,14 @@ type alias Monster =
     { name : String
     , hpStat : IntStat
     , spStat : IntStat
+    , powerStat : IntStat
     }
 
 
 type alias BattleModel =
-    {}
+    { golem : Monster
+    , slime : Monster
+    }
 
 
 type alias TrendSnapshot =
@@ -1402,9 +1410,22 @@ create_character char_id name =
     }
 
 
+newMonster : String -> Int -> Int -> Int -> Monster
+newMonster name hpMax spMax pwrMax =
+    { name = name
+    , hpStat = newStat hpMax
+    , spStat = newStat spMax
+    , powerStat = newStat pwrMax
+    }
+
+
 initBattleModel : BattleModel
 initBattleModel =
-    {}
+    { golem = newMonster "Golem" 10 10 10
+    , slime =
+        newMonster "Slime" 10 2 5
+            |> (\s -> { s | hpStat = s.hpStat |> setStatCurVal 4 |> setStatMaxVal 6 })
+    }
 
 
 init : String -> ( Model, Cmd Msg )
@@ -2208,7 +2229,7 @@ update msg model =
         GotBattleMsg battleMsg ->
             let
                 ( newBattleModel, newBattleCmds ) =
-                    updateBattleMsg model.battleModel
+                    updateBattleMsg model.battleModel battleMsg
             in
             ( { model | battleModel = newBattleModel }, Cmd.map GotBattleMsg newBattleCmds )
 
@@ -2217,9 +2238,29 @@ update msg model =
 --- END OF UPDATE
 
 
-updateBattleMsg : BattleModel -> ( BattleModel, Cmd BattleMsg )
-updateBattleMsg battleModel =
-    ( battleModel, Cmd.none )
+monsterTakeDamage : Int -> Monster -> Monster
+monsterTakeDamage damageToTake monster =
+    { monster | hpStat = addStatCurVal -damageToTake monster.hpStat }
+
+
+monsterFightsMonster : Monster -> Monster -> ( Monster, Monster )
+monsterFightsMonster attacker defender =
+    let
+        damageToTake =
+            attacker.powerStat.curVal
+    in
+    ( attacker, monsterTakeDamage damageToTake defender )
+
+
+updateBattleMsg : BattleModel -> BattleMsg -> ( BattleModel, Cmd BattleMsg )
+updateBattleMsg battleModel battleMsg =
+    case battleMsg of
+        Fight ->
+            let
+                ( newGolem, newSlime ) =
+                    monsterFightsMonster battleModel.golem battleModel.slime
+            in
+            ( { battleModel | golem = newGolem, slime = newSlime }, Cmd.none )
 
 
 generate_uuid : String -> UUID.UUID
@@ -4961,33 +5002,18 @@ viewMonsterInBattle monster =
 
 
 view_battle_tab_type : Model -> Element Msg
-view_battle_tab_type model =
-    let
-        golem : Monster
-        golem =
-            { name = "Golem"
-            , hpStat = newStat 10
-            , spStat = newStat 10
-            }
-
-        slime : Monster
-        slime =
-            { name = "Slime"
-            , hpStat = newStat 10 |> setStatCurVal 4 |> setStatMaxVal 6
-            , spStat = newStat 2
-            }
-    in
+view_battle_tab_type { battleModel } =
     column [ width fill, Font.size 16 ]
         [ el [ Font.size 24, Element.paddingEach { bottom = 20, top = 0, left = 0, right = 0 } ] <| text "Battle!"
         , row [ width fill ]
             [ column [ alignLeft ]
-                [ viewMonsterInBattle golem ]
+                [ viewMonsterInBattle battleModel.golem ]
             , column [ centerX ]
-                [ primary_button [] Noop "Fight"
+                [ primary_button [] (GotBattleMsg Fight) "Fight"
                 ]
             , column
                 [ alignRight ]
-                [ viewMonsterInBattle slime ]
+                [ viewMonsterInBattle battleModel.slime ]
             ]
         , column [ width fill, paddingXY 0 20 ]
             [ row [ width fill, centerX ]

@@ -216,6 +216,7 @@ type SpecialAction
 
 type BattleMsg
     = Fight
+    | FindNewEnemy
 
 
 type Msg
@@ -1429,7 +1430,7 @@ initBattleModel =
     { golem = LivingMonster <| createMonster "Golem" 10 10 10
     , enemyMonster =
         createMonster "Slime" 10 2 5
-            |> (\s -> { s | hpStat = s.hpStat |> setStatCurVal 4 |> setStatMaxVal 6 })
+            |> (\s -> { s | hpStat = s.hpStat |> setStatCurVal 4 })
             |> LivingMonster
     }
 
@@ -1505,7 +1506,12 @@ init hash =
       , hovered_tooltip = NoHoveredTooltip
       , cached_tooltip_offsets = Dict.empty
       , global_seed = Random.initialSeed 4
-      , ai_updates_paused = if initial_tab_type == ShopTabType then False else True
+      , ai_updates_paused =
+            if initial_tab_type == ShopTabType then
+                False
+
+            else
+                True
       , tab_type = initial_tab_type
       , globalViewport = Nothing
       , showDebugInventoriesElement = Nothing
@@ -2297,6 +2303,13 @@ updateBattleMsg battleModel battleMsg =
 
                 DeadMonster golem ->
                     Debug.log "dead golem" ( battleModel, Cmd.none )
+
+        FindNewEnemy ->
+            ( { battleModel
+                | enemyMonster = LivingMonster <| createMonster "Skeleton" 15 5 5
+              }
+            , Cmd.none
+            )
 
 
 generate_uuid : String -> UUID.UUID
@@ -5054,7 +5067,12 @@ view_battle_tab_type { battleModel } =
             [ column [ alignLeft ]
                 [ viewMonsterInBattle battleModel.golem ]
             , column [ centerX ]
-                [ primary_button [] (GotBattleMsg Fight) "Fight"
+                [ case battleModel.enemyMonster of
+                    LivingMonster _ ->
+                        primary_button [] (GotBattleMsg Fight) "Fight"
+
+                    DeadMonster _ ->
+                        primary_button [] (GotBattleMsg FindNewEnemy) "New Enemy"
                 ]
             , column
                 [ alignRight ]

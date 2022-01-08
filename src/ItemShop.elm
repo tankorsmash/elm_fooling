@@ -1410,8 +1410,8 @@ create_character char_id name =
     }
 
 
-newMonster : String -> Int -> Int -> Int -> Monster
-newMonster name hpMax spMax pwrMax =
+createMonster : String -> Int -> Int -> Int -> Monster
+createMonster name hpMax spMax pwrMax =
     { name = name
     , hpStat = newStat hpMax
     , spStat = newStat spMax
@@ -1421,9 +1421,9 @@ newMonster name hpMax spMax pwrMax =
 
 initBattleModel : BattleModel
 initBattleModel =
-    { golem = newMonster "Golem" 10 10 10
+    { golem = createMonster "Golem" 10 10 10
     , slime =
-        newMonster "Slime" 10 2 5
+        createMonster "Slime" 10 2 5
             |> (\s -> { s | hpStat = s.hpStat |> setStatCurVal 4 |> setStatMaxVal 6 })
     }
 
@@ -2238,18 +2238,38 @@ update msg model =
 --- END OF UPDATE
 
 
-monsterTakeDamage : Int -> Monster -> Monster
+type DamagedMonster
+    = LivingMonster Monster
+    | DeadMonster Monster
+
+
+monsterTakeDamage : Int -> Monster -> DamagedMonster
 monsterTakeDamage damageToTake monster =
-    { monster | hpStat = addStatCurVal -damageToTake monster.hpStat }
+    let
+        newMonster : Monster
+        newMonster =
+            { monster | hpStat = addStatCurVal -damageToTake monster.hpStat }
+    in
+    if newMonster.hpStat.curVal > 0 then
+        LivingMonster newMonster
+
+    else
+        DeadMonster newMonster
 
 
-monsterFightsMonster : Monster -> Monster -> ( Monster, Monster )
+monsterFightsMonster : Monster -> Monster -> ( Monster, DamagedMonster )
 monsterFightsMonster attacker defender =
     let
         damageToTake =
             attacker.powerStat.curVal
+
+        newAttacker =
+            attacker
+
+        newDefender =
+            monsterTakeDamage damageToTake defender
     in
-    ( attacker, monsterTakeDamage damageToTake defender )
+    ( newAttacker, newDefender )
 
 
 updateBattleMsg : BattleModel -> BattleMsg -> ( BattleModel, Cmd BattleMsg )
@@ -2257,8 +2277,16 @@ updateBattleMsg battleModel battleMsg =
     case battleMsg of
         Fight ->
             let
-                ( newGolem, newSlime ) =
+                ( newGolem, damagedSlime ) =
                     monsterFightsMonster battleModel.golem battleModel.slime
+
+                newSlime =
+                    case damagedSlime of
+                        LivingMonster monster ->
+                            monster
+
+                        DeadMonster monster ->
+                            monster
             in
             ( { battleModel | golem = newGolem, slime = newSlime }, Cmd.none )
 

@@ -5063,7 +5063,6 @@ viewMonsterInBattle damagedMonster showXp =
                 [ el [ Font.size 20 ] <| text monster.name
                 , monospace [] <| text <| "HP: " ++ "DEAD!"
                 , monospace [] <| text <| "SP: " ++ padStatBar monster.spStat
-                , monospace [] <| text <| "XP: " ++ padLeft (String.fromInt monster.xp) 6
                 ]
 
 

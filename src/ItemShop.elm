@@ -2312,7 +2312,7 @@ calculateXpValue : Monster -> Int
 calculateXpValue monster =
     (monster.powerStat.maxVal * monster.hpStat.maxVal)
         |> toFloat
-        |> \val -> val / 10
+        |> (\val -> val / 10)
         |> round
         |> max 1
 

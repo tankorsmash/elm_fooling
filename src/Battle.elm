@@ -288,14 +288,11 @@ update model battleMsg =
         HealGolem ->
             let
                 newGolem =
-                    case model.golem of
-                        LivingMonster golem ->
-                            LivingMonster <|
-                                monsterStatMap .statHP setStatHP setStatToMax golem
-
-                        DeadMonster golem ->
-                            LivingMonster <|
-                                monsterStatMap .statHP setStatHP setStatToMax golem
+                    monsterMap
+                        (monsterStatMap .statHP setStatHP setStatToMax
+                            >> LivingMonster
+                        )
+                        model.golem
             in
             ( { model | golem = newGolem }, Cmd.none )
 
@@ -304,14 +301,14 @@ update model battleMsg =
 -- end of update
 
 
-monsterMap : (Monster -> Monster) -> DamagedMonster -> DamagedMonster
+monsterMap : (Monster -> a) -> DamagedMonster -> a
 monsterMap callback damagedMonster =
     case damagedMonster of
         LivingMonster monster ->
-            LivingMonster <| callback monster
+            callback monster
 
         DeadMonster monster ->
-            DeadMonster <| callback monster
+            callback monster
 
 
 padLeft : String -> Int -> String

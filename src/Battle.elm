@@ -70,6 +70,7 @@ type Msg
     | Fight
     | FindNewEnemy
     | ToggleShowExpandedLogs
+    | HealGolem
 
 
 type alias IntStat =
@@ -232,6 +233,41 @@ update model battleMsg =
         ToggleShowExpandedLogs ->
             ( { model | showExpandedLogs = not model.showExpandedLogs }, Cmd.none )
 
+        HealGolem ->
+            let
+                newGolem =
+                    case model.golem of
+                        LivingMonster golem ->
+                            LivingMonster <|
+                                { golem
+                                    | hpStat =
+                                        setStatCurVal
+                                            golem.hpStat.maxVal
+                                            golem.hpStat
+                                }
+
+                        DeadMonster golem ->
+                            LivingMonster <|
+                                { golem
+                                    | hpStat = setStatCurVal golem.hpStat.maxVal golem.hpStat
+                                }
+            in
+            ( { model | golem = newGolem }, Cmd.none )
+
+
+
+-- end of update
+
+
+monsterMap : (Monster -> Monster) -> DamagedMonster -> DamagedMonster
+monsterMap callback damagedMonster =
+    case damagedMonster of
+        LivingMonster monster ->
+            LivingMonster <| callback monster
+
+        DeadMonster monster ->
+            DeadMonster <| callback monster
+
 
 padLeft : String -> Int -> String
 padLeft str num =
@@ -382,7 +418,7 @@ view model =
         , row [ width fill ]
             [ el [ width <| fillPortion 4, alignTop ] <| viewFightLog model.showExpandedLogs model.fightLogs
             , column [ width <| fillPortion 2, alignTop ]
-                [ el [ centerX, width (fill |> Element.maximum 150)] <|
+                [ el [ centerX, width (fill |> Element.maximum 150) ] <|
                     UI.outline_button
                         [ centerX, width fill ]
                         ToggleShowExpandedLogs
@@ -390,8 +426,8 @@ view model =
                 , column [ width fill, spacing 1, padding 10 ]
                     [ UI.outline_button
                         [ centerX, width (fill |> Element.maximum 150) ]
-                        Noop
-                        "Heal (No-op)"
+                        HealGolem
+                        "Heal"
                     , UI.outline_button
                         [ centerX, width (fill |> Element.maximum 150) ]
                         Noop

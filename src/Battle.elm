@@ -68,6 +68,7 @@ import UUID exposing (UUID)
 type Msg
     = Fight
     | FindNewEnemy
+    | ToggleShowExpandedLogs
 
 
 type alias IntStat =
@@ -140,6 +141,7 @@ type alias Model =
     , enemyMonster : DamagedMonster
     , battleSeed : Random.Seed
     , fightLogs : List FightLog
+    , showExpandedLogs : Bool
     }
 
 
@@ -152,6 +154,7 @@ init =
             |> LivingMonster
     , battleSeed = Random.initialSeed 123456
     , fightLogs = []
+    , showExpandedLogs = False
     }
 
 
@@ -198,6 +201,9 @@ update model battleMsg =
               }
             , Cmd.none
             )
+
+        ToggleShowExpandedLogs ->
+            ( { model | showExpandedLogs = not model.showExpandedLogs }, Cmd.none )
 
 
 padLeft : String -> Int -> String
@@ -262,13 +268,26 @@ viewSingleFightLog expandedLog fightLog =
     if expandedLog then
         case fightLog of
             MonsterAttackedMonster { attacker, defender, attackerPower, defenderProtection, damageTaken } ->
-                paragraph [] [ text "attack log" ]
+                paragraph []
+                    [ text <|
+                        attacker.name
+                            ++ " attacked "
+                            ++ defender.name
+                            ++ " for "
+                            ++ String.fromInt damageTaken
+                            ++ " total damage. "
+                            ++ "(Power of "
+                            ++ String.fromInt attackerPower
+                            ++ " - Protection of "
+                            ++ String.fromInt defenderProtection
+                            ++ ")"
+                    ]
 
             FoundNewMonster newMonster ->
-                paragraph [] [ text "found new monster" ]
+                paragraph [] [ text <| "Found new monster: " ++ newMonster.name ]
 
             MonsterKilledMonster attacker deadMonster ->
-                paragraph [] [ text "attacker killed monster" ]
+                paragraph [] [ text <| attacker.name ++ " killed " ++ deadMonster.name ]
 
     else
         case fightLog of
@@ -285,11 +304,12 @@ viewSingleFightLog expandedLog fightLog =
 viewFightLog : Bool -> List FightLog -> Element Msg
 viewFightLog expandedLog fightLogs =
     column [ width fill, spacing 5 ] <|
-        (fightLogs
-            |> List.reverse
-            |> List.take 10
-            |> List.map (viewSingleFightLog expandedLog)
-        )
+        [ UI.outline_button [ centerX ] ToggleShowExpandedLogs "Toggle" ]
+            ++ (fightLogs
+                    |> List.reverse
+                    |> List.take 10
+                    |> List.map (viewSingleFightLog expandedLog)
+               )
 
 
 view : Model -> Element Msg
@@ -318,7 +338,7 @@ view model =
                 , row [ width <| fillPortion 1 ] []
                 ]
             ]
-        , el [ width fill ] <| viewFightLog False model.fightLogs
+        , el [ width fill ] <| viewFightLog model.showExpandedLogs model.fightLogs
         ]
 
 

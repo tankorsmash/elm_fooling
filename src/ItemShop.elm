@@ -2310,11 +2310,16 @@ pickMonsterToSpawn seed =
 
 calculateXpValue : Monster -> Int
 calculateXpValue monster =
-    (monster.powerStat.curVal * monster.hpStat.curVal)
+    (monster.powerStat.maxVal * monster.hpStat.maxVal)
         |> toFloat
-        |> (/) 5
+        |> \val -> val / 10
         |> round
         |> max 1
+
+
+increaseMonsterXpByMonster : Monster -> Monster -> Monster
+increaseMonsterXpByMonster monster otherMonster =
+    { monster | xp = monster.xp + calculateXpValue otherMonster }
 
 
 updateBattleMsg : BattleModel -> BattleMsg -> ( BattleModel, Cmd BattleMsg )
@@ -2325,7 +2330,16 @@ updateBattleMsg battleModel battleMsg =
                 ( LivingMonster golem, LivingMonster enemyMonster ) ->
                     let
                         ( newGolem, damagedEnemyMonster ) =
-                            monsterFightsMonster golem enemyMonster
+                            case monsterFightsMonster golem enemyMonster of
+                                ( LivingMonster newGolem_, DeadMonster deadEnemy ) ->
+                                    ( LivingMonster (increaseMonsterXpByMonster newGolem_ deadEnemy)
+                                    , DeadMonster deadEnemy
+                                    )
+
+                                --if no dead enemy, proceed as normal
+                                -- TODO: handle dead golem
+                                ( g, e ) ->
+                                    ( g, e )
                     in
                     ( { battleModel
                         | golem = newGolem

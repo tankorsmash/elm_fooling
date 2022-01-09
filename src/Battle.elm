@@ -110,10 +110,10 @@ setStatInitialVal newInitialVal stat =
 
 type alias Monster =
     { name : String
-    , hpStat : IntStat
-    , spStat : IntStat
-    , powerStat : IntStat
-    , protectionStat : IntStat
+    , statHP : IntStat
+    , statStamina : IntStat
+    , statPower : IntStat
+    , statProtection : IntStat
     , xp : Int
     }
 
@@ -152,7 +152,7 @@ init =
     { golem = LivingMonster <| createMonster "Golem" 50 10 0
     , enemyMonster =
         createMonster "Slime" 10 2 5
-            |> (\s -> { s | hpStat = s.hpStat |> setStatCurVal 4 })
+            |> (\s -> { s | statHP = s.statHP |> setStatCurVal 4 })
             |> LivingMonster
     , battleSeed = Random.initialSeed 123456
     , fightLogs = []
@@ -240,16 +240,16 @@ update model battleMsg =
                         LivingMonster golem ->
                             LivingMonster <|
                                 { golem
-                                    | hpStat =
+                                    | statHP =
                                         setStatCurVal
-                                            golem.hpStat.maxVal
-                                            golem.hpStat
+                                            golem.statHP.maxVal
+                                            golem.statHP
                                 }
 
                         DeadMonster golem ->
                             LivingMonster <|
                                 { golem
-                                    | hpStat = setStatCurVal golem.hpStat.maxVal golem.hpStat
+                                    | statHP = setStatCurVal golem.statHP.maxVal golem.statHP
                                 }
             in
             ( { model | golem = newGolem }, Cmd.none )
@@ -292,10 +292,10 @@ padStatStrBar leftNum rightNum =
 createMonster : String -> Int -> Int -> Int -> Monster
 createMonster name hpMax pwrMax protMax =
     { name = name
-    , hpStat = newStat hpMax
-    , spStat = newStat 10
-    , powerStat = newStat pwrMax
-    , protectionStat = newStat protMax
+    , statHP = newStat hpMax
+    , statStamina = newStat 10
+    , statPower = newStat pwrMax
+    , statProtection = newStat protMax
     , xp = 0
     }
 
@@ -310,10 +310,10 @@ viewMonsterInBattle damagedMonster showXp =
                     UI.monospace [ alignRight, centerX ] <| text <| "DEAD!"
 
                   else
-                    UI.monospace [] <| text <| "HP: " ++ padStatBar monster.hpStat
-                , UI.monospace [] <| text <| "SP: " ++ padStatBar monster.spStat
-                , UI.monospace [] <| text <| "Pwr: " ++ padLeft (String.fromInt monster.powerStat.curVal) 5
-                , UI.monospace [] <| text <| "Prt: " ++ padLeft (String.fromInt monster.protectionStat.curVal) 5
+                    UI.monospace [] <| text <| "HP: " ++ padStatBar monster.statHP
+                , UI.monospace [] <| text <| "SP: " ++ padStatBar monster.statStamina
+                , UI.monospace [] <| text <| "Pwr: " ++ padLeft (String.fromInt monster.statPower.curVal) 5
+                , UI.monospace [] <| text <| "Prt: " ++ padLeft (String.fromInt monster.statProtection.curVal) 5
                 ]
                     ++ (if showXp then
                             [ UI.monospace [ width fill ] <| text <| "XP: " ++ padLeft (String.fromInt monster.xp) 6 ]
@@ -451,9 +451,9 @@ monsterTakeDamage damageToTake monster =
     let
         newMonster : Monster
         newMonster =
-            { monster | hpStat = addStatCurVal -damageToTake monster.hpStat }
+            { monster | statHP = addStatCurVal -damageToTake monster.statHP }
     in
-    if newMonster.hpStat.curVal > 0 then
+    if newMonster.statHP.curVal > 0 then
         LivingMonster newMonster
 
     else
@@ -464,10 +464,10 @@ monsterFightsMonster : Monster -> Monster -> ( DamagedMonster, DamagedMonster, L
 monsterFightsMonster attacker defender =
     let
         attackerPower =
-            attacker.powerStat.curVal
+            attacker.statPower.curVal
 
         defenderProtection =
-            defender.protectionStat.curVal
+            defender.statProtection.curVal
 
         damageToTake =
             attackerPower
@@ -513,7 +513,7 @@ pickMonsterToSpawn seed =
 
 calculateXpValue : Monster -> Int
 calculateXpValue monster =
-    (monster.powerStat.maxVal * monster.hpStat.maxVal)
+    (monster.statPower.maxVal * monster.statHP.maxVal)
         |> toFloat
         |> (\val -> val / 10)
         |> round

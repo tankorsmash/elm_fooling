@@ -133,7 +133,7 @@ type alias MonsterAttackedData =
 type FightLog
     = MonsterAttackedMonster MonsterAttackedData
     | FoundNewMonster Monster
-    | MonsterKilledMonster Monster Monster
+    | MonsterKilledMonster Monster Monster Int
 
 
 type alias Model =
@@ -168,9 +168,13 @@ update model battleMsg =
                         ( newGolem, damagedEnemyMonster, fightLogs ) =
                             case monsterFightsMonster golem enemyMonster of
                                 ( LivingMonster newGolem_, DeadMonster deadEnemy, fightLogs_ ) ->
-                                    ( LivingMonster (increaseMonsterXpByMonster newGolem_ deadEnemy)
+                                    let
+                                        ( victorGolem, gainedXp ) =
+                                            increaseMonsterXpByMonster newGolem_ deadEnemy
+                                    in
+                                    ( LivingMonster victorGolem
                                     , DeadMonster deadEnemy
-                                    , fightLogs_ ++ [ MonsterKilledMonster newGolem_ deadEnemy ]
+                                    , fightLogs_ ++ [ MonsterKilledMonster newGolem_ deadEnemy gainedXp ]
                                     )
 
                                 --if no dead enemy, proceed as normal
@@ -286,8 +290,8 @@ viewSingleFightLog expandedLog fightLog =
             FoundNewMonster newMonster ->
                 paragraph [] [ text <| "Found new monster: " ++ newMonster.name ]
 
-            MonsterKilledMonster attacker deadMonster ->
-                paragraph [] [ text <| attacker.name ++ " killed " ++ deadMonster.name ]
+            MonsterKilledMonster attacker deadMonster xp_gained ->
+                paragraph [] [ text <| attacker.name ++ " killed " ++ deadMonster.name ++ ", gaining " ++ String.fromInt xp_gained ++ " XP." ]
 
     else
         case fightLog of
@@ -297,8 +301,8 @@ viewSingleFightLog expandedLog fightLog =
             FoundNewMonster newMonster ->
                 paragraph [] [ text <| "Found new monster: " ++ newMonster.name ]
 
-            MonsterKilledMonster attacker deadMonster ->
-                paragraph [] [ text <| attacker.name ++ " killed " ++ deadMonster.name ]
+            MonsterKilledMonster attacker deadMonster xp_gained ->
+                paragraph [] [ text <| attacker.name ++ " killed " ++ deadMonster.name ++ ", gaining " ++ String.fromInt xp_gained ++ " XP." ]
 
 
 viewFightLog : Bool -> List FightLog -> Element Msg
@@ -416,9 +420,13 @@ calculateXpValue monster =
         |> max 1
 
 
-increaseMonsterXpByMonster : Monster -> Monster -> Monster
+increaseMonsterXpByMonster : Monster -> Monster -> ( Monster, Int )
 increaseMonsterXpByMonster monster otherMonster =
-    { monster | xp = monster.xp + calculateXpValue otherMonster }
+    let
+        gainedXP =
+            calculateXpValue otherMonster
+    in
+    ( { monster | xp = monster.xp + gainedXP }, gainedXP )
 
 
 subscriptions : Model -> Sub Msg

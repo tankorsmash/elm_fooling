@@ -489,6 +489,7 @@ type DamagedMonster
 type alias BattleModel =
     { golem : DamagedMonster
     , enemyMonster : DamagedMonster
+    , battleSeed : Random.Seed
     }
 
 
@@ -1434,6 +1435,7 @@ initBattleModel =
         createMonster "Slime" 10 2 5
             |> (\s -> { s | hpStat = s.hpStat |> setStatCurVal 4 })
             |> LivingMonster
+    , battleSeed = Random.initialSeed 123456
     }
 
 
@@ -2281,6 +2283,31 @@ monsterFightsMonster attacker defender =
     ( newAttacker, newDefender )
 
 
+pickMonsterToSpawn : Random.Seed -> ( Monster, Random.Seed )
+pickMonsterToSpawn seed =
+    let
+        skeleton =
+            createMonster "Skeleton" 15 5 5
+
+        monsters =
+            [ skeleton
+            , createMonster "Ogre" 15 5 8
+            , createMonster "Goblin" 10 5 2
+            , createMonster "Mimic" 20 5 3
+            , createMonster "Titan" 50 5 5
+            , createMonster "Fae" 10 5 2
+            , createMonster "Rat" 12 5 3
+            , createMonster "Water Elemental" 12 5 5
+            , createMonster "Fire Elemental" 11 5 4
+            , createMonster "Earth Elemental" 9 5 6
+            ]
+
+        ( ( maybeChosen, unChosen ), newSeed ) =
+            Random.step (Random.List.choose monsters) seed
+    in
+    ( Maybe.withDefault skeleton maybeChosen, newSeed )
+
+
 updateBattleMsg : BattleModel -> BattleMsg -> ( BattleModel, Cmd BattleMsg )
 updateBattleMsg battleModel battleMsg =
     case battleMsg of
@@ -2307,8 +2334,13 @@ updateBattleMsg battleModel battleMsg =
                     Debug.log "dead golem" ( battleModel, Cmd.none )
 
         FindNewEnemy ->
+            let
+                ( newMonster, newSeed ) =
+                    pickMonsterToSpawn battleModel.battleSeed
+            in
             ( { battleModel
-                | enemyMonster = LivingMonster <| createMonster "Skeleton" 15 5 5
+                | enemyMonster = LivingMonster <| newMonster
+                , battleSeed = newSeed
               }
             , Cmd.none
             )

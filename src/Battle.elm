@@ -130,7 +130,9 @@ type alias MonsterAttackedData =
 
 
 type FightLog
-    = MonsterAttacked MonsterAttackedData
+    = MonsterAttackedMonster MonsterAttackedData
+    | FoundNewMonster Monster
+    | MonsterKilledMonster Monster Monster
 
 
 type alias Model =
@@ -165,7 +167,7 @@ update model battleMsg =
                                 ( LivingMonster newGolem_, DeadMonster deadEnemy, fightLogs_ ) ->
                                     ( LivingMonster (increaseMonsterXpByMonster newGolem_ deadEnemy)
                                     , DeadMonster deadEnemy
-                                    , fightLogs_
+                                    , fightLogs_ ++ [MonsterKilledMonster newGolem_ deadEnemy]
                                     )
 
                                 --if no dead enemy, proceed as normal
@@ -192,6 +194,7 @@ update model battleMsg =
             ( { model
                 | enemyMonster = LivingMonster <| newMonster
                 , battleSeed = newSeed
+                , fightLogs = model.fightLogs ++ [ FoundNewMonster newMonster ]
               }
             , Cmd.none
             )
@@ -323,7 +326,7 @@ monsterFightsMonster attacker defender =
             monsterTakeDamage damageToTake defender
 
         fightLog =
-            MonsterAttacked { attacker = attacker, defender = defender, attackerPower = attackerPower, defenderProtection = defenderProtection, damageTaken = damageToTake }
+            MonsterAttackedMonster { attacker = attacker, defender = defender, attackerPower = attackerPower, defenderProtection = defenderProtection, damageTaken = damageToTake }
     in
     ( newAttacker, newDefender, [ fightLog ] )
 

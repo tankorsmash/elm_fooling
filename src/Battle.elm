@@ -1,6 +1,5 @@
 module Battle exposing (Model, Msg, init, subscriptions, suite, update, view)
 
-import Interface as UI
 import Array
 import Browser.Dom
 import Browser.Events
@@ -52,6 +51,7 @@ import Fuzz exposing (Fuzzer, int, list, string, tuple)
 import Html
 import Html.Attributes exposing (attribute, classList, href, property, src, style, value)
 import Html.Events
+import Interface as UI
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as Encode exposing (Value)
@@ -120,10 +120,24 @@ type DamagedMonster
     | DeadMonster Monster
 
 
+type alias MonsterAttackedData =
+    { attacker : Monster
+    , defender : Monster
+    , attackerPower : Int
+    , defenderProtection : Int
+    , damageTaken : Int
+    }
+
+
+type FightLog
+    = MonsterAttacked MonsterAttackedData
+
+
 type alias Model =
     { golem : DamagedMonster
     , enemyMonster : DamagedMonster
     , battleSeed : Random.Seed
+    , fightLogs : List FightLog
     }
 
 
@@ -135,7 +149,9 @@ init =
             |> (\s -> { s | hpStat = s.hpStat |> setStatCurVal 4 })
             |> LivingMonster
     , battleSeed = Random.initialSeed 123456
+    , fightLogs = []
     }
+
 
 update : Model -> Msg -> ( Model, Cmd Msg )
 update model battleMsg =
@@ -144,21 +160,23 @@ update model battleMsg =
             case ( model.golem, model.enemyMonster ) of
                 ( LivingMonster golem, LivingMonster enemyMonster ) ->
                     let
-                        ( newGolem, damagedEnemyMonster ) =
+                        ( newGolem, damagedEnemyMonster, fightLogs ) =
                             case monsterFightsMonster golem enemyMonster of
-                                ( LivingMonster newGolem_, DeadMonster deadEnemy ) ->
+                                ( LivingMonster newGolem_, DeadMonster deadEnemy, fightLogs_ ) ->
                                     ( LivingMonster (increaseMonsterXpByMonster newGolem_ deadEnemy)
                                     , DeadMonster deadEnemy
+                                    , fightLogs_
                                     )
 
                                 --if no dead enemy, proceed as normal
                                 -- TODO: handle dead golem
-                                ( g, e ) ->
-                                    ( g, e )
+                                ( g, e, fightLogs_ ) ->
+                                    ( g, e, fightLogs_ )
                     in
                     ( { model
                         | golem = newGolem
                         , enemyMonster = damagedEnemyMonster
+                        , fightLogs = List.append model.fightLogs fightLogs
                       }
                     , Cmd.none
                     )
@@ -177,6 +195,7 @@ update model battleMsg =
               }
             , Cmd.none
             )
+
 
 padLeft : String -> Int -> String
 padLeft str num =
@@ -197,6 +216,7 @@ padStatStrBar : String -> String -> String
 padStatStrBar leftNum rightNum =
     padLeft leftNum 3 ++ "/" ++ padRight rightNum 3
 
+
 createMonster : String -> Int -> Int -> Int -> Monster
 createMonster name hpMax pwrMax protMax =
     { name = name
@@ -206,8 +226,6 @@ createMonster name hpMax pwrMax protMax =
     , protectionStat = newStat protMax
     , xp = 0
     }
-
-
 
 
 viewMonsterInBattle : DamagedMonster -> Bool -> Element Msg
@@ -237,7 +255,7 @@ viewMonsterInBattle damagedMonster showXp =
 
 
 view : Model -> Element Msg
-view model  =
+view model =
     column [ width fill, Font.size 16 ]
         [ el [ Font.size 24, Element.paddingEach { bottom = 20, top = 0, left = 0, right = 0 } ] <| text "Battle!"
         , row [ width fill ]
@@ -246,10 +264,10 @@ view model  =
             , column [ centerX ]
                 [ case model.enemyMonster of
                     LivingMonster _ ->
-                        UI.primary_button [] (Fight) "Fight"
+                        UI.primary_button [] Fight "Fight"
 
                     DeadMonster _ ->
-                        UI.primary_button [] (FindNewEnemy) "New Enemy"
+                        UI.primary_button [] FindNewEnemy "New Enemy"
                 ]
             , column
                 [ alignRight ]
@@ -268,6 +286,8 @@ view model  =
             , paragraph [] [ text "Slime attacks Golem, but misses." ]
             ]
         ]
+
+
 monsterTakeDamage : Int -> Monster -> DamagedMonster
 monsterTakeDamage damageToTake monster =
     let
@@ -282,12 +302,18 @@ monsterTakeDamage damageToTake monster =
         DeadMonster newMonster
 
 
-monsterFightsMonster : Monster -> Monster -> ( DamagedMonster, DamagedMonster )
+monsterFightsMonster : Monster -> Monster -> ( DamagedMonster, DamagedMonster, List FightLog )
 monsterFightsMonster attacker defender =
     let
-        damageToTake =
+        attackerPower =
             attacker.powerStat.curVal
-                - defender.protectionStat.curVal
+
+        defenderProtection =
+            defender.protectionStat.curVal
+
+        damageToTake =
+            attackerPower
+                - defenderProtection
                 |> max 1
 
         newAttacker =
@@ -295,8 +321,11 @@ monsterFightsMonster attacker defender =
 
         newDefender =
             monsterTakeDamage damageToTake defender
+
+        fightLog =
+            MonsterAttacked { attacker = attacker, defender = defender, attackerPower = attackerPower, defenderProtection = defenderProtection, damageTaken = damageToTake }
     in
-    ( newAttacker, newDefender )
+    ( newAttacker, newDefender, [ fightLog ] )
 
 
 pickMonsterToSpawn : Random.Seed -> ( Monster, Random.Seed )
@@ -343,4 +372,5 @@ subscriptions model =
     Sub.none
 
 
-suite = ()
+suite =
+    ()

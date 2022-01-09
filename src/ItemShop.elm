@@ -2321,26 +2321,21 @@ updateBattleMsg : BattleModel -> BattleMsg -> ( BattleModel, Cmd BattleMsg )
 updateBattleMsg battleModel battleMsg =
     case battleMsg of
         Fight ->
-            case battleModel.golem of
-                LivingMonster golem ->
-                    case battleModel.enemyMonster of
-                        LivingMonster enemyMonster ->
-                            let
-                                ( newGolem, damagedEnemyMonster ) =
-                                    monsterFightsMonster golem enemyMonster
-                            in
-                            ( { battleModel
-                                | golem = newGolem
-                                , enemyMonster = damagedEnemyMonster
-                              }
-                            , Cmd.none
-                            )
+            case ( battleModel.golem, battleModel.enemyMonster ) of
+                ( LivingMonster golem, LivingMonster enemyMonster ) ->
+                    let
+                        ( newGolem, damagedEnemyMonster ) =
+                            monsterFightsMonster golem enemyMonster
+                    in
+                    ( { battleModel
+                        | golem = newGolem
+                        , enemyMonster = damagedEnemyMonster
+                      }
+                    , Cmd.none
+                    )
 
-                        DeadMonster enemyMonster ->
-                            Debug.log "dead enemy" ( battleModel, Cmd.none )
-
-                DeadMonster golem ->
-                    Debug.log "dead golem" ( battleModel, Cmd.none )
+                _ ->
+                    Debug.log "dead something" ( battleModel, Cmd.none )
 
         FindNewEnemy ->
             let

@@ -187,7 +187,7 @@ updateFight model =
                                 --if no dead enemy, proceed as normal
                                 -- TODO: handle dead golem
                                 ( e, g, secondfightLogs_ ) ->
-                                    ( e, g, secondfightLogs_ )
+                                    ( g, e, secondfightLogs_ )
 
                         --if no dead enemy, proceed as normal
                         -- TODO: handle dead golem

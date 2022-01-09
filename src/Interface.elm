@@ -418,9 +418,9 @@ render_gp_sized colorTheme count font_size =
         ]
 
 
-renderBlood : Int -> Element msg
-renderBlood count =
-    renderBlood_sized count 12
+renderBlood : ColorTheme -> Int -> Element msg
+renderBlood colorTheme count =
+    renderBlood_sized colorTheme count 12
 
 
 renderBlood_string : Int -> String
@@ -428,8 +428,8 @@ renderBlood_string count =
     String.fromInt count ++ "gp"
 
 
-renderBlood_sized : Int -> Int -> Element msg
-renderBlood_sized count font_size =
+renderBlood_sized : ColorTheme -> Int -> Int -> Element msg
+renderBlood_sized colorTheme count font_size =
     paragraph []
         [ text <| String.fromInt count
         , Element.el [ Font.size font_size, font_blood ] (text "blood")

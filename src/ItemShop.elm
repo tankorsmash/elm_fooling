@@ -3716,7 +3716,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                             ]
                         , if is_player_context && character.held_blood > 0 then
                             row [ width fill ]
-                                [ UI.renderBlood character.held_blood
+                                [ UI.renderBlood model.colorTheme character.held_blood
                                 ]
 
                           else
@@ -4475,8 +4475,10 @@ viewOverlay model =
                         ]
                     <|
                         row [ noUserSelect ]
-                            [ text "Gold: "
+                            [ text "Held: "
                             , UI.render_gp model.colorTheme <| player.held_gold
+                            , text " "
+                            , UI.renderBlood model.colorTheme <| player.held_blood
                             ]
             )
         |> Maybe.withDefault Element.none

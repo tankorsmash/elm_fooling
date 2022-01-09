@@ -243,11 +243,15 @@ createMonster name hpMax pwrMax protMax =
 
 viewMonsterInBattle : DamagedMonster -> Bool -> Element Msg
 viewMonsterInBattle damagedMonster showXp =
-    case damagedMonster of
-        LivingMonster monster ->
+    let
+        viewMonster_ monster isDead =
             column [] <|
                 [ el [ Font.size 20 ] <| text monster.name
-                , UI.monospace [] <| text <| "HP: " ++ padStatBar monster.hpStat
+                , if isDead then
+                    UI.monospace [ alignRight, centerX ] <| text <| "DEAD!"
+
+                  else
+                    UI.monospace [] <| text <| "HP: " ++ padStatBar monster.hpStat
                 , UI.monospace [] <| text <| "SP: " ++ padStatBar monster.spStat
                 , UI.monospace [] <| text <| "Pwr: " ++ padLeft (String.fromInt monster.powerStat.curVal) 5
                 , UI.monospace [] <| text <| "Prt: " ++ padLeft (String.fromInt monster.protectionStat.curVal) 5
@@ -258,13 +262,13 @@ viewMonsterInBattle damagedMonster showXp =
                         else
                             []
                        )
+    in
+    case damagedMonster of
+        LivingMonster monster ->
+            viewMonster_ monster False
 
         DeadMonster monster ->
-            column []
-                [ el [ Font.size 20 ] <| text monster.name
-                , UI.monospace [] <| text <| "HP: " ++ "DEAD!"
-                , UI.monospace [] <| text <| "SP: " ++ padStatBar monster.spStat
-                ]
+            viewMonster_ monster True
 
 
 viewSingleFightLog : Bool -> FightLog -> Element Msg
@@ -316,24 +320,32 @@ viewFightLog expandedLog fightLogs =
                )
 
 
+explain =
+    Element.explain Debug.todo
+
+
 view : Model -> Element Msg
 view model =
     column [ width fill, Font.size 16 ]
         [ el [ Font.size 24, Element.paddingEach { bottom = 20, top = 0, left = 0, right = 0 } ] <| text "Battle!"
         , row [ width fill ]
-            [ column [ alignLeft ]
-                [ viewMonsterInBattle model.golem True ]
+            [ column [ alignLeft, width (Element.px 200) ]
+                [ Element.el [ alignLeft ] <| viewMonsterInBattle model.golem True ]
             , column [ centerX ]
-                [ case model.enemyMonster of
-                    LivingMonster _ ->
-                        UI.primary_button [] Fight "Fight"
+                [ let
+                    ( msg, txt ) =
+                        case model.enemyMonster of
+                            LivingMonster _ ->
+                                ( Fight, "Fight" )
 
-                    DeadMonster _ ->
-                        UI.primary_button [] FindNewEnemy "New Enemy"
+                            DeadMonster _ ->
+                                ( FindNewEnemy, "New Enemy" )
+                  in
+                  UI.primary_button [ width (fill |> Element.minimum 125) ] msg txt
                 ]
             , column
-                [ alignRight ]
-                [ viewMonsterInBattle model.enemyMonster False ]
+                [ alignRight, width (Element.px 200) ]
+                [ Element.el [ alignRight ] <| viewMonsterInBattle model.enemyMonster False ]
             ]
         , column [ width fill, paddingXY 0 20 ]
             [ row [ width fill, centerX ]

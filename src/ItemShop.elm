@@ -5097,17 +5097,18 @@ viewMonsterInBattle : DamagedMonster -> Bool -> Element Msg
 viewMonsterInBattle damagedMonster showXp =
     case damagedMonster of
         LivingMonster monster ->
-            column []
+            column [] <|
                 [ el [ Font.size 20 ] <| text monster.name
                 , monospace [] <| text <| "HP: " ++ padStatBar monster.hpStat
                 , monospace [] <| text <| "SP: " ++ padStatBar monster.spStat
-                , monospace [] <| text <| "Pwr: " ++ (padLeft (String.fromInt monster.powerStat.curVal) 5)
-                , if showXp then
-                    monospace [ width fill ] <| text <| "XP: " ++ padLeft (String.fromInt monster.xp) 6
-
-                  else
-                    Element.none
+                , monospace [] <| text <| "Pwr: " ++ padLeft (String.fromInt monster.powerStat.curVal) 5
                 ]
+                    ++ (if showXp then
+                            [ monospace [ width fill ] <| text <| "XP: " ++ padLeft (String.fromInt monster.xp) 6 ]
+
+                        else
+                            []
+                       )
 
         DeadMonster monster ->
             column []

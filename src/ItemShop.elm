@@ -2308,6 +2308,15 @@ pickMonsterToSpawn seed =
     ( Maybe.withDefault skeleton maybeChosen, newSeed )
 
 
+calculateXpValue : Monster -> Int
+calculateXpValue monster =
+    (monster.powerStat.curVal * monster.hpStat.curVal)
+        |> toFloat
+        |> (/) 5
+        |> round
+        |> max 1
+
+
 updateBattleMsg : BattleModel -> BattleMsg -> ( BattleModel, Cmd BattleMsg )
 updateBattleMsg battleModel battleMsg =
     case battleMsg of

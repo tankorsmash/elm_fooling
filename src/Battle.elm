@@ -80,8 +80,8 @@ type alias IntStat =
     }
 
 
-newStat : Int -> IntStat
-newStat maxVal =
+initStat : Int -> IntStat
+initStat maxVal =
     { curVal = maxVal
     , initialVal = maxVal
     , maxVal = maxVal
@@ -116,6 +116,58 @@ type alias Monster =
     , statProtection : IntStat
     , xp : Int
     }
+
+
+monsterStatMap :
+    (Monster -> IntStat)
+    -> (Monster -> IntStat -> Monster)
+    -> (IntStat -> IntStat)
+    -> Monster
+    -> Monster
+monsterStatMap statGetter statSetter statFunc monster =
+    let
+        intStat =
+            statGetter monster
+
+        newStat =
+            statFunc intStat
+    in
+    statSetter monster newStat
+
+
+setStatHP : Monster -> IntStat -> Monster
+setStatHP monster newStatHP =
+    { monster | statHP = newStatHP }
+
+
+setStatStamina : Monster -> IntStat -> Monster
+setStatStamina monster newStatStamina =
+    { monster | statStamina = newStatStamina }
+
+
+setStatPower : Monster -> IntStat -> Monster
+setStatPower monster newStatPower =
+    { monster | statPower = newStatPower }
+
+
+setStatProtection : Monster -> IntStat -> Monster
+setStatProtection monster newStatProtection =
+    { monster | statProtection = newStatProtection }
+
+
+setHpTo value monster =
+    let
+        hpStat =
+            monster.hpStat
+
+        newHpStat =
+            { hpStat | curVal = value }
+    in
+    { monster | hpStat = newHpStat }
+
+
+setStatToMax intStat =
+    { intStat | curVal = intStat.maxVal }
 
 
 type DamagedMonster
@@ -239,18 +291,11 @@ update model battleMsg =
                     case model.golem of
                         LivingMonster golem ->
                             LivingMonster <|
-                                { golem
-                                    | statHP =
-                                        setStatCurVal
-                                            golem.statHP.maxVal
-                                            golem.statHP
-                                }
+                                monsterStatMap .statHP setStatHP setStatToMax golem
 
                         DeadMonster golem ->
                             LivingMonster <|
-                                { golem
-                                    | statHP = setStatCurVal golem.statHP.maxVal golem.statHP
-                                }
+                                monsterStatMap .statHP setStatHP setStatToMax golem
             in
             ( { model | golem = newGolem }, Cmd.none )
 
@@ -292,10 +337,10 @@ padStatStrBar leftNum rightNum =
 createMonster : String -> Int -> Int -> Int -> Monster
 createMonster name hpMax pwrMax protMax =
     { name = name
-    , statHP = newStat hpMax
-    , statStamina = newStat 10
-    , statPower = newStat pwrMax
-    , statProtection = newStat protMax
+    , statHP = initStat hpMax
+    , statStamina = initStat 10
+    , statPower = initStat pwrMax
+    , statProtection = initStat protMax
     , xp = 0
     }
 

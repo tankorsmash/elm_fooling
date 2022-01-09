@@ -66,7 +66,8 @@ import UUID exposing (UUID)
 
 
 type Msg
-    = Fight
+    = Noop
+    | Fight
     | FindNewEnemy
     | ToggleShowExpandedLogs
 
@@ -209,6 +210,9 @@ updateFight model =
 update : Model -> Msg -> ( Model, Cmd Msg )
 update model battleMsg =
     case battleMsg of
+        Noop ->
+            ( model, Cmd.none )
+
         Fight ->
             updateFight model
 
@@ -353,12 +357,15 @@ view model =
             , column [ centerX ]
                 [ let
                     ( msg, txt ) =
-                        case model.enemyMonster of
-                            LivingMonster _ ->
+                        case ( model.golem, model.enemyMonster ) of
+                            ( LivingMonster _, LivingMonster _ ) ->
                                 ( Fight, "Fight" )
 
-                            DeadMonster _ ->
+                            ( LivingMonster _, DeadMonster _ ) ->
                                 ( FindNewEnemy, "New Enemy" )
+
+                            ( DeadMonster _, _ ) ->
+                                ( Noop, "You're dead" )
                   in
                   UI.primary_button [ width (fill |> Element.minimum 125) ] msg txt
                 ]

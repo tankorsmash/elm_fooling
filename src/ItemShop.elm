@@ -477,6 +477,7 @@ type alias Monster =
     , hpStat : IntStat
     , spStat : IntStat
     , powerStat : IntStat
+    , protectionStat : IntStat
     , xp : Int
     }
 
@@ -1419,18 +1420,19 @@ create_character char_id name =
 
 
 createMonster : String -> Int -> Int -> Int -> Monster
-createMonster name hpMax spMax pwrMax =
+createMonster name hpMax pwrMax protMax =
     { name = name
     , hpStat = newStat hpMax
-    , spStat = newStat spMax
+    , spStat = newStat 10
     , powerStat = newStat pwrMax
+    , protectionStat = newStat protMax
     , xp = 0
     }
 
 
 initBattleModel : BattleModel
 initBattleModel =
-    { golem = LivingMonster <| createMonster "Golem" 10 10 10
+    { golem = LivingMonster <| createMonster "Golem" 10 10 0
     , enemyMonster =
         createMonster "Slime" 10 2 5
             |> (\s -> { s | hpStat = s.hpStat |> setStatCurVal 4 })
@@ -2291,15 +2293,15 @@ pickMonsterToSpawn seed =
 
         monsters =
             [ skeleton
-            , createMonster "Ogre" 15 5 8
-            , createMonster "Goblin" 10 5 2
-            , createMonster "Mimic" 20 5 3
-            , createMonster "Titan" 50 5 5
-            , createMonster "Fae" 10 5 2
-            , createMonster "Rat" 12 5 3
-            , createMonster "Water Elemental" 12 5 5
-            , createMonster "Fire Elemental" 11 5 4
-            , createMonster "Earth Elemental" 9 5 6
+            , createMonster "Ogre" 15 8 2
+            , createMonster "Goblin" 10 2 0
+            , createMonster "Mimic" 20 3 0
+            , createMonster "Titan" 50 5 3
+            , createMonster "Fae" 10 2 0
+            , createMonster "Rat" 12 3 0
+            , createMonster "Water Elemental" 12 0 2
+            , createMonster "Fire Elemental" 11 4 2
+            , createMonster "Earth Elemental" 9 6 2
             ]
 
         ( ( maybeChosen, unChosen ), newSeed ) =
@@ -5102,6 +5104,7 @@ viewMonsterInBattle damagedMonster showXp =
                 , monospace [] <| text <| "HP: " ++ padStatBar monster.hpStat
                 , monospace [] <| text <| "SP: " ++ padStatBar monster.spStat
                 , monospace [] <| text <| "Pwr: " ++ padLeft (String.fromInt monster.powerStat.curVal) 5
+                , monospace [] <| text <| "Prt: " ++ padLeft (String.fromInt monster.protectionStat.curVal) 5
                 ]
                     ++ (if showXp then
                             [ monospace [ width fill ] <| text <| "XP: " ++ padLeft (String.fromInt monster.xp) 6 ]

@@ -148,7 +148,7 @@ type alias Model =
 
 init : Model
 init =
-    { golem = LivingMonster <| createMonster "Golem" 10 10 0
+    { golem = LivingMonster <| createMonster "Golem" 50 10 0
     , enemyMonster =
         createMonster "Slime" 10 2 5
             |> (\s -> { s | hpStat = s.hpStat |> setStatCurVal 4 })
@@ -335,12 +335,11 @@ viewSingleFightLog expandedLog fightLog =
 viewFightLog : Bool -> List FightLog -> Element Msg
 viewFightLog expandedLog fightLogs =
     column [ width fill, spacing 5 ] <|
-        [ UI.outline_button [ centerX ] ToggleShowExpandedLogs "Toggle" ]
-            ++ (fightLogs
-                    |> List.reverse
-                    |> List.take 10
-                    |> List.map (viewSingleFightLog expandedLog)
-               )
+        (fightLogs
+            |> List.reverse
+            |> List.take 10
+            |> List.map (viewSingleFightLog expandedLog)
+        )
 
 
 explain =
@@ -380,7 +379,34 @@ view model =
                 , row [ width <| fillPortion 1 ] []
                 ]
             ]
-        , el [ width fill ] <| viewFightLog model.showExpandedLogs model.fightLogs
+        , row [ width fill ]
+            [ el [ width <| fillPortion 4, alignTop ] <| viewFightLog model.showExpandedLogs model.fightLogs
+            , column [ width <| fillPortion 2, alignTop ]
+                [ el [ centerX, width (fill |> Element.maximum 150)] <|
+                    UI.outline_button
+                        [ centerX, width fill ]
+                        ToggleShowExpandedLogs
+                        "Details"
+                , column [ width fill, spacing 1, padding 10 ]
+                    [ UI.outline_button
+                        [ centerX, width (fill |> Element.maximum 150) ]
+                        Noop
+                        "Heal (No-op)"
+                    , UI.outline_button
+                        [ centerX, width (fill |> Element.maximum 150) ]
+                        Noop
+                        "Strengthen (No-op)"
+                    , UI.outline_button
+                        [ centerX, width (fill |> Element.maximum 150) ]
+                        Noop
+                        "Harden (No-op)"
+                    ]
+                , UI.outline_button
+                    [ centerX, width (fill |> Element.maximum 150) ]
+                    Noop
+                    "Back (No-op)"
+                ]
+            ]
         ]
 
 

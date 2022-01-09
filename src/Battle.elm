@@ -167,7 +167,7 @@ update model battleMsg =
                                 ( LivingMonster newGolem_, DeadMonster deadEnemy, fightLogs_ ) ->
                                     ( LivingMonster (increaseMonsterXpByMonster newGolem_ deadEnemy)
                                     , DeadMonster deadEnemy
-                                    , fightLogs_ ++ [MonsterKilledMonster newGolem_ deadEnemy]
+                                    , fightLogs_ ++ [ MonsterKilledMonster newGolem_ deadEnemy ]
                                     )
 
                                 --if no dead enemy, proceed as normal
@@ -257,6 +257,41 @@ viewMonsterInBattle damagedMonster showXp =
                 ]
 
 
+viewSingleFightLog : Bool -> FightLog -> Element Msg
+viewSingleFightLog expandedLog fightLog =
+    if expandedLog then
+        case fightLog of
+            MonsterAttackedMonster { attacker, defender, attackerPower, defenderProtection, damageTaken } ->
+                paragraph [] [ text "attack log" ]
+
+            FoundNewMonster newMonster ->
+                paragraph [] [ text "found new monster" ]
+
+            MonsterKilledMonster attacker deadMonster ->
+                paragraph [] [ text "attacker killed monster" ]
+
+    else
+        case fightLog of
+            MonsterAttackedMonster { attacker, defender, attackerPower, defenderProtection, damageTaken } ->
+                paragraph [] [ text <| attacker.name ++ " attacked " ++ defender.name ++ " for " ++ String.fromInt damageTaken ++ " total damage." ]
+
+            FoundNewMonster newMonster ->
+                paragraph [] [ text <| "Found new monster: " ++ newMonster.name ]
+
+            MonsterKilledMonster attacker deadMonster ->
+                paragraph [] [ text <| attacker.name ++ " killed " ++ deadMonster.name ]
+
+
+viewFightLog : Bool -> List FightLog -> Element Msg
+viewFightLog expandedLog fightLogs =
+    column [ width fill, spacing 5 ] <|
+        (fightLogs
+            |> List.reverse
+            |> List.take 10
+            |> List.map (viewSingleFightLog expandedLog)
+        )
+
+
 view : Model -> Element Msg
 view model =
     column [ width fill, Font.size 16 ]
@@ -283,11 +318,7 @@ view model =
                 , row [ width <| fillPortion 1 ] []
                 ]
             ]
-        , column [ width fill, spacing 5 ]
-            [ paragraph [] [ text "The battle has begun!" ]
-            , paragraph [] [ text "Golem deals 2 damage to Slime." ]
-            , paragraph [] [ text "Slime attacks Golem, but misses." ]
-            ]
+        , el [ width fill ] <| viewFightLog False model.fightLogs
         ]
 
 

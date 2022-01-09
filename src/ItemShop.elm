@@ -1,5 +1,7 @@
 module ItemShop exposing (Model, Msg, add_to_average, init, sub_from_average, subscriptions, suite, update, view)
 
+import Interface as UI exposing (ColorTheme(..))
+import Battle
 import Array
 import Browser.Dom
 import Browser.Events
@@ -214,10 +216,6 @@ type SpecialAction
     | IncreaseIncome
 
 
-type BattleMsg
-    = Fight
-    | FindNewEnemy
-
 
 type Msg
     = Noop
@@ -247,7 +245,7 @@ type Msg
     | GotShowDebugElement (Result Browser.Dom.Error Browser.Dom.Element)
     | SacrificeItem Item
     | ToggleColorTheme
-    | GotBattleMsg BattleMsg
+    | GotBattleMsg Battle.Msg
 
 
 type alias TradeOrder =
@@ -436,64 +434,6 @@ type alias Characters =
 type alias CharacterId =
     UUID
 
-
-type alias IntStat =
-    { curVal : Int
-    , initialVal : Int
-    , maxVal : Int
-    }
-
-
-newStat : Int -> IntStat
-newStat maxVal =
-    { curVal = maxVal
-    , initialVal = maxVal
-    , maxVal = maxVal
-    }
-
-
-setStatCurVal : Int -> IntStat -> IntStat
-setStatCurVal newCurVal stat =
-    { stat | curVal = newCurVal }
-
-
-addStatCurVal : Int -> IntStat -> IntStat
-addStatCurVal addedCurVal stat =
-    { stat | curVal = stat.curVal + addedCurVal }
-
-
-setStatMaxVal : Int -> IntStat -> IntStat
-setStatMaxVal newMaxVal stat =
-    { stat | maxVal = newMaxVal }
-
-
-setStatInitialVal : Int -> IntStat -> IntStat
-setStatInitialVal newInitialVal stat =
-    { stat | initialVal = newInitialVal }
-
-
-type alias Monster =
-    { name : String
-    , hpStat : IntStat
-    , spStat : IntStat
-    , powerStat : IntStat
-    , protectionStat : IntStat
-    , xp : Int
-    }
-
-
-type DamagedMonster
-    = LivingMonster Monster
-    | DeadMonster Monster
-
-
-type alias BattleModel =
-    { golem : DamagedMonster
-    , enemyMonster : DamagedMonster
-    , battleSeed : Random.Seed
-    }
-
-
 type alias TrendSnapshot =
     { time : Time.Posix, item_type : ItemType, value : Float }
 
@@ -638,13 +578,8 @@ type PlayerActionLog
     | TookSpecialActionUnlockItem ItemId
 
 
-type ColorTheme
-    = BrightTheme
-    | DarkTheme
-
-
 type alias Model =
-    { colorTheme : ColorTheme
+    { colorTheme : UI.ColorTheme
     , player_id : CharacterId
     , player_upgrades : List PlayerUpgrade
     , shop_id : CharacterId
@@ -669,7 +604,7 @@ type alias Model =
     , globalViewport : Maybe Browser.Dom.Viewport
     , showDebugInventoriesElement : Maybe Browser.Dom.Element
     , shouldDisplayShowDebugInventoriesOverlay : Bool
-    , battleModel : BattleModel
+    , battleModel : Battle.Model
     }
 
 
@@ -1081,263 +1016,6 @@ get_single_adjusted_item_cost : ShopTrends -> Item -> Int
 get_single_adjusted_item_cost shop_trends item =
     get_adjusted_item_cost shop_trends item (Quantity 1)
 
-
-color_white : Color
-color_white =
-    rgb 1 1 1
-
-
-color_black : Color
-color_black =
-    rgb 0 0 0
-
-
-hex_to_color : String -> Color
-hex_to_color hex_str =
-    case Convert.hexToColor hex_str of
-        Ok color ->
-            let
-                -- convert to a Color lib Color record
-                rgba =
-                    Color.toRgba color
-            in
-            -- from the Color record, call the ElmUI `rgb` func
-            rgb rgba.red rgba.green rgba.blue
-
-        Err err ->
-            Debug.todo "NOOO" <| rgb255 255 0 0
-
-
-{-| lightest green at 1, darkest at 7
--}
-color_pastel_green_1 : Color
-color_pastel_green_1 =
-    hex_to_color "#b4ecb4"
-
-
-color_pastel_green_2 : Color
-color_pastel_green_2 =
-    hex_to_color "#a0e7a0"
-
-
-color_pastel_green_3 : Color
-color_pastel_green_3 =
-    hex_to_color "#8be28b"
-
-
-color_pastel_green_4 : Color
-color_pastel_green_4 =
-    hex_to_color "#77dd77"
-
-
-color_pastel_green_5 : Color
-color_pastel_green_5 =
-    hex_to_color "#63d863"
-
-
-color_pastel_green_6 : Color
-color_pastel_green_6 =
-    hex_to_color "#4ed34e"
-
-
-color_pastel_green_7 : Color
-color_pastel_green_7 =
-    hex_to_color "#3ace3a"
-
-
-{-| lightest red at 1, darkest at 7
--}
-color_pastel_red_1 : Color
-color_pastel_red_1 =
-    hex_to_color "#ecb4b4"
-
-
-color_pastel_red_2 : Color
-color_pastel_red_2 =
-    hex_to_color "#e7a0a0"
-
-
-color_pastel_red_3 : Color
-color_pastel_red_3 =
-    hex_to_color "#e28b8b"
-
-
-color_pastel_red_4 : Color
-color_pastel_red_4 =
-    hex_to_color "#dd7777"
-
-
-color_pastel_red_5 : Color
-color_pastel_red_5 =
-    hex_to_color "#d86363"
-
-
-color_pastel_red_6 : Color
-color_pastel_red_6 =
-    hex_to_color "#d34e4e"
-
-
-color_pastel_red_7 : Color
-color_pastel_red_7 =
-    hex_to_color "#ce3a3a"
-
-
-color_secondary : Color
-color_secondary =
-    convertColor Color.charcoal
-
-
-color_danger : Color
-color_danger =
-    convertColor Color.red
-
-
-color_danger_bright : Color
-color_danger_bright =
-    convertColor Color.lightRed
-
-
-color_primary : Color
-color_primary =
-    convertColor Color.blue
-
-
-primary_color_bright : Color
-primary_color_bright =
-    convertColor Color.lightBlue
-
-
-type alias ButtonConfig =
-    { font_color : Color
-    , button_color : Color
-    , hovered_button_color : Color
-    , hovered_font_color : Color
-    }
-
-
-common_button_attrs : ButtonConfig -> List (Element.Attribute Msg)
-common_button_attrs { font_color, button_color, hovered_button_color, hovered_font_color } =
-    [ -- bs4-like values
-      Font.color font_color
-    , Font.size 16
-    , Font.center
-    , padding 6
-    , Background.color button_color
-    , Border.rounded 5
-    , Border.width 5
-    , Border.color button_color
-    , Element.mouseOver
-        [ Background.color <| hovered_button_color
-        , Border.color <| hovered_button_color
-        , Font.color <| rgb 0 0 0
-        ]
-    ]
-
-
-primary_button_custom : List (Element.Attribute Msg) -> Msg -> Element Msg -> Element Msg
-primary_button_custom custom_attrs on_press label =
-    Input.button
-        (common_button_attrs
-            { font_color = color_white
-            , button_color = color_primary
-            , hovered_button_color = primary_color_bright
-            , hovered_font_color = color_black
-            }
-            ++ custom_attrs
-        )
-        { onPress = Just on_press, label = label }
-
-
-primary_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
-primary_button custom_attrs on_press label =
-    primary_button_custom custom_attrs on_press (text label)
-
-
-secondary_button_custom : List (Element.Attribute Msg) -> Msg -> Element Msg -> Element Msg
-secondary_button_custom custom_attrs on_press label =
-    Input.button
-        (common_button_attrs
-            { font_color = color_white
-            , button_color = color_secondary
-            , hovered_button_color = color_secondary --_bright
-            , hovered_font_color = color_black
-            }
-            ++ custom_attrs
-        )
-        { onPress = Just on_press, label = label }
-
-
-secondary_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
-secondary_button custom_attrs on_press label =
-    secondary_button_custom custom_attrs on_press (text label)
-
-
-outline_button_custom : List (Element.Attribute Msg) -> Msg -> Element Msg -> Element Msg
-outline_button_custom custom_attrs on_press label =
-    Input.button
-        ([ -- bs4-like values
-           Font.color color_secondary
-         , Font.size 16
-         , Font.center
-         , padding 9
-         , Background.color color_white
-         , Border.rounded 5
-         , Border.width 2
-         , Border.color color_secondary
-         , Element.mouseOver
-            [ Background.color <| color_secondary
-            , Font.color <| color_white
-            ]
-         ]
-            ++ custom_attrs
-        )
-        { onPress = Just on_press, label = label }
-
-
-outline_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
-outline_button custom_attrs on_press label =
-    outline_button_custom custom_attrs on_press (text label)
-
-
-
--- this doesn't help me so far
-
-
-scrollbarYEl : List (Element.Attribute msg) -> Element msg -> Element msg
-scrollbarYEl custom_attrs body =
-    el [ height fill, width fill ] <|
-        el
-            ([ Element.htmlAttribute <| Html.Attributes.style "position" "absolute"
-             , Element.htmlAttribute <| Html.Attributes.style "top" "0"
-             , Element.htmlAttribute <| Html.Attributes.style "right" "0"
-             , Element.htmlAttribute <| Html.Attributes.style "bottom" "0"
-             , Element.htmlAttribute <| Html.Attributes.style "left" "0"
-             , Element.scrollbarY
-             ]
-                ++ custom_attrs
-            )
-            body
-
-
-danger_button_custom : List (Element.Attribute Msg) -> Msg -> Element Msg -> Element Msg
-danger_button_custom custom_attrs on_press label =
-    Input.button
-        (common_button_attrs
-            { font_color = color_white
-            , button_color = color_danger
-            , hovered_button_color = color_danger_bright
-            , hovered_font_color = color_black
-            }
-            ++ custom_attrs
-        )
-        { onPress = Just on_press, label = label }
-
-
-danger_button : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
-danger_button custom_attrs on_press label_str =
-    danger_button_custom custom_attrs on_press <| text label_str
-
-
 no_text_decoration : Element.Attribute msg
 no_text_decoration =
     Element.htmlAttribute <| Html.Attributes.style "text-decoration" "inherit"
@@ -1419,28 +1097,6 @@ create_character char_id name =
     }
 
 
-createMonster : String -> Int -> Int -> Int -> Monster
-createMonster name hpMax pwrMax protMax =
-    { name = name
-    , hpStat = newStat hpMax
-    , spStat = newStat 10
-    , powerStat = newStat pwrMax
-    , protectionStat = newStat protMax
-    , xp = 0
-    }
-
-
-initBattleModel : BattleModel
-initBattleModel =
-    { golem = LivingMonster <| createMonster "Golem" 10 10 0
-    , enemyMonster =
-        createMonster "Slime" 10 2 5
-            |> (\s -> { s | hpStat = s.hpStat |> setStatCurVal 4 })
-            |> LivingMonster
-    , battleSeed = Random.initialSeed 123456
-    }
-
-
 init : String -> ( Model, Cmd Msg )
 init hash =
     let
@@ -1490,7 +1146,7 @@ init hash =
                     ShopTabType
 
         battleModel =
-            initBattleModel
+            Battle.init
     in
     ( { colorTheme = BrightTheme
       , player_id = player.char_id
@@ -2247,7 +1903,7 @@ update msg model =
         GotBattleMsg battleMsg ->
             let
                 ( newBattleModel, newBattleCmds ) =
-                    updateBattleMsg model.battleModel battleMsg
+                    Battle.update model.battleModel battleMsg
             in
             ( { model | battleModel = newBattleModel }, Cmd.map GotBattleMsg newBattleCmds )
 
@@ -2256,116 +1912,6 @@ update msg model =
 --- END OF UPDATE
 
 
-monsterTakeDamage : Int -> Monster -> DamagedMonster
-monsterTakeDamage damageToTake monster =
-    let
-        newMonster : Monster
-        newMonster =
-            { monster | hpStat = addStatCurVal -damageToTake monster.hpStat }
-    in
-    if newMonster.hpStat.curVal > 0 then
-        LivingMonster newMonster
-
-    else
-        DeadMonster newMonster
-
-
-monsterFightsMonster : Monster -> Monster -> ( DamagedMonster, DamagedMonster )
-monsterFightsMonster attacker defender =
-    let
-        damageToTake =
-            attacker.powerStat.curVal
-                - defender.protectionStat.curVal
-                |> max 1
-
-        newAttacker =
-            LivingMonster attacker
-
-        newDefender =
-            monsterTakeDamage damageToTake defender
-    in
-    ( newAttacker, newDefender )
-
-
-pickMonsterToSpawn : Random.Seed -> ( Monster, Random.Seed )
-pickMonsterToSpawn seed =
-    let
-        skeleton =
-            createMonster "Skeleton" 15 5 5
-
-        monsters =
-            [ skeleton
-            , createMonster "Ogre" 15 8 2
-            , createMonster "Goblin" 10 2 0
-            , createMonster "Mimic" 20 3 0
-            , createMonster "Titan" 50 5 3
-            , createMonster "Fae" 10 2 0
-            , createMonster "Rat" 12 3 0
-            , createMonster "Water Elemental" 12 0 2
-            , createMonster "Fire Elemental" 11 4 2
-            , createMonster "Earth Elemental" 9 6 2
-            ]
-
-        ( ( maybeChosen, unChosen ), newSeed ) =
-            Random.step (Random.List.choose monsters) seed
-    in
-    ( Maybe.withDefault skeleton maybeChosen, newSeed )
-
-
-calculateXpValue : Monster -> Int
-calculateXpValue monster =
-    (monster.powerStat.maxVal * monster.hpStat.maxVal)
-        |> toFloat
-        |> (\val -> val / 10)
-        |> round
-        |> max 1
-
-
-increaseMonsterXpByMonster : Monster -> Monster -> Monster
-increaseMonsterXpByMonster monster otherMonster =
-    { monster | xp = monster.xp + calculateXpValue otherMonster }
-
-
-updateBattleMsg : BattleModel -> BattleMsg -> ( BattleModel, Cmd BattleMsg )
-updateBattleMsg battleModel battleMsg =
-    case battleMsg of
-        Fight ->
-            case ( battleModel.golem, battleModel.enemyMonster ) of
-                ( LivingMonster golem, LivingMonster enemyMonster ) ->
-                    let
-                        ( newGolem, damagedEnemyMonster ) =
-                            case monsterFightsMonster golem enemyMonster of
-                                ( LivingMonster newGolem_, DeadMonster deadEnemy ) ->
-                                    ( LivingMonster (increaseMonsterXpByMonster newGolem_ deadEnemy)
-                                    , DeadMonster deadEnemy
-                                    )
-
-                                --if no dead enemy, proceed as normal
-                                -- TODO: handle dead golem
-                                ( g, e ) ->
-                                    ( g, e )
-                    in
-                    ( { battleModel
-                        | golem = newGolem
-                        , enemyMonster = damagedEnemyMonster
-                      }
-                    , Cmd.none
-                    )
-
-                _ ->
-                    Debug.log "dead something" ( battleModel, Cmd.none )
-
-        FindNewEnemy ->
-            let
-                ( newMonster, newSeed ) =
-                    pickMonsterToSpawn battleModel.battleSeed
-            in
-            ( { battleModel
-                | enemyMonster = LivingMonster <| newMonster
-                , battleSeed = newSeed
-              }
-            , Cmd.none
-            )
 
 
 generate_uuid : String -> UUID.UUID
@@ -2832,22 +2378,6 @@ signedFromInt int =
     else
         String.fromInt int
 
-
-convertColor : Color.Color -> Element.Color
-convertColor color =
-    Element.fromRgb <| Color.toRgba <| color
-
-
-colorFromInt : Int -> Color -> Color -> Color -> Color
-colorFromInt int positiveColor neutralColor negativeColor =
-    if int > 0 then
-        positiveColor
-
-    else if int == 0 then
-        neutralColor
-
-    else
-        negativeColor
 
 
 {-| items the character can afford and desires at least a little
@@ -3330,46 +2860,46 @@ update_ai_chars model =
 get_trend_color : Float -> Color
 get_trend_color trend =
     if trend > 1.65 then
-        color_pastel_red_7
+        UI.color_pastel_red_7
 
     else if trend > 1.55 then
-        color_pastel_red_6
+        UI.color_pastel_red_6
 
     else if trend > 1.45 then
-        color_pastel_red_5
+        UI.color_pastel_red_5
 
     else if trend > 1.35 then
-        color_pastel_red_4
+        UI.color_pastel_red_4
 
     else if trend > 1.25 then
-        color_pastel_red_3
+        UI.color_pastel_red_3
 
     else if trend > 1.15 then
-        color_pastel_red_2
+        UI.color_pastel_red_2
 
     else if trend > 1.0 then
-        color_pastel_red_1
+        UI.color_pastel_red_1
 
     else if trend < 0.45 then
-        color_pastel_green_7
+        UI.color_pastel_green_7
 
     else if trend < 0.55 then
-        color_pastel_green_6
+        UI.color_pastel_green_6
 
     else if trend < 0.65 then
-        color_pastel_green_5
+        UI.color_pastel_green_5
 
     else if trend < 0.75 then
-        color_pastel_green_4
+        UI.color_pastel_green_4
 
     else if trend < 0.85 then
-        color_pastel_green_3
+        UI.color_pastel_green_3
 
     else if trend < 0.95 then
-        color_pastel_green_2
+        UI.color_pastel_green_2
 
     else if trend < 1.0 then
-        color_pastel_green_1
+        UI.color_pastel_green_1
 
     else
         rgb 0 0 0
@@ -3401,96 +2931,6 @@ render_item_type shop_trends item_type =
         , el ([ Font.color trend_color ] ++ trend_shadow) <| text pretty_trend
         ]
 
-
-clipText : String -> Int -> String
-clipText str length =
-    if String.length str > length then
-        String.left length str ++ "..."
-
-    else
-        str
-
-
-color_grey : Color
-color_grey =
-    rgb 0.35 0.35 0.35
-
-
-color_very_light_grey : Color
-color_very_light_grey =
-    rgb 0.75 0.75 0.75
-
-
-color_very_very_light_grey : Color
-color_very_very_light_grey =
-    rgb 0.85 0.85 0.85
-
-
-color_ultra_light_grey : Color
-color_ultra_light_grey =
-    rgb 0.95 0.95 0.95
-
-
-color_light_grey : Color
-color_light_grey =
-    rgb 0.55 0.55 0.55
-
-
-font_grey : Element.Attribute msg
-font_grey =
-    Font.color <| color_grey
-
-
-font_blood : Element.Attribute msg
-font_blood =
-    Font.color <| color_danger
-
-
-render_gp : ColorTheme -> Int -> Element msg
-render_gp colorTheme count =
-    render_gp_sized colorTheme count 12
-
-
-render_gp_string : ColorTheme -> Int -> String
-render_gp_string colorTheme count =
-    String.fromInt count ++ "gp"
-
-
-render_gp_sized : ColorTheme -> Int -> Int -> Element msg
-render_gp_sized colorTheme count font_size =
-    paragraph []
-        [ text <| String.fromInt count
-        , Element.el
-            [ Font.size font_size
-            , case colorTheme of
-                BrightTheme ->
-                    font_grey
-
-                DarkTheme ->
-                    Font.color <| hex_to_color "#777439"
-            ]
-            (text "gp")
-        ]
-
-
-renderBlood : Int -> Element msg
-renderBlood count =
-    renderBlood_sized count 12
-
-
-renderBlood_string : Int -> String
-renderBlood_string count =
-    String.fromInt count ++ "gp"
-
-
-renderBlood_sized : Int -> Int -> Element msg
-renderBlood_sized count font_size =
-    paragraph []
-        [ text <| String.fromInt count
-        , Element.el [ Font.size font_size, font_blood ] (text "blood")
-        ]
-
-
 shop_buy_button : Int -> Int -> InventoryRecord -> Element Msg
 shop_buy_button gold_cost gold_in_pocket { item, quantity, avg_price } =
     let
@@ -3499,10 +2939,10 @@ shop_buy_button gold_cost gold_in_pocket { item, quantity, avg_price } =
 
         button_type =
             if can_afford then
-                primary_button
+                UI.primary_button
 
             else
-                secondary_button
+                UI.secondary_button
     in
     button_type
         [ getQuantity quantity < 1 |> Element.transparent
@@ -3522,10 +2962,10 @@ shop_sell_button has_items_to_sell_ { item } =
     let
         button_type =
             if has_items_to_sell_ then
-                primary_button
+                UI.primary_button
 
             else
-                secondary_button
+                UI.secondary_button
 
         buttonText =
             if has_items_to_sell_ then
@@ -3600,7 +3040,7 @@ border_bottom bord =
     Border.widthEach { bottom = bord, left = 0, right = 0, top = 0 }
 
 
-render_single_trade_log_entry : ColorTheme -> ItemDb -> List Character -> ItemTradeLog -> Element msg
+render_single_trade_log_entry : UI.ColorTheme -> ItemDb -> List Character -> ItemTradeLog -> Element msg
 render_single_trade_log_entry colorTheme item_db all_characters trade_log =
     let
         { from_party, to_party, item_id, quantity, gold_cost } =
@@ -3614,7 +3054,7 @@ render_single_trade_log_entry colorTheme item_db all_characters trade_log =
 
         rendered_cost : Element msg
         rendered_cost =
-            render_gp colorTheme gold_cost
+            UI.render_gp colorTheme gold_cost
 
         item_name =
             case maybe_item of
@@ -3691,11 +3131,8 @@ render_single_trade_log_entry colorTheme item_db all_characters trade_log =
                 ]
 
 
-monospace attrs el =
-    Element.el (Font.family [ Font.monospace ] :: attrs) el
 
-
-trends_display : ColorTheme -> Bool -> ItemDb -> ShopTrends -> List Character -> Bool -> Element.Element Msg
+trends_display : UI.ColorTheme -> Bool -> ItemDb -> ShopTrends -> List Character -> Bool -> Element.Element Msg
 trends_display colorTheme shiftIsPressed item_db shop_trends all_characters is_expanded =
     let
         render_single_popularity : ( Int, Float ) -> Element.Element msg
@@ -3713,7 +3150,7 @@ trends_display colorTheme shiftIsPressed item_db shop_trends all_characters is_e
             paragraph []
                 [ text <| pretty_type
                 , text ": "
-                , monospace [] <|
+                , UI.monospace [] <|
                     text <|
                         ((popularity * 100)
                             |> round
@@ -3774,10 +3211,10 @@ trends_display colorTheme shiftIsPressed item_db shop_trends all_characters is_e
                         [ Font.color <|
                             case colorTheme of
                                 BrightTheme ->
-                                    color_grey
+                                    UI.color_grey
 
                                 DarkTheme ->
-                                    convertColor Color.lightGrey
+                                    UI.convertColor Color.lightGrey
                         , Font.size 12
                         , width fill
                         , Element.spaceEvenly
@@ -3836,7 +3273,7 @@ divider =
         Element.el
             [ width fill
             , border_bottom 1
-            , Border.color color_very_light_grey
+            , Border.color UI.color_very_light_grey
             ]
         <|
             Element.none
@@ -4026,7 +3463,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
         rendered_inventory_controls : List (Element Msg)
         rendered_inventory_controls =
             [ row [ spacingXY 10 0 ]
-                [ primary_button []
+                [ UI.primary_button []
                     (ToggleHideNonZeroRows character.char_id)
                     (if hide_zero_qty_inv_rows then
                         "Show Nonzero"
@@ -4034,7 +3471,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                      else
                         "Hide Nonzero"
                     )
-                , secondary_button
+                , UI.secondary_button
                     [ Html.Events.preventDefaultOn "contextmenu"
                         (Decode.succeed <| ( CycleFilterDisplayedItemsBackward character.char_id character.displayedItemType, True ))
                         |> Element.htmlAttribute
@@ -4092,10 +3529,10 @@ render_inventory_grid model header character shop_trends hovered_item context co
                                     , Font.color <|
                                         case model.colorTheme of
                                             BrightTheme ->
-                                                color_grey
+                                                UI.color_grey
 
                                             DarkTheme ->
-                                                convertColor Color.white
+                                                UI.convertColor Color.white
                                     , Font.size 12
                                     ]
                                 <|
@@ -4106,7 +3543,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                             ]
                         , paragraph [] <|
                             [ text "Current Price: "
-                            , render_gp model.colorTheme (current_price item)
+                            , UI.render_gp model.colorTheme (current_price item)
                             ]
                                 ++ (if
                                         is_item_trending
@@ -4116,7 +3553,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                                             /= current_price item
                                     then
                                         [ text " (originally "
-                                        , render_gp model.colorTheme item.raw_gold_cost
+                                        , UI.render_gp model.colorTheme item.raw_gold_cost
                                         , text ")"
                                         ]
 
@@ -4159,7 +3596,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                                    , centerY
                                    ]
                             )
-                            (text (clipText item.name 25))
+                            (text (UI.clipText item.name 25))
               }
             , { header = small_header "Price"
               , width = fillPortion 1
@@ -4176,13 +3613,13 @@ render_inventory_grid model header character shop_trends hovered_item context co
                                     adjustedPrice - getPrice avg_price
                             in
                             paragraph [] <|
-                                [ render_gp model.colorTheme <|
+                                [ UI.render_gp model.colorTheme <|
                                     get_single_adjusted_item_cost shop_trends item
                                 ]
                                     ++ [ if context /= ShopItems && priceDiff /= 0 && getQuantity quantity /= 0 then
                                             let
                                                 diffColor =
-                                                    colorFromInt priceDiff (convertColor Color.green) color_black color_danger
+                                                    UI.colorFromInt priceDiff (UI.convertColor Color.green) UI.color_black UI.color_danger
                                             in
                                             el [ Font.size 12, Font.color diffColor ] <| text <| " (" ++ signedFromInt priceDiff ++ ")"
 
@@ -4203,7 +3640,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
 
                                 _ ->
                                     if getQuantity quantity /= 0 then
-                                        render_gp model.colorTheme <| getPrice avg_price
+                                        UI.render_gp model.colorTheme <| getPrice avg_price
 
                                     else
                                         Element.none
@@ -4241,7 +3678,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
             , { header = small_header "Item Desc."
               , width = fillPortion 3
               , view =
-                    \{ item } -> el [ centerY ] <| text <| clipText item.description 24
+                    \{ item } -> el [ centerY ] <| text <| UI.clipText item.description 24
               }
             , { header = small_header "Controls"
               , width = fillPortion 1
@@ -4275,11 +3712,11 @@ render_inventory_grid model header character shop_trends hovered_item context co
                     [ row [ centerX, width Element.shrink, spacingXY 10 0 ]
                         [ row [ Font.alignRight ]
                             [ text "Held: "
-                            , render_gp model.colorTheme held_gold
+                            , UI.render_gp model.colorTheme held_gold
                             ]
                         , if is_player_context && character.held_blood > 0 then
                             row [ width fill ]
-                                [ renderBlood character.held_blood
+                                [ UI.renderBlood character.held_blood
                                 ]
 
                           else
@@ -4664,14 +4101,14 @@ render_single_player_action_log item_db player_action_log =
         ]
 
 
-render_single_player_upgrade : ColorTheme -> PlayerUpgrade -> Element Msg
+render_single_player_upgrade : UI.ColorTheme -> PlayerUpgrade -> Element Msg
 render_single_player_upgrade colorTheme player_upgrade =
     case player_upgrade of
         AutomaticGPM gpm ->
-            paragraph [] [ text "Income: ", render_gp colorTheme gpm, text "/sec" ]
+            paragraph [] [ text "Income: ", UI.render_gp colorTheme gpm, text "/sec" ]
 
 
-player_upgrades_display : ColorTheme -> List PlayerUpgrade -> Element Msg
+player_upgrades_display : UI.ColorTheme -> List PlayerUpgrade -> Element Msg
 player_upgrades_display colorTheme player_upgrades =
     column [ height fill ]
         ([ el [ font_scaled 2, border_bottom 2, alignTop ] <| text "Upgrades" ]
@@ -4710,7 +4147,7 @@ showHideDebugInventoriesButton attrs show_debug_inventories =
             else
                 "Show Debug"
     in
-    danger_button (defineHtmlId "show_debug_inventories" :: attrs)
+    UI.danger_button (defineHtmlId "show_debug_inventories" :: attrs)
         ToggleShowDebugInventories
         buttonText
 
@@ -4741,7 +4178,7 @@ playerInventoryControls player ( shiftIsPressed, shop_trends ) { item, quantity,
             { item = item, quantity = setQuantity 1, avg_price = avg_price }
 
     else
-        danger_button
+        UI.danger_button
             [ Element.transparent <| not hasItemsToSell
             , width (fill |> Element.minimum 120)
             ]
@@ -4786,10 +4223,10 @@ view_shop_tab_type model =
             [ Border.color
                 (case model.colorTheme of
                     BrightTheme ->
-                        color_light_grey
+                        UI.color_light_grey
 
                     DarkTheme ->
-                        color_grey
+                        UI.color_grey
                 )
             , Border.width 10
             , Border.dashed
@@ -4820,15 +4257,15 @@ view_shop_tab_type model =
                 [ Element.link []
                     { url = "#items"
                     , label =
-                        secondary_button [] (ChangeTabType ItemsUnlockedTabType) "View Items"
+                        UI.secondary_button [] (ChangeTabType ItemsUnlockedTabType) "View Items"
                     }
-                , outline_button [] ToggleShowMainChart <|
+                , UI.outline_button [] ToggleShowMainChart <|
                     if model.show_main_chart then
                         "Hide Charts"
 
                     else
                         "Charts"
-                , outline_button [ alignRight ] ToggleColorTheme <|
+                , UI.outline_button [ alignRight ] ToggleColorTheme <|
                     case model.colorTheme of
                         BrightTheme ->
                             "Darken"
@@ -4899,7 +4336,7 @@ view_shop_tab_type model =
                    ]
 
 
-render_item_db_item : ColorTheme -> ItemDbRecord -> Element Msg
+render_item_db_item : UI.ColorTheme -> ItemDbRecord -> Element Msg
 render_item_db_item colorTheme { item, trade_stats, is_unlocked } =
     column [ width (fill |> Element.maximum 150), height fill ]
         [ text <| item.name
@@ -4908,13 +4345,13 @@ render_item_db_item colorTheme { item, trade_stats, is_unlocked } =
                 Element.none
 
               else
-                el [ Font.color color_primary ] <| text "LOCKED"
+                el [ Font.color UI.color_primary ] <| text "LOCKED"
             ]
         , row [ width fill, Font.size 14, spacingXY 10 0 ]
             [ item_type_to_pretty_string item.item_type
                 |> text
             , item.raw_gold_cost
-                |> render_gp colorTheme
+                |> UI.render_gp colorTheme
                 |> el [ alignRight ]
             ]
         , row [ width fill, Font.size 12 ]
@@ -4924,7 +4361,7 @@ render_item_db_item colorTheme { item, trade_stats, is_unlocked } =
                 |> String.fromInt
                 |> String.padLeft 3 '\u{2003}'
                 |> text
-                |> monospace [ alignRight ]
+                |> UI.monospace [ alignRight ]
             ]
         , row [ width fill, Font.size 12 ]
             [ text "Num Sold: "
@@ -4933,7 +4370,7 @@ render_item_db_item colorTheme { item, trade_stats, is_unlocked } =
                 |> String.fromInt
                 |> String.padLeft 3 '\u{2003}'
                 |> text
-                |> monospace [ alignRight ]
+                |> UI.monospace [ alignRight ]
             ]
         , row [ width fill, Font.size 12 ]
             [ text "Others' Trades: "
@@ -4942,18 +4379,18 @@ render_item_db_item colorTheme { item, trade_stats, is_unlocked } =
                 |> String.fromInt
                 |> String.padLeft 3 '\u{2003}'
                 |> text
-                |> monospace [ alignRight ]
+                |> UI.monospace [ alignRight ]
             ]
         ]
 
 
-view_items_unlocked_tab_type : ColorTheme -> ItemDb -> Element Msg
+view_items_unlocked_tab_type : UI.ColorTheme -> ItemDb -> Element Msg
 view_items_unlocked_tab_type colorTheme item_db =
     let
         back_btn =
             Element.link []
                 { url = "#shop"
-                , label = danger_button [] (ChangeTabType ShopTabType) "Back to Shop"
+                , label = UI.danger_button [] (ChangeTabType ShopTabType) "Back to Shop"
                 }
 
         -- item_grid : Element Msg
@@ -5026,10 +4463,10 @@ viewOverlay model =
                         , Border.color
                             (case model.colorTheme of
                                 BrightTheme ->
-                                    color_ultra_light_grey
+                                    UI.color_ultra_light_grey
 
                                 DarkTheme ->
-                                    convertColor Color.lightCharcoal
+                                    UI.convertColor Color.lightCharcoal
                             )
                         , Border.width 1
                         , Border.rounded 3
@@ -5039,7 +4476,7 @@ viewOverlay model =
                     <|
                         row [ noUserSelect ]
                             [ text "Gold: "
-                            , render_gp model.colorTheme <| player.held_gold
+                            , UI.render_gp model.colorTheme <| player.held_gold
                             ]
             )
         |> Maybe.withDefault Element.none
@@ -5048,10 +4485,10 @@ viewOverlay model =
 defaultSolidColor colorTheme =
     case colorTheme of
         BrightTheme ->
-            convertColor Color.white
+            UI.convertColor Color.white
 
         DarkTheme ->
-            convertColor Color.darkCharcoal
+            UI.convertColor Color.darkCharcoal
 
 
 defaultBackgroundColor colorTheme =
@@ -5062,10 +4499,10 @@ defaultBackgroundColor colorTheme =
 defaultTextColor colorTheme =
     case colorTheme of
         BrightTheme ->
-            convertColor Color.black
+            UI.convertColor Color.black
 
         DarkTheme ->
-            hex_to_color "#ccc"
+            UI.hex_to_color "#ccc"
 
 
 
@@ -5076,85 +4513,6 @@ defaultFontColor colorTheme =
     defaultTextColor colorTheme
         |> Font.color
 
-
-padLeft : String -> Int -> String
-padLeft str num =
-    String.padLeft num '\u{2003}' str
-
-
-padRight : String -> Int -> String
-padRight str num =
-    String.padRight num '\u{2003}' str
-
-
-padStatBar : IntStat -> String
-padStatBar stat =
-    padStatStrBar (stat.curVal |> String.fromInt) (stat.maxVal |> String.fromInt)
-
-
-padStatStrBar : String -> String -> String
-padStatStrBar leftNum rightNum =
-    padLeft leftNum 3 ++ "/" ++ padRight rightNum 3
-
-
-viewMonsterInBattle : DamagedMonster -> Bool -> Element Msg
-viewMonsterInBattle damagedMonster showXp =
-    case damagedMonster of
-        LivingMonster monster ->
-            column [] <|
-                [ el [ Font.size 20 ] <| text monster.name
-                , monospace [] <| text <| "HP: " ++ padStatBar monster.hpStat
-                , monospace [] <| text <| "SP: " ++ padStatBar monster.spStat
-                , monospace [] <| text <| "Pwr: " ++ padLeft (String.fromInt monster.powerStat.curVal) 5
-                , monospace [] <| text <| "Prt: " ++ padLeft (String.fromInt monster.protectionStat.curVal) 5
-                ]
-                    ++ (if showXp then
-                            [ monospace [ width fill ] <| text <| "XP: " ++ padLeft (String.fromInt monster.xp) 6 ]
-
-                        else
-                            []
-                       )
-
-        DeadMonster monster ->
-            column []
-                [ el [ Font.size 20 ] <| text monster.name
-                , monospace [] <| text <| "HP: " ++ "DEAD!"
-                , monospace [] <| text <| "SP: " ++ padStatBar monster.spStat
-                ]
-
-
-view_battle_tab_type : Model -> Element Msg
-view_battle_tab_type { battleModel } =
-    column [ width fill, Font.size 16 ]
-        [ el [ Font.size 24, Element.paddingEach { bottom = 20, top = 0, left = 0, right = 0 } ] <| text "Battle!"
-        , row [ width fill ]
-            [ column [ alignLeft ]
-                [ viewMonsterInBattle battleModel.golem True ]
-            , column [ centerX ]
-                [ case battleModel.enemyMonster of
-                    LivingMonster _ ->
-                        primary_button [] (GotBattleMsg Fight) "Fight"
-
-                    DeadMonster _ ->
-                        primary_button [] (GotBattleMsg FindNewEnemy) "New Enemy"
-                ]
-            , column
-                [ alignRight ]
-                [ viewMonsterInBattle battleModel.enemyMonster False ]
-            ]
-        , column [ width fill, paddingXY 0 20 ]
-            [ row [ width fill, centerX ]
-                [ row [ width <| fillPortion 1 ] []
-                , row [ width <| fillPortion 3, Border.widthEach { top = 1, bottom = 0, left = 0, right = 0 } ] []
-                , row [ width <| fillPortion 1 ] []
-                ]
-            ]
-        , column [ width fill, spacing 5 ]
-            [ paragraph [] [ text "The battle has begun!" ]
-            , paragraph [] [ text "Golem deals 2 damage to Slime." ]
-            , paragraph [] [ text "Slime attacks Golem, but misses." ]
-            ]
-        ]
 
 
 view : Model -> Html.Html Msg
@@ -5187,7 +4545,7 @@ view model =
                 Lazy.lazy2 view_items_unlocked_tab_type model.colorTheme model.item_db
 
             BattleTabType ->
-                Lazy.lazy view_battle_tab_type model
+                Element.map GotBattleMsg <| Lazy.lazy Battle.view model.battleModel
 
 
 scaled : Int -> Int
@@ -5222,7 +4580,7 @@ hoveredTooltipMatchesId hovered_tooltip tooltip_id =
 
 
 primary_button_tooltip :
-    ColorTheme
+    UI.ColorTheme
     -> List (Element.Attribute Msg)
     -> Msg
     -> String
@@ -5247,7 +4605,7 @@ primary_button_tooltip colorTheme custom_attrs on_press label { tooltip_id, tool
                 [ width Element.shrink
                 , defaultFontColor colorTheme
                 , defaultBackgroundColor colorTheme
-                , Border.color <| convertColor Color.charcoal
+                , Border.color <| UI.convertColor Color.charcoal
                 , Border.rounded 3
                 , Border.width 2
                 , padding 10
@@ -5279,7 +4637,7 @@ primary_button_tooltip colorTheme custom_attrs on_press label { tooltip_id, tool
             else
                 []
     in
-    primary_button
+    UI.primary_button
         ([ Events.onMouseLeave <| EndTooltipHover tooltip_id
          , Events.onMouseEnter <| StartTooltipHover tooltip_id
          ]
@@ -5304,7 +4662,7 @@ buildTooltipElementConfig tooltip_id element =
     }
 
 
-build_special_action_button : ColorTheme -> HoveredTooltip -> Character -> SpecialAction -> String -> String -> Price -> Element Msg
+build_special_action_button : UI.ColorTheme -> HoveredTooltip -> Character -> SpecialAction -> String -> String -> Price -> Element Msg
 build_special_action_button colorTheme hovered_tooltip character special_action title tooltip_text price =
     let
         is_disabled =
@@ -5325,12 +4683,12 @@ build_special_action_button colorTheme hovered_tooltip character special_action 
                         if price /= Free then
                             let
                                 renderedCost =
-                                    render_gp colorTheme <| getPrice price
+                                    UI.render_gp colorTheme <| getPrice price
                             in
                             buildTooltipElementConfig t <|
                                 column []
                                     [ text t
-                                    , el [ centerX, padding 1, Font.color color_grey ] <| text "___"
+                                    , el [ centerX, padding 1, Font.color UI.color_grey ] <| text "___"
                                     , paragraph [ padding 10, centerX, Font.size 14 ]
                                         [ text "Costs: "
                                         , renderedCost
@@ -5343,15 +4701,15 @@ build_special_action_button colorTheme hovered_tooltip character special_action 
 
         button_attrs =
             if is_disabled then
-                [ Background.color color_grey
-                , Border.color color_grey
+                [ Background.color UI.color_grey
+                , Border.color UI.color_grey
                 ]
                     ++ (if hoveredTooltipMatchesId hovered_tooltip tooltip_config.tooltip_id then
                             [ Background.color <| rgb 0 0 0
                             , Border.color <| rgb 0 0 0
 
                             --required mouseOver to override the default buttons behaviour
-                            , Element.mouseOver [ Background.color color_light_grey, Border.color color_light_grey ]
+                            , Element.mouseOver [ Background.color UI.color_light_grey, Border.color UI.color_light_grey ]
                             ]
 
                         else
@@ -5381,7 +4739,7 @@ scale_increase_income_cost current_level =
     (20 + (5 * current_level * current_level) * 2) |> setPrice
 
 
-special_actions_display : ColorTheme -> List PlayerUpgrade -> HoveredTooltip -> Character -> Bool -> Element Msg
+special_actions_display : UI.ColorTheme -> List PlayerUpgrade -> HoveredTooltip -> Character -> Bool -> Element Msg
 special_actions_display colorTheme player_upgrades hovered_tooltip player ai_updates_paused =
     let
         button_toggle_ai_pause =
@@ -5564,10 +4922,10 @@ suite =
             in
             [ test "clipText test clips" <|
                 \_ ->
-                    Expect.equal "abc..." <| clipText "abcdef" 3
+                    Expect.equal "abc..." <| UI.clipText "abcdef" 3
             , test "clipText test doesnt clip" <|
                 \_ ->
-                    Expect.equal "abcdef" <| clipText "abcdef" 30
+                    Expect.equal "abcdef" <| UI.clipText "abcdef" 30
             , test "getting adjusted item cost should return exact item cost" <|
                 \_ ->
                     Expect.equal

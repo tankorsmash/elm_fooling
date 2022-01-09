@@ -2275,6 +2275,8 @@ monsterFightsMonster attacker defender =
     let
         damageToTake =
             attacker.powerStat.curVal
+                - defender.protectionStat.curVal
+                |> max 1
 
         newAttacker =
             LivingMonster attacker

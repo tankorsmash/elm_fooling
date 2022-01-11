@@ -1,4 +1,4 @@
-module Battle exposing (Model, Msg, init, subscriptions, suite, update, view)
+module Battle exposing (Model, Msg(..), init, subscriptions, suite, update, view)
 
 import Array
 import Browser.Dom
@@ -71,6 +71,7 @@ type Msg
     | FindNewEnemy
     | ToggleShowExpandedLogs
     | HealGolem
+    | ReturnToShop
 
 
 type alias IntStat =
@@ -296,6 +297,9 @@ update model battleMsg =
             in
             ( { model | golem = newGolem }, Cmd.none )
 
+        ReturnToShop ->
+            -- this is handled in the parent view
+            ( model, Cmd.none)
 
 
 -- end of update
@@ -481,8 +485,8 @@ view model =
                     ]
                 , UI.outline_button
                     [ centerX, width (fill |> Element.maximum 150) ]
-                    Noop
-                    "Back (No-op)"
+                    ReturnToShop
+                    "Back"
                 ]
             ]
         ]

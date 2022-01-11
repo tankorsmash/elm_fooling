@@ -1,8 +1,7 @@
 module ItemShop exposing (Model, Msg, add_to_average, init, sub_from_average, subscriptions, suite, update, view)
 
-import Interface as UI exposing (ColorTheme(..))
-import Battle
 import Array
+import Battle
 import Browser.Dom
 import Browser.Events
 import Chart as C
@@ -53,6 +52,7 @@ import Fuzz exposing (Fuzzer, int, list, string, tuple)
 import Html
 import Html.Attributes exposing (attribute, classList, href, property, src, style, value)
 import Html.Events
+import Interface as UI exposing (ColorTheme(..))
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as Encode exposing (Value)
@@ -214,7 +214,6 @@ type SpecialAction
     | TogglePauseAi
     | UnlockItem
     | IncreaseIncome
-
 
 
 type Msg
@@ -433,6 +432,7 @@ type alias Characters =
 
 type alias CharacterId =
     UUID
+
 
 type alias TrendSnapshot =
     { time : Time.Posix, item_type : ItemType, value : Float }
@@ -1015,6 +1015,7 @@ get_adjusted_item_cost shop_trends { item_type, raw_gold_cost } qty =
 get_single_adjusted_item_cost : ShopTrends -> Item -> Int
 get_single_adjusted_item_cost shop_trends item =
     get_adjusted_item_cost shop_trends item (Quantity 1)
+
 
 no_text_decoration : Element.Attribute msg
 no_text_decoration =
@@ -1904,14 +1905,25 @@ update msg model =
             let
                 ( newBattleModel, newBattleCmds ) =
                     Battle.update model.battleModel battleMsg
+
+                currentTab =
+                    case battleMsg of
+                        Battle.ReturnToShop ->
+                            ShopTabType
+
+                        _ ->
+                            model.tab_type
             in
-            ( { model | battleModel = newBattleModel }, Cmd.map GotBattleMsg newBattleCmds )
+            ( { model
+                | battleModel = newBattleModel
+                , tab_type = currentTab
+              }
+            , Cmd.map GotBattleMsg newBattleCmds
+            )
 
 
 
 --- END OF UPDATE
-
-
 
 
 generate_uuid : String -> UUID.UUID
@@ -2377,7 +2389,6 @@ signedFromInt int =
 
     else
         String.fromInt int
-
 
 
 {-| items the character can afford and desires at least a little
@@ -2931,6 +2942,7 @@ render_item_type shop_trends item_type =
         , el ([ Font.color trend_color ] ++ trend_shadow) <| text pretty_trend
         ]
 
+
 shop_buy_button : Int -> Int -> InventoryRecord -> Element Msg
 shop_buy_button gold_cost gold_in_pocket { item, quantity, avg_price } =
     let
@@ -3129,7 +3141,6 @@ render_single_trade_log_entry colorTheme item_db all_characters trade_log =
                         ++ "was traded for "
                 , rendered_cost
                 ]
-
 
 
 trends_display : UI.ColorTheme -> Bool -> ItemDb -> ShopTrends -> List Character -> Bool -> Element.Element Msg
@@ -4514,7 +4525,6 @@ defaultTextColor colorTheme =
 defaultFontColor colorTheme =
     defaultTextColor colorTheme
         |> Font.color
-
 
 
 view : Model -> Html.Html Msg

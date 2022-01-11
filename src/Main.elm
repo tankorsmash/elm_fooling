@@ -191,7 +191,7 @@ init _ url navKey =
                     ""
 
         ( item_shop_model, item_shop_cmds ) =
-            ItemShop.init hash
+            ItemShop.init hash (Just navKey)
 
         initial_model : Model
         initial_model =

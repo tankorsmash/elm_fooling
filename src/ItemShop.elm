@@ -4,6 +4,7 @@ import Array
 import Battle
 import Browser.Dom
 import Browser.Events
+import Browser.Navigation as Nav
 import Chart as C
 import Chart.Attributes as CA
 import Chart.Events as CE
@@ -64,6 +65,7 @@ import Test exposing (..)
 import Time
 import Tuple3
 import UUID exposing (UUID)
+import Url
 
 
 type ItemType
@@ -606,6 +608,7 @@ type alias Model =
     , showDebugInventoriesElement : Maybe Browser.Dom.Element
     , shouldDisplayShowDebugInventoriesOverlay : Bool
     , battleModel : Battle.Model
+    , browserNavKey : Maybe Nav.Key
     }
 
 
@@ -1099,8 +1102,37 @@ create_character char_id name =
     }
 
 
-init : String -> ( Model, Cmd Msg )
-init hash =
+tabTypeToString : TabType -> String
+tabTypeToString tabType =
+    case tabType of
+        ShopTabType ->
+            "shop"
+
+        ItemsUnlockedTabType ->
+            "items"
+
+        BattleTabType ->
+            "battle"
+
+
+stringToTabType : String -> TabType
+stringToTabType hash =
+    case hash of
+        "shop" ->
+            ShopTabType
+
+        "items" ->
+            ItemsUnlockedTabType
+
+        "battle" ->
+            BattleTabType
+
+        _ ->
+            ShopTabType
+
+
+init : String -> Maybe Nav.Key -> ( Model, Cmd Msg )
+init hash key =
     let
         player_base_char =
             create_character (UUID.forName "player character" UUID.dnsNamespace) "Player"
@@ -1134,18 +1166,7 @@ init hash =
 
         initial_tab_type : TabType
         initial_tab_type =
-            case hash of
-                "shop" ->
-                    ShopTabType
-
-                "items" ->
-                    ItemsUnlockedTabType
-
-                "battle" ->
-                    BattleTabType
-
-                _ ->
-                    ShopTabType
+            stringToTabType hash
 
         battleModel =
             Battle.init
@@ -1181,6 +1202,7 @@ init hash =
       , showDebugInventoriesElement = Nothing
       , shouldDisplayShowDebugInventoriesOverlay = False
       , battleModel = battleModel
+      , browserNavKey = key
       }
     , Task.perform TickSecond Time.now
     )
@@ -1764,7 +1786,16 @@ update msg model =
             ( { model | characters = new_characters }, Cmd.none )
 
         ChangeTabType tab_type ->
-            ( { model | tab_type = tab_type }, Cmd.none )
+            ( { model | tab_type = tab_type }
+            , case model.browserNavKey of
+                Just key ->
+                    Nav.pushUrl
+                        key
+                        ("#" ++ tabTypeToString tab_type)
+
+                Nothing ->
+                    Cmd.none
+            )
 
         CycleFilterDisplayedItemsForward character_id mb_item_type ->
             let
@@ -1914,12 +1945,30 @@ update msg model =
 
                         _ ->
                             model.tab_type
+
+                mappedCmds =
+                    Cmd.map GotBattleMsg newBattleCmds
             in
             ( { model
                 | battleModel = newBattleModel
                 , tab_type = currentTab
               }
-            , Cmd.map GotBattleMsg newBattleCmds
+            , case battleMsg of
+                Battle.ReturnToShop ->
+                    Cmd.batch
+                        [ mappedCmds
+                        , case model.browserNavKey of
+                            Just key ->
+                                Nav.pushUrl
+                                    key
+                                    ("#" ++ tabTypeToString currentTab)
+
+                            Nothing ->
+                                Cmd.none
+                        ]
+
+                _ ->
+                    mappedCmds
             )
 
 
@@ -4936,7 +4985,7 @@ suite =
 
                 test_model : Model
                 test_model =
-                    init "" |> Tuple.first
+                    init "" Nothing |> Tuple.first
 
                 ( test_item, test_item_qty, test_avg_price ) =
                     ( lookup_item_id_str_default test_item_db "a41ae9d3-61f0-54f9-800e-56f53ed3ac98", Quantity 12, setPrice 9999 )

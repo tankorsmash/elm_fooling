@@ -1473,12 +1473,6 @@ isElementOnScreen gvp { element } =
     let
         { y, height } =
             gvp.viewport
-
-        -- _ =
-        --     Debug.log "gvp: y height" ( y, height )
-        --
-        -- _ =
-        --     Debug.log "elm: y height" ( element.element.y, element.element.height )
     in
     y > (element.y + element.height)
 
@@ -4190,10 +4184,6 @@ player_action_log_display item_db player_action_logs =
                         |> List.take 5
                         |> List.map (render_single_player_action_log item_db)
                         |> (\logs ->
-                                let
-                                    _ =
-                                        Debug.log "length logs" <| List.length logs
-                                in
                                 if List.length logs < 5 then
                                     logs
                                         ++ List.repeat
@@ -4203,7 +4193,6 @@ player_action_log_display item_db player_action_logs =
                                 else
                                     logs
                            )
-                        |> Debug.log "logs"
                     )
                ]
         )

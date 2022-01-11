@@ -325,7 +325,6 @@ danger_button custom_attrs on_press label_str =
     danger_button_custom custom_attrs on_press <| text label_str
 
 
-
 convertColor : Color.Color -> Element.Color
 convertColor color =
     Element.fromRgb <| Color.toRgba <| color
@@ -342,9 +341,9 @@ colorFromInt int positiveColor neutralColor negativeColor =
     else
         negativeColor
 
+
 monospace attrs el =
     Element.el (Font.family [ Font.monospace ] :: attrs) el
-
 
 
 clipText : String -> Int -> String
@@ -435,3 +434,6 @@ renderBlood_sized colorTheme count font_size =
         , Element.el [ Font.size font_size, font_blood ] (text "blood")
         ]
 
+
+blankChar =
+    "\u{2003}"

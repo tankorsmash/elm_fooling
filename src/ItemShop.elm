@@ -572,7 +572,8 @@ type PlayerUpgrade
 
 
 type PlayerActionLog
-    = TookSpecialActionInviteTrader
+    = WelcomeMessageActionLog
+    | TookSpecialActionInviteTrader
     | TookSpecialActionTriggerEvent SpecialEvent
     | TookSpecialActionTogglePauseAi
     | TookSpecialActionUnlockItem ItemId
@@ -1158,7 +1159,7 @@ init hash =
       , shop_trends = initial_shop_trends
       , item_db = item_db
       , historical_shop_trends = []
-      , historical_player_actions = []
+      , historical_player_actions = [ WelcomeMessageActionLog ]
       , shop_trends_hovered = False
       , ai_tick_time = Time.millisToPosix -1
       , show_main_chart = True
@@ -4083,6 +4084,9 @@ render_single_player_action_log : ItemDb -> PlayerActionLog -> Element Msg
 render_single_player_action_log item_db player_action_log =
     paragraph []
         [ case player_action_log of
+            WelcomeMessageActionLog ->
+                text "Welcome to ItemShop!"
+
             TookSpecialActionInviteTrader ->
                 text "Invited Trader"
 
@@ -4129,23 +4133,31 @@ player_upgrades_display colorTheme player_upgrades =
 
 player_action_log_display : ItemDb -> List PlayerActionLog -> Element Msg
 player_action_log_display item_db player_action_logs =
-    if List.length player_action_logs > 0 then
-        column [ height fill ]
-            ([ el [ font_scaled 2, border_bottom 2, alignTop ] <| text "Action Log" ]
-                ++ [ column [ paddingXY 0 10, Element.spacing 4 ]
-                        (player_action_logs
-                            |> List.reverse
-                            |> List.take 5
-                            |> List.map (render_single_player_action_log item_db)
-                        )
-                   ]
-            )
+    column [ height fill ]
+        ([ el [ font_scaled 2, border_bottom 2, alignTop ] <| text "Action Log" ]
+            ++ [ column [ paddingXY 0 10, Element.spacing 4 ]
+                    (player_action_logs
+                        |> List.reverse
+                        |> List.take 5
+                        |> List.map (render_single_player_action_log item_db)
+                        |> (\logs ->
+                                let
+                                    _ =
+                                        Debug.log "length logs" <| List.length logs
+                                in
+                                if List.length logs < 5 then
+                                    logs
+                                        ++ List.repeat
+                                            (5 - List.length logs)
+                                            (paragraph [] [ text UI.blankChar ])
 
-    else
-        column [ paddingXY 0 10, spacing 5 ]
-            ([ el [ font_scaled 2, border_bottom 2 ] <| text "Action Log" ]
-                ++ [ text "Welcome!" ]
-            )
+                                else
+                                    logs
+                           )
+                        |> Debug.log "logs"
+                    )
+               ]
+        )
 
 
 showHideDebugInventoriesButton : List (Element.Attribute Msg) -> Bool -> Element Msg

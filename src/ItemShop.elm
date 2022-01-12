@@ -3682,7 +3682,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
 
         table_columns : List (Element.Column InventoryRecord Msg)
         table_columns =
-            [ { header = small_header "Name:"
+            [ { header = small_header "Name"
               , width = fillPortion 2
               , view =
                     \{ item, quantity, avg_price } ->

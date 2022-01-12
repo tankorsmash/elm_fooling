@@ -4709,7 +4709,16 @@ view model =
                 Lazy.lazy2 view_items_unlocked_tab_type model.colorTheme model.item_db
 
             BattleTabType ->
-                Element.map GotBattleMsg <| Lazy.lazy Battle.view model.battleModel
+                Element.map GotBattleMsg <|
+                    (Maybe.map
+                        (\player ->
+                            Battle.view
+                                ( player.held_gold, player.held_blood )
+                                model.battleModel
+                        )
+                        (getPlayer model)
+                        |> Maybe.withDefault (el [ Font.color UI.color_danger ] <| text "ERR: NO PLAYER")
+                    )
 
 
 scaled : Int -> Int

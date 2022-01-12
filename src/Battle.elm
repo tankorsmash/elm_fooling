@@ -414,7 +414,7 @@ viewSingleFightLog expandedLog fightLog =
                 paragraph [] [ text <| "Found new monster: " ++ newMonster.name ]
 
             MonsterKilledMonster attacker deadMonster xp_gained ->
-                paragraph [] [ text <| attacker.name ++ " killed " ++ deadMonster.name ++ ", gaining " ++ String.fromInt xp_gained ++ " XP." ]
+                paragraph [] [ text <| attacker.name ++ " killed " ++ deadMonster.name ++ ", gaining " ++ String.fromInt xp_gained ++ " XP, and an item was put up for sale." ]
 
     else
         case fightLog of

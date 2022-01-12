@@ -4819,6 +4819,9 @@ special_actions_display colorTheme player_upgrades hovered_tooltip player ai_upd
                 "You tap your medallion, and time comes to a halt.\n\nYou take a breath, and feel a weight off your shoulders. You'll take your time with things."
                 Free
 
+        button_battle =
+            UI.primary_button [] (ChangeTabType BattleTabType) "To Battle!"
+
         button_search =
             build_special_action_button
                 colorTheme
@@ -4882,8 +4885,9 @@ special_actions_display colorTheme player_upgrades hovered_tooltip player ai_upd
     in
     column [ width fill, spacing 10, paddingXY 0 10 ]
         [ el [ font_scaled 2, border_bottom 2 ] <| text "Special Actions"
-        , row [ width fill, spacingXY 10 0 ]
+        , Element.wrappedRow [ width fill, spacingXY 10 10 ]
             [ button_toggle_ai_pause
+            , button_battle
             , button_increase_income
             , button_search
             , button_unlock_item

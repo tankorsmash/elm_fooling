@@ -271,12 +271,19 @@ update msg model =
                 newRoute =
                     Debug.log "parsed Route" <| parseUrl url
 
+                fragment : String
                 fragment =
                     case newRoute of
                         -- Home (Just hash) ->
                         TabRoute tab_type (Just hash) ->
                             -- Debug.log "url changed" hash
-                            Debug.log "url changed" hash
+                            case tab_type of
+                                ItemShopTab ->
+                                    let
+                                        _ =
+                                            Debug.log "Main.tab_type changed to " tab_type
+                                    in
+                                    hash
 
                         _ ->
                             Debug.log "empty hash on UrlChanged" ""

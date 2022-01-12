@@ -1941,11 +1941,11 @@ update msg model =
 
         GotBattleMsg battleMsg ->
             let
-                ( newBattleModel, newBattleCmds ) =
+                ( newBattleModel, newBattleCmds, battleOutMsg ) =
                     Battle.update model.battleModel battleMsg
 
                 currentTab =
-                    case battleMsg of
+                    case battleOutMsg of
                         Battle.ReturnToShop ->
                             ShopTabType
 
@@ -1961,7 +1961,7 @@ update msg model =
                         , tab_type = currentTab
                     }
                         |> (\m ->
-                                case battleMsg of
+                                case battleOutMsg of
                                     Battle.DeliverItemToShopOnMonsterDefeat ->
                                         let
                                             ( mbNewItem, newSeed ) =
@@ -1990,7 +1990,7 @@ update msg model =
                 newCmds =
                     Cmd.batch <|
                         [ mappedCmds ]
-                            ++ (case battleMsg of
+                            ++ (case battleOutMsg of
                                     Battle.ReturnToShop ->
                                         case model.browserNavKey of
                                             Just key ->

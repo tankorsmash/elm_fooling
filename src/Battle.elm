@@ -1,4 +1,4 @@
-module Battle exposing (Model, Msg(..), init, subscriptions, suite, update, view)
+module Battle exposing (Model, Msg(..), OutMsg(..), init, subscriptions, suite, update, view)
 
 import Array
 import Browser.Dom
@@ -71,6 +71,11 @@ type Msg
     | FindNewEnemy
     | ToggleShowExpandedLogs
     | HealGolem
+    | SendOutMsg OutMsg
+
+
+type OutMsg
+    = NoOutMsg
     | ReturnToShop
     | DeliverItemToShopOnMonsterDefeat
 
@@ -226,7 +231,7 @@ golemKillsEnemy golem deadEnemy fightLogs =
     )
 
 
-updateFight : Model -> ( Model, Cmd Msg )
+updateFight : Model -> ( Model, Cmd Msg, OutMsg )
 updateFight model =
     case ( model.golem, model.enemyMonster ) of
         ( LivingMonster golem, LivingMonster enemyMonster ) ->
@@ -256,17 +261,18 @@ updateFight model =
                 , fightLogs = List.append model.fightLogs fightLogs
               }
             , Cmd.none
+            , NoOutMsg
             )
 
         _ ->
-            Debug.log "dead something" ( model, Cmd.none )
+            Debug.log "dead something" ( model, Cmd.none, NoOutMsg )
 
 
-update : Model -> Msg -> ( Model, Cmd Msg )
+update : Model -> Msg -> ( Model, Cmd Msg, OutMsg )
 update model battleMsg =
     case battleMsg of
         Noop ->
-            ( model, Cmd.none )
+            ( model, Cmd.none, NoOutMsg )
 
         Fight ->
             updateFight model
@@ -282,10 +288,11 @@ update model battleMsg =
                 , fightLogs = model.fightLogs ++ [ FoundNewMonster newMonster ]
               }
             , Cmd.none
+            , NoOutMsg
             )
 
         ToggleShowExpandedLogs ->
-            ( { model | showExpandedLogs = not model.showExpandedLogs }, Cmd.none )
+            ( { model | showExpandedLogs = not model.showExpandedLogs }, Cmd.none, NoOutMsg )
 
         HealGolem ->
             let
@@ -296,14 +303,13 @@ update model battleMsg =
                         )
                         model.golem
             in
-            ( { model | golem = newGolem }, Cmd.none )
+            ( { model | golem = newGolem }, Cmd.none, NoOutMsg )
 
-        ReturnToShop ->
-            -- this is handled in the parent view
-            ( model, Cmd.none)
+        --handled by parent component (would be nice to handle this nicer)
+        SendOutMsg out_msg ->
+            ( model, Cmd.none, out_msg )
 
-        DeliverItemToShopOnMonsterDefeat ->
-            ( model, Cmd.none)
+
 
 -- end of update
 
@@ -488,7 +494,7 @@ view model =
                     ]
                 , UI.outline_button
                     [ centerX, width (fill |> Element.maximum 150) ]
-                    ReturnToShop
+                    (SendOutMsg ReturnToShop)
                     "Back"
                 ]
             ]

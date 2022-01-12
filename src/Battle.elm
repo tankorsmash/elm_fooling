@@ -72,6 +72,7 @@ type Msg
     | ToggleShowExpandedLogs
     | HealGolem
     | ReturnToShop
+    | DeliverItemToShopOnMonsterDefeat
 
 
 type alias IntStat =
@@ -301,6 +302,8 @@ update model battleMsg =
             -- this is handled in the parent view
             ( model, Cmd.none)
 
+        DeliverItemToShopOnMonsterDefeat ->
+            ( model, Cmd.none)
 
 -- end of update
 

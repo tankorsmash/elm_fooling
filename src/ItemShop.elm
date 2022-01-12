@@ -1942,28 +1942,33 @@ update msg model =
 
                 mappedCmds =
                     Cmd.map GotBattleMsg newBattleCmds
+
+                newModel =
+                    { model
+                        | battleModel = newBattleModel
+                        , tab_type = currentTab
+                    }
+
+                newCmds =
+                    Cmd.batch <|
+                        [ mappedCmds ]
+                            ++ (case battleMsg of
+                                    Battle.ReturnToShop ->
+                                        case model.browserNavKey of
+                                            Just key ->
+                                                [ Nav.pushUrl
+                                                    key
+                                                    ("#" ++ tabTypeToString currentTab)
+                                                ]
+
+                                            Nothing ->
+                                                []
+
+                                    _ ->
+                                        []
+                               )
             in
-            ( { model
-                | battleModel = newBattleModel
-                , tab_type = currentTab
-              }
-            , case battleMsg of
-                Battle.ReturnToShop ->
-                    Cmd.batch
-                        [ mappedCmds
-                        , case model.browserNavKey of
-                            Just key ->
-                                Nav.pushUrl
-                                    key
-                                    ("#" ++ tabTypeToString currentTab)
-
-                            Nothing ->
-                                Cmd.none
-                        ]
-
-                _ ->
-                    mappedCmds
-            )
+            ( newModel, newCmds )
 
 
 

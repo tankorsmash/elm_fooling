@@ -1571,6 +1571,34 @@ sell_items_from_party_to_other orig_trade_context { item, qty } =
         IncompleteTradeRecord orig_trade_context
 
 
+updateBattleOut : Battle.OutMsg -> Model -> Model
+updateBattleOut battleOutMsg model =
+    case battleOutMsg of
+        Battle.DeliverItemToShopOnMonsterDefeat ->
+            let
+                ( mbNewItem, newSeed ) =
+                    pick_random_unlocked_item_from_db model.item_db model.global_seed
+            in
+            Maybe.map2
+                (\shop newItem ->
+                    withCharacter
+                        (add_inventory_record_to_character
+                            { item = newItem
+                            , quantity = setQuantity 1
+                            , avg_price = setPrice newItem.raw_gold_cost
+                            }
+                            shop
+                        )
+                        { model | global_seed = newSeed }
+                )
+                (getShop model)
+                mbNewItem
+                |> Maybe.withDefault model
+
+        _ ->
+            model
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -1979,32 +2007,7 @@ update msg model =
                         | battleModel = newBattleModel
                         , tab_type = currentTab
                     }
-                        |> (\m ->
-                                case battleOutMsg of
-                                    Battle.DeliverItemToShopOnMonsterDefeat ->
-                                        let
-                                            ( mbNewItem, newSeed ) =
-                                                pick_random_unlocked_item_from_db m.item_db m.global_seed
-                                        in
-                                        Maybe.map2
-                                            (\shop newItem ->
-                                                withCharacter
-                                                    (add_inventory_record_to_character
-                                                        { item = newItem
-                                                        , quantity = setQuantity 1
-                                                        , avg_price = setPrice newItem.raw_gold_cost
-                                                        }
-                                                        shop
-                                                    )
-                                                    { m | global_seed = newSeed }
-                                            )
-                                            (getShop model)
-                                            mbNewItem
-                                            |> Maybe.withDefault m
-
-                                    _ ->
-                                        m
-                           )
+                        |> updateBattleOut battleOutMsg
 
                 newCmds =
                     Cmd.batch <|

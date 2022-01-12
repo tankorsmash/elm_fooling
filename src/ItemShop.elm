@@ -1948,6 +1948,36 @@ update msg model =
                         | battleModel = newBattleModel
                         , tab_type = currentTab
                     }
+                        |> (\m ->
+                                case battleMsg of
+                                    Battle.DeliverItemToShopOnMonsterDefeat ->
+                                        let
+                                            ( mbNewItem, newSeed ) =
+                                                pick_random_unlocked_item_from_db model.item_db model.global_seed
+
+                                            mbShop =
+                                                getShop model
+                                        in
+                                        Maybe.map2
+                                            (\shop newItem ->
+                                                withCharacter
+                                                    { shop
+                                                        | held_items =
+                                                            add_item_to_inventory_records
+                                                                shop.held_items
+                                                                newItem
+                                                                (setQuantity 1)
+                                                                newItem.raw_gold_cost
+                                                    }
+                                                    model
+                                            )
+                                            mbShop
+                                            mbNewItem
+                                            |> Maybe.withDefault m
+
+                                    _ ->
+                                        m
+                           )
 
                 newCmds =
                     Cmd.batch <|

@@ -1276,6 +1276,18 @@ sub_from_average old_avg old_count new_value new_count =
     (old_count * old_avg - new_value) // (old_count - new_count)
 
 
+add_inventory_record_to_character : InventoryRecord -> Character -> Character
+add_inventory_record_to_character { item, quantity, avg_price } character =
+    { character
+        | held_items =
+            add_item_to_inventory_records
+                character.held_items
+                item
+                quantity
+                item.raw_gold_cost
+    }
+
+
 add_item_to_inventory_records : InventoryRecords -> Item -> Quantity -> Int -> InventoryRecords
 add_item_to_inventory_records records item qty total_cost =
     case List.filter (find_matching_records item) records of
@@ -1954,24 +1966,20 @@ update msg model =
                                         let
                                             ( mbNewItem, newSeed ) =
                                                 pick_random_unlocked_item_from_db model.item_db model.global_seed
-
-                                            mbShop =
-                                                getShop model
                                         in
                                         Maybe.map2
                                             (\shop newItem ->
                                                 withCharacter
-                                                    { shop
-                                                        | held_items =
-                                                            add_item_to_inventory_records
-                                                                shop.held_items
-                                                                newItem
-                                                                (setQuantity 1)
-                                                                newItem.raw_gold_cost
-                                                    }
+                                                    (add_inventory_record_to_character
+                                                        { item = newItem
+                                                        , quantity = setQuantity 1
+                                                        , avg_price = setPrice newItem.raw_gold_cost
+                                                        }
+                                                        shop
+                                                    )
                                                     model
                                             )
-                                            mbShop
+                                            (getShop model)
                                             mbNewItem
                                             |> Maybe.withDefault m
 

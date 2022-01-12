@@ -3483,6 +3483,28 @@ render_inventory_grid model header character shop_trends hovered_item context co
         { historical_shop_trends, item_db, show_charts_in_hovered_item } =
             model
 
+        -- sortFunc : InventoryRecord -> comparable
+        sortFunc =
+            \left right ->
+                case model.inventorySortType of
+                    SortByName ->
+                        compare left.item.name right.item.name
+
+                    SortByPrice ->
+                        compare (get_single_adjusted_item_cost shop_trends left.item) (get_single_adjusted_item_cost shop_trends right.item)
+
+                    SortByAvgPrice ->
+                        compare (getPrice left.avg_price) (getPrice right.avg_price)
+
+                    SortByQuantity ->
+                        compare (getQuantity left.quantity) (getQuantity right.quantity)
+
+                    SortByItemType ->
+                        compare (item_type_to_pretty_string left.item.item_type) (item_type_to_pretty_string right.item.item_type)
+
+                    SortByItemDesc ->
+                        compare left.item.description right.item.description
+
         items : InventoryRecords
         items =
             (if hide_zero_qty_inv_rows then
@@ -3493,7 +3515,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
              else
                 held_items
             )
-                |> List.sortBy sort_func
+                |> List.sortWith sortFunc
                 |> (\irs ->
                         case character.displayedItemType of
                             Nothing ->
@@ -3697,7 +3719,9 @@ render_inventory_grid model header character shop_trends hovered_item context co
 
         table_columns : List (Element.Column InventoryRecord Msg)
         table_columns =
-            [ { header = small_header "Name"
+            [ { header =
+                    small_header "Name"
+                        |> el [ Events.onClick <| ChangeInventorySortType SortByName ]
               , width = fillPortion 2
               , view =
                     \{ item, quantity, avg_price } ->
@@ -3711,7 +3735,9 @@ render_inventory_grid model header character shop_trends hovered_item context co
                             )
                             (text (UI.clipText item.name 25))
               }
-            , { header = small_header "Price"
+            , { header =
+                    small_header "Price"
+                        |> el [ Events.onClick <| ChangeInventorySortType SortByPrice ]
               , width = fillPortion 1
               , view =
                     \{ item, quantity, avg_price } ->
@@ -3740,7 +3766,9 @@ render_inventory_grid model header character shop_trends hovered_item context co
                                             Element.none
                                        ]
               }
-            , { header = small_header "Avg Px"
+            , { header =
+                    small_header "Avg Px"
+                        |> el [ Events.onClick <| ChangeInventorySortType SortByAvgPrice ]
               , width = fillPortion 1
               , view =
                     \{ quantity, avg_price } ->
@@ -3758,7 +3786,9 @@ render_inventory_grid model header character shop_trends hovered_item context co
                                     else
                                         Element.none
               }
-            , { header = small_header "Qty."
+            , { header =
+                    small_header "Qty."
+                        |> el [ Events.onClick <| ChangeInventorySortType SortByQuantity ]
               , width = fillPortion 1
               , view =
                     \{ quantity } ->
@@ -3779,7 +3809,9 @@ render_inventory_grid model header character shop_trends hovered_item context co
                             else
                                 text <| "x" ++ (String.fromInt <| getQuantity quantity)
               }
-            , { header = small_header "Item Type"
+            , { header =
+                    small_header "Item Type"
+                        |> el [ Events.onClick <| ChangeInventorySortType SortByItemType ]
               , width = fillPortion 2
               , view =
                     \{ item } ->
@@ -3788,7 +3820,9 @@ render_inventory_grid model header character shop_trends hovered_item context co
                         <|
                             render_item_type shop_trends item.item_type
               }
-            , { header = small_header "Item Desc."
+            , { header =
+                    small_header "Item Desc."
+                        |> el [ Events.onClick <| ChangeInventorySortType SortByItemDesc ]
               , width = fillPortion 3
               , view =
                     \{ item } -> el [ centerY ] <| text <| UI.clipText item.description 24
@@ -3872,8 +3906,8 @@ sort_by_bool_true_last bool =
         1
 
 
-sort_func : InventoryRecord -> String
-sort_func =
+sortByInvRecName : InventoryRecord -> String
+sortByInvRecName =
     .item >> .name
 
 

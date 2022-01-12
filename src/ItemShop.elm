@@ -1571,8 +1571,8 @@ sell_items_from_party_to_other orig_trade_context { item, qty } =
         IncompleteTradeRecord orig_trade_context
 
 
-updateBattleOut : Battle.OutMsg -> Model -> Model
-updateBattleOut battleOutMsg model =
+updateBattleOutMsg : Battle.OutMsg -> Model -> ( Model, Cmd Msg )
+updateBattleOutMsg battleOutMsg model =
     case battleOutMsg of
         Battle.DeliverItemToShopOnMonsterDefeat ->
             let
@@ -1594,9 +1594,22 @@ updateBattleOut battleOutMsg model =
                 (getShop model)
                 mbNewItem
                 |> Maybe.withDefault model
+                |> (\m -> ( m, Cmd.none ))
+
+        Battle.ReturnToShop ->
+            case model.browserNavKey of
+                Just key ->
+                    ( { model | tab_type = ShopTabType }
+                    , Nav.pushUrl
+                        key
+                        ("#" ++ tabTypeToString ShopTabType)
+                    )
+
+                Nothing ->
+                    ( model, Cmd.none )
 
         _ ->
-            model
+            ( model, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -1991,42 +2004,17 @@ update msg model =
                 ( newBattleModel, newBattleCmds, battleOutMsg ) =
                     Battle.update model.battleModel battleMsg
 
-                currentTab =
-                    case battleOutMsg of
-                        Battle.ReturnToShop ->
-                            ShopTabType
-
-                        _ ->
-                            model.tab_type
-
                 mappedCmds =
                     Cmd.map GotBattleMsg newBattleCmds
 
-                newModel =
+                ( newModel, newOutCmds ) =
                     { model
                         | battleModel = newBattleModel
-                        , tab_type = currentTab
                     }
-                        |> updateBattleOut battleOutMsg
+                        |> updateBattleOutMsg battleOutMsg
 
                 newCmds =
-                    Cmd.batch <|
-                        [ mappedCmds ]
-                            ++ (case battleOutMsg of
-                                    Battle.ReturnToShop ->
-                                        case model.browserNavKey of
-                                            Just key ->
-                                                [ Nav.pushUrl
-                                                    key
-                                                    ("#" ++ tabTypeToString currentTab)
-                                                ]
-
-                                            Nothing ->
-                                                []
-
-                                    _ ->
-                                        []
-                               )
+                    Cmd.batch (mappedCmds :: [ newOutCmds ])
             in
             ( newModel, newCmds )
 

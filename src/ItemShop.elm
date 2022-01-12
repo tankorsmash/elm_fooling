@@ -247,6 +247,7 @@ type Msg
     | SacrificeItem Item
     | ToggleColorTheme
     | GotBattleMsg Battle.Msg
+    | ChangeInventorySortType InventorySortType
 
 
 type alias TradeOrder =
@@ -581,6 +582,15 @@ type PlayerActionLog
     | TookSpecialActionUnlockItem ItemId
 
 
+type InventorySortType
+    = SortByName
+    | SortByPrice
+    | SortByAvgPrice
+    | SortByQuantity
+    | SortByItemType
+    | SortByItemDesc
+
+
 type alias Model =
     { colorTheme : UI.ColorTheme
     , player_id : CharacterId
@@ -609,6 +619,7 @@ type alias Model =
     , shouldDisplayShowDebugInventoriesOverlay : Bool
     , battleModel : Battle.Model
     , browserNavKey : Maybe Nav.Key
+    , inventorySortType : InventorySortType
     }
 
 
@@ -1203,6 +1214,7 @@ init hash key =
       , shouldDisplayShowDebugInventoriesOverlay = False
       , battleModel = battleModel
       , browserNavKey = key
+      , inventorySortType = SortByName
       }
     , Task.perform TickSecond Time.now
     )
@@ -2007,6 +2019,9 @@ update msg model =
                                )
             in
             ( newModel, newCmds )
+
+        ChangeInventorySortType inventorySortType ->
+            ( { model | inventorySortType = inventorySortType }, Cmd.none )
 
 
 

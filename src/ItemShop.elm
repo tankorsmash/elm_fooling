@@ -1965,7 +1965,7 @@ update msg model =
                                     Battle.DeliverItemToShopOnMonsterDefeat ->
                                         let
                                             ( mbNewItem, newSeed ) =
-                                                pick_random_unlocked_item_from_db model.item_db model.global_seed
+                                                pick_random_unlocked_item_from_db m.item_db m.global_seed
                                         in
                                         Maybe.map2
                                             (\shop newItem ->
@@ -1977,7 +1977,7 @@ update msg model =
                                                         }
                                                         shop
                                                     )
-                                                    model
+                                                    { m | global_seed = newSeed }
                                             )
                                             (getShop model)
                                             mbNewItem

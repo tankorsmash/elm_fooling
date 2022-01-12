@@ -3483,27 +3483,31 @@ render_inventory_grid model header character shop_trends hovered_item context co
         { historical_shop_trends, item_db, show_charts_in_hovered_item } =
             model
 
-        -- sortFunc : InventoryRecord -> comparable
-        sortFunc =
+        buildCompare : (a -> comparable) -> (a -> a -> Order)
+        buildCompare getter =
             \left right ->
-                case model.inventorySortType of
-                    SortByName ->
-                        compare left.item.name right.item.name
+                compare (getter left) (getter right)
 
-                    SortByPrice ->
-                        compare (get_single_adjusted_item_cost shop_trends left.item) (get_single_adjusted_item_cost shop_trends right.item)
+        sortFunc : InventoryRecord -> InventoryRecord -> Order
+        sortFunc =
+            case model.inventorySortType of
+                SortByName ->
+                    buildCompare (.item >> .name)
 
-                    SortByAvgPrice ->
-                        compare (getPrice left.avg_price) (getPrice right.avg_price)
+                SortByPrice ->
+                    buildCompare (.item >> get_single_adjusted_item_cost shop_trends)
 
-                    SortByQuantity ->
-                        compare (getQuantity left.quantity) (getQuantity right.quantity)
+                SortByAvgPrice ->
+                    buildCompare (.avg_price >> getPrice)
 
-                    SortByItemType ->
-                        compare (item_type_to_pretty_string left.item.item_type) (item_type_to_pretty_string right.item.item_type)
+                SortByQuantity ->
+                    buildCompare (.quantity >> getQuantity)
 
-                    SortByItemDesc ->
-                        compare left.item.description right.item.description
+                SortByItemType ->
+                    buildCompare (.item >> .item_type >> item_type_to_pretty_string)
+
+                SortByItemDesc ->
+                    buildCompare (.item >> .description)
 
         items : InventoryRecords
         items =

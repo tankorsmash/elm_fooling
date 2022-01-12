@@ -4854,10 +4854,10 @@ special_actions_display colorTheme player_upgrades hovered_tooltip player ai_upd
                 player
                 TogglePauseAi
                 (if ai_updates_paused then
-                    "Resume Time"
+                    "Resume"
 
                  else
-                    "Pause Time"
+                    "Pause"
                 )
                 "You tap your medallion, and time comes to a halt.\n\nYou take a breath, and feel a weight off your shoulders. You'll take your time with things."
                 Free

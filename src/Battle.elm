@@ -261,7 +261,12 @@ updateFight model =
                 , fightLogs = List.append model.fightLogs fightLogs
               }
             , Cmd.none
-            , NoOutMsg
+            , case damagedEnemyMonster of
+                DeadMonster _ ->
+                    DeliverItemToShopOnMonsterDefeat
+
+                _ ->
+                    NoOutMsg
             )
 
         _ ->

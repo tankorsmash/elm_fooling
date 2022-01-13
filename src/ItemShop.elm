@@ -1617,6 +1617,16 @@ updateBattleOutMsg battleOutMsg model =
             ( model, Cmd.none )
 
 
+mapPlayer : (Character -> Character) -> Model -> Model
+mapPlayer callback model =
+    case getPlayer model of
+        Just player ->
+            withCharacter (callback player) model
+
+        Nothing ->
+            model
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -2016,6 +2026,13 @@ update msg model =
                     { model
                         | battleModel = newBattleModel
                     }
+                        |> mapPlayer
+                            (\player ->
+                                { player
+                                    | held_gold = newBattleModel.player.held_gold
+                                    , held_blood = newBattleModel.player.held_blood
+                                }
+                            )
                         |> updateBattleOutMsg battleOutMsg
 
                 newCmds =

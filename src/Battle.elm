@@ -676,7 +676,16 @@ view ( player_held_gold, player_held_blood ) model =
                             ( DeadMonster _, _ ) ->
                                 ( UI.danger_button, Noop, "You're dead" )
                   in
-                  buttonType [ width (fillMin 125) ] msg txt
+                  buttonType
+                    [ width (fillMin 125)
+                    , if msg == Noop then
+                        Element.mouseOver []
+
+                      else
+                        attrNone
+                    ]
+                    msg
+                    txt
                 ]
             , column
                 [ alignRight, width (Element.px 200) ]

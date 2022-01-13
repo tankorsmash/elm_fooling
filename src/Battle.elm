@@ -238,7 +238,7 @@ type alias Model =
     , battleSeed : Random.Seed
     , fightLogs : List FightLog
     , showExpandedLogs : Bool
-    , player : BattleCharacter
+    , player : BattleCharacter --NOTE: this is hackily read from in ItemShop's updateBattleOutMsg and used to update ItemShop's player. FIXME hack on that for sure
     }
 
 
@@ -334,6 +334,9 @@ updateFight model =
             Debug.log "dead something" ( model, Cmd.none, NoOutMsg )
 
 
+{-| called from ItemShop.updateBattleOutMsg, which does some post processing
+like reading what Battle.Model.player's held\_gold and held\_blood are
+-}
 update : Model -> Msg -> ( Model, Cmd Msg, OutMsg )
 update model battleMsg =
     case battleMsg of
@@ -361,20 +364,29 @@ update model battleMsg =
             ( { model | showExpandedLogs = not model.showExpandedLogs }, Cmd.none, NoOutMsg )
 
         HealGolem ->
-            case model.golem of
-                LivingMonster golem ->
-                    ( { model
-                        | golem =
-                            golem
-                                |> monsterStatMapHP setStatToMax
-                                |> LivingMonster
-                      }
-                    , Cmd.none
-                    , NoOutMsg
-                    )
+            if model.player.held_blood >= 5 then
+                case model.golem of
+                    LivingMonster golem ->
+                        ( { model
+                            | golem =
+                                golem
+                                    |> monsterStatMapHP setStatToMax
+                                    |> LivingMonster
+                            , player =
+                                model.player
+                                    |> (\p ->
+                                            { p | held_blood = p.held_blood - 5 }
+                                       )
+                          }
+                        , Cmd.none
+                        , NoOutMsg
+                        )
 
-                DeadMonster golem ->
-                    ( model, Cmd.none, NoOutMsg )
+                    DeadMonster golem ->
+                        ( model, Cmd.none, NoOutMsg )
+
+            else
+                ( model, Cmd.none, NoOutMsg )
 
         ReviveGolem ->
             case model.golem of

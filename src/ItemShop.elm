@@ -1213,7 +1213,7 @@ init hash key =
             , cached_tooltip_offsets = Dict.empty
             , global_seed = Random.initialSeed 4
             , ai_updates_paused =
-                if initial_tab_type == ShopTabType then
+                if initial_tab_type == ShopTabType || initial_tab_type == BattleTabType then
                     False
 
                 else
@@ -1244,6 +1244,7 @@ subscriptions model =
             Sub.none
         , Browser.Events.onKeyDown keyPressedDecoder
         , Browser.Events.onKeyUp keyReleasedDecoder
+        , Sub.map GotBattleMsg <| Battle.subscriptions model.battleModel
         ]
 
 

@@ -73,6 +73,7 @@ type Msg
     | HealGolem
     | ReviveGolem
     | SendOutMsg OutMsg
+    | TickSecond Time.Posix
 
 
 type OutMsg
@@ -433,6 +434,9 @@ update model battleMsg =
         --handled by parent component (would be nice to handle this nicer)
         SendOutMsg out_msg ->
             ( model, Cmd.none, out_msg )
+
+        TickSecond time ->
+            ( model, Cmd.none, NoOutMsg )
 
 
 
@@ -806,7 +810,7 @@ increaseMonsterXpByMonster monster otherMonster =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.none
+    Time.every 1000 TickSecond
 
 
 attrNone : Element.Attribute Msg

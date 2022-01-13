@@ -413,8 +413,16 @@ update model battleMsg =
                                         >> LivingMonster
                                     )
                                     model.golem
+
+                            newPlayer =
+                                model.player
+                                    |> (\p ->
+                                            { p
+                                                | held_blood = p.held_blood - reviveGolemBloodCost
+                                            }
+                                       )
                         in
-                        ( { model | golem = newGolem }, Cmd.none, NoOutMsg )
+                        ( { model | golem = newGolem, player = newPlayer }, Cmd.none, NoOutMsg )
 
                     LivingMonster _ ->
                         ( model, Cmd.none, NoOutMsg )

@@ -334,6 +334,11 @@ updateFight model =
             Debug.log "dead something" ( model, Cmd.none, NoOutMsg )
 
 
+healGolemBloodCost : Int
+healGolemBloodCost =
+    5
+
+
 {-| called from ItemShop.updateBattleOutMsg, which does some post processing
 like reading what Battle.Model.player's held\_gold and held\_blood are
 -}
@@ -364,7 +369,7 @@ update model battleMsg =
             ( { model | showExpandedLogs = not model.showExpandedLogs }, Cmd.none, NoOutMsg )
 
         HealGolem ->
-            if model.player.held_blood >= 5 then
+            if model.player.held_blood >= healGolemBloodCost then
                 case model.golem of
                     LivingMonster golem ->
                         if not (golem.statHP.curVal == golem.statHP.maxVal) then
@@ -376,7 +381,7 @@ update model battleMsg =
                                 , player =
                                     model.player
                                         |> (\p ->
-                                                { p | held_blood = p.held_blood - 5 }
+                                                { p | held_blood = p.held_blood - healGolemBloodCost }
                                            )
                               }
                             , Cmd.none
@@ -557,7 +562,24 @@ fillMin pxWidth =
 
 
 viewBattleControls : Model -> List (Element Msg)
-viewBattleControls model =
+viewBattleControls { golem, player } =
+    let
+        canHealGolem =
+            if player.held_blood >= healGolemBloodCost then
+                case golem of
+                    LivingMonster livingGolem ->
+                        livingGolem.statHP
+                            |> (\statHP ->
+                                    (statHP.curVal > 0)
+                                        && (statHP.curVal < statHP.maxVal)
+                               )
+
+                    DeadMonster _ ->
+                        False
+
+            else
+                False
+    in
     [ el [ centerX, width (fill |> Element.maximum 150) ] <|
         UI.outline_button
             [ centerX, width fill ]
@@ -565,7 +587,7 @@ viewBattleControls model =
             "Details"
     , column [ width fill, spacing 1, padding 10 ]
         [ UI.outline_button
-            [ centerX, width (fillMax 150) ]
+            [ centerX, width (fillMax 150), Element.transparent <| not canHealGolem ]
             HealGolem
             "Heal"
         , UI.outline_button

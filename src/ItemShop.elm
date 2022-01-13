@@ -1187,7 +1187,7 @@ init hash key =
 
         battleModel : Battle.Model
         battleModel =
-            Battle.init2 player
+            Battle.init player
 
         initModel : Model
         initModel =

@@ -1,4 +1,4 @@
-module Battle exposing (Model, Msg(..), OutMsg(..), init2, subscriptions, suite, update, view)
+module Battle exposing (Model, Msg(..), OutMsg(..), init, subscriptions, suite, update, view)
 
 import Array
 import Browser.Dom
@@ -215,8 +215,8 @@ type alias Model =
     }
 
 
-init2 : { a | held_blood : Int, held_gold : Int } -> Model
-init2 { held_blood, held_gold } =
+init : { a | held_blood : Int, held_gold : Int } -> Model
+init { held_blood, held_gold } =
     { golem = LivingMonster <| createMonster "Golem" 50 10 0
     , enemyMonster =
         createMonster "Slime" 10 2 5

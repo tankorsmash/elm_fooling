@@ -148,6 +148,26 @@ monsterStatMap statGetter statSetter statFunc monster =
     statSetter monster newStat
 
 
+monsterStatMapHP : (IntStat -> IntStat) -> Monster -> Monster
+monsterStatMapHP statFunc monster =
+    monsterStatMap .statHP setStatHP statFunc monster
+
+
+monsterStatMapStamina : (IntStat -> IntStat) -> Monster -> Monster
+monsterStatMapStamina statFunc monster =
+    monsterStatMap .statStamina setStatStamina statFunc monster
+
+
+monsterStatMapPower : (IntStat -> IntStat) -> Monster -> Monster
+monsterStatMapPower statFunc monster =
+    monsterStatMap .statPower setStatPower statFunc monster
+
+
+monsterStatMapProtection : (IntStat -> IntStat) -> Monster -> Monster
+monsterStatMapProtection statFunc monster =
+    monsterStatMap .statProtection setStatProtection statFunc monster
+
+
 setStatHP : Monster -> IntStat -> Monster
 setStatHP monster newStatHP =
     { monster | statHP = newStatHP }
@@ -227,7 +247,7 @@ init { held_blood, held_gold } =
     { golem = LivingMonster <| createMonster "Golem" 10 10 0
     , enemyMonster =
         createMonster "Slime" 10 2 5
-            |> (\s -> { s | statHP = s.statHP |> setStatCurVal 4 })
+            |> monsterStatMapHP (setStatCurVal 4)
             |> LivingMonster
     , battleSeed = Random.initialSeed 123456
     , fightLogs = []
@@ -346,7 +366,7 @@ update model battleMsg =
                     ( { model
                         | golem =
                             golem
-                                |> monsterStatMap .statHP setStatHP setStatToMax
+                                |> monsterStatMapHP setStatToMax
                                 |> LivingMonster
                       }
                     , Cmd.none
@@ -362,7 +382,7 @@ update model battleMsg =
                     let
                         newGolem =
                             monsterMap
-                                (monsterStatMap .statHP setStatHP (setStatCurVal 1)
+                                (monsterStatMapHP (setStatCurVal 1)
                                     >> LivingMonster
                                 )
                                 model.golem
@@ -583,7 +603,7 @@ monsterTakeDamage damageToTake monster =
     let
         newMonster : Monster
         newMonster =
-            { monster | statHP = addToStatCurVal -damageToTake monster.statHP }
+            monsterStatMapHP (addToStatCurVal -damageToTake) monster
     in
     if newMonster.statHP.curVal > 0 then
         LivingMonster newMonster
@@ -611,9 +631,7 @@ monsterFightsMonster attacker defender =
 
         newAttacker =
             LivingMonster
-                (monsterStatMap
-                    .statStamina
-                    setStatStamina
+                (monsterStatMapStamina
                     (addToStatCurVal staminaCostToAttack)
                     attacker
                 )

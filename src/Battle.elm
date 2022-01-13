@@ -223,6 +223,8 @@ type FightLog
     | FoundNewMonster Monster
     | GolemKilledMonster Monster Monster Int
     | MonsterKilledGolem Monster Monster
+    | PlayerHealedGolem Int
+    | PlayerRevivedGolem
 
 
 {-| we're going to have to import Character at some point, for now though this is good enough
@@ -379,6 +381,10 @@ update model battleMsg =
                 case model.golem of
                     LivingMonster golem ->
                         if not (golem.statHP.curVal == golem.statHP.maxVal) then
+                            let
+                                currentHP = golem.statHP.curVal
+                                maxHP = golem.statHP.maxVal
+                            in
                             ( { model
                                 | golem =
                                     golem
@@ -389,6 +395,8 @@ update model battleMsg =
                                         |> (\p ->
                                                 { p | held_blood = p.held_blood - healGolemBloodCost }
                                            )
+                                , fightLogs =
+                                    model.fightLogs ++ [PlayerHealedGolem (maxHP - currentHP)]
                               }
                             , Cmd.none
                             , NoOutMsg
@@ -409,11 +417,9 @@ update model battleMsg =
                     DeadMonster golem ->
                         let
                             newGolem =
-                                monsterMap
-                                    (monsterStatMapHP (setStatCurVal 1)
-                                        >> LivingMonster
-                                    )
-                                    model.golem
+                                golem
+                                    |> monsterStatMapHP (setStatCurVal 1)
+                                    |> LivingMonster
 
                             newPlayer =
                                 model.player
@@ -423,7 +429,14 @@ update model battleMsg =
                                             }
                                        )
                         in
-                        ( { model | golem = newGolem, player = newPlayer }, Cmd.none, NoOutMsg )
+                        ( { model
+                            | golem = newGolem
+                            , player = newPlayer
+                            , fightLogs = model.fightLogs ++ [ PlayerRevivedGolem ]
+                          }
+                        , Cmd.none
+                        , NoOutMsg
+                        )
 
                     LivingMonster _ ->
                         ( model, Cmd.none, NoOutMsg )
@@ -573,6 +586,12 @@ viewSingleFightLog expandedLog fightLog =
             MonsterKilledGolem golem monster ->
                 paragraph [] [ text <| monster.name ++ " killed " ++ golem.name ++ ". You must now Revive your Golem." ]
 
+            PlayerHealedGolem amount ->
+                paragraph [] [ text <| "You healed your creature by " ++ String.fromInt amount ++ " HP." ]
+
+            PlayerRevivedGolem ->
+                paragraph [] [ text <| "You revived your creature." ]
+
     else
         case fightLog of
             MonsterAttackedMonster { attacker, defender, attackerPower, defenderProtection, damageTaken } ->
@@ -586,6 +605,12 @@ viewSingleFightLog expandedLog fightLog =
 
             MonsterKilledGolem golem monster ->
                 paragraph [] [ text <| monster.name ++ " killed " ++ golem.name ++ ". You must now Revive your Golem." ]
+
+            PlayerHealedGolem amount ->
+                paragraph [] [ text <| "You healed your creature by " ++ String.fromInt amount ++ " HP." ]
+
+            PlayerRevivedGolem ->
+                paragraph [] [ text <| "You revived your creature." ]
 
 
 viewFightLog : Bool -> List FightLog -> Element Msg

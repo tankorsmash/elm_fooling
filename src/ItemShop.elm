@@ -3734,7 +3734,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                 , Events.onClick (ChangeInventorySortType sortType)
                 , noUserSelect
                 , Border.rounded 2
-                , Element.mouseOver [Background.color UI.color_very_light_grey]
+                , Element.mouseOver [ Background.color UI.color_very_light_grey ]
                 , padding 2
                 , Element.pointer
                 ]

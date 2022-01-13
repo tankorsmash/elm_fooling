@@ -1629,6 +1629,36 @@ mapPlayer callback model =
             model
 
 
+transferToBattleModel : Model -> Battle.Model
+transferToBattleModel model =
+    model.battleModel
+
+
+
+-- |> (\bm ->
+--         let
+--             oldPlayer = bm.player
+--             newPlayer =
+--                 {oldPlayer | held_gold =
+--         in
+--             { bm | player = ne
+--    )
+
+
+transferFromBattleModel : Model -> Battle.Model -> Model
+transferFromBattleModel model newBattleModel =
+    { model
+        | battleModel = newBattleModel
+    }
+        |> mapPlayer
+            (\player ->
+                { player
+                    | held_gold = newBattleModel.player.held_gold
+                    , held_blood = newBattleModel.player.held_blood
+                }
+            )
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -2009,22 +2039,14 @@ update msg model =
         GotBattleMsg battleMsg ->
             let
                 ( newBattleModel, newBattleCmds, battleOutMsg ) =
-                    Battle.update model.battleModel battleMsg
+                    Battle.update (transferToBattleModel model) battleMsg
 
                 mappedCmds =
                     Cmd.map GotBattleMsg newBattleCmds
 
                 ( newModel, newOutCmds ) =
-                    { model
-                        | battleModel = newBattleModel
-                    }
-                        |> mapPlayer
-                            (\player ->
-                                { player
-                                    | held_gold = newBattleModel.player.held_gold
-                                    , held_blood = newBattleModel.player.held_blood
-                                }
-                            )
+                    newBattleModel
+                        |> transferFromBattleModel model
                         |> updateBattleOutMsg battleOutMsg
 
                 newCmds =
@@ -4736,7 +4758,6 @@ view model =
                     (Maybe.map
                         (\player ->
                             Battle.view
-                                ( player.held_gold, player.held_blood )
                                 model.battleModel
                         )
                         (getPlayer model)

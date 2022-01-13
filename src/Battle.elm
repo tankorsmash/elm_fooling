@@ -727,8 +727,8 @@ viewBattleControls { golem, player } =
     ]
 
 
-view : ( Int, Int ) -> Model -> Element Msg
-view ( player_held_gold, player_held_blood ) model =
+view : Model -> Element Msg
+view model =
     column [ width fill, Font.size 16 ]
         [ el [ Font.size 24, Element.paddingEach { bottom = 20, top = 0, left = 0, right = 0 } ] <| text "Battle!"
         , row [ width fill ]

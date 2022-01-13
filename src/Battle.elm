@@ -109,7 +109,7 @@ addToStatMaxVal addedMaxVal stat =
 
 addToStatCurVal : Int -> IntStat -> IntStat
 addToStatCurVal addedCurVal stat =
-    { stat | curVal = stat.curVal + addedCurVal }
+    { stat | curVal = stat.curVal + addedCurVal |> min stat.maxVal }
 
 
 setStatMaxVal : Int -> IntStat -> IntStat
@@ -436,13 +436,19 @@ update model battleMsg =
             ( model, Cmd.none, out_msg )
 
         TickSecond time ->
-            ( model, Cmd.none, NoOutMsg )
+            let
+                newGolem =
+                    monsterLivingMap (monsterStatMapStamina (addToStatCurVal 1)) model.golem
+            in
+            ( { model | golem = newGolem }, Cmd.none, NoOutMsg )
 
 
 
 -- end of update
 
 
+{-| does something on the actual monster
+-}
 monsterMap : (Monster -> a) -> DamagedMonster -> a
 monsterMap callback damagedMonster =
     case damagedMonster of
@@ -451,6 +457,30 @@ monsterMap callback damagedMonster =
 
         DeadMonster monster ->
             callback monster
+
+
+{-| does something on the actual monster, so long as its living
+-}
+monsterLivingMap : (Monster -> Monster) -> DamagedMonster -> DamagedMonster
+monsterLivingMap callback damagedMonster =
+    case damagedMonster of
+        LivingMonster monster ->
+            LivingMonster <| callback monster
+
+        DeadMonster monster ->
+            damagedMonster
+
+
+{-| does something on the actual monster, so long as its dead
+-}
+monsterDeadMap : (Monster -> Monster) -> DamagedMonster -> DamagedMonster
+monsterDeadMap callback damagedMonster =
+    case damagedMonster of
+        LivingMonster monster ->
+            damagedMonster
+
+        DeadMonster monster ->
+            DeadMonster <| callback monster
 
 
 padLeft : String -> Int -> String

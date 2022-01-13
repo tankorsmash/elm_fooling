@@ -367,20 +367,24 @@ update model battleMsg =
             if model.player.held_blood >= 5 then
                 case model.golem of
                     LivingMonster golem ->
-                        ( { model
-                            | golem =
-                                golem
-                                    |> monsterStatMapHP setStatToMax
-                                    |> LivingMonster
-                            , player =
-                                model.player
-                                    |> (\p ->
-                                            { p | held_blood = p.held_blood - 5 }
-                                       )
-                          }
-                        , Cmd.none
-                        , NoOutMsg
-                        )
+                        if not (golem.statHP.curVal == golem.statHP.maxVal) then
+                            ( { model
+                                | golem =
+                                    golem
+                                        |> monsterStatMapHP setStatToMax
+                                        |> LivingMonster
+                                , player =
+                                    model.player
+                                        |> (\p ->
+                                                { p | held_blood = p.held_blood - 5 }
+                                           )
+                              }
+                            , Cmd.none
+                            , NoOutMsg
+                            )
+
+                        else
+                            ( model, Cmd.none, NoOutMsg )
 
                     DeadMonster golem ->
                         ( model, Cmd.none, NoOutMsg )

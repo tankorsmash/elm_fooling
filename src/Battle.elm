@@ -242,6 +242,7 @@ type alias Model =
     , fightLogs : List FightLog
     , showExpandedLogs : Bool
     , player : BattleCharacter --NOTE: this is hackily read from in ItemShop's updateBattleOutMsg and used to update ItemShop's player. FIXME hack on that for sure
+    , secondsWaitedSinceLastSPRefill : Int
     }
 
 
@@ -256,6 +257,7 @@ init { held_blood, held_gold } =
     , fightLogs = []
     , showExpandedLogs = False
     , player = { held_blood = held_blood, held_gold = held_gold }
+    , secondsWaitedSinceLastSPRefill = 0
     }
 
 
@@ -453,10 +455,26 @@ update model battleMsg =
 
         TickSecond time ->
             let
-                newGolem =
-                    monsterLivingMap (monsterStatMapStamina (addToStatCurVal 1)) model.golem
+                newSecondsWaited =
+                    model.secondsWaitedSinceLastSPRefill + 1
             in
-            ( { model | golem = newGolem }, Cmd.none, NoOutMsg )
+            if newSecondsWaited >= 5 then
+                let
+                    newGolem =
+                        monsterLivingMap
+                            (monsterStatMapStamina (addToStatCurVal 1))
+                            model.golem
+                in
+                ( { model
+                    | golem = newGolem
+                    , secondsWaitedSinceLastSPRefill = 0
+                  }
+                , Cmd.none
+                , NoOutMsg
+                )
+
+            else
+                ( { model | secondsWaitedSinceLastSPRefill = newSecondsWaited }, Cmd.none, NoOutMsg )
 
 
 

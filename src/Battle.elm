@@ -546,6 +546,14 @@ explain =
     Element.explain Debug.todo
 
 
+fillMax pxWidth =
+    fill |> Element.maximum pxWidth
+
+
+fillMin pxWidth =
+    fill |> Element.minimum pxWidth
+
+
 view : ( Int, Int ) -> Model -> Element Msg
 view ( player_held_gold, player_held_blood ) model =
     column [ width fill, Font.size 16 ]
@@ -566,7 +574,7 @@ view ( player_held_gold, player_held_blood ) model =
                             ( DeadMonster _, _ ) ->
                                 ( UI.danger_button, Noop, "You're dead" )
                   in
-                  buttonType [ width (fill |> Element.minimum 125) ] msg txt
+                  buttonType [ width (fillMin 125) ] msg txt
                 ]
             , column
                 [ alignRight, width (Element.px 200) ]
@@ -589,24 +597,24 @@ view ( player_held_gold, player_held_blood ) model =
                         "Details"
                 , column [ width fill, spacing 1, padding 10 ]
                     [ UI.outline_button
-                        [ centerX, width (fill |> Element.maximum 150) ]
+                        [ centerX, width (fillMax 150) ]
                         HealGolem
                         "Heal"
                     , UI.outline_button
-                        [ centerX, width (fill |> Element.maximum 150) ]
+                        [ centerX, width (fillMax 150) ]
                         ReviveGolem
                         "Revive"
                     , UI.outline_button
-                        [ centerX, width (fill |> Element.maximum 150) ]
+                        [ centerX, width (fillMax 150) ]
                         Noop
                         "Strengthen (No-op)"
                     , UI.outline_button
-                        [ centerX, width (fill |> Element.maximum 150) ]
+                        [ centerX, width (fillMax 150) ]
                         Noop
                         "Harden (No-op)"
                     ]
                 , UI.outline_button
-                    [ centerX, width (fill |> Element.maximum 150) ]
+                    [ centerX, width (fillMax 150) ]
                     (SendOutMsg ReturnToShop)
                     "Back"
                 ]

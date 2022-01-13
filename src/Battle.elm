@@ -71,6 +71,7 @@ type Msg
     | FindNewEnemy
     | ToggleShowExpandedLogs
     | HealGolem
+    | ReviveGolem
     | SendOutMsg OutMsg
 
 
@@ -310,15 +311,36 @@ update model battleMsg =
             ( { model | showExpandedLogs = not model.showExpandedLogs }, Cmd.none, NoOutMsg )
 
         HealGolem ->
-            let
-                newGolem =
-                    monsterMap
-                        (monsterStatMap .statHP setStatHP setStatToMax
-                            >> LivingMonster
-                        )
-                        model.golem
-            in
-            ( { model | golem = newGolem }, Cmd.none, NoOutMsg )
+            case model.golem of
+                LivingMonster golem ->
+                    ( { model
+                        | golem =
+                            golem
+                                |> monsterStatMap .statHP setStatHP setStatToMax
+                                |> LivingMonster
+                      }
+                    , Cmd.none
+                    , NoOutMsg
+                    )
+
+                DeadMonster golem ->
+                    ( model, Cmd.none, NoOutMsg )
+
+        ReviveGolem ->
+            case model.golem of
+                DeadMonster golem ->
+                    let
+                        newGolem =
+                            monsterMap
+                                (monsterStatMap .statHP setStatHP (setStatCurVal 1)
+                                    >> LivingMonster
+                                )
+                                model.golem
+                    in
+                    ( { model | golem = newGolem }, Cmd.none, NoOutMsg )
+
+                LivingMonster _ ->
+                    ( model, Cmd.none, NoOutMsg )
 
         --handled by parent component (would be nice to handle this nicer)
         SendOutMsg out_msg ->
@@ -498,6 +520,10 @@ view ( player_held_gold, player_held_blood ) model =
                         [ centerX, width (fill |> Element.maximum 150) ]
                         HealGolem
                         "Heal"
+                    , UI.outline_button
+                        [ centerX, width (fill |> Element.maximum 150) ]
+                        ReviveGolem
+                        "Revive"
                     , UI.outline_button
                         [ centerX, width (fill |> Element.maximum 150) ]
                         Noop

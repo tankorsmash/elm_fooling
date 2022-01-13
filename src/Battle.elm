@@ -251,6 +251,17 @@ enemyKillsGolem golem enemy existingFightLogs =
     )
 
 
+monsterCounterAttacks : Monster -> Monster -> List FightLog -> ( DamagedMonster, DamagedMonster, List FightLog )
+monsterCounterAttacks golem enemy existingFightLogs =
+    case monsterFightsMonster enemy golem of
+        --enemy killed golem in the counterattack
+        ( LivingMonster killingEnemy, DeadMonster deadGolem, secondFightLogs_ ) ->
+            enemyKillsGolem deadGolem killingEnemy (existingFightLogs ++ secondFightLogs_)
+
+        ( e, g, secondFightLogs_ ) ->
+            ( g, e, existingFightLogs ++ secondFightLogs_ )
+
+
 updateFight : Model -> ( Model, Cmd Msg, OutMsg )
 updateFight model =
     case ( model.golem, model.enemyMonster ) of
@@ -264,13 +275,7 @@ updateFight model =
 
                         --enemy survived, so the counter attack happens
                         ( LivingMonster newGolem_, LivingMonster survivingEnemy, firstFightLogs_ ) ->
-                            case monsterFightsMonster survivingEnemy newGolem_ of
-                                --enemy killed golem in the counterattack
-                                ( LivingMonster killingEnemy, DeadMonster deadGolem, secondFightLogs_ ) ->
-                                    enemyKillsGolem deadGolem killingEnemy (firstFightLogs_ ++ secondFightLogs_)
-
-                                ( e, g, secondFightLogs_ ) ->
-                                    ( g, e, firstFightLogs_ ++ secondFightLogs_ )
+                            monsterCounterAttacks newGolem_ survivingEnemy firstFightLogs_
 
                         ( DeadMonster newGolem_, LivingMonster killingEnemy, firstFightLogs_ ) ->
                             enemyKillsGolem newGolem_ killingEnemy firstFightLogs_

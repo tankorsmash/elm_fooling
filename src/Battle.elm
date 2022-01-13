@@ -382,8 +382,11 @@ update model battleMsg =
                     LivingMonster golem ->
                         if not (golem.statHP.curVal == golem.statHP.maxVal) then
                             let
-                                currentHP = golem.statHP.curVal
-                                maxHP = golem.statHP.maxVal
+                                currentHP =
+                                    golem.statHP.curVal
+
+                                maxHP =
+                                    golem.statHP.maxVal
                             in
                             ( { model
                                 | golem =
@@ -396,7 +399,7 @@ update model battleMsg =
                                                 { p | held_blood = p.held_blood - healGolemBloodCost }
                                            )
                                 , fightLogs =
-                                    model.fightLogs ++ [PlayerHealedGolem (maxHP - currentHP)]
+                                    model.fightLogs ++ [ PlayerHealedGolem (maxHP - currentHP) ]
                               }
                             , Cmd.none
                             , NoOutMsg
@@ -559,9 +562,9 @@ viewMonsterInBattle damagedMonster showXp =
 
 viewSingleFightLog : Bool -> FightLog -> Element Msg
 viewSingleFightLog expandedLog fightLog =
-    if expandedLog then
-        case fightLog of
-            MonsterAttackedMonster { attacker, defender, attackerPower, defenderProtection, damageTaken } ->
+    case fightLog of
+        MonsterAttackedMonster { attacker, defender, attackerPower, defenderProtection, damageTaken } ->
+            if expandedLog then
                 paragraph []
                     [ text <|
                         attacker.name
@@ -577,40 +580,23 @@ viewSingleFightLog expandedLog fightLog =
                             ++ ")"
                     ]
 
-            FoundNewMonster newMonster ->
-                paragraph [] [ text <| "Found new monster: " ++ newMonster.name ]
-
-            GolemKilledMonster attacker deadMonster xp_gained ->
-                paragraph [] [ text <| attacker.name ++ " killed " ++ deadMonster.name ++ ", gaining " ++ String.fromInt xp_gained ++ " XP, and an item was put up for sale." ]
-
-            MonsterKilledGolem golem monster ->
-                paragraph [] [ text <| monster.name ++ " killed " ++ golem.name ++ ". You must now Revive your Golem." ]
-
-            PlayerHealedGolem amount ->
-                paragraph [] [ text <| "You healed your creature by " ++ String.fromInt amount ++ " HP." ]
-
-            PlayerRevivedGolem ->
-                paragraph [] [ text <| "You revived your creature." ]
-
-    else
-        case fightLog of
-            MonsterAttackedMonster { attacker, defender, attackerPower, defenderProtection, damageTaken } ->
+            else
                 paragraph [] [ text <| attacker.name ++ " attacked " ++ defender.name ++ " for " ++ String.fromInt damageTaken ++ " total damage." ]
 
-            FoundNewMonster newMonster ->
-                paragraph [] [ text <| "Found new monster: " ++ newMonster.name ]
+        FoundNewMonster newMonster ->
+            paragraph [] [ text <| "Found new monster: " ++ newMonster.name ]
 
-            GolemKilledMonster attacker deadMonster xp_gained ->
-                paragraph [] [ text <| attacker.name ++ " killed " ++ deadMonster.name ++ ", gaining " ++ String.fromInt xp_gained ++ " XP." ]
+        GolemKilledMonster attacker deadMonster xp_gained ->
+            paragraph [] [ text <| attacker.name ++ " killed " ++ deadMonster.name ++ ", gaining " ++ String.fromInt xp_gained ++ " XP, and an item was put up for sale." ]
 
-            MonsterKilledGolem golem monster ->
-                paragraph [] [ text <| monster.name ++ " killed " ++ golem.name ++ ". You must now Revive your Golem." ]
+        MonsterKilledGolem golem monster ->
+            paragraph [] [ text <| monster.name ++ " killed " ++ golem.name ++ ". You must now Revive your Golem." ]
 
-            PlayerHealedGolem amount ->
-                paragraph [] [ text <| "You healed your creature by " ++ String.fromInt amount ++ " HP." ]
+        PlayerHealedGolem amount ->
+            paragraph [] [ text <| "You healed your creature by " ++ String.fromInt amount ++ " HP." ]
 
-            PlayerRevivedGolem ->
-                paragraph [] [ text <| "You revived your creature." ]
+        PlayerRevivedGolem ->
+            paragraph [] [ text <| "You revived your creature." ]
 
 
 viewFightLog : Bool -> List FightLog -> Element Msg

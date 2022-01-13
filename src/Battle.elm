@@ -101,8 +101,13 @@ setStatCurVal newCurVal stat =
     { stat | curVal = newCurVal }
 
 
-addStatCurVal : Int -> IntStat -> IntStat
-addStatCurVal addedCurVal stat =
+addToStatMaxVal : Int -> IntStat -> IntStat
+addToStatMaxVal addedMaxVal stat =
+    { stat | maxVal = stat.maxVal + addedMaxVal }
+
+
+addToStatCurVal : Int -> IntStat -> IntStat
+addToStatCurVal addedCurVal stat =
     { stat | curVal = stat.curVal + addedCurVal }
 
 
@@ -266,40 +271,44 @@ updateFight : Model -> ( Model, Cmd Msg, OutMsg )
 updateFight model =
     case ( model.golem, model.enemyMonster ) of
         ( LivingMonster golem, LivingMonster enemyMonster ) ->
-            let
-                ( newGolem, damagedEnemyMonster, fightLogs ) =
-                    case monsterFightsMonster golem enemyMonster of
-                        --golem kills enemy
-                        ( LivingMonster newGolem_, DeadMonster deadEnemy, firstFightLogs_ ) ->
-                            golemKillsEnemy newGolem_ deadEnemy firstFightLogs_
+            if golem.statStamina.curVal > 0 then
+                let
+                    ( newGolem, damagedEnemyMonster, fightLogs ) =
+                        case monsterFightsMonster golem enemyMonster of
+                            --golem kills enemy
+                            ( LivingMonster newGolem_, DeadMonster deadEnemy, firstFightLogs_ ) ->
+                                golemKillsEnemy newGolem_ deadEnemy firstFightLogs_
 
-                        --enemy survived, so the counter attack happens
-                        ( LivingMonster newGolem_, LivingMonster survivingEnemy, firstFightLogs_ ) ->
-                            monsterCounterAttacks newGolem_ survivingEnemy firstFightLogs_
+                            --enemy survived, so the counter attack happens
+                            ( LivingMonster newGolem_, LivingMonster survivingEnemy, firstFightLogs_ ) ->
+                                monsterCounterAttacks newGolem_ survivingEnemy firstFightLogs_
 
-                        ( DeadMonster newGolem_, LivingMonster killingEnemy, firstFightLogs_ ) ->
-                            enemyKillsGolem newGolem_ killingEnemy firstFightLogs_
+                            ( DeadMonster newGolem_, LivingMonster killingEnemy, firstFightLogs_ ) ->
+                                enemyKillsGolem newGolem_ killingEnemy firstFightLogs_
 
-                        --if no dead enemy, proceed as normal
-                        ( g, e, firstFightLogs_ ) ->
-                            ( g, e, firstFightLogs_ )
+                            --if no dead enemy, proceed as normal
+                            ( g, e, firstFightLogs_ ) ->
+                                ( g, e, firstFightLogs_ )
 
-                _ =
-                    Debug.log "fight logs" fightLogs
-            in
-            ( { model
-                | golem = newGolem
-                , enemyMonster = damagedEnemyMonster
-                , fightLogs = List.append model.fightLogs fightLogs
-              }
-            , Cmd.none
-            , case damagedEnemyMonster of
-                DeadMonster _ ->
-                    DeliverItemToShopOnMonsterDefeat
+                    _ =
+                        Debug.log "fight logs" fightLogs
+                in
+                ( { model
+                    | golem = newGolem
+                    , enemyMonster = damagedEnemyMonster
+                    , fightLogs = List.append model.fightLogs fightLogs
+                  }
+                , Cmd.none
+                , case damagedEnemyMonster of
+                    DeadMonster _ ->
+                        DeliverItemToShopOnMonsterDefeat
 
-                _ ->
-                    NoOutMsg
-            )
+                    _ ->
+                        NoOutMsg
+                )
+
+            else
+                ( model, Cmd.none, NoOutMsg )
 
         _ ->
             Debug.log "dead something" ( model, Cmd.none, NoOutMsg )
@@ -574,7 +583,7 @@ monsterTakeDamage damageToTake monster =
     let
         newMonster : Monster
         newMonster =
-            { monster | statHP = addStatCurVal -damageToTake monster.statHP }
+            { monster | statHP = addToStatCurVal -damageToTake monster.statHP }
     in
     if newMonster.statHP.curVal > 0 then
         LivingMonster newMonster
@@ -597,8 +606,17 @@ monsterFightsMonster attacker defender =
                 - defenderProtection
                 |> max 1
 
+        staminaCostToAttack =
+            -1
+
         newAttacker =
-            LivingMonster attacker
+            LivingMonster
+                (monsterStatMap
+                    .statStamina
+                    setStatStamina
+                    (addToStatCurVal staminaCostToAttack)
+                    attacker
+                )
 
         newDefender =
             monsterTakeDamage damageToTake defender

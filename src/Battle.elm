@@ -546,12 +546,46 @@ explain =
     Element.explain Debug.todo
 
 
+fillMax : Int -> Element.Length
 fillMax pxWidth =
     fill |> Element.maximum pxWidth
 
 
+fillMin : Int -> Element.Length
 fillMin pxWidth =
     fill |> Element.minimum pxWidth
+
+
+viewBattleControls : Model -> List (Element Msg)
+viewBattleControls model =
+    [ el [ centerX, width (fill |> Element.maximum 150) ] <|
+        UI.outline_button
+            [ centerX, width fill ]
+            ToggleShowExpandedLogs
+            "Details"
+    , column [ width fill, spacing 1, padding 10 ]
+        [ UI.outline_button
+            [ centerX, width (fillMax 150) ]
+            HealGolem
+            "Heal"
+        , UI.outline_button
+            [ centerX, width (fillMax 150) ]
+            ReviveGolem
+            "Revive"
+        , UI.outline_button
+            [ centerX, width (fillMax 150) ]
+            Noop
+            "Strengthen (No-op)"
+        , UI.outline_button
+            [ centerX, width (fillMax 150) ]
+            Noop
+            "Harden (No-op)"
+        ]
+    , UI.outline_button
+        [ centerX, width (fillMax 150) ]
+        (SendOutMsg ReturnToShop)
+        "Back"
+    ]
 
 
 view : ( Int, Int ) -> Model -> Element Msg
@@ -590,34 +624,7 @@ view ( player_held_gold, player_held_blood ) model =
         , row [ width fill ]
             [ el [ width <| fillPortion 4, alignTop ] <| viewFightLog model.showExpandedLogs model.fightLogs
             , column [ width <| fillPortion 2, alignTop ]
-                [ el [ centerX, width (fill |> Element.maximum 150) ] <|
-                    UI.outline_button
-                        [ centerX, width fill ]
-                        ToggleShowExpandedLogs
-                        "Details"
-                , column [ width fill, spacing 1, padding 10 ]
-                    [ UI.outline_button
-                        [ centerX, width (fillMax 150) ]
-                        HealGolem
-                        "Heal"
-                    , UI.outline_button
-                        [ centerX, width (fillMax 150) ]
-                        ReviveGolem
-                        "Revive"
-                    , UI.outline_button
-                        [ centerX, width (fillMax 150) ]
-                        Noop
-                        "Strengthen (No-op)"
-                    , UI.outline_button
-                        [ centerX, width (fillMax 150) ]
-                        Noop
-                        "Harden (No-op)"
-                    ]
-                , UI.outline_button
-                    [ centerX, width (fillMax 150) ]
-                    (SendOutMsg ReturnToShop)
-                    "Back"
-                ]
+                (viewBattleControls model)
             ]
         ]
 

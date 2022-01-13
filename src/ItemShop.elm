@@ -1967,28 +1967,28 @@ update msg model =
             )
 
         SacrificeItem item ->
-            ( getPlayer model
-                |> Maybe.map
-                    (\player ->
-                        let
-                            itemGoldCost =
-                                get_adjusted_item_cost model.shop_trends item (setQuantity 1)
+            ( mapPlayer
+                (\player ->
+                    let
+                        itemGoldCost =
+                            get_adjusted_item_cost
+                                model.shop_trends
+                                item
+                                (setQuantity 1)
 
-                            newItems =
-                                remove_item_from_inventory_records
-                                    player.held_items
-                                    item
-                                    (setQuantity 1)
-                                    itemGoldCost
-                        in
-                        withCharacter
-                            { player
-                                | held_items = newItems
-                                , held_blood = player.held_blood + itemGoldCost
-                            }
-                            model
-                    )
-                |> Maybe.withDefault model
+                        newItems =
+                            remove_item_from_inventory_records
+                                player.held_items
+                                item
+                                (setQuantity 1)
+                                itemGoldCost
+                    in
+                    { player
+                        | held_items = newItems
+                        , held_blood = player.held_blood + itemGoldCost
+                    }
+                )
+                model
             , Cmd.none
             )
 

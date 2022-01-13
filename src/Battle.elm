@@ -1,4 +1,4 @@
-module Battle exposing (Model, Msg(..), OutMsg(..), init, subscriptions, suite, update, view)
+module Battle exposing (Model, Msg(..), OutMsg(..), init2, subscriptions, suite, update, view)
 
 import Array
 import Browser.Dom
@@ -197,17 +197,26 @@ type FightLog
     | MonsterKilledMonster Monster Monster Int
 
 
+{-| we're going to have to import Character at some point, for now though this is good enough
+-}
+type alias BattleCharacter =
+    { held_gold : Int
+    , held_blood : Int
+    }
+
+
 type alias Model =
     { golem : DamagedMonster
     , enemyMonster : DamagedMonster
     , battleSeed : Random.Seed
     , fightLogs : List FightLog
     , showExpandedLogs : Bool
+    , player : BattleCharacter
     }
 
 
-init : Model
-init =
+init2 : { a | held_blood : Int, held_gold : Int } -> Model
+init2 { held_blood, held_gold } =
     { golem = LivingMonster <| createMonster "Golem" 50 10 0
     , enemyMonster =
         createMonster "Slime" 10 2 5
@@ -216,6 +225,7 @@ init =
     , battleSeed = Random.initialSeed 123456
     , fightLogs = []
     , showExpandedLogs = False
+    , player = { held_blood = held_blood, held_gold = held_gold }
     }
 
 
@@ -442,8 +452,8 @@ explain =
     Element.explain Debug.todo
 
 
-view : (Int, Int) -> Model -> Element Msg
-view (player_held_gold, player_held_blood) model =
+view : ( Int, Int ) -> Model -> Element Msg
+view ( player_held_gold, player_held_blood ) model =
     column [ width fill, Font.size 16 ]
         [ el [ Font.size 24, Element.paddingEach { bottom = 20, top = 0, left = 0, right = 0 } ] <| text "Battle!"
         , row [ width fill ]

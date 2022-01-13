@@ -1185,44 +1185,49 @@ init hash key =
         initial_tab_type =
             stringToTabType hash
 
+        battleModel : Battle.Model
         battleModel =
-            Battle.init
-    in
-    ( { colorTheme = BrightTheme
-      , player_id = player.char_id
-      , player_upgrades = [ AutomaticGPM 1 ]
-      , shop_id = shop.char_id
-      , characters = characters
-      , hovered_item_in_character = Nothing
-      , shop_trends = initial_shop_trends
-      , item_db = item_db
-      , historical_shop_trends = []
-      , historical_player_actions = [ WelcomeMessageActionLog ]
-      , shop_trends_hovered = False
-      , ai_tick_time = Time.millisToPosix -1
-      , show_main_chart = True
-      , hovered_trend_chart = []
-      , show_debug_inventories = True
-      , show_charts_in_hovered_item = False
-      , shiftIsPressed = False
-      , hovered_tooltip = NoHoveredTooltip
-      , cached_tooltip_offsets = Dict.empty
-      , global_seed = Random.initialSeed 4
-      , ai_updates_paused =
-            if initial_tab_type == ShopTabType then
-                False
+            Battle.init2 player
 
-            else
-                True
-      , tab_type = initial_tab_type
-      , globalViewport = Nothing
-      , showDebugInventoriesElement = Nothing
-      , shouldDisplayShowDebugInventoriesOverlay = False
-      , battleModel = battleModel
-      , browserNavKey = key
-      , inventorySortType = SortByName
-      , inventorySortDir = Ascending
-      }
+        initModel : Model
+        initModel =
+            { colorTheme = BrightTheme
+            , player_id = player.char_id
+            , player_upgrades = [ AutomaticGPM 1 ]
+            , shop_id = shop.char_id
+            , characters = characters
+            , hovered_item_in_character = Nothing
+            , shop_trends = initial_shop_trends
+            , item_db = item_db
+            , historical_shop_trends = []
+            , historical_player_actions = [ WelcomeMessageActionLog ]
+            , shop_trends_hovered = False
+            , ai_tick_time = Time.millisToPosix -1
+            , show_main_chart = True
+            , hovered_trend_chart = []
+            , show_debug_inventories = True
+            , show_charts_in_hovered_item = False
+            , shiftIsPressed = False
+            , hovered_tooltip = NoHoveredTooltip
+            , cached_tooltip_offsets = Dict.empty
+            , global_seed = Random.initialSeed 4
+            , ai_updates_paused =
+                if initial_tab_type == ShopTabType then
+                    False
+
+                else
+                    True
+            , tab_type = initial_tab_type
+            , globalViewport = Nothing
+            , showDebugInventoriesElement = Nothing
+            , shouldDisplayShowDebugInventoriesOverlay = False
+            , battleModel = battleModel
+            , browserNavKey = key
+            , inventorySortType = SortByName
+            , inventorySortDir = Ascending
+            }
+    in
+    ( initModel
     , Task.perform TickSecond Time.now
     )
 

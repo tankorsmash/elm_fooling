@@ -195,7 +195,8 @@ type alias MonsterAttackedData =
 type FightLog
     = MonsterAttackedMonster MonsterAttackedData
     | FoundNewMonster Monster
-    | MonsterKilledMonster Monster Monster Int
+    | GolemKilledMonster Monster Monster Int
+    | MonsterKilledGolem Monster Monster
 
 
 {-| we're going to have to import Character at some point, for now though this is good enough
@@ -218,7 +219,7 @@ type alias Model =
 
 init : { a | held_blood : Int, held_gold : Int } -> Model
 init { held_blood, held_gold } =
-    { golem = LivingMonster <| createMonster "Golem" 50 10 0
+    { golem = LivingMonster <| createMonster "Golem" 10 10 0
     , enemyMonster =
         createMonster "Slime" 10 2 5
             |> (\s -> { s | statHP = s.statHP |> setStatCurVal 4 })
@@ -238,7 +239,15 @@ golemKillsEnemy golem deadEnemy fightLogs =
     in
     ( LivingMonster victorGolem
     , DeadMonster deadEnemy
-    , fightLogs ++ [ MonsterKilledMonster golem deadEnemy gainedXp ]
+    , fightLogs ++ [ GolemKilledMonster golem deadEnemy gainedXp ]
+    )
+
+
+enemyKillsGolem : Monster -> Monster -> List FightLog -> ( DamagedMonster, DamagedMonster, List FightLog )
+enemyKillsGolem golem enemy existingFightLogs =
+    ( DeadMonster golem
+    , LivingMonster enemy
+    , existingFightLogs ++ [ MonsterKilledGolem golem enemy ]
     )
 
 
@@ -256,15 +265,22 @@ updateFight model =
                         --enemy survived, so the counter attack happens
                         ( LivingMonster newGolem_, LivingMonster survivingEnemy, firstFightLogs_ ) ->
                             case monsterFightsMonster survivingEnemy newGolem_ of
-                                --if no dead enemy, proceed as normal
-                                -- TODO: handle dead golem
-                                ( e, g, secondfightLogs_ ) ->
-                                    ( g, e, firstFightLogs_ ++ secondfightLogs_ )
+                                --enemy killed golem in the counterattack
+                                ( LivingMonster killingEnemy, DeadMonster deadGolem, secondFightLogs_ ) ->
+                                    enemyKillsGolem deadGolem killingEnemy (firstFightLogs_ ++ secondFightLogs_)
+
+                                ( e, g, secondFightLogs_ ) ->
+                                    ( g, e, firstFightLogs_ ++ secondFightLogs_ )
+
+                        ( DeadMonster newGolem_, LivingMonster killingEnemy, firstFightLogs_ ) ->
+                            enemyKillsGolem newGolem_ killingEnemy firstFightLogs_
 
                         --if no dead enemy, proceed as normal
-                        -- TODO: handle dead golem
                         ( g, e, firstFightLogs_ ) ->
                             ( g, e, firstFightLogs_ )
+
+                _ =
+                    Debug.log "fight logs" fightLogs
             in
             ( { model
                 | golem = newGolem
@@ -445,8 +461,11 @@ viewSingleFightLog expandedLog fightLog =
             FoundNewMonster newMonster ->
                 paragraph [] [ text <| "Found new monster: " ++ newMonster.name ]
 
-            MonsterKilledMonster attacker deadMonster xp_gained ->
+            GolemKilledMonster attacker deadMonster xp_gained ->
                 paragraph [] [ text <| attacker.name ++ " killed " ++ deadMonster.name ++ ", gaining " ++ String.fromInt xp_gained ++ " XP, and an item was put up for sale." ]
+
+            MonsterKilledGolem golem monster ->
+                paragraph [] [ text <| monster.name ++ " killed " ++ golem.name ++ ". You must now Revive your Golem." ]
 
     else
         case fightLog of
@@ -456,8 +475,11 @@ viewSingleFightLog expandedLog fightLog =
             FoundNewMonster newMonster ->
                 paragraph [] [ text <| "Found new monster: " ++ newMonster.name ]
 
-            MonsterKilledMonster attacker deadMonster xp_gained ->
+            GolemKilledMonster attacker deadMonster xp_gained ->
                 paragraph [] [ text <| attacker.name ++ " killed " ++ deadMonster.name ++ ", gaining " ++ String.fromInt xp_gained ++ " XP." ]
+
+            MonsterKilledGolem golem monster ->
+                paragraph [] [ text <| monster.name ++ " killed " ++ golem.name ++ ". You must now Revive your Golem." ]
 
 
 viewFightLog : Bool -> List FightLog -> Element Msg

@@ -1629,20 +1629,30 @@ mapPlayer callback model =
             model
 
 
+{-| builds a new Battle.Model with the latest data we want
+-}
 transferToBattleModel : Model -> Battle.Model
 transferToBattleModel model =
-    model.battleModel
+    let
+        mbPlayer =
+            getPlayer model
+    in
+    Maybe.map
+        (\p ->
+            let
+                { battleModel } =
+                    model
 
+                battlePlayer =
+                    battleModel.player
 
-
--- |> (\bm ->
---         let
---             oldPlayer = bm.player
---             newPlayer =
---                 {oldPlayer | held_gold =
---         in
---             { bm | player = ne
---    )
+                newPlayer =
+                    { battlePlayer | held_gold = p.held_gold, held_blood = p.held_blood }
+            in
+            { battleModel | player = newPlayer }
+        )
+        mbPlayer
+        |> Maybe.withDefault model.battleModel
 
 
 transferFromBattleModel : Model -> Battle.Model -> Model

@@ -566,36 +566,39 @@ fillMin pxWidth =
     fill |> Element.minimum pxWidth
 
 
+
+-- type CanHealGolem = NotHealable | CannotAffordHeal | CanAffordHeal
+-- type CanReviveGolem = NotReviveable | CannotAffordRevive | CanAffordRevive
+
+
 viewBattleControls : Model -> List (Element Msg)
 viewBattleControls { golem, player } =
     let
-        canHealGolem =
-            if player.held_blood >= healGolemBloodCost then
-                case golem of
-                    LivingMonster livingGolem ->
-                        livingGolem.statHP
-                            |> (\statHP ->
-                                    (statHP.curVal > 0)
-                                        && (statHP.curVal < statHP.maxVal)
-                               )
+        canAffordHealGolem =
+            player.held_blood >= healGolemBloodCost
 
-                    DeadMonster _ ->
-                        False
+        golemHealable =
+            case golem of
+                LivingMonster livingGolem ->
+                    livingGolem.statHP
+                        |> (\statHP ->
+                                (statHP.curVal > 0)
+                                    && (statHP.curVal < statHP.maxVal)
+                           )
 
-            else
-                False
+                DeadMonster _ ->
+                    False
 
-        canReviveGolem =
-            if player.held_blood >= reviveGolemBloodCost then
-                case golem of
-                    LivingMonster _ ->
-                        False
+        canAffordReviveGolem =
+            player.held_blood >= reviveGolemBloodCost
 
-                    DeadMonster _ ->
-                        True
+        golemRevivable =
+            case golem of
+                LivingMonster _ ->
+                    False
 
-            else
-                False
+                DeadMonster _ ->
+                    True
     in
     [ el [ centerX, width (fill |> Element.maximum 150) ] <|
         UI.outline_button
@@ -604,11 +607,33 @@ viewBattleControls { golem, player } =
             "Details"
     , column [ width fill, spacing 1, padding 10 ]
         [ UI.outline_button
-            [ centerX, width (fillMax 150), Element.transparent <| not canHealGolem ]
+            [ centerX
+            , width (fillMax 150)
+            , Element.alpha <|
+                if not golemHealable then
+                    0.0
+
+                else if not canAffordHealGolem then
+                    0.5
+
+                else
+                    1.0
+            ]
             HealGolem
             "Heal"
         , UI.outline_button
-            [ centerX, width (fillMax 150), Element.transparent <| not canReviveGolem ]
+            [ centerX
+            , width (fillMax 150)
+            , Element.alpha <|
+                if not golemRevivable then
+                    0.0
+
+                else if not canAffordReviveGolem then
+                    0.5
+
+                else
+                    1.0
+            ]
             ReviveGolem
             "Revive"
         , UI.outline_button

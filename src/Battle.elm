@@ -403,20 +403,24 @@ update model battleMsg =
                 ( model, Cmd.none, NoOutMsg )
 
         ReviveGolem ->
-            case model.golem of
-                DeadMonster golem ->
-                    let
-                        newGolem =
-                            monsterMap
-                                (monsterStatMapHP (setStatCurVal 1)
-                                    >> LivingMonster
-                                )
-                                model.golem
-                    in
-                    ( { model | golem = newGolem }, Cmd.none, NoOutMsg )
+            if model.player.held_blood >= reviveGolemBloodCost then
+                case model.golem of
+                    DeadMonster golem ->
+                        let
+                            newGolem =
+                                monsterMap
+                                    (monsterStatMapHP (setStatCurVal 1)
+                                        >> LivingMonster
+                                    )
+                                    model.golem
+                        in
+                        ( { model | golem = newGolem }, Cmd.none, NoOutMsg )
 
-                LivingMonster _ ->
-                    ( model, Cmd.none, NoOutMsg )
+                    LivingMonster _ ->
+                        ( model, Cmd.none, NoOutMsg )
+
+            else
+                ( model, Cmd.none, NoOutMsg )
 
         --handled by parent component (would be nice to handle this nicer)
         SendOutMsg out_msg ->

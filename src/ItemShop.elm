@@ -984,10 +984,10 @@ initial_characters : ItemDb -> List Character
 initial_characters item_db =
     let
         base_character_1 =
-            create_character (generate_uuid "character 1") "Billy"
+            createCharacter (generate_uuid "character 1") "Billy"
 
         base_character_2 =
-            create_character (generate_uuid "character 2") "Mitchell"
+            createCharacter (generate_uuid "character 2") "Mitchell"
     in
     [ { base_character_1
         | held_items =
@@ -1096,8 +1096,8 @@ empty_trend_tolerance =
     { buy = Dict.empty, sell = Dict.empty }
 
 
-create_character : UUID -> String -> Character
-create_character char_id name =
+createCharacter : UUID -> String -> Character
+createCharacter char_id name =
     { -- inventory
       held_items = []
     , held_gold = 0
@@ -1152,10 +1152,10 @@ init : String -> Maybe Nav.Key -> ( Model, Cmd Msg )
 init hash key =
     let
         player_base_char =
-            create_character (UUID.forName "player character" UUID.dnsNamespace) "Player"
+            createCharacter (UUID.forName "player character" UUID.dnsNamespace) "Player"
 
         shop_base_char =
-            create_character (UUID.forName "shop character" UUID.dnsNamespace) "Shop"
+            createCharacter (UUID.forName "shop character" UUID.dnsNamespace) "Shop"
 
         item_db : ItemDb
         item_db =
@@ -2107,7 +2107,7 @@ handle_invite_trader model =
             "Character " ++ (String.fromInt <| List.length model.characters + 1)
 
         invited_character =
-            create_character (generate_uuid name) name
+            createCharacter (generate_uuid name) name
 
         ( num_items, _ ) =
             Random.step (Random.int 1 5) global_seed
@@ -5102,11 +5102,11 @@ suite =
 
                 test_character : Character
                 test_character =
-                    create_character (generate_uuid "Test Character !!") "Testy McTested"
+                    createCharacter (generate_uuid "Test Character !!") "Testy McTested"
 
                 test_character2 : Character
                 test_character2 =
-                    create_character (generate_uuid "Second test character") "Testa Mysticles"
+                    createCharacter (generate_uuid "Second test character") "Testa Mysticles"
 
                 test_model : Model
                 test_model =

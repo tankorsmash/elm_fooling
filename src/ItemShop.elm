@@ -1640,83 +1640,73 @@ update msg model =
             ( { model | hovered_item_in_character = Nothing }, Cmd.none )
 
         PlayerBuyItemFromShop item qty ->
-            case getShop model of
-                Just shop ->
-                    case getPlayer model of
-                        Just player ->
-                            let
-                                -- ( new_shop_trends, new_shop, new_player ) =
-                                trade_record =
-                                    sell_items_from_party_to_other
-                                        { shop_trends = model.shop_trends
-                                        , from_party = shop
-                                        , to_party = player
-                                        }
-                                        { item = item, qty = qty }
+            case ( getShop model, getPlayer model ) of
+                ( Just shop, Just player ) ->
+                    let
+                        -- ( new_shop_trends, new_shop, new_player ) =
+                        trade_record =
+                            sell_items_from_party_to_other
+                                { shop_trends = model.shop_trends
+                                , from_party = shop
+                                , to_party = player
+                                }
+                                { item = item, qty = qty }
 
-                                new_trade_context =
-                                    getTradeContext trade_record
+                        new_trade_context =
+                            getTradeContext trade_record
 
-                                new_item_db =
-                                    updateItemDbFromTradeRecord model.item_db updateTimesYouBought trade_record
-                            in
-                            ( { model
-                                | shop_trends = new_trade_context.shop_trends
-                                , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
-                                , item_db = new_item_db
-                              }
-                                --it doesn't matter who was what party, they're still getting updated
-                                |> withCharacter new_trade_context.to_party
-                                |> withCharacter new_trade_context.from_party
-                            , Cmd.none
-                            )
+                        new_item_db =
+                            updateItemDbFromTradeRecord model.item_db updateTimesYouBought trade_record
+                    in
+                    ( { model
+                        | shop_trends = new_trade_context.shop_trends
+                        , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
+                        , item_db = new_item_db
+                      }
+                        --it doesn't matter who was what party, they're still getting updated
+                        |> withCharacter new_trade_context.to_party
+                        |> withCharacter new_trade_context.from_party
+                    , Cmd.none
+                    )
 
-                        Nothing ->
-                            ( model, Cmd.none )
-
-                Nothing ->
+                _ ->
                     ( model, Cmd.none )
 
         PlayerSellItemToShop item qty ->
-            case getShop model of
-                Just shop ->
-                    case getPlayer model of
-                        Just player ->
-                            let
-                                trade_order =
-                                    { item = item, qty = qty }
+            case ( getShop model, getPlayer model ) of
+                ( Just shop, Just player ) ->
+                    let
+                        trade_order =
+                            { item = item, qty = qty }
 
-                                orig_trade_context =
-                                    { shop_trends = model.shop_trends
-                                    , from_party = player
-                                    , to_party = shop
-                                    }
+                        orig_trade_context =
+                            { shop_trends = model.shop_trends
+                            , from_party = player
+                            , to_party = shop
+                            }
 
-                                trade_record =
-                                    sell_items_from_party_to_other
-                                        orig_trade_context
-                                        trade_order
+                        trade_record =
+                            sell_items_from_party_to_other
+                                orig_trade_context
+                                trade_order
 
-                                new_trade_context =
-                                    getTradeContext trade_record
+                        new_trade_context =
+                            getTradeContext trade_record
 
-                                new_item_db =
-                                    updateItemDbFromTradeRecord model.item_db updateTimesYouSold trade_record
-                            in
-                            ( { model
-                                | shop_trends = new_trade_context.shop_trends
-                                , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
-                                , item_db = new_item_db
-                              }
-                                |> withCharacter new_trade_context.from_party
-                                |> withCharacter new_trade_context.to_party
-                            , Cmd.none
-                            )
+                        new_item_db =
+                            updateItemDbFromTradeRecord model.item_db updateTimesYouSold trade_record
+                    in
+                    ( { model
+                        | shop_trends = new_trade_context.shop_trends
+                        , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
+                        , item_db = new_item_db
+                      }
+                        |> withCharacter new_trade_context.from_party
+                        |> withCharacter new_trade_context.to_party
+                    , Cmd.none
+                    )
 
-                        Nothing ->
-                            ( model, Cmd.none )
-
-                Nothing ->
+                _ ->
                     ( model, Cmd.none )
 
         StartTrendsHover ->

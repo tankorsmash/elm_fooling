@@ -339,6 +339,11 @@ healGolemBloodCost =
     5
 
 
+reviveGolemBloodCost : Int
+reviveGolemBloodCost =
+    25
+
+
 {-| called from ItemShop.updateBattleOutMsg, which does some post processing
 like reading what Battle.Model.player's held\_gold and held\_blood are
 -}
@@ -579,6 +584,18 @@ viewBattleControls { golem, player } =
 
             else
                 False
+
+        canReviveGolem =
+            if player.held_blood >= reviveGolemBloodCost then
+                case golem of
+                    LivingMonster _ ->
+                        False
+
+                    DeadMonster _ ->
+                        True
+
+            else
+                False
     in
     [ el [ centerX, width (fill |> Element.maximum 150) ] <|
         UI.outline_button
@@ -591,7 +608,7 @@ viewBattleControls { golem, player } =
             HealGolem
             "Heal"
         , UI.outline_button
-            [ centerX, width (fillMax 150) ]
+            [ centerX, width (fillMax 150), Element.transparent <| not canReviveGolem ]
             ReviveGolem
             "Revive"
         , UI.outline_button

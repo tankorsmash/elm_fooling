@@ -717,5 +717,10 @@ subscriptions model =
     Sub.none
 
 
+attrNone : Element.Attribute Msg
+attrNone =
+    Element.htmlAttribute <| Html.Attributes.class ""
+
+
 suite =
     ()

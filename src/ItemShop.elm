@@ -1633,25 +1633,22 @@ mapPlayer callback model =
 -}
 transferToBattleModel : Model -> Battle.Model
 transferToBattleModel model =
-    let
-        mbPlayer =
-            getPlayer model
-    in
-    Maybe.map
-        (\p ->
-            let
-                { battleModel } =
-                    model
+    model
+        |> getPlayer
+        |> Maybe.map
+            (\p ->
+                let
+                    { battleModel } =
+                        model
 
-                battlePlayer =
-                    battleModel.player
+                    battlePlayer =
+                        battleModel.player
 
-                newPlayer =
-                    { battlePlayer | held_gold = p.held_gold, held_blood = p.held_blood }
-            in
-            { battleModel | player = newPlayer }
-        )
-        mbPlayer
+                    newPlayer =
+                        { battlePlayer | held_gold = p.held_gold, held_blood = p.held_blood }
+                in
+                { battleModel | player = newPlayer }
+            )
         |> Maybe.withDefault model.battleModel
 
 

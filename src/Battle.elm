@@ -510,18 +510,18 @@ view ( player_held_gold, player_held_blood ) model =
                 [ Element.el [ alignLeft ] <| viewMonsterInBattle model.golem True ]
             , column [ centerX ]
                 [ let
-                    ( msg, txt ) =
+                    ( buttonType, msg, txt ) =
                         case ( model.golem, model.enemyMonster ) of
                             ( LivingMonster _, LivingMonster _ ) ->
-                                ( Fight, "Fight" )
+                                ( UI.primary_button, Fight, "Fight" )
 
                             ( LivingMonster _, DeadMonster _ ) ->
-                                ( FindNewEnemy, "New Enemy" )
+                                ( UI.secondary_button, FindNewEnemy, "New Enemy" )
 
                             ( DeadMonster _, _ ) ->
-                                ( Noop, "You're dead" )
+                                ( UI.danger_button, Noop, "You're dead" )
                   in
-                  UI.primary_button [ width (fill |> Element.minimum 125) ] msg txt
+                  buttonType [ width (fill |> Element.minimum 125) ] msg txt
                 ]
             , column
                 [ alignRight, width (Element.px 200) ]

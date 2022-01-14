@@ -258,7 +258,7 @@ locationToPretty location =
 
 type alias Model =
     { golem : DamagedMonster
-    , enemyMonster : DamagedMonster
+    , enemyMonster : Maybe DamagedMonster
     , battleSeed : Random.Seed
     , fightLogs : List FightLog
     , showExpandedLogs : Bool
@@ -276,6 +276,7 @@ init { held_blood, held_gold } =
         createMonster "Slime" 10 2 5
             |> monsterStatMapHP (setStatCurVal 4)
             |> LivingMonster
+            |> Just
     , battleSeed = Random.initialSeed 123456
     , fightLogs = []
     , showExpandedLogs = False
@@ -319,49 +320,54 @@ monsterCounterAttacks golem enemy existingFightLogs =
 
 updateFight : Model -> ( Model, Cmd Msg, OutMsg )
 updateFight model =
-    case ( model.golem, model.enemyMonster ) of
-        ( LivingMonster golem, LivingMonster enemyMonster ) ->
-            if golem.statStamina.curVal > 0 then
-                let
-                    ( newGolem, damagedEnemyMonster, fightLogs ) =
-                        case monsterFightsMonster golem enemyMonster of
-                            --golem kills enemy
-                            ( LivingMonster newGolem_, DeadMonster deadEnemy, firstFightLogs_ ) ->
-                                golemKillsEnemy newGolem_ deadEnemy firstFightLogs_
+    model.enemyMonster
+        |> Maybe.map
+            (\enemyMonster ->
+                case ( model.golem, enemyMonster ) of
+                    ( LivingMonster golem, LivingMonster livingMonster ) ->
+                        if golem.statStamina.curVal > 0 then
+                            let
+                                ( newGolem, damagedEnemyMonster, fightLogs ) =
+                                    case monsterFightsMonster golem livingMonster of
+                                        --golem kills enemy
+                                        ( LivingMonster newGolem_, DeadMonster deadEnemy, firstFightLogs_ ) ->
+                                            golemKillsEnemy newGolem_ deadEnemy firstFightLogs_
 
-                            --enemy survived, so the counter attack happens
-                            ( LivingMonster newGolem_, LivingMonster survivingEnemy, firstFightLogs_ ) ->
-                                monsterCounterAttacks newGolem_ survivingEnemy firstFightLogs_
+                                        --enemy survived, so the counter attack happens
+                                        ( LivingMonster newGolem_, LivingMonster survivingEnemy, firstFightLogs_ ) ->
+                                            monsterCounterAttacks newGolem_ survivingEnemy firstFightLogs_
 
-                            ( DeadMonster newGolem_, LivingMonster killingEnemy, firstFightLogs_ ) ->
-                                enemyKillsGolem newGolem_ killingEnemy firstFightLogs_
+                                        ( DeadMonster newGolem_, LivingMonster killingEnemy, firstFightLogs_ ) ->
+                                            enemyKillsGolem newGolem_ killingEnemy firstFightLogs_
 
-                            --if no dead enemy, proceed as normal
-                            ( g, e, firstFightLogs_ ) ->
-                                ( g, e, firstFightLogs_ )
+                                        --if no dead enemy, proceed as normal
+                                        ( g, e, firstFightLogs_ ) ->
+                                            ( g, e, firstFightLogs_ )
 
-                    _ =
-                        Debug.log "fight logs" fightLogs
-                in
-                ( { model
-                    | golem = newGolem
-                    , enemyMonster = damagedEnemyMonster
-                    , fightLogs = List.append model.fightLogs fightLogs
-                  }
-                , Cmd.none
-                , case damagedEnemyMonster of
-                    DeadMonster _ ->
-                        DeliverItemToShopOnMonsterDefeat
+                                _ =
+                                    Debug.log "fight logs" fightLogs
+                            in
+                            ( { model
+                                | golem = newGolem
+                                , enemyMonster = Just damagedEnemyMonster
+                                , fightLogs = List.append model.fightLogs fightLogs
+                              }
+                            , Cmd.none
+                            , case damagedEnemyMonster of
+                                DeadMonster _ ->
+                                    DeliverItemToShopOnMonsterDefeat
+
+                                _ ->
+                                    NoOutMsg
+                            )
+
+                        else
+                            ( model, Cmd.none, NoOutMsg )
 
                     _ ->
-                        NoOutMsg
-                )
-
-            else
-                ( model, Cmd.none, NoOutMsg )
-
-        _ ->
-            Debug.log "dead something" ( model, Cmd.none, NoOutMsg )
+                        Debug.log "dead something" ( model, Cmd.none, NoOutMsg )
+            )
+        |> Maybe.withDefault ( model, Cmd.none, NoOutMsg )
 
 
 healGolemBloodCost : Int
@@ -392,7 +398,7 @@ update model battleMsg =
                     pickMonsterToSpawn model.battleSeed
             in
             ( { model
-                | enemyMonster = LivingMonster <| newMonster
+                | enemyMonster = Just <| LivingMonster <| newMonster
                 , battleSeed = newSeed
                 , fightLogs = model.fightLogs ++ [ FoundNewMonster newMonster ]
               }
@@ -767,10 +773,13 @@ viewBattleControls { golem, player, enemyMonster } =
     ]
 
 
-canChangeLocation : DamagedMonster -> DamagedMonster -> Bool
-canChangeLocation  golem enemyMonster  =
+canChangeLocation : DamagedMonster -> Maybe DamagedMonster -> Bool
+canChangeLocation golem enemyMonster =
     case ( golem, enemyMonster ) of
-        ( LivingMonster livingGolem, DeadMonster deadEnemy ) ->
+        ( LivingMonster livingGolem, Just (DeadMonster deadEnemy) ) ->
+            True
+
+        ( LivingMonster livingGolem, Nothing ) ->
             True
 
         _ ->
@@ -789,10 +798,13 @@ view model =
                     [ let
                         ( buttonType, msg, txt ) =
                             case ( model.golem, model.enemyMonster ) of
-                                ( LivingMonster _, LivingMonster _ ) ->
+                                ( LivingMonster _, Just (LivingMonster _) ) ->
                                     ( UI.primary_button, Fight, "Fight" )
 
-                                ( LivingMonster _, DeadMonster _ ) ->
+                                ( LivingMonster _, Just (DeadMonster _) ) ->
+                                    ( UI.secondary_button, FindNewEnemy, "New Enemy" )
+
+                                ( LivingMonster _, Nothing ) ->
                                     ( UI.secondary_button, FindNewEnemy, "New Enemy" )
 
                                 ( DeadMonster _, _ ) ->
@@ -815,7 +827,14 @@ view model =
                     ]
                 , column
                     [ alignRight, width (Element.px 200) ]
-                    [ Element.el [ alignRight ] <| viewMonsterInBattle model.enemyMonster False ]
+                    [ Element.el [ alignRight ] <|
+                        case model.enemyMonster of
+                            Just enemyMonster ->
+                                viewMonsterInBattle enemyMonster False
+
+                            Nothing ->
+                                text "No Enemy To Fight"
+                    ]
                 ]
             , column [ width fill, paddingXY 0 20 ]
                 [ row [ width fill, centerX ]

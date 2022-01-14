@@ -328,39 +328,47 @@ init { held_blood, held_gold } =
     }
 
 
-golemKillsEnemy : Monster -> Monster -> List FightLog -> ( DamagedMonster, DamagedMonster, List FightLog )
-golemKillsEnemy golem deadEnemy fightLogs =
+golemKillsEnemy : Model -> Monster -> Monster -> List FightLog -> ( Model, OutMsg )
+golemKillsEnemy model golem deadEnemy fightLogs =
     let
         ( victorGolem, gainedXp ) =
             increaseMonsterXpByMonster golem deadEnemy
     in
-    ( LivingMonster victorGolem
-    , DeadMonster deadEnemy
-    , fightLogs ++ [ GolemKilledMonster golem deadEnemy gainedXp ]
+    ( { model
+        | golem = LivingMonster victorGolem
+        , enemyMonster = Just <| DeadMonster deadEnemy
+        , fightLogs = model.fightLogs ++ fightLogs ++ [ GolemKilledMonster golem deadEnemy gainedXp ]
+      }
+    , OnMonsterDefeat deadEnemy.onDefeat
     )
 
 
-enemyKillsGolem : Monster -> Monster -> List FightLog -> ( DamagedMonster, DamagedMonster, List FightLog )
-enemyKillsGolem golem enemy existingFightLogs =
-    ( DeadMonster golem
-    , LivingMonster enemy
-    , existingFightLogs ++ [ MonsterKilledGolem golem enemy ]
+enemyKillsGolem : Model -> Monster -> Monster -> List FightLog -> ( Model, OutMsg )
+enemyKillsGolem model golem enemy existingFightLogs =
+    ( { model
+        | golem = DeadMonster golem
+        , enemyMonster = Just <| LivingMonster enemy
+        , fightLogs = model.fightLogs ++ existingFightLogs ++ [ MonsterKilledGolem golem enemy ]
+      }
+    , NoOutMsg
     )
 
 
-monsterCounterAttacks : Monster -> Monster -> List FightLog -> ( DamagedMonster, DamagedMonster, List FightLog )
-monsterCounterAttacks golem enemy existingFightLogs =
+monsterCounterAttacks : Model -> Monster -> Monster -> List FightLog -> ( Model, OutMsg )
+monsterCounterAttacks model golem enemy existingFightLogs =
     case monsterFightsMonster enemy golem of
         --enemy killed golem in the counterattack
         ( LivingMonster killingEnemy, DeadMonster deadGolem, secondFightLogs_ ) ->
-            enemyKillsGolem deadGolem killingEnemy (existingFightLogs ++ secondFightLogs_)
+            enemyKillsGolem model deadGolem killingEnemy (existingFightLogs ++ secondFightLogs_)
 
         ( e, g, secondFightLogs_ ) ->
-            ( g, e, existingFightLogs ++ secondFightLogs_ )
-
-
-
--- updateFightWithLivingGolemAndEnemy : Model -> ( Monster, Monster ) -> ( DamagedMonster, DamagedMonster, List FightLog )
+            ( { model
+                | golem = g
+                , enemyMonster = Just e
+                , fightLogs = model.fightLogs ++ existingFightLogs ++ secondFightLogs_
+              }
+            , NoOutMsg
+            )
 
 
 updateFightWithLivingGolemAndEnemy : Model -> ( Monster, Monster ) -> ( Model, Cmd Msg, OutMsg )
@@ -370,35 +378,32 @@ updateFightWithLivingGolemAndEnemy model ( golem, livingMonster ) =
             currentLocation =
                 getCurrentLocation model
 
-            ( newGolem, damagedEnemyMonster, fightLogs ) =
+            ( newModel, newOutMsg ) =
                 case monsterFightsMonster golem livingMonster of
                     --golem kills enemy
                     ( LivingMonster newGolem_, DeadMonster deadEnemy, firstFightLogs_ ) ->
-                        golemKillsEnemy newGolem_ deadEnemy firstFightLogs_
+                        golemKillsEnemy model newGolem_ deadEnemy firstFightLogs_
 
                     --enemy survived, so the counter attack happens
                     ( LivingMonster newGolem_, LivingMonster survivingEnemy, firstFightLogs_ ) ->
-                        monsterCounterAttacks newGolem_ survivingEnemy firstFightLogs_
+                        monsterCounterAttacks model newGolem_ survivingEnemy firstFightLogs_
 
                     ( DeadMonster newGolem_, LivingMonster killingEnemy, firstFightLogs_ ) ->
-                        enemyKillsGolem newGolem_ killingEnemy firstFightLogs_
+                        enemyKillsGolem model newGolem_ killingEnemy firstFightLogs_
 
                     --if no dead enemy, proceed as normal
                     ( g, e, firstFightLogs_ ) ->
-                        ( g, e, firstFightLogs_ )
+                        ( { model
+                            | golem = g
+                            , enemyMonster = Just e
+                            , fightLogs = model.fightLogs ++ firstFightLogs_
+                          }
+                        , NoOutMsg
+                        )
         in
-        ( { model
-            | golem = newGolem
-            , enemyMonster = Just damagedEnemyMonster
-            , fightLogs = List.append model.fightLogs fightLogs
-          }
+        ( newModel
         , Cmd.none
-        , case damagedEnemyMonster of
-            DeadMonster monster ->
-                OnMonsterDefeat monster.onDefeat
-
-            _ ->
-                NoOutMsg
+        , newOutMsg
         )
 
     else
@@ -412,7 +417,7 @@ updateFight model =
             (\enemyMonster ->
                 case ( model.golem, enemyMonster ) of
                     ( LivingMonster golem, LivingMonster livingMonster ) ->
-                        updateFightWithLivingGolemAndEnemy model (golem, livingMonster)
+                        updateFightWithLivingGolemAndEnemy model ( golem, livingMonster )
 
                     _ ->
                         Debug.log "dead something" ( model, Cmd.none, NoOutMsg )

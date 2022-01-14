@@ -359,6 +359,52 @@ monsterCounterAttacks golem enemy existingFightLogs =
             ( g, e, existingFightLogs ++ secondFightLogs_ )
 
 
+
+-- updateFightWithLivingGolemAndEnemy : Model -> ( Monster, Monster ) -> ( DamagedMonster, DamagedMonster, List FightLog )
+
+
+updateFightWithLivingGolemAndEnemy : Model -> ( Monster, Monster ) -> ( Model, Cmd Msg, OutMsg )
+updateFightWithLivingGolemAndEnemy model ( golem, livingMonster ) =
+    if golem.statStamina.curVal > 0 then
+        let
+            currentLocation =
+                getCurrentLocation model
+
+            ( newGolem, damagedEnemyMonster, fightLogs ) =
+                case monsterFightsMonster golem livingMonster of
+                    --golem kills enemy
+                    ( LivingMonster newGolem_, DeadMonster deadEnemy, firstFightLogs_ ) ->
+                        golemKillsEnemy newGolem_ deadEnemy firstFightLogs_
+
+                    --enemy survived, so the counter attack happens
+                    ( LivingMonster newGolem_, LivingMonster survivingEnemy, firstFightLogs_ ) ->
+                        monsterCounterAttacks newGolem_ survivingEnemy firstFightLogs_
+
+                    ( DeadMonster newGolem_, LivingMonster killingEnemy, firstFightLogs_ ) ->
+                        enemyKillsGolem newGolem_ killingEnemy firstFightLogs_
+
+                    --if no dead enemy, proceed as normal
+                    ( g, e, firstFightLogs_ ) ->
+                        ( g, e, firstFightLogs_ )
+        in
+        ( { model
+            | golem = newGolem
+            , enemyMonster = Just damagedEnemyMonster
+            , fightLogs = List.append model.fightLogs fightLogs
+          }
+        , Cmd.none
+        , case damagedEnemyMonster of
+            DeadMonster monster ->
+                OnMonsterDefeat monster.onDefeat
+
+            _ ->
+                NoOutMsg
+        )
+
+    else
+        ( model, Cmd.none, NoOutMsg )
+
+
 updateFight : Model -> ( Model, Cmd Msg, OutMsg )
 updateFight model =
     model.enemyMonster
@@ -366,41 +412,7 @@ updateFight model =
             (\enemyMonster ->
                 case ( model.golem, enemyMonster ) of
                     ( LivingMonster golem, LivingMonster livingMonster ) ->
-                        if golem.statStamina.curVal > 0 then
-                            let
-                                ( newGolem, damagedEnemyMonster, fightLogs ) =
-                                    case monsterFightsMonster golem livingMonster of
-                                        --golem kills enemy
-                                        ( LivingMonster newGolem_, DeadMonster deadEnemy, firstFightLogs_ ) ->
-                                            golemKillsEnemy newGolem_ deadEnemy firstFightLogs_
-
-                                        --enemy survived, so the counter attack happens
-                                        ( LivingMonster newGolem_, LivingMonster survivingEnemy, firstFightLogs_ ) ->
-                                            monsterCounterAttacks newGolem_ survivingEnemy firstFightLogs_
-
-                                        ( DeadMonster newGolem_, LivingMonster killingEnemy, firstFightLogs_ ) ->
-                                            enemyKillsGolem newGolem_ killingEnemy firstFightLogs_
-
-                                        --if no dead enemy, proceed as normal
-                                        ( g, e, firstFightLogs_ ) ->
-                                            ( g, e, firstFightLogs_ )
-                            in
-                            ( { model
-                                | golem = newGolem
-                                , enemyMonster = Just damagedEnemyMonster
-                                , fightLogs = List.append model.fightLogs fightLogs
-                              }
-                            , Cmd.none
-                            , case damagedEnemyMonster of
-                                DeadMonster monster ->
-                                    OnMonsterDefeat monster.onDefeat
-
-                                _ ->
-                                    NoOutMsg
-                            )
-
-                        else
-                            ( model, Cmd.none, NoOutMsg )
+                        updateFightWithLivingGolemAndEnemy model (golem, livingMonster)
 
                     _ ->
                         Debug.log "dead something" ( model, Cmd.none, NoOutMsg )

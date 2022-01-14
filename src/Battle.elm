@@ -74,7 +74,8 @@ type Msg
     | ChangeLocation Location
 
 type DefeatAction
-    = DeliverItemToShop
+    = NoDefeatAction
+    | DeliverItemToShop
 
 type OutMsg
     = NoOutMsg
@@ -129,6 +130,7 @@ type alias Monster =
     , statPower : IntStat
     , statProtection : IntStat
     , xp : Int
+    , onDefeat : DefeatAction
     }
 
 
@@ -352,8 +354,8 @@ updateFight model =
                               }
                             , Cmd.none
                             , case damagedEnemyMonster of
-                                DeadMonster _ ->
-                                    OnMonsterDefeat DeliverItemToShop
+                                DeadMonster monster ->
+                                    OnMonsterDefeat monster.onDefeat
 
                                 _ ->
                                     NoOutMsg
@@ -580,6 +582,7 @@ createMonster name hpMax pwrMax protMax =
     , statPower = initStat pwrMax
     , statProtection = initStat protMax
     , xp = 0
+    , onDefeat = NoDefeatAction
     }
 
 

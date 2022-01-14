@@ -1583,6 +1583,9 @@ updateBattleOutMsg battleOutMsg model =
     case battleOutMsg of
         Battle.OnMonsterDefeat defeatAction ->
             case defeatAction of
+                Battle.NoDefeatAction ->
+                    ( model, Cmd.none )
+
                 Battle.DeliverItemToShop ->
                     let
                         ( mbNewItem, newSeed ) =

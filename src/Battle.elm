@@ -1,4 +1,4 @@
-module Battle exposing (Model, Msg(..), OutMsg(..), DefeatAction(..), init, subscriptions, suite, update, view)
+module Battle exposing (DefeatAction(..), Model, Msg(..), OutMsg(..), init, subscriptions, suite, update, view)
 
 import Array
 import Browser.Dom
@@ -73,9 +73,11 @@ type Msg
     | ToggleShowLocationMenu
     | ChangeLocation Location
 
+
 type DefeatAction
     = NoDefeatAction
     | DeliverItemToShop
+
 
 type OutMsg
     = NoOutMsg
@@ -395,7 +397,7 @@ update model battleMsg =
         FindNewEnemy ->
             let
                 ( newMonster, newSeed ) =
-                    pickMonsterToSpawn model.battleSeed
+                    pickMonsterToSpawn model.battleSeed model.currentLocation
             in
             ( { model
                 | enemyMonster = Just <| LivingMonster <| newMonster
@@ -918,8 +920,8 @@ monsterFightsMonster attacker defender =
     ( newAttacker, newDefender, [ fightLog ] )
 
 
-pickMonsterToSpawn : Random.Seed -> ( Monster, Random.Seed )
-pickMonsterToSpawn seed =
+pickMonsterToSpawn : Random.Seed -> Location -> ( Monster, Random.Seed )
+pickMonsterToSpawn seed location =
     let
         skeleton =
             createMonster "Skeleton" 15 5 5
@@ -936,6 +938,25 @@ pickMonsterToSpawn seed =
             , createMonster "Fire Elemental" 11 4 2
             , createMonster "Earth Elemental" 9 6 2
             ]
+                ++ (case location of
+                        Forest ->
+                            [ createMonster "Forest Elf" 10 3 1
+                            , createMonster "Dire Wolf" 15 5 0
+                            , createMonster "Ursa" 20 4 3
+                            ]
+
+                        Mountains ->
+                            [ createMonster "Hillock" 30 1 3
+                            , createMonster "Valley Goat" 15 2 0
+                            , createMonster "Elephant" 40 4 4
+                            ]
+
+                        Plains ->
+                            [ createMonster "Mole" 10 2 1
+                            , createMonster "Ferret" 20 3 1
+                            , createMonster "Plainshawk" 30 2 3
+                            ]
+                   )
 
         ( ( maybeChosen, unChosen ), newSeed ) =
             Random.step (Random.List.choose monsters) seed

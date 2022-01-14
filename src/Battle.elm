@@ -3,10 +3,6 @@ module Battle exposing (Model, Msg(..), OutMsg(..), DefeatAction(..), init, subs
 import Array
 import Browser.Dom
 import Browser.Events
-import Chart as C
-import Chart.Attributes as CA
-import Chart.Events as CE
-import Chart.Item as CI
 import Color
 import Color.Convert as Convert
 import DOM exposing (offsetWidth, target)

@@ -1581,27 +1581,29 @@ sell_items_from_party_to_other orig_trade_context { item, qty } =
 updateBattleOutMsg : Battle.OutMsg -> Model -> ( Model, Cmd Msg )
 updateBattleOutMsg battleOutMsg model =
     case battleOutMsg of
-        Battle.DeliverItemToShopOnMonsterDefeat ->
-            let
-                ( mbNewItem, newSeed ) =
-                    pick_random_unlocked_item_from_db model.item_db model.global_seed
-            in
-            Maybe.map2
-                (\shop newItem ->
-                    withCharacter
-                        (add_inventory_record_to_character
-                            { item = newItem
-                            , quantity = setQuantity 1
-                            , avg_price = setPrice newItem.raw_gold_cost
-                            }
-                            shop
+        Battle.OnMonsterDefeat defeatAction ->
+            case defeatAction of
+                Battle.DeliverItemToShop ->
+                    let
+                        ( mbNewItem, newSeed ) =
+                            pick_random_unlocked_item_from_db model.item_db model.global_seed
+                    in
+                    Maybe.map2
+                        (\shop newItem ->
+                            withCharacter
+                                (add_inventory_record_to_character
+                                    { item = newItem
+                                    , quantity = setQuantity 1
+                                    , avg_price = setPrice newItem.raw_gold_cost
+                                    }
+                                    shop
+                                )
+                                { model | global_seed = newSeed }
                         )
-                        { model | global_seed = newSeed }
-                )
-                (getShop model)
-                mbNewItem
-                |> Maybe.withDefault model
-                |> (\m -> ( m, Cmd.none ))
+                        (getShop model)
+                        mbNewItem
+                        |> Maybe.withDefault model
+                        |> (\m -> ( m, Cmd.none ))
 
         Battle.ReturnToShop ->
             case model.browserNavKey of

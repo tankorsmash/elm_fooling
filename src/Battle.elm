@@ -1,4 +1,4 @@
-module Battle exposing (Model, Msg(..), OutMsg(..), init, subscriptions, suite, update, view)
+module Battle exposing (Model, Msg(..), OutMsg(..), DefeatAction(..), init, subscriptions, suite, update, view)
 
 import Array
 import Browser.Dom
@@ -77,11 +77,13 @@ type Msg
     | ToggleShowLocationMenu
     | ChangeLocation Location
 
+type DefeatAction
+    = DeliverItemToShop
 
 type OutMsg
     = NoOutMsg
     | ReturnToShop
-    | DeliverItemToShopOnMonsterDefeat
+    | OnMonsterDefeat DefeatAction
 
 
 type alias IntStat =
@@ -271,7 +273,7 @@ type alias Model =
 
 init : { a | held_blood : Int, held_gold : Int } -> Model
 init { held_blood, held_gold } =
-    { golem = LivingMonster <| createMonster "Golem" 10 10 0
+    { golem = LivingMonster <| createMonster "Golem" 25 10 0
     , enemyMonster =
         createMonster "Slime" 10 2 5
             |> monsterStatMapHP (setStatCurVal 4)
@@ -355,7 +357,7 @@ updateFight model =
                             , Cmd.none
                             , case damagedEnemyMonster of
                                 DeadMonster _ ->
-                                    DeliverItemToShopOnMonsterDefeat
+                                    OnMonsterDefeat DeliverItemToShop
 
                                 _ ->
                                     NoOutMsg

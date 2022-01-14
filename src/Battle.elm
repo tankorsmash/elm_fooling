@@ -312,6 +312,28 @@ getCurrentLocation { currentLocationId, locations } =
         |> Maybe.withDefault locations.forest
 
 
+mapCurrentLocation : Model -> (Location -> Location) -> Locations
+mapCurrentLocation model locationUpdater =
+    let
+        currentLocation =
+            getCurrentLocation model
+
+        { currentLocationId, locations } =
+            model
+    in
+    if currentLocationId == locations.forest.locationId then
+        { locations | forest = locationUpdater locations.forest }
+
+    else if currentLocationId == locations.mountains.locationId then
+        { locations | mountains = locationUpdater locations.mountains }
+
+    else if currentLocationId == locations.plains.locationId then
+        { locations | plains = locationUpdater locations.plains }
+
+    else
+        locations
+
+
 type alias Model =
     { golem : DamagedMonster
     , enemyMonster : Maybe DamagedMonster
@@ -332,8 +354,8 @@ init { held_blood, held_gold } =
         locations : Locations
         locations =
             { forest = createLocation Forest 0 "The Forest"
-            , mountains = createLocation Mountains 0 "The Mountains"
-            , plains = createLocation Plains 0 "The Plains"
+            , mountains = createLocation Mountains 1 "The Mountains"
+            , plains = createLocation Plains 2 "The Plains"
             }
     in
     { golem = LivingMonster <| createMonster "Golem" 25 10 0
@@ -360,11 +382,15 @@ golemKillsEnemy model golem deadEnemy fightLogs =
         ( victorGolem, gainedXp ) =
             increaseMonsterXpByMonster golem deadEnemy
 
+        decrementMonstersLeft =
+            \curLocation ->
+                { curLocation | monstersLeft = curLocation.monstersLeft - 1 }
     in
     ( { model
         | golem = LivingMonster victorGolem
         , enemyMonster = Just <| DeadMonster deadEnemy
         , fightLogs = model.fightLogs ++ fightLogs ++ [ GolemKilledMonster golem deadEnemy gainedXp ]
+        , locations = mapCurrentLocation model decrementMonstersLeft
       }
     , OnMonsterDefeat deadEnemy.onDefeat
     )

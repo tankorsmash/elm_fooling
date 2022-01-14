@@ -511,7 +511,7 @@ update model battleMsg =
             ( { model | shouldShowLocationMenu = not model.shouldShowLocationMenu }, Cmd.none, NoOutMsg )
 
         ChangeLocation newLocation ->
-            ( { model | currentLocation = newLocation, shouldShowLocationMenu = False }, Cmd.none, NoOutMsg )
+            ( { model | currentLocation = newLocation, shouldShowLocationMenu = False, enemyMonster = Nothing }, Cmd.none, NoOutMsg )
 
 
 
@@ -802,10 +802,10 @@ view model =
                                     ( UI.primary_button, Fight, "Fight" )
 
                                 ( LivingMonster _, Just (DeadMonster _) ) ->
-                                    ( UI.secondary_button, FindNewEnemy, "New Enemy" )
+                                    ( UI.secondary_button, FindNewEnemy, "Find New Enemy" )
 
                                 ( LivingMonster _, Nothing ) ->
-                                    ( UI.secondary_button, FindNewEnemy, "New Enemy" )
+                                    ( UI.secondary_button, FindNewEnemy, "Find New Enemy" )
 
                                 ( DeadMonster _, _ ) ->
                                     ( UI.danger_button, Noop, "You're dead" )
@@ -826,14 +826,16 @@ view model =
                         ]
                     ]
                 , column
-                    [ alignRight, width (Element.px 200) ]
-                    [ Element.el [ alignRight ] <|
+                    [ alignRight, width (Element.px 200), height fill ]
+                    [ Element.el [ alignRight, height fill ] <|
                         case model.enemyMonster of
                             Just enemyMonster ->
                                 viewMonsterInBattle enemyMonster False
 
                             Nothing ->
-                                text "No Enemy To Fight"
+                                paragraph [ centerY ]
+                                    [ text "Find an enemy to fight"
+                                    ]
                     ]
                 ]
             , column [ width fill, paddingXY 0 20 ]

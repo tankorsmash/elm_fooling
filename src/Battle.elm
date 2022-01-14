@@ -885,9 +885,17 @@ view model =
                         ]
                         msg
                         txt
-                    , column [ centerX ]
-                        [ el [ Font.underline, Font.size 10, centerX ] <| text "Current LocationType"
-                        , el [ centerX ] <| text <| (getCurrentLocation model).name
+                    , let
+                        currentLocation =
+                            getCurrentLocation model
+                      in
+                      column [ centerX, spacing 2 ]
+                        [ el [ Font.underline, Font.size 10, centerX ] <|
+                            text "Current Location"
+                        , el [ centerX ] <| text <| currentLocation.name
+                        , el [ Font.underline, Font.size 10, centerX ] <|
+                            text "Enemies Remaining"
+                        , el [ centerX ] <| text <| String.fromInt currentLocation.monstersLeft
                         ]
                     ]
                 , column

@@ -281,7 +281,7 @@ init { held_blood, held_gold } =
     , showExpandedLogs = False
     , player = { held_blood = held_blood, held_gold = held_gold }
     , secondsWaitedSinceLastSPRefill = 0
-    , shouldShowLocationMenu = True
+    , shouldShowLocationMenu = False
     , currentLocation = Forest
     }
 
@@ -678,7 +678,7 @@ fillMin pxWidth =
 
 
 viewBattleControls : Model -> List (Element Msg)
-viewBattleControls { golem, player } =
+viewBattleControls { golem, player, enemyMonster } =
     let
         canAffordHealGolem =
             player.held_blood >= healGolemBloodCost
@@ -712,10 +712,14 @@ viewBattleControls { golem, player } =
             ToggleShowExpandedLogs
             "Details"
     , el [ centerX, width (fillMax 150), Element.paddingEach { top = 10, bottom = 0, left = 0, right = 0 } ] <|
-        UI.outline_button
-            [ centerX, width fill ]
-            ToggleShowLocationMenu
-            "Change Location"
+        if canChangeLocation golem enemyMonster then
+            UI.outline_button
+                [ centerX, width fill ]
+                ToggleShowLocationMenu
+                "Change Location"
+
+        else
+            Element.none
     , column [ width fill, spacing 1, padding 10 ]
         [ UI.outline_button
             [ centerX
@@ -761,6 +765,16 @@ viewBattleControls { golem, player } =
         (SendOutMsg ReturnToShop)
         "Back"
     ]
+
+
+canChangeLocation : DamagedMonster -> DamagedMonster -> Bool
+canChangeLocation  golem enemyMonster  =
+    case ( golem, enemyMonster ) of
+        ( LivingMonster livingGolem, DeadMonster deadEnemy ) ->
+            True
+
+        _ ->
+            False
 
 
 view : Model -> Element Msg

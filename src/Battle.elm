@@ -70,8 +70,8 @@ type Msg
     | ReviveGolem
     | SendOutMsg OutMsg
     | TickSecond Time.Posix
-    | ToggleShowLocationMenu
-    | ChangeLocation Location
+    | ToggleShowLocationTypeMenu
+    | ChangeLocationType LocationType
 
 
 type DefeatAction
@@ -239,13 +239,31 @@ type alias BattleCharacter =
     }
 
 
-type Location
+type LocationType
     = Forest
     | Mountains
     | Plains
 
 
-locationToPretty : Location -> String
+type alias Location =
+    { locationType : LocationType
+    , monstersLeft : Int
+    }
+
+
+createLocation : LocationType -> Int -> Location
+createLocation locationType monstersLeft =
+    { locationType = locationType, monstersLeft = monstersLeft }
+
+
+type alias Locations =
+    { forest : Location
+    , mountains : Location
+    , plains : Location
+    }
+
+
+locationToPretty : LocationType -> String
 locationToPretty location =
     case location of
         Forest ->
@@ -266,8 +284,9 @@ type alias Model =
     , showExpandedLogs : Bool
     , player : BattleCharacter --NOTE: this is hackily read from in ItemShop's updateBattleOutMsg and used to update ItemShop's player. FIXME hack on that for sure
     , secondsWaitedSinceLastSPRefill : Int
-    , shouldShowLocationMenu : Bool
-    , currentLocation : Location
+    , shouldShowLocationTypeMenu : Bool
+    , currentLocationType : LocationType
+    , locations : Locations
     }
 
 
@@ -284,8 +303,13 @@ init { held_blood, held_gold } =
     , showExpandedLogs = False
     , player = { held_blood = held_blood, held_gold = held_gold }
     , secondsWaitedSinceLastSPRefill = 0
-    , shouldShowLocationMenu = False
-    , currentLocation = Forest
+    , shouldShowLocationTypeMenu = False
+    , currentLocationType = Forest
+    , locations =
+        { forest = createLocation Forest 0
+        , mountains = createLocation Mountains 0
+        , plains = createLocation Plains 0
+        }
     }
 
 
@@ -394,7 +418,7 @@ update model battleMsg =
         FindNewEnemy ->
             let
                 ( newMonster, newSeed ) =
-                    pickMonsterToSpawn model.battleSeed model.currentLocation
+                    pickMonsterToSpawn model.battleSeed model.currentLocationType
             in
             ( { model
                 | enemyMonster = Just <| LivingMonster <| newMonster
@@ -506,11 +530,11 @@ update model battleMsg =
             else
                 ( { model | secondsWaitedSinceLastSPRefill = newSecondsWaited }, Cmd.none, NoOutMsg )
 
-        ToggleShowLocationMenu ->
-            ( { model | shouldShowLocationMenu = not model.shouldShowLocationMenu }, Cmd.none, NoOutMsg )
+        ToggleShowLocationTypeMenu ->
+            ( { model | shouldShowLocationTypeMenu = not model.shouldShowLocationTypeMenu }, Cmd.none, NoOutMsg )
 
-        ChangeLocation newLocation ->
-            ( { model | currentLocation = newLocation, shouldShowLocationMenu = False, enemyMonster = Nothing }, Cmd.none, NoOutMsg )
+        ChangeLocationType newLocationType ->
+            ( { model | currentLocationType = newLocationType, shouldShowLocationTypeMenu = False, enemyMonster = Nothing }, Cmd.none, NoOutMsg )
 
 
 
@@ -718,11 +742,11 @@ viewBattleControls { golem, player, enemyMonster } =
             ToggleShowExpandedLogs
             "Details"
     , el [ centerX, width (fillMax 150), Element.paddingEach { top = 10, bottom = 0, left = 0, right = 0 } ] <|
-        if canChangeLocation golem enemyMonster then
+        if canChangeLocationType golem enemyMonster then
             UI.outline_button
                 [ centerX, width fill ]
-                ToggleShowLocationMenu
-                "Change Location"
+                ToggleShowLocationTypeMenu
+                "Change LocationType"
 
         else
             Element.none
@@ -773,8 +797,8 @@ viewBattleControls { golem, player, enemyMonster } =
     ]
 
 
-canChangeLocation : DamagedMonster -> Maybe DamagedMonster -> Bool
-canChangeLocation golem enemyMonster =
+canChangeLocationType : DamagedMonster -> Maybe DamagedMonster -> Bool
+canChangeLocationType golem enemyMonster =
     case ( golem, enemyMonster ) of
         ( LivingMonster livingGolem, Just (DeadMonster deadEnemy) ) ->
             True
@@ -788,7 +812,7 @@ canChangeLocation golem enemyMonster =
 
 view : Model -> Element Msg
 view model =
-    if not model.shouldShowLocationMenu then
+    if not model.shouldShowLocationTypeMenu then
         column [ width fill, Font.size 16 ]
             [ el [ Font.size 24, Element.paddingEach { bottom = 20, top = 0, left = 0, right = 0 } ] <| text "Battle!"
             , row [ width fill ]
@@ -821,8 +845,8 @@ view model =
                         msg
                         txt
                     , column [ centerX ]
-                        [ el [ Font.underline, Font.size 10, centerX ] <| text "Current Location"
-                        , el [ centerX ] <| text <| locationToPretty model.currentLocation
+                        [ el [ Font.underline, Font.size 10, centerX ] <| text "Current LocationType"
+                        , el [ centerX ] <| text <| locationToPretty model.currentLocationType
                         ]
                     ]
                 , column
@@ -859,13 +883,13 @@ view model =
                 , Element.paddingEach { bottom = 20, top = 0, left = 0, right = 0 }
                 ]
               <|
-                text "Choose Location"
-            , paragraph [ padding 10 ] [ text "You may choose a new Location to visit." ]
-            , paragraph [ padding 10 ] [ text "A new Location contains new monsters to fight, which may bring new rewards!" ]
+                text "Choose LocationType"
+            , paragraph [ padding 10 ] [ text "You may choose a new LocationType to visit." ]
+            , paragraph [ padding 10 ] [ text "A new LocationType contains new monsters to fight, which may bring new rewards!" ]
             , column [ width fill, spacing 10, padding 10 ]
-                [ UI.secondary_button [ width fill ] (ChangeLocation Forest) "Forest"
-                , UI.secondary_button [ width fill ] (ChangeLocation Mountains) "Mountains"
-                , UI.secondary_button [ width fill ] (ChangeLocation Plains) "Plains"
+                [ UI.secondary_button [ width fill ] (ChangeLocationType Forest) "Forest"
+                , UI.secondary_button [ width fill ] (ChangeLocationType Mountains) "Mountains"
+                , UI.secondary_button [ width fill ] (ChangeLocationType Plains) "Plains"
                 ]
             ]
 
@@ -917,7 +941,7 @@ monsterFightsMonster attacker defender =
     ( newAttacker, newDefender, [ fightLog ] )
 
 
-pickMonsterToSpawn : Random.Seed -> Location -> ( Monster, Random.Seed )
+pickMonsterToSpawn : Random.Seed -> LocationType -> ( Monster, Random.Seed )
 pickMonsterToSpawn seed location =
     let
         skeleton =

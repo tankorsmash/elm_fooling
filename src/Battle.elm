@@ -71,7 +71,7 @@ type Msg
     | SendOutMsg OutMsg
     | TickSecond Time.Posix
     | ToggleShowLocationTypeMenu
-    | ChangeLocationType LocationType
+    | ChangeLocation LocationId
 
 
 type DefeatAction
@@ -245,15 +245,25 @@ type LocationType
     | Plains
 
 
+type alias LocationId =
+    Int
+
+
 type alias Location =
     { locationType : LocationType
+    , name : String
     , monstersLeft : Int
+    , locationId : LocationId
     }
 
 
-createLocation : LocationType -> Int -> Location
-createLocation locationType monstersLeft =
-    { locationType = locationType, monstersLeft = monstersLeft }
+createLocation : LocationType -> LocationId -> String -> Location
+createLocation locationType locationId name =
+    { locationType = locationType
+    , name = name
+    , monstersLeft = 10
+    , locationId = locationId
+    }
 
 
 type alias Locations =
@@ -285,13 +295,21 @@ type alias Model =
     , player : BattleCharacter --NOTE: this is hackily read from in ItemShop's updateBattleOutMsg and used to update ItemShop's player. FIXME hack on that for sure
     , secondsWaitedSinceLastSPRefill : Int
     , shouldShowLocationTypeMenu : Bool
-    , currentLocationType : LocationType
+    , currentLocationId : LocationId
     , locations : Locations
     }
 
 
 init : { a | held_blood : Int, held_gold : Int } -> Model
 init { held_blood, held_gold } =
+    let
+        locations : Locations
+        locations =
+            { forest = createLocation Forest 0 "The Forest"
+            , mountains = createLocation Mountains 0 "The Mountains"
+            , plains = createLocation Plains 0 "The Plains"
+            }
+    in
     { golem = LivingMonster <| createMonster "Golem" 25 10 0
     , enemyMonster =
         createMonster "Slime" 10 2 5
@@ -304,12 +322,9 @@ init { held_blood, held_gold } =
     , player = { held_blood = held_blood, held_gold = held_gold }
     , secondsWaitedSinceLastSPRefill = 0
     , shouldShowLocationTypeMenu = False
-    , currentLocationType = Forest
+    , currentLocationId = locations.forest.locationId
     , locations =
-        { forest = createLocation Forest 0
-        , mountains = createLocation Mountains 0
-        , plains = createLocation Plains 0
-        }
+        locations
     }
 
 
@@ -403,6 +418,32 @@ reviveGolemBloodCost =
     25
 
 
+getLocationsList : Locations -> List Location
+getLocationsList locations =
+    [ locations.forest
+    , locations.mountains
+    , locations.plains
+    ]
+
+
+getCurrentLocation { currentLocationId, locations } =
+    let
+        potentialLocations =
+            getLocationsList locations
+    in
+    potentialLocations
+        |> List.foldl
+            (\pl acc ->
+                if pl.locationId == currentLocationId then
+                    Just pl
+
+                else
+                    acc
+            )
+            Nothing
+        |> Maybe.withDefault locations.forest
+
+
 {-| called from ItemShop.updateBattleOutMsg, which does some post processing
 like reading what Battle.Model.player's held\_gold and held\_blood are
 -}
@@ -418,7 +459,7 @@ update model battleMsg =
         FindNewEnemy ->
             let
                 ( newMonster, newSeed ) =
-                    pickMonsterToSpawn model.battleSeed model.currentLocationType
+                    pickMonsterToSpawn model.battleSeed (getCurrentLocation model)
             in
             ( { model
                 | enemyMonster = Just <| LivingMonster <| newMonster
@@ -533,8 +574,8 @@ update model battleMsg =
         ToggleShowLocationTypeMenu ->
             ( { model | shouldShowLocationTypeMenu = not model.shouldShowLocationTypeMenu }, Cmd.none, NoOutMsg )
 
-        ChangeLocationType newLocationType ->
-            ( { model | currentLocationType = newLocationType, shouldShowLocationTypeMenu = False, enemyMonster = Nothing }, Cmd.none, NoOutMsg )
+        ChangeLocation newLocationId ->
+            ( { model | currentLocationId = newLocationId, shouldShowLocationTypeMenu = False, enemyMonster = Nothing }, Cmd.none, NoOutMsg )
 
 
 
@@ -742,11 +783,11 @@ viewBattleControls { golem, player, enemyMonster } =
             ToggleShowExpandedLogs
             "Details"
     , el [ centerX, width (fillMax 150), Element.paddingEach { top = 10, bottom = 0, left = 0, right = 0 } ] <|
-        if canChangeLocationType golem enemyMonster then
+        if canChangeLocation golem enemyMonster then
             UI.outline_button
                 [ centerX, width fill ]
                 ToggleShowLocationTypeMenu
-                "Change LocationType"
+                "Change Location"
 
         else
             Element.none
@@ -797,8 +838,8 @@ viewBattleControls { golem, player, enemyMonster } =
     ]
 
 
-canChangeLocationType : DamagedMonster -> Maybe DamagedMonster -> Bool
-canChangeLocationType golem enemyMonster =
+canChangeLocation : DamagedMonster -> Maybe DamagedMonster -> Bool
+canChangeLocation golem enemyMonster =
     case ( golem, enemyMonster ) of
         ( LivingMonster livingGolem, Just (DeadMonster deadEnemy) ) ->
             True
@@ -846,7 +887,7 @@ view model =
                         txt
                     , column [ centerX ]
                         [ el [ Font.underline, Font.size 10, centerX ] <| text "Current LocationType"
-                        , el [ centerX ] <| text <| locationToPretty model.currentLocationType
+                        , el [ centerX ] <| text <| (getCurrentLocation model).name
                         ]
                     ]
                 , column
@@ -887,10 +928,16 @@ view model =
             , paragraph [ padding 10 ] [ text "You may choose a new LocationType to visit." ]
             , paragraph [ padding 10 ] [ text "A new LocationType contains new monsters to fight, which may bring new rewards!" ]
             , column [ width fill, spacing 10, padding 10 ]
-                [ UI.secondary_button [ width fill ] (ChangeLocationType Forest) "Forest"
-                , UI.secondary_button [ width fill ] (ChangeLocationType Mountains) "Mountains"
-                , UI.secondary_button [ width fill ] (ChangeLocationType Plains) "Plains"
-                ]
+                (model.locations
+                    |> getLocationsList
+                    |> List.map
+                        (\location ->
+                            UI.secondary_button
+                                [ width fill ]
+                                (ChangeLocation location.locationId)
+                                location.name
+                        )
+                )
             ]
 
 
@@ -941,8 +988,8 @@ monsterFightsMonster attacker defender =
     ( newAttacker, newDefender, [ fightLog ] )
 
 
-pickMonsterToSpawn : Random.Seed -> LocationType -> ( Monster, Random.Seed )
-pickMonsterToSpawn seed location =
+pickMonsterToSpawn : Random.Seed -> Location -> ( Monster, Random.Seed )
+pickMonsterToSpawn seed { locationType } =
     let
         skeleton =
             createMonster "Skeleton" 15 5 5
@@ -959,7 +1006,7 @@ pickMonsterToSpawn seed location =
             , createMonster "Fire Elemental" 11 4 2
             , createMonster "Earth Elemental" 9 6 2
             ]
-                ++ (case location of
+                ++ (case locationType of
                         Forest ->
                             [ createMonster "Forest Elf" 10 3 1
                             , createMonster "Dire Wolf" 15 5 0

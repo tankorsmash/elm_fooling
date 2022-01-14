@@ -286,6 +286,32 @@ locationToPretty location =
             "The Plains"
 
 
+getLocationsList : Locations -> List Location
+getLocationsList locations =
+    [ locations.forest
+    , locations.mountains
+    , locations.plains
+    ]
+
+
+getCurrentLocation { currentLocationId, locations } =
+    let
+        potentialLocations =
+            getLocationsList locations
+    in
+    potentialLocations
+        |> List.foldl
+            (\pl acc ->
+                if pl.locationId == currentLocationId then
+                    Just pl
+
+                else
+                    acc
+            )
+            Nothing
+        |> Maybe.withDefault locations.forest
+
+
 type alias Model =
     { golem : DamagedMonster
     , enemyMonster : Maybe DamagedMonster
@@ -333,6 +359,7 @@ golemKillsEnemy model golem deadEnemy fightLogs =
     let
         ( victorGolem, gainedXp ) =
             increaseMonsterXpByMonster golem deadEnemy
+
     in
     ( { model
         | golem = LivingMonster victorGolem
@@ -433,32 +460,6 @@ healGolemBloodCost =
 reviveGolemBloodCost : Int
 reviveGolemBloodCost =
     25
-
-
-getLocationsList : Locations -> List Location
-getLocationsList locations =
-    [ locations.forest
-    , locations.mountains
-    , locations.plains
-    ]
-
-
-getCurrentLocation { currentLocationId, locations } =
-    let
-        potentialLocations =
-            getLocationsList locations
-    in
-    potentialLocations
-        |> List.foldl
-            (\pl acc ->
-                if pl.locationId == currentLocationId then
-                    Just pl
-
-                else
-                    acc
-            )
-            Nothing
-        |> Maybe.withDefault locations.forest
 
 
 {-| called from ItemShop.updateBattleOutMsg, which does some post processing

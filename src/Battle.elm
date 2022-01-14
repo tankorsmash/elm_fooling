@@ -345,9 +345,6 @@ updateFight model =
                                         --if no dead enemy, proceed as normal
                                         ( g, e, firstFightLogs_ ) ->
                                             ( g, e, firstFightLogs_ )
-
-                                _ =
-                                    Debug.log "fight logs" fightLogs
                             in
                             ( { model
                                 | golem = newGolem

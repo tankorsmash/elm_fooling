@@ -74,6 +74,8 @@ type Msg
     | ReviveGolem
     | SendOutMsg OutMsg
     | TickSecond Time.Posix
+    | ToggleShowLocationMenu
+    | ChangeLocation Location
 
 
 type OutMsg
@@ -235,6 +237,25 @@ type alias BattleCharacter =
     }
 
 
+type Location
+    = Forest
+    | Mountains
+    | Plains
+
+
+locationToPretty : Location -> String
+locationToPretty location =
+    case location of
+        Forest ->
+            "The Forest"
+
+        Mountains ->
+            "The Mountains"
+
+        Plains ->
+            "The Plains"
+
+
 type alias Model =
     { golem : DamagedMonster
     , enemyMonster : DamagedMonster
@@ -243,6 +264,8 @@ type alias Model =
     , showExpandedLogs : Bool
     , player : BattleCharacter --NOTE: this is hackily read from in ItemShop's updateBattleOutMsg and used to update ItemShop's player. FIXME hack on that for sure
     , secondsWaitedSinceLastSPRefill : Int
+    , shouldShowLocationMenu : Bool
+    , currentLocation : Location
     }
 
 
@@ -258,6 +281,8 @@ init { held_blood, held_gold } =
     , showExpandedLogs = False
     , player = { held_blood = held_blood, held_gold = held_gold }
     , secondsWaitedSinceLastSPRefill = 0
+    , shouldShowLocationMenu = True
+    , currentLocation = Forest
     }
 
 
@@ -476,6 +501,12 @@ update model battleMsg =
             else
                 ( { model | secondsWaitedSinceLastSPRefill = newSecondsWaited }, Cmd.none, NoOutMsg )
 
+        ToggleShowLocationMenu ->
+            ( { model | shouldShowLocationMenu = not model.shouldShowLocationMenu }, Cmd.none, NoOutMsg )
+
+        ChangeLocation newLocation ->
+            ( { model | currentLocation = newLocation, shouldShowLocationMenu = False }, Cmd.none, NoOutMsg )
+
 
 
 -- end of update
@@ -675,11 +706,16 @@ viewBattleControls { golem, player } =
                 DeadMonster _ ->
                     True
     in
-    [ el [ centerX, width (fill |> Element.maximum 150) ] <|
+    [ el [ centerX, width (fillMax 150) ] <|
         UI.outline_button
             [ centerX, width fill ]
             ToggleShowExpandedLogs
             "Details"
+    , el [ centerX, width (fillMax 150), Element.paddingEach { top = 10, bottom = 0, left = 0, right = 0 } ] <|
+        UI.outline_button
+            [ centerX, width fill ]
+            ToggleShowLocationMenu
+            "Change Location"
     , column [ width fill, spacing 1, padding 10 ]
         [ UI.outline_button
             [ centerX
@@ -729,52 +765,74 @@ viewBattleControls { golem, player } =
 
 view : Model -> Element Msg
 view model =
-    column [ width fill, Font.size 16 ]
-        [ el [ Font.size 24, Element.paddingEach { bottom = 20, top = 0, left = 0, right = 0 } ] <| text "Battle!"
-        , row [ width fill ]
-            [ column [ alignLeft, width (Element.px 200) ]
-                [ Element.el [ alignLeft ] <| viewMonsterInBattle model.golem True ]
-            , column [ centerX ]
-                [ let
-                    ( buttonType, msg, txt ) =
-                        case ( model.golem, model.enemyMonster ) of
-                            ( LivingMonster _, LivingMonster _ ) ->
-                                ( UI.primary_button, Fight, "Fight" )
+    if not model.shouldShowLocationMenu then
+        column [ width fill, Font.size 16 ]
+            [ el [ Font.size 24, Element.paddingEach { bottom = 20, top = 0, left = 0, right = 0 } ] <| text "Battle!"
+            , row [ width fill ]
+                [ column [ alignLeft, width (Element.px 200) ]
+                    [ Element.el [ alignLeft ] <| viewMonsterInBattle model.golem True ]
+                , column [ centerX, spacing 10 ]
+                    [ let
+                        ( buttonType, msg, txt ) =
+                            case ( model.golem, model.enemyMonster ) of
+                                ( LivingMonster _, LivingMonster _ ) ->
+                                    ( UI.primary_button, Fight, "Fight" )
 
-                            ( LivingMonster _, DeadMonster _ ) ->
-                                ( UI.secondary_button, FindNewEnemy, "New Enemy" )
+                                ( LivingMonster _, DeadMonster _ ) ->
+                                    ( UI.secondary_button, FindNewEnemy, "New Enemy" )
 
-                            ( DeadMonster _, _ ) ->
-                                ( UI.danger_button, Noop, "You're dead" )
-                  in
-                  buttonType
-                    [ width (fillMin 125)
-                    , if msg == Noop then
-                        Element.mouseOver []
+                                ( DeadMonster _, _ ) ->
+                                    ( UI.danger_button, Noop, "You're dead" )
+                      in
+                      buttonType
+                        [ width (fillMin 125)
+                        , if msg == Noop then
+                            Element.mouseOver []
 
-                      else
-                        attrNone
+                          else
+                            attrNone
+                        ]
+                        msg
+                        txt
+                    , column [ centerX ]
+                        [ el [ Font.underline, Font.size 10, centerX ] <| text "Current Location"
+                        , el [ centerX ] <| text <| locationToPretty model.currentLocation
+                        ]
                     ]
-                    msg
-                    txt
+                , column
+                    [ alignRight, width (Element.px 200) ]
+                    [ Element.el [ alignRight ] <| viewMonsterInBattle model.enemyMonster False ]
                 ]
-            , column
-                [ alignRight, width (Element.px 200) ]
-                [ Element.el [ alignRight ] <| viewMonsterInBattle model.enemyMonster False ]
-            ]
-        , column [ width fill, paddingXY 0 20 ]
-            [ row [ width fill, centerX ]
-                [ row [ width <| fillPortion 1 ] []
-                , row [ width <| fillPortion 3, Border.widthEach { top = 1, bottom = 0, left = 0, right = 0 } ] []
-                , row [ width <| fillPortion 1 ] []
+            , column [ width fill, paddingXY 0 20 ]
+                [ row [ width fill, centerX ]
+                    [ row [ width <| fillPortion 1 ] []
+                    , row [ width <| fillPortion 3, Border.widthEach { top = 1, bottom = 0, left = 0, right = 0 } ] []
+                    , row [ width <| fillPortion 1 ] []
+                    ]
+                ]
+            , row [ width fill ]
+                [ el [ width <| fillPortion 4, alignTop ] <| viewFightLog model.showExpandedLogs model.fightLogs
+                , column [ width <| fillPortion 2, alignTop ]
+                    (viewBattleControls model)
                 ]
             ]
-        , row [ width fill ]
-            [ el [ width <| fillPortion 4, alignTop ] <| viewFightLog model.showExpandedLogs model.fightLogs
-            , column [ width <| fillPortion 2, alignTop ]
-                (viewBattleControls model)
+
+    else
+        column [ width fill, Font.size 16 ]
+            [ el
+                [ Font.size 24
+                , Element.paddingEach { bottom = 20, top = 0, left = 0, right = 0 }
+                ]
+              <|
+                text "Choose Location"
+            , paragraph [ padding 10 ] [ text "You may choose a new Location to visit." ]
+            , paragraph [ padding 10 ] [ text "A new Location contains new monsters to fight, which may bring new rewards!" ]
+            , column [ width fill, spacing 10, padding 10 ]
+                [ UI.secondary_button [ width fill ] (ChangeLocation Forest) "Forest"
+                , UI.secondary_button [ width fill ] (ChangeLocation Mountains) "Mountains"
+                , UI.secondary_button [ width fill ] (ChangeLocation Plains) "Plains"
+                ]
             ]
-        ]
 
 
 monsterTakeDamage : Int -> Monster -> DamagedMonster

@@ -796,7 +796,21 @@ viewSingleFightLog expandedLog fightLog =
             paragraph [] [ text <| "Found new monster: " ++ newMonster.name ]
 
         GolemKilledMonster attacker deadMonster xp_gained ->
-            paragraph [] [ text <| attacker.name ++ " killed " ++ deadMonster.name ++ ", gaining " ++ String.fromInt xp_gained ++ " XP, and an item was put up for sale." ]
+            paragraph []
+                [ text <|
+                    attacker.name
+                        ++ " killed "
+                        ++ deadMonster.name
+                        ++ ", gaining "
+                        ++ String.fromInt xp_gained
+                        ++ " XP"
+                        ++ (if deadMonster.onDefeat == DeliverItemToShop then
+                                ", and an item was put up for sale."
+
+                            else
+                                ""
+                           )
+                ]
 
         MonsterKilledGolem golem monster ->
             paragraph [] [ text <| monster.name ++ " killed " ++ golem.name ++ ". You must now Revive your Golem." ]

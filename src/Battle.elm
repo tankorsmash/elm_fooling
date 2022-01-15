@@ -879,6 +879,18 @@ viewBattleControls { golem, player, enemyMonster } =
 
                 DeadMonster _ ->
                     True
+
+        canAffordGolemLevelUp : Bool
+        canAffordGolemLevelUp =
+            monsterMap (\g -> g.xp >= 100) golem
+
+        golemLevelupable =
+            case golem of
+                LivingMonster _ ->
+                    True
+
+                DeadMonster _ ->
+                    False
     in
     [ el [ centerX, width (fillMax 150) ] <|
         UI.outline_button
@@ -926,8 +938,24 @@ viewBattleControls { golem, player, enemyMonster } =
             ReviveGolem
             "Revive"
         , UI.outline_button
-            [ centerX, width (fillMax 150) ]
-            LevelUpGolem
+            [ centerX
+            , width (fillMax 150)
+            , Element.alpha <|
+                if not golemLevelupable then
+                    0.0
+
+                else if not canAffordGolemLevelUp then
+                    0.5
+
+                else
+                    1.0
+            ]
+            (if golemLevelupable && canAffordGolemLevelUp then
+                LevelUpGolem
+
+             else
+                Noop
+            )
             "Strengthen"
         , UI.outline_button
             [ centerX, width (fillMax 150) ]

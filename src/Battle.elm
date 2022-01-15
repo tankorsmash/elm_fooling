@@ -565,6 +565,10 @@ secondsRequiredForSpRefill : Int
 secondsRequiredForSpRefill =
     5
 
+secondsRequiredForLocationMonsterRefill : Int
+secondsRequiredForLocationMonsterRefill =
+    60
+
 
 {-| called from ItemShop.updateBattleOutMsg, which does some post processing
 like reading what Battle.Model.player's held\_gold and held\_blood are
@@ -686,7 +690,7 @@ update model battleMsg =
                             model.golem
 
                     newSecondsWaitedSince =
-                        { secondsWaitedSince | lastSpRefill = newSecondsWaitedSinceLastSpRefill }
+                        { secondsWaitedSince | lastSpRefill = 0 }
                 in
                 ( { model
                     | golem = newGolem
@@ -699,7 +703,7 @@ update model battleMsg =
             else
                 let
                     newSecondsWaitedSince =
-                        { secondsWaitedSince | lastSpRefill = 0 }
+                        { secondsWaitedSince | lastSpRefill = newSecondsWaitedSinceLastSpRefill }
                 in
                 ( { model | secondsWaitedSince = newSecondsWaitedSince }, Cmd.none, NoOutMsg )
 
@@ -1088,6 +1092,9 @@ view model =
                         , text <|
                             "Time Until SP Recharge: "
                                 ++ String.fromInt (secondsRequiredForSpRefill - model.secondsWaitedSince.lastSpRefill)
+                        , text <|
+                            "Time Until Location Monster Refill: "
+                                ++ String.fromInt (secondsRequiredForLocationMonsterRefill - model.secondsWaitedSince.lastLocationMonsterRefill)
                         ]
                     , column [ width fill, paddingXY 0 20 ]
                         [ row [ width fill, centerX ]

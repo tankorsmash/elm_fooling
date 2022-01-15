@@ -228,6 +228,7 @@ decodeRetrigger obj =
     Decode.map Retrigger
         (Decode.field "p_repeat_speed" Decode.float)
 
+
 type alias Flanger =
     { offset : Float
     , ramp : Float
@@ -246,6 +247,29 @@ decodeFlanger obj =
     Decode.map2 Flanger
         (Decode.field "p_pha_offset" Decode.float)
         (Decode.field "p_pha_ramp" Decode.float)
+
+
+type alias LowPassFilter =
+    { frequency : Float
+    , ramp : Float
+    , resonance : Float
+    }
+
+
+encodeLowPassFilter : LowPassFilter -> List ( String, Encode.Value )
+encodeLowPassFilter lowPassFilter =
+    [ ( "p_lpf_freq", Encode.float lowPassFilter.frequency )
+    , ( "p_lpf_ramp", Encode.float lowPassFilter.ramp )
+    , ( "p_lpf_resonance", Encode.float lowPassFilter.resonance )
+    ]
+
+
+decodeLowPassFilter : Encode.Value -> Decoder LowPassFilter
+decodeLowPassFilter obj =
+    Decode.map3 LowPassFilter
+        (Decode.field "p_lpf_freq" Decode.float)
+        (Decode.field "p_lpf_ramp" Decode.float)
+        (Decode.field "p_lpf_resonance" Decode.float)
 
 
 type alias SoundConfig =

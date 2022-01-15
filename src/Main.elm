@@ -35,6 +35,7 @@ import ItemShop
 import Json.Decode exposing (Decoder, at, field, list, string)
 import Json.Encode exposing (string)
 import List
+import Sfxr
 import String
 import Task
 import Time
@@ -56,6 +57,7 @@ type Msg
       -- | GotEditWeaponFormUpdate Magnolia.WeaponFrame.EditFormUpdateType
       -- | SubmitFormData
     | GotItemShopMsg ItemShop.Msg
+    | GotSfxrMsg Sfxr.Msg
 
 
 
@@ -96,6 +98,7 @@ subscriptions model =
         [ --Time.every 1000 Tick,
           test_port_receiving RecvFromPort
         , Sub.map GotItemShopMsg <| ItemShop.subscriptions model.item_shop_model
+        , Sub.map GotSfxrMsg <| Sfxr.subscriptions model.sfxrModel
         ]
 
 
@@ -123,6 +126,7 @@ type alias Model =
     , page_info : UrlPageInfo
     , current_tab : TabType
     , item_shop_model : ItemShop.Model
+    , sfxrModel : Sfxr.Model
     }
 
 
@@ -202,6 +206,7 @@ init _ url navKey =
             , page_info = page_info
             , current_tab = initial_tab
             , item_shop_model = item_shop_model
+            , sfxrModel = Sfxr.init
             }
 
         existingCmds : Cmd Msg
@@ -328,6 +333,21 @@ update msg model =
               }
             , Cmd.map GotItemShopMsg sub_cmd
             )
+
+        GotSfxrMsg sfxrMsg ->
+            let
+                ( sub_model, sub_cmd ) =
+                    Sfxr.update sfxrMsg model.sfxrModel
+            in
+            ( { model
+                | sfxrModel = sub_model
+              }
+            , Cmd.map GotSfxrMsg sub_cmd
+            )
+
+
+
+-- end of update
 
 
 humanize : Time.Posix -> Time.Zone -> String

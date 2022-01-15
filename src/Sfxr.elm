@@ -271,6 +271,25 @@ decodeLowPassFilter obj =
         (Decode.field "p_lpf_ramp" Decode.float)
         (Decode.field "p_lpf_resonance" Decode.float)
 
+type alias HighPassFilter =
+    { frequency : Float
+    , ramp : Float
+    }
+
+
+encodeHighPassFilter : HighPassFilter -> List ( String, Encode.Value )
+encodeHighPassFilter highPassFilter =
+    [ ( "p_lpf_freq", Encode.float highPassFilter.frequency )
+    , ( "p_lpf_ramp", Encode.float highPassFilter.ramp )
+    ]
+
+
+decodeHighPassFilter : Encode.Value -> Decoder HighPassFilter
+decodeHighPassFilter obj =
+    Decode.map2 HighPassFilter
+        (Decode.field "p_lpf_freq" Decode.float)
+        (Decode.field "p_lpf_ramp" Decode.float)
+
 
 type alias SoundConfig =
     { shape : Shape
@@ -281,6 +300,8 @@ type alias SoundConfig =
     , duty : Duty
     , retrigger : Retrigger
     , flanger : Flanger
+    , lowPassFilter : LowPassFilter
+    , highPassFilter : HighPassFilter
     }
 
 
@@ -296,6 +317,8 @@ encodeSoundConfig soundConfig =
             ++ encodeDuty soundConfig.duty
             ++ encodeRetrigger soundConfig.retrigger
             ++ encodeFlanger soundConfig.flanger
+            ++ encodeLowPassFilter soundConfig.lowPassFilter
+            ++ encodeHighPassFilter soundConfig.highPassFilter
         )
 
 

@@ -422,7 +422,7 @@ golemKillsEnemy : Model -> Monster -> Monster -> List FightLog -> ( Model, OutMs
 golemKillsEnemy model golem deadEnemy fightLogs =
     let
         ( victorGolem, gainedXp ) =
-            increaseMonsterXpByMonster golem deadEnemy
+            addMonsterXpByMonster golem deadEnemy
 
         decrementMonstersLeft =
             \curLocation ->
@@ -530,9 +530,22 @@ reviveGolemBloodCost =
     25
 
 
+levelUpXpCost : Int
+levelUpXpCost =
+    100
+
+
+monsterHasXpToLevelUp : Monster -> Bool
+monsterHasXpToLevelUp monster =
+    monster.xp >= levelUpXpCost
+
+
+{-| NOTE: assumes the monster has enough XP
+-}
 addMonsterLevel : Int -> Monster -> Monster
-addMonsterLevel toAdd monster =
-    { monster | level = monster.level + toAdd }
+addMonsterLevel toAdd ({ xp, level } as monster) =
+    { monster | level = level + toAdd }
+        |> addMonsterXp -(levelUpXpCost * toAdd)
 
 
 {-| called from ItemShop.updateBattleOutMsg, which does some post processing
@@ -867,11 +880,6 @@ fillMin pxWidth =
     fill |> Element.minimum pxWidth
 
 
-
--- type CanHealGolem = NotHealable | CannotAffordHeal | CanAffordHeal
--- type CanReviveGolem = NotReviveable | CannotAffordRevive | CanAffordRevive
-
-
 viewBattleControls : Model -> List (Element Msg)
 viewBattleControls { golem, player, enemyMonster } =
     let
@@ -903,7 +911,7 @@ viewBattleControls { golem, player, enemyMonster } =
 
         canAffordGolemLevelUp : Bool
         canAffordGolemLevelUp =
-            monsterMap (\g -> g.xp >= 100) golem
+            monsterMap monsterHasXpToLevelUp golem
 
         golemLevelupable =
             case golem of
@@ -1183,13 +1191,18 @@ calculateXpValue monster =
         |> max 1
 
 
-increaseMonsterXpByMonster : Monster -> Monster -> ( Monster, Int )
-increaseMonsterXpByMonster monster otherMonster =
+addMonsterXp : Int -> Monster -> Monster
+addMonsterXp toAdd monster =
+    { monster | xp = monster.xp + toAdd }
+
+
+addMonsterXpByMonster : Monster -> Monster -> ( Monster, Int )
+addMonsterXpByMonster monster otherMonster =
     let
-        gainedXP =
+        gainedXp =
             calculateXpValue otherMonster
     in
-    ( { monster | xp = monster.xp + gainedXP }, gainedXP )
+    ( addMonsterXp gainedXp monster, gainedXp )
 
 
 subscriptions : Model -> Sub Msg

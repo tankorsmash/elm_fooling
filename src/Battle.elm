@@ -357,6 +357,12 @@ mapCurrentLocation model locationUpdater =
         locations
 
 
+type alias SecondsWaitedSince =
+    { lastSpRefill : Int
+    , lastLocationMonsterRefill : Int
+    }
+
+
 type alias Model =
     { golem : DamagedMonster
     , enemyMonster : Maybe DamagedMonster
@@ -364,7 +370,7 @@ type alias Model =
     , fightLogs : List FightLog
     , showExpandedLogs : Bool
     , player : BattleCharacter --NOTE: this is hackily read from in ItemShop's updateBattleOutMsg and used to update ItemShop's player. FIXME hack on that for sure
-    , secondsWaitedSinceLastSPRefill : Int
+    , secondsWaitedSince : SecondsWaitedSince
     , shouldShowLocationTypeMenu : Bool
     , currentLocationId : LocationId
     , locations : Locations
@@ -389,7 +395,9 @@ setOnDefeat defeatAction monster =
     { monster | onDefeat = defeatAction }
 
 
-debugMode = True
+debugMode =
+    True
+
 
 init : { a | held_blood : Int, held_gold : Int } -> Model
 init { held_blood, held_gold } =
@@ -412,7 +420,10 @@ init { held_blood, held_gold } =
     , fightLogs = []
     , showExpandedLogs = False
     , player = { held_blood = held_blood, held_gold = held_gold }
-    , secondsWaitedSinceLastSPRefill = 0
+    , secondsWaitedSince =
+        { lastSpRefill = 0
+        , lastLocationMonsterRefill = 0
+        }
     , shouldShowLocationTypeMenu = False
     , currentLocationId = locations.forest.locationId
     , locations =
@@ -661,26 +672,36 @@ update model battleMsg =
 
         TickSecond time ->
             let
-                newSecondsWaited =
-                    model.secondsWaitedSinceLastSPRefill + 1
+                secondsWaitedSince =
+                    model.secondsWaitedSince
+
+                newSecondsWaitedSinceLastSpRefill =
+                    secondsWaitedSince.lastSpRefill + 1
             in
-            if newSecondsWaited >= secondsRequiredForSpRefill then
+            if newSecondsWaitedSinceLastSpRefill >= secondsRequiredForSpRefill then
                 let
                     newGolem =
                         monsterLivingMap
                             (monsterStatMapStamina (addToStatCurVal 1))
                             model.golem
+
+                    newSecondsWaitedSince =
+                        { secondsWaitedSince | lastSpRefill = newSecondsWaitedSinceLastSpRefill }
                 in
                 ( { model
                     | golem = newGolem
-                    , secondsWaitedSinceLastSPRefill = 0
+                    , secondsWaitedSince = newSecondsWaitedSince
                   }
                 , Cmd.none
                 , NoOutMsg
                 )
 
             else
-                ( { model | secondsWaitedSinceLastSPRefill = newSecondsWaited }, Cmd.none, NoOutMsg )
+                let
+                    newSecondsWaitedSince =
+                        { secondsWaitedSince | lastSpRefill = 0 }
+                in
+                ( { model | secondsWaitedSince = newSecondsWaitedSince }, Cmd.none, NoOutMsg )
 
         ToggleShowLocationTypeMenu ->
             ( { model | shouldShowLocationTypeMenu = not model.shouldShowLocationTypeMenu }, Cmd.none, NoOutMsg )
@@ -1060,13 +1081,13 @@ view model =
                     ]
                 ]
             , if debugMode then
-                column [width fill]
+                column [ width fill ]
                     [ column [ width fill, paddingXY 0 20 ]
                         [ el [ Font.underline ] <|
                             text "Debug"
                         , text <|
                             "Time Until SP Recharge: "
-                                ++ String.fromInt (secondsRequiredForSpRefill - model.secondsWaitedSinceLastSPRefill)
+                                ++ String.fromInt (secondsRequiredForSpRefill - model.secondsWaitedSince.lastSpRefill)
                         ]
                     , column [ width fill, paddingXY 0 20 ]
                         [ row [ width fill, centerX ]

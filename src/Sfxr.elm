@@ -126,9 +126,57 @@ decodeEnvelope obj =
         (Decode.field "p_env_decay" Decode.float)
 
 
+type alias Frequency =
+    { base : Float
+    , limit : Float
+    , ramp : Float
+    , dramp : Float
+    }
+
+
+encodeFrequency : Frequency -> List ( String, Encode.Value )
+encodeFrequency frequency =
+    [ ( "p_freq_base_freq", Encode.float frequency.base )
+    , ( "p_freq_limit", Encode.float frequency.limit )
+    , ( "p_freq_ramp", Encode.float frequency.ramp )
+    , ( "p_freq_dramp", Encode.float frequency.dramp )
+    ]
+
+
+decodeFrequency : Encode.Value -> Decoder Frequency
+decodeFrequency obj =
+    Decode.map4 Frequency
+        (Decode.field "p_freq_base_freq" Decode.float)
+        (Decode.field "p_freq_limit" Decode.float)
+        (Decode.field "p_freq_ramp" Decode.float)
+        (Decode.field "p_freq_dramp" Decode.float)
+
+
+type alias Vibrato =
+    { strength : Float
+    , speed : Float
+    }
+
+
+encodeVibrato : Vibrato -> List ( String, Encode.Value )
+encodeVibrato vibrato =
+    [ ( "p_vib_strength", Encode.float vibrato.strength )
+    , ( "p_vib_speed", Encode.float vibrato.speed )
+    ]
+
+
+decodeVibrato : Encode.Value -> Decoder Vibrato
+decodeVibrato obj =
+    Decode.map2 Vibrato
+        (Decode.field "p_vib_strength" Decode.float)
+        (Decode.field "p_vib_speed" Decode.float)
+
+
 type alias SoundConfig =
     { shape : Shape
     , envelope : Envelope
+    , frequency : Frequency
+    , vibrato : Vibrato
     }
 
 
@@ -138,7 +186,13 @@ encodeSoundConfig soundConfig =
         ([ encodeShape soundConfig.shape
          ]
             ++ encodeEnvelope soundConfig.envelope
+            ++ encodeFrequency soundConfig.frequency
+            ++ encodeVibrato soundConfig.vibrato
         )
+
+
+
+-- decodeSoundConfig : Decode.Value -> SoundConfig
 
 
 type alias Model =

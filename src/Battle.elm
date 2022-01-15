@@ -571,16 +571,19 @@ secondsRequiredForLocationMonsterRefill =
     60
 
 
-updateTick : Model -> Time.Posix -> (Model, Cmd Msg, OutMsg)
+updateTick : Model -> Time.Posix -> ( Model, Cmd Msg, OutMsg )
 updateTick model time =
     let
         secondsWaitedSince =
             model.secondsWaitedSince
 
-        newSecondsWaitedSinceLastSpRefill =
-            secondsWaitedSince.lastSpRefill + 1
+        incrSecondsWaitedSince =
+            { secondsWaitedSince
+                | lastSpRefill = secondsWaitedSince.lastSpRefill + 1
+                , lastLocationMonsterRefill = secondsWaitedSince.lastLocationMonsterRefill + 1
+            }
     in
-    if newSecondsWaitedSinceLastSpRefill >= secondsRequiredForSpRefill then
+    if incrSecondsWaitedSince.lastSpRefill >= secondsRequiredForSpRefill then
         let
             newGolem =
                 monsterLivingMap
@@ -599,11 +602,10 @@ updateTick model time =
         )
 
     else
-        let
-            newSecondsWaitedSince =
-                { secondsWaitedSince | lastSpRefill = newSecondsWaitedSinceLastSpRefill }
-        in
-        ( { model | secondsWaitedSince = newSecondsWaitedSince }, Cmd.none, NoOutMsg )
+        ( { model | secondsWaitedSince = incrSecondsWaitedSince }
+        , Cmd.none
+        , NoOutMsg
+        )
 
 
 {-| called from ItemShop.updateBattleOutMsg, which does some post processing

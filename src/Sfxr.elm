@@ -55,6 +55,60 @@ type Msg
     | FromPort String
 
 
+type Shape
+    = Square
+    | Sawtooth
+    | Sine
+    | Noise
+
+
+encodeShape : Shape -> Int
+encodeShape shape =
+    case shape of
+        Square ->
+            0
+
+        Sawtooth ->
+            1
+
+        Sine ->
+            2
+
+        Noise ->
+            3
+
+
+decodeShape : Int -> Shape
+decodeShape shapeInt =
+    case shapeInt of
+        0 ->
+            Square
+
+        1 ->
+            Sawtooth
+
+        2 ->
+            Sine
+
+        3 ->
+            Noise
+
+        _ ->
+            Square
+
+
+type alias SoundConfig =
+    { shape : Shape
+    }
+
+
+encodeSoundConfig : SoundConfig -> Encode.Value
+encodeSoundConfig soundConfig =
+    Encode.object
+        [ ( "wave_type", Encode.int <| encodeShape soundConfig.shape )
+        ]
+
+
 type alias Model =
     {}
 
@@ -74,7 +128,7 @@ update msg model =
             noop
 
         PlaySound ->
-            (model, sfxrOut "PlaySound sent")
+            ( model, sfxrOut "PlaySound sent" )
 
         FromPort str ->
             let

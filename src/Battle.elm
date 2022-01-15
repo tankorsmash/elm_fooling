@@ -72,6 +72,7 @@ type Msg
     | TickSecond Time.Posix
     | ToggleShowLocationTypeMenu
     | ChangeLocation LocationId
+    | LevelUpGolem
 
 
 type DefeatAction
@@ -131,6 +132,7 @@ type alias Monster =
     , statStamina : IntStat
     , statPower : IntStat
     , statProtection : IntStat
+    , level : Int
     , xp : Int
     , onDefeat : DefeatAction
     }
@@ -348,6 +350,19 @@ type alias Model =
     }
 
 
+createMonster : String -> Int -> Int -> Int -> Monster
+createMonster name hpMax pwrMax protMax =
+    { name = name
+    , statHP = initStat hpMax
+    , statStamina = initStat 10
+    , statPower = initStat pwrMax
+    , statProtection = initStat protMax
+    , xp = 0
+    , level = 1
+    , onDefeat = NoDefeatAction
+    }
+
+
 init : { a | held_blood : Int, held_gold : Int } -> Model
 init { held_blood, held_gold } =
     let
@@ -488,6 +503,11 @@ reviveGolemBloodCost =
     25
 
 
+addMonsterLevel : Int -> Monster -> Monster
+addMonsterLevel toAdd monster =
+    { monster | level = monster.level + toAdd }
+
+
 {-| called from ItemShop.updateBattleOutMsg, which does some post processing
 like reading what Battle.Model.player's held\_gold and held\_blood are
 -}
@@ -621,12 +641,24 @@ update model battleMsg =
         ChangeLocation newLocationId ->
             ( { model | currentLocationId = newLocationId, shouldShowLocationTypeMenu = False, enemyMonster = Nothing }, Cmd.none, NoOutMsg )
 
+        LevelUpGolem ->
+            let
+                newGolem =
+                    monsterIdentityMap
+                        (addMonsterLevel 1
+                            >> monsterStatMapHP (addToStatMaxVal 3)
+                            >> monsterStatMapHP (addToStatCurVal 3)
+                        )
+                        model.golem
+            in
+            ( { model | golem = newGolem }, Cmd.none, NoOutMsg )
+
 
 
 -- end of update
 
 
-{-| does something on the actual monster
+{-| does something on the actual monster and returns anything
 -}
 monsterMap : (Monster -> a) -> DamagedMonster -> a
 monsterMap callback damagedMonster =
@@ -636,6 +668,18 @@ monsterMap callback damagedMonster =
 
         DeadMonster monster ->
             callback monster
+
+
+{-| does something on the actual monster and returns anything
+-}
+monsterIdentityMap : (Monster -> Monster) -> DamagedMonster -> DamagedMonster
+monsterIdentityMap callback damagedMonster =
+    case damagedMonster of
+        LivingMonster monster ->
+            LivingMonster <| callback monster
+
+        DeadMonster monster ->
+            DeadMonster <| callback monster
 
 
 {-| does something on the actual monster, so long as its living
@@ -682,24 +726,19 @@ padStatStrBar leftNum rightNum =
     padLeft leftNum 3 ++ "/" ++ padRight rightNum 3
 
 
-createMonster : String -> Int -> Int -> Int -> Monster
-createMonster name hpMax pwrMax protMax =
-    { name = name
-    , statHP = initStat hpMax
-    , statStamina = initStat 10
-    , statPower = initStat pwrMax
-    , statProtection = initStat protMax
-    , xp = 0
-    , onDefeat = NoDefeatAction
-    }
-
-
 viewMonsterInBattle : DamagedMonster -> Bool -> Element Msg
-viewMonsterInBattle damagedMonster showXp =
+viewMonsterInBattle damagedMonster showExtra =
     let
         viewMonster_ monster isDead =
             column [] <|
-                [ el [ Font.size 20 ] <| text monster.name
+                [ paragraph [ Font.size 20 ] <|
+                    [ el [] <| text <| monster.name
+                    , if showExtra then
+                        el [ Font.size 12 ] <| text <| " Lv. " ++ String.fromInt monster.level
+
+                      else
+                        Element.none
+                    ]
                 , if isDead then
                     UI.monospace [ alignRight, centerX ] <| text <| "DEAD!"
 
@@ -709,7 +748,7 @@ viewMonsterInBattle damagedMonster showXp =
                 , UI.monospace [] <| text <| "Pwr: " ++ padLeft (String.fromInt monster.statPower.curVal) 5
                 , UI.monospace [] <| text <| "Prt: " ++ padLeft (String.fromInt monster.statProtection.curVal) 5
                 ]
-                    ++ (if showXp then
+                    ++ (if showExtra then
                             [ UI.monospace [ width fill ] <| text <| "XP: " ++ padLeft (String.fromInt monster.xp) 6 ]
 
                         else
@@ -868,8 +907,8 @@ viewBattleControls { golem, player, enemyMonster } =
             "Revive"
         , UI.outline_button
             [ centerX, width (fillMax 150) ]
-            Noop
-            "Strengthen (No-op)"
+            LevelUpGolem
+            "Strengthen"
         , UI.outline_button
             [ centerX, width (fillMax 150) ]
             Noop

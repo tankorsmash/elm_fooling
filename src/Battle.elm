@@ -619,7 +619,7 @@ updateTick model time =
                         if m.secondsWaitedSince.lastLocationMonsterRefill >= secondsRequiredForLocationMonsterRefill then
                             let
                                 locationsList =
-                                    getLocationsList m.locations
+                                    getLocationsList m
 
                                 locationRefiller location =
                                     if location.monstersLeft < maxMonstersPerLocation then

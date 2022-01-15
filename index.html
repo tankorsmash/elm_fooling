@@ -23,17 +23,23 @@
                 function send_to_elm() {
                     app.ports && app.ports.test_port_receiving && app.ports.test_port_receiving.send("sent from js");
                 };
-                // console.log("ports exist? "+(app.ports && app.ports.test_port_receiving));
+			// console.log("ports exist? "+(app.ports && app.ports.test_port_receiving));
 
-                app.ports.exec_jsonp.subscribe(function(url) {
-                    console.log("subbing to exec_jsonp port");
-                    execJsonp(url);
-                });
+			app.ports.exec_jsonp.subscribe(function(url) {
+				console.log("subbing to exec_jsonp port");
+				execJsonp(url);
+			});
 
-				app.ports.sfxrOut.subscribe(function(outMsg) {
-					console.log("outMsg:", outMsg);
-					var sound = {
-					  "oldParams": true,
+			app.ports.sfxrOut.subscribe(function(outMsg) {
+				console.log("outMsg:", outMsg);
+				var sound = {
+				  "oldParams": true,
+				//shape
+				/* var SQUARE = 0;
+					   var SAWTOOTH = 1;
+					   var SINE = 2;
+					   var NOISE = 3;
+					*/
 					  "wave_type": 1,
 
 					//envelope
@@ -56,7 +62,7 @@
 					  "p_arp_mod": 0,
 					  "p_arp_speed": 0,
 
-					//duty cycle
+					//duty cycle (only SQUARE and SAWTOOTH can use duty)
 					  "p_duty": 1,
 					  "p_duty_ramp": 0,
 

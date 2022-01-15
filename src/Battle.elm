@@ -984,10 +984,18 @@ view model =
                     |> getLocationsList
                     |> List.map
                         (\location ->
-                            UI.secondary_button
+                            UI.secondary_button_custom
                                 [ width fill ]
                                 (ChangeLocation location.locationId)
-                                location.name
+                                (column [ centerX, spacing 5 ]
+                                    [ el [ centerX ] <| text location.name
+                                    , el [ centerX, Font.size 12 ] <|
+                                        column [ width fill ]
+                                            [ el [ Font.underline, centerX, width fill ] <| text "Monsters Remain"
+                                            , el [ centerX ] <| text <| String.fromInt location.monstersLeft
+                                            ]
+                                    ]
+                                )
                         )
                 )
             ]

@@ -172,11 +172,32 @@ decodeVibrato obj =
         (Decode.field "p_vib_speed" Decode.float)
 
 
+type alias Arpeggiation =
+    { mod : Float
+    , speed : Float
+    }
+
+
+encodeArpeggiation : Arpeggiation -> List ( String, Encode.Value )
+encodeArpeggiation arpeggiation =
+    [ ( "p_arp_mod", Encode.float arpeggiation.mod )
+    , ( "p_arp_speed", Encode.float arpeggiation.speed )
+    ]
+
+
+decodeArpeggiation : Encode.Value -> Decoder Arpeggiation
+decodeArpeggiation obj =
+    Decode.map2 Arpeggiation
+        (Decode.field "p_arp_mod" Decode.float)
+        (Decode.field "p_arp_speed" Decode.float)
+
+
 type alias SoundConfig =
     { shape : Shape
     , envelope : Envelope
     , frequency : Frequency
     , vibrato : Vibrato
+    , arpeggiation : Arpeggiation
     }
 
 
@@ -188,6 +209,7 @@ encodeSoundConfig soundConfig =
             ++ encodeEnvelope soundConfig.envelope
             ++ encodeFrequency soundConfig.frequency
             ++ encodeVibrato soundConfig.vibrato
+            ++ encodeArpeggiation soundConfig.arpeggiation
         )
 
 

@@ -191,6 +191,7 @@ decodeArpeggiation obj =
         (Decode.field "p_arp_mod" Decode.float)
         (Decode.field "p_arp_speed" Decode.float)
 
+
 type alias Duty =
     { duty : Float
     , ramp : Float
@@ -211,6 +212,23 @@ decodeDuty obj =
         (Decode.field "p_duty_ramp" Decode.float)
 
 
+type alias Retrigger =
+    { repeatSpeed : Float
+    }
+
+
+encodeRetrigger : Retrigger -> List ( String, Encode.Value )
+encodeRetrigger retrigger =
+    [ ( "p_repeat_speed", Encode.float retrigger.repeatSpeed )
+    ]
+
+
+decodeRetrigger : Encode.Value -> Decoder Retrigger
+decodeRetrigger obj =
+    Decode.map Retrigger
+        (Decode.field "p_repeat_speed" Decode.float)
+
+
 type alias SoundConfig =
     { shape : Shape
     , envelope : Envelope
@@ -218,6 +236,7 @@ type alias SoundConfig =
     , vibrato : Vibrato
     , arpeggiation : Arpeggiation
     , duty : Duty
+    , retrigger : Retrigger
     }
 
 
@@ -231,6 +250,7 @@ encodeSoundConfig soundConfig =
             ++ encodeVibrato soundConfig.vibrato
             ++ encodeArpeggiation soundConfig.arpeggiation
             ++ encodeDuty soundConfig.duty
+            ++ encodeRetrigger soundConfig.retrigger
         )
 
 

@@ -191,6 +191,25 @@ decodeArpeggiation obj =
         (Decode.field "p_arp_mod" Decode.float)
         (Decode.field "p_arp_speed" Decode.float)
 
+type alias Duty =
+    { duty : Float
+    , ramp : Float
+    }
+
+
+encodeDuty : Duty -> List ( String, Encode.Value )
+encodeDuty duty =
+    [ ( "p_duty", Encode.float duty.duty )
+    , ( "p_duty_ramp", Encode.float duty.ramp )
+    ]
+
+
+decodeDuty : Encode.Value -> Decoder Duty
+decodeDuty obj =
+    Decode.map2 Duty
+        (Decode.field "p_duty" Decode.float)
+        (Decode.field "p_duty_ramp" Decode.float)
+
 
 type alias SoundConfig =
     { shape : Shape
@@ -198,6 +217,7 @@ type alias SoundConfig =
     , frequency : Frequency
     , vibrato : Vibrato
     , arpeggiation : Arpeggiation
+    , duty : Duty
     }
 
 
@@ -210,6 +230,7 @@ encodeSoundConfig soundConfig =
             ++ encodeFrequency soundConfig.frequency
             ++ encodeVibrato soundConfig.vibrato
             ++ encodeArpeggiation soundConfig.arpeggiation
+            ++ encodeDuty soundConfig.duty
         )
 
 

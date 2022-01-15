@@ -39,6 +39,7 @@ import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string, tuple)
 import Html
 import Html.Attributes
+import Interface as UI
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as Encode exposing (Value)
@@ -49,7 +50,8 @@ import Time
 
 
 type Msg
-    = PlaySound
+    = Noop
+    | PlaySound
     | FromPort String
 
 
@@ -68,8 +70,11 @@ update msg model =
             ( model, Cmd.none )
     in
     case msg of
-        PlaySound ->
+        Noop ->
             noop
+
+        PlaySound ->
+            (model, sfxrOut "PlaySound sent")
 
         FromPort str ->
             let
@@ -102,7 +107,10 @@ view model =
         [ padding 20
         ]
     <|
-        text "TEMP SFXR"
+        column []
+            [ text "TEMP SFXR"
+            , UI.primary_button [] PlaySound "Play"
+            ]
 
 
 port sfxrIn : (String -> msg) -> Sub msg

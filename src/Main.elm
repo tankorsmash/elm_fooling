@@ -475,7 +475,7 @@ view : Model -> Browser.Document Msg
 view model =
     { title = tab_type_to_str model.current_tab ++ " | Elm Fooling"
     , body =
-        [ div [ Html.Attributes.style "height" "50px" ]
+        [ div [ Html.Attributes.style "height" "150px" ]
             [ Html.map GotSfxrMsg <| Sfxr.view model.sfxrModel ]
         , case model.page_info.page of
             NotFoundPage ->

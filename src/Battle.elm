@@ -990,7 +990,7 @@ view model =
                         ( buttonType, msg, txt ) =
                             case ( model.golem, model.enemyMonster ) of
                                 ( LivingMonster _, Just (LivingMonster _) ) ->
-                                    ( UI.primary_button, Fight, "Fight" )
+                                    ( UI.primary_button, Fight, "Continue Fight" )
 
                                 ( LivingMonster _, Just (DeadMonster _) ) ->
                                     ( UI.secondary_button, FindNewEnemy, "Find New Enemy" )

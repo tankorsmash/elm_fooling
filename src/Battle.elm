@@ -389,6 +389,8 @@ setOnDefeat defeatAction monster =
     { monster | onDefeat = defeatAction }
 
 
+debugMode = True
+
 init : { a | held_blood : Int, held_gold : Int } -> Model
 init { held_blood, held_gold } =
     let
@@ -548,6 +550,11 @@ addMonsterLevel toAdd ({ xp, level } as monster) =
         |> addMonsterXp -(levelUpXpCost * toAdd)
 
 
+secondsRequiredForSpRefill : Int
+secondsRequiredForSpRefill =
+    5
+
+
 {-| called from ItemShop.updateBattleOutMsg, which does some post processing
 like reading what Battle.Model.player's held\_gold and held\_blood are
 -}
@@ -657,7 +664,7 @@ update model battleMsg =
                 newSecondsWaited =
                     model.secondsWaitedSinceLastSPRefill + 1
             in
-            if newSecondsWaited >= 5 then
+            if newSecondsWaited >= secondsRequiredForSpRefill then
                 let
                     newGolem =
                         monsterLivingMap
@@ -1052,6 +1059,26 @@ view model =
                     , row [ width <| fillPortion 1 ] []
                     ]
                 ]
+            , if debugMode then
+                column [width fill]
+                    [ column [ width fill, paddingXY 0 20 ]
+                        [ el [ Font.underline ] <|
+                            text "Debug"
+                        , text <|
+                            "Time Until SP Recharge: "
+                                ++ String.fromInt (secondsRequiredForSpRefill - model.secondsWaitedSinceLastSPRefill)
+                        ]
+                    , column [ width fill, paddingXY 0 20 ]
+                        [ row [ width fill, centerX ]
+                            [ row [ width <| fillPortion 1 ] []
+                            , row [ width <| fillPortion 3, Border.widthEach { top = 1, bottom = 0, left = 0, right = 0 } ] []
+                            , row [ width <| fillPortion 1 ] []
+                            ]
+                        ]
+                    ]
+
+              else
+                Element.none
             , row [ width fill ]
                 [ el [ width <| fillPortion 4, alignTop ] <| viewFightLog model.showExpandedLogs model.fightLogs
                 , column [ width <| fillPortion 2, alignTop ]

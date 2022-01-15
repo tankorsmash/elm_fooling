@@ -363,6 +363,11 @@ createMonster name hpMax pwrMax protMax =
     }
 
 
+setOnDefeat : DefeatAction -> Monster -> Monster
+setOnDefeat defeatAction monster =
+    { monster | onDefeat = defeatAction }
+
+
 init : { a | held_blood : Int, held_gold : Int } -> Model
 init { held_blood, held_gold } =
     let
@@ -377,6 +382,7 @@ init { held_blood, held_gold } =
     , enemyMonster =
         createMonster "Slime" 10 2 5
             |> monsterStatMapHP (setStatCurVal 4)
+            |> setOnDefeat DeliverItemToShop
             |> LivingMonster
             |> Just
     , battleSeed = Random.initialSeed 123456

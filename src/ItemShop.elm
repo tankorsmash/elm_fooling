@@ -585,6 +585,7 @@ type PlayerActionLog
     | TookSpecialActionTriggerEvent SpecialEvent
     | TookSpecialActionTogglePauseAi
     | TookSpecialActionUnlockItem ItemId
+    | MonsterDeliveredItemToShop ItemId
 
 
 type InventorySortType
@@ -1602,6 +1603,7 @@ updateBattleOutMsg battleOutMsg model =
                                     shop
                                 )
                                 { model | global_seed = newSeed }
+                                |> append_player_action_log (MonsterDeliveredItemToShop newItem.id)
                         )
                         (getShop model)
                         mbNewItem
@@ -4315,6 +4317,9 @@ render_single_player_action_log item_db player_action_log =
 
             TookSpecialActionUnlockItem item_id ->
                 text <| "Found an item: " ++ (lookup_item_id_default item_db item_id).name
+
+            MonsterDeliveredItemToShop itemId ->
+                text "A monster died, and left an item to the shop"
         ]
 
 

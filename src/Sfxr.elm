@@ -290,6 +290,28 @@ decodeHighPassFilter obj =
         (Decode.field "p_lpf_freq" Decode.float)
         (Decode.field "p_lpf_ramp" Decode.float)
 
+type alias Misc =
+    { volume : Float
+    , sampleRate : Int
+    , sampleSize : Int
+    }
+
+
+encodeMisc : Misc -> List ( String, Encode.Value )
+encodeMisc misc =
+    [ ( "sound_vol", Encode.float misc.volume )
+    , ( "sample_rate", Encode.int misc.sampleRate )
+    , ( "sample_size", Encode.int misc.sampleSize )
+    ]
+
+
+decodeMisc : Encode.Value -> Decoder Misc
+decodeMisc obj =
+    Decode.map3 Misc
+        (Decode.field "sound_vol" Decode.float)
+        (Decode.field "sample_rate" Decode.int)
+        (Decode.field "sample_size" Decode.int)
+
 
 type alias SoundConfig =
     { shape : Shape
@@ -302,6 +324,7 @@ type alias SoundConfig =
     , flanger : Flanger
     , lowPassFilter : LowPassFilter
     , highPassFilter : HighPassFilter
+    , misc : Misc
     }
 
 
@@ -319,6 +342,7 @@ encodeSoundConfig soundConfig =
             ++ encodeFlanger soundConfig.flanger
             ++ encodeLowPassFilter soundConfig.lowPassFilter
             ++ encodeHighPassFilter soundConfig.highPassFilter
+            ++ encodeMisc soundConfig.misc
         )
 
 

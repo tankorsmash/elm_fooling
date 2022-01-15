@@ -912,51 +912,48 @@ viewBattleControls { golem, player, enemyMonster } =
 
                 DeadMonster _ ->
                     False
+
+        controlButton : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
+        controlButton attrs msg txt =
+            UI.outline_button ([ centerX, width (fillMax 150) ] ++ attrs) msg txt
+
+        canChangeLocationNow =
+            canChangeLocation golem enemyMonster
     in
     [ el [ centerX, width (fillMax 150) ] <|
-        UI.outline_button
-            [ centerX, width fill ]
+        -- Toggle Details
+        controlButton []
             ToggleShowExpandedLogs
             "Details"
     , el [ centerX, width (fillMax 150), Element.paddingEach { top = 10, bottom = 0, left = 0, right = 0 } ] <|
-        if canChangeLocation golem enemyMonster then
-            UI.outline_button
-                [ centerX, width fill ]
-                ToggleShowLocationTypeMenu
-                "Change Location"
-
-        else
-            Element.none
+        -- Change Location
+        controlButton [ Element.transparent <| not canChangeLocationNow ]
+            (conditionalMsg canChangeLocationNow ToggleShowLocationTypeMenu)
+            "Change Location"
     , column [ width fill, spacing 1, padding 10 ]
-        [ --heal
-          UI.outline_button
-            [ centerX
-            , width (fillMax 150)
-            , Element.alpha <|
+        [ -- Heal
+          controlButton
+            [ Element.alpha <|
                 conditionalAlpha (not golemHealable) (not canAffordHealGolem)
             ]
             (conditionalMsg (golemHealable && canAffordReviveGolem) HealGolem)
             "Heal"
-        , --revive
-          UI.outline_button
-            [ centerX
-            , width (fillMax 150)
-            , Element.alpha <|
+        , -- Revive
+          controlButton
+            [ Element.alpha <|
                 conditionalAlpha (not golemRevivable) (not canAffordReviveGolem)
             ]
             (conditionalMsg (golemRevivable && canAffordReviveGolem) ReviveGolem)
             "Revive"
-        , --level up
-          UI.outline_button
-            [ centerX
-            , width (fillMax 150)
-            , Element.alpha <|
+        , -- Level Up
+          controlButton
+            [ Element.alpha <|
                 conditionalAlpha (not golemLevelupable) (not canAffordGolemLevelUp)
             ]
             (conditionalMsg (golemLevelupable && canAffordGolemLevelUp) LevelUpGolem)
             "Strengthen"
-        , UI.outline_button
-            [ centerX, width (fillMax 150) ]
+        , -- Noop
+          controlButton []
             Noop
             "Harden (No-op)"
         ]

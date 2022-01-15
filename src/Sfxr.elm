@@ -62,9 +62,10 @@ type Shape
     | Noise
 
 
-encodeShape : Shape -> Encode.Value
+encodeShape : Shape -> ( String, Encode.Value )
 encodeShape shape =
-    Encode.int <|
+    ( "wave_type"
+    , Encode.int <|
         case shape of
             Square ->
                 0
@@ -77,6 +78,7 @@ encodeShape shape =
 
             Noise ->
                 3
+    )
 
 
 decodeShape : Int -> Shape
@@ -106,14 +108,13 @@ type alias Envelope =
     }
 
 
-encodeEnvelope : Envelope -> Encode.Value
+encodeEnvelope : Envelope -> List ( String, Encode.Value )
 encodeEnvelope envelope =
-    Encode.object
-        [ ( "p_env_attack", Encode.float envelope.attack )
-        , ( "p_env_sustain", Encode.float envelope.sustain )
-        , ( "p_env_punch", Encode.float envelope.punch )
-        , ( "p_env_decay", Encode.float envelope.decay )
-        ]
+    [ ( "p_env_attack", Encode.float envelope.attack )
+    , ( "p_env_sustain", Encode.float envelope.sustain )
+    , ( "p_env_punch", Encode.float envelope.punch )
+    , ( "p_env_decay", Encode.float envelope.decay )
+    ]
 
 
 decodeEnvelope : Encode.Value -> Decoder Envelope
@@ -134,8 +135,10 @@ type alias SoundConfig =
 encodeSoundConfig : SoundConfig -> Encode.Value
 encodeSoundConfig soundConfig =
     Encode.object
-        [ ( "wave_type", encodeShape soundConfig.shape )
-        ] --TODO include envelope
+        ([ encodeShape soundConfig.shape
+         ]
+            ++ encodeEnvelope soundConfig.envelope
+        )
 
 
 type alias Model =

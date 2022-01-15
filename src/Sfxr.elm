@@ -228,6 +228,25 @@ decodeRetrigger obj =
     Decode.map Retrigger
         (Decode.field "p_repeat_speed" Decode.float)
 
+type alias Flanger =
+    { offset : Float
+    , ramp : Float
+    }
+
+
+encodeFlanger : Flanger -> List ( String, Encode.Value )
+encodeFlanger flanger =
+    [ ( "p_pha_offset", Encode.float flanger.offset )
+    , ( "p_pha_ramp", Encode.float flanger.ramp )
+    ]
+
+
+decodeFlanger : Encode.Value -> Decoder Flanger
+decodeFlanger obj =
+    Decode.map2 Flanger
+        (Decode.field "p_pha_offset" Decode.float)
+        (Decode.field "p_pha_ramp" Decode.float)
+
 
 type alias SoundConfig =
     { shape : Shape
@@ -237,6 +256,7 @@ type alias SoundConfig =
     , arpeggiation : Arpeggiation
     , duty : Duty
     , retrigger : Retrigger
+    , flanger : Flanger
     }
 
 
@@ -251,6 +271,7 @@ encodeSoundConfig soundConfig =
             ++ encodeArpeggiation soundConfig.arpeggiation
             ++ encodeDuty soundConfig.duty
             ++ encodeRetrigger soundConfig.retrigger
+            ++ encodeFlanger soundConfig.flanger
         )
 
 

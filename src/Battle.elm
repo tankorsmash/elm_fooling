@@ -565,9 +565,45 @@ secondsRequiredForSpRefill : Int
 secondsRequiredForSpRefill =
     5
 
+
 secondsRequiredForLocationMonsterRefill : Int
 secondsRequiredForLocationMonsterRefill =
     60
+
+
+updateTick : Model -> Time.Posix -> (Model, Cmd Msg, OutMsg)
+updateTick model time =
+    let
+        secondsWaitedSince =
+            model.secondsWaitedSince
+
+        newSecondsWaitedSinceLastSpRefill =
+            secondsWaitedSince.lastSpRefill + 1
+    in
+    if newSecondsWaitedSinceLastSpRefill >= secondsRequiredForSpRefill then
+        let
+            newGolem =
+                monsterLivingMap
+                    (monsterStatMapStamina (addToStatCurVal 1))
+                    model.golem
+
+            newSecondsWaitedSince =
+                { secondsWaitedSince | lastSpRefill = 0 }
+        in
+        ( { model
+            | golem = newGolem
+            , secondsWaitedSince = newSecondsWaitedSince
+          }
+        , Cmd.none
+        , NoOutMsg
+        )
+
+    else
+        let
+            newSecondsWaitedSince =
+                { secondsWaitedSince | lastSpRefill = newSecondsWaitedSinceLastSpRefill }
+        in
+        ( { model | secondsWaitedSince = newSecondsWaitedSince }, Cmd.none, NoOutMsg )
 
 
 {-| called from ItemShop.updateBattleOutMsg, which does some post processing
@@ -675,37 +711,7 @@ update model battleMsg =
             ( model, Cmd.none, out_msg )
 
         TickSecond time ->
-            let
-                secondsWaitedSince =
-                    model.secondsWaitedSince
-
-                newSecondsWaitedSinceLastSpRefill =
-                    secondsWaitedSince.lastSpRefill + 1
-            in
-            if newSecondsWaitedSinceLastSpRefill >= secondsRequiredForSpRefill then
-                let
-                    newGolem =
-                        monsterLivingMap
-                            (monsterStatMapStamina (addToStatCurVal 1))
-                            model.golem
-
-                    newSecondsWaitedSince =
-                        { secondsWaitedSince | lastSpRefill = 0 }
-                in
-                ( { model
-                    | golem = newGolem
-                    , secondsWaitedSince = newSecondsWaitedSince
-                  }
-                , Cmd.none
-                , NoOutMsg
-                )
-
-            else
-                let
-                    newSecondsWaitedSince =
-                        { secondsWaitedSince | lastSpRefill = newSecondsWaitedSinceLastSpRefill }
-                in
-                ( { model | secondsWaitedSince = newSecondsWaitedSince }, Cmd.none, NoOutMsg )
+            updateTick model time
 
         ToggleShowLocationTypeMenu ->
             ( { model | shouldShowLocationTypeMenu = not model.shouldShowLocationTypeMenu }, Cmd.none, NoOutMsg )

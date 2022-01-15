@@ -155,6 +155,27 @@ monsterStatMap statGetter statSetter statFunc monster =
     statSetter monster newStat
 
 
+conditionalAlpha : Bool -> Bool -> Float
+conditionalAlpha invisCondition semiCondition =
+    if invisCondition then
+        0.0
+
+    else if semiCondition then
+        0.5
+
+    else
+        1.0
+
+
+conditionalMsg : Bool -> Msg -> Msg
+conditionalMsg condition msg =
+    if condition then
+        msg
+
+    else
+        Noop
+
+
 monsterStatMapHP : (IntStat -> IntStat) -> Monster -> Monster
 monsterStatMapHP statFunc monster =
     monsterStatMap .statHP setStatHP statFunc monster
@@ -907,55 +928,32 @@ viewBattleControls { golem, player, enemyMonster } =
         else
             Element.none
     , column [ width fill, spacing 1, padding 10 ]
-        [ UI.outline_button
+        [ --heal
+          UI.outline_button
             [ centerX
             , width (fillMax 150)
             , Element.alpha <|
-                if not golemHealable then
-                    0.0
-
-                else if not canAffordHealGolem then
-                    0.5
-
-                else
-                    1.0
+                conditionalAlpha (not golemHealable) (not canAffordHealGolem)
             ]
-            HealGolem
+            (conditionalMsg (golemHealable && canAffordReviveGolem) HealGolem)
             "Heal"
-        , UI.outline_button
+        , --revive
+          UI.outline_button
             [ centerX
             , width (fillMax 150)
             , Element.alpha <|
-                if not golemRevivable then
-                    0.0
-
-                else if not canAffordReviveGolem then
-                    0.5
-
-                else
-                    1.0
+                conditionalAlpha (not golemRevivable) (not canAffordReviveGolem)
             ]
-            ReviveGolem
+            (conditionalMsg (golemRevivable && canAffordReviveGolem) ReviveGolem)
             "Revive"
-        , UI.outline_button
+        , --level up
+          UI.outline_button
             [ centerX
             , width (fillMax 150)
             , Element.alpha <|
-                if not golemLevelupable then
-                    0.0
-
-                else if not canAffordGolemLevelUp then
-                    0.5
-
-                else
-                    1.0
+                conditionalAlpha (not golemLevelupable) (not canAffordGolemLevelUp)
             ]
-            (if golemLevelupable && canAffordGolemLevelUp then
-                LevelUpGolem
-
-             else
-                Noop
-            )
+            (conditionalMsg (golemLevelupable && canAffordGolemLevelUp) LevelUpGolem)
             "Strengthen"
         , UI.outline_button
             [ centerX, width (fillMax 150) ]

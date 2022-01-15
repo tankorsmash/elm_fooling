@@ -280,11 +280,16 @@ type alias Location =
     }
 
 
+maxMonstersPerLocation : Int
+maxMonstersPerLocation =
+    10
+
+
 createLocation : LocationType -> LocationId -> String -> Location
 createLocation locationType locationId name =
     { locationType = locationType
     , name = name
-    , monstersLeft = 10
+    , monstersLeft = maxMonstersPerLocation
     , locationId = locationId
     }
 
@@ -585,7 +590,7 @@ updateTick model time =
 
         newModel =
             model
-                |> -- apply incremented ticks to all times
+                |> --apply incremented ticks to all times
                    (\({ secondsWaitedSince } as m) ->
                         { m | secondsWaitedSince = incrSecondsWaitedSince }
                    )
@@ -605,6 +610,31 @@ updateTick model time =
                                 | golem = newGolem
                                 , secondsWaitedSince = newSecondsWaitedSince
                             }
+
+                        else
+                            m
+                   )
+                |> -- location monster refil
+                   (\({ secondsWaitedSince, locations } as m) ->
+                        if m.secondsWaitedSince.lastLocationMonsterRefill >= secondsRequiredForLocationMonsterRefill then
+                            let
+                                locationsList =
+                                    getLocationsList m.locations
+
+                                locationRefiller location =
+                                    if location.monstersLeft < maxMonstersPerLocation then
+                                        { location | monstersLeft = location.monstersLeft + 1 }
+
+                                    else
+                                        location
+                                newLocations =
+                                    { locations
+                                        | forest = locationRefiller locations.forest
+                                        , mountains = locationRefiller locations.mountains
+                                        , plains = locationRefiller locations.plains
+                                    }
+                            in
+                            { m | locations = newLocations }
 
                         else
                             m

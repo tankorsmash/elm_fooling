@@ -574,38 +574,46 @@ secondsRequiredForLocationMonsterRefill =
 updateTick : Model -> Time.Posix -> ( Model, Cmd Msg, OutMsg )
 updateTick model time =
     let
-        secondsWaitedSince =
+        origSecondsWaitedSince =
             model.secondsWaitedSince
 
         incrSecondsWaitedSince =
-            { secondsWaitedSince
-                | lastSpRefill = secondsWaitedSince.lastSpRefill + 1
-                , lastLocationMonsterRefill = secondsWaitedSince.lastLocationMonsterRefill + 1
+            { origSecondsWaitedSince
+                | lastSpRefill = origSecondsWaitedSince.lastSpRefill + 1
+                , lastLocationMonsterRefill = origSecondsWaitedSince.lastLocationMonsterRefill + 1
             }
+
+        newModel =
+            model
+                |> -- apply incremented ticks to all times
+                   (\({ secondsWaitedSince } as m) ->
+                        { m | secondsWaitedSince = incrSecondsWaitedSince }
+                   )
+                |> -- golem sp refil
+                   (\({ secondsWaitedSince } as m) ->
+                        if secondsWaitedSince.lastSpRefill >= secondsRequiredForSpRefill then
+                            let
+                                newGolem =
+                                    monsterLivingMap
+                                        (monsterStatMapStamina (addToStatCurVal 1))
+                                        m.golem
+
+                                newSecondsWaitedSince =
+                                    { secondsWaitedSince | lastSpRefill = 0 }
+                            in
+                            { m
+                                | golem = newGolem
+                                , secondsWaitedSince = newSecondsWaitedSince
+                            }
+
+                        else
+                            m
+                   )
     in
-    if incrSecondsWaitedSince.lastSpRefill >= secondsRequiredForSpRefill then
-        let
-            newGolem =
-                monsterLivingMap
-                    (monsterStatMapStamina (addToStatCurVal 1))
-                    model.golem
-
-            newSecondsWaitedSince =
-                { secondsWaitedSince | lastSpRefill = 0 }
-        in
-        ( { model
-            | golem = newGolem
-            , secondsWaitedSince = newSecondsWaitedSince
-          }
-        , Cmd.none
-        , NoOutMsg
-        )
-
-    else
-        ( { model | secondsWaitedSince = incrSecondsWaitedSince }
-        , Cmd.none
-        , NoOutMsg
-        )
+    ( newModel
+    , Cmd.none
+    , NoOutMsg
+    )
 
 
 {-| called from ItemShop.updateBattleOutMsg, which does some post processing

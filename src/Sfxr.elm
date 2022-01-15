@@ -1,4 +1,4 @@
-port module Sfxr exposing (Model, Msg(..), init, subscriptions, update)
+port module Sfxr exposing (Model, Msg(..), init, subscriptions, update, view)
 
 import Element
     exposing
@@ -37,6 +37,8 @@ import Element.Keyed
 import Element.Lazy as Lazy
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string, tuple)
+import Html
+import Html.Attributes
 import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as Encode exposing (Value)
@@ -83,6 +85,24 @@ subscriptions model =
         [ --Time.every 1000 Tick,
           sfxrIn FromPort
         ]
+
+
+view : Model -> Html.Html Msg
+view model =
+    Element.layoutWith
+        { options =
+            [ Element.noStaticStyleSheet
+            , Element.focusStyle
+                { borderColor = Nothing
+                , backgroundColor = Nothing
+                , shadow = Nothing
+                }
+            ]
+        }
+        [ padding 20
+        ]
+    <|
+        text "TEMP SFXR"
 
 
 port sfxrIn : (String -> msg) -> Sub msg

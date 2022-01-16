@@ -1070,6 +1070,17 @@ canChangeLocation golem enemyMonster =
             False
 
 
+dividingLine : Element msg
+dividingLine =
+    column [ width fill, paddingXY 0 20 ]
+        [ row [ width fill, centerX ]
+            [ row [ width <| fillPortion 1 ] []
+            , row [ width <| fillPortion 3, Border.widthEach { top = 1, bottom = 0, left = 0, right = 0 } ] []
+            , row [ width <| fillPortion 1 ] []
+            ]
+        ]
+
+
 view : Model -> Element Msg
 view model =
     if not model.shouldShowLocationTypeMenu then
@@ -1130,16 +1141,16 @@ view model =
                                     ]
                     ]
                 ]
-            , column [ width fill, paddingXY 0 20 ]
-                [ row [ width fill, centerX ]
-                    [ row [ width <| fillPortion 1 ] []
-                    , row [ width <| fillPortion 3, Border.widthEach { top = 1, bottom = 0, left = 0, right = 0 } ] []
-                    , row [ width <| fillPortion 1 ] []
-                    ]
+            , dividingLine
+            , row [ width fill ]
+                [ el [ width <| fillPortion 4, alignTop ] <| viewFightLog model.showExpandedLogs model.fightLogs
+                , column [ width <| fillPortion 2, alignTop ]
+                    (viewBattleControls model)
                 ]
             , if debugMode then
                 column [ width fill ]
-                    [ column [ width fill, paddingXY 0 20 ]
+                    [ dividingLine
+                    , column [ width fill, paddingXY 0 20 ]
                         [ el [ Font.underline ] <|
                             text "Debug"
                         , text <|
@@ -1149,22 +1160,11 @@ view model =
                             "Time Until Location Monster Refill: "
                                 ++ String.fromInt (secondsRequiredForLocationMonsterRefill - model.secondsWaitedSince.lastLocationMonsterRefill)
                         ]
-                    , column [ width fill, paddingXY 0 20 ]
-                        [ row [ width fill, centerX ]
-                            [ row [ width <| fillPortion 1 ] []
-                            , row [ width <| fillPortion 3, Border.widthEach { top = 1, bottom = 0, left = 0, right = 0 } ] []
-                            , row [ width <| fillPortion 1 ] []
-                            ]
-                        ]
+                    , dividingLine
                     ]
 
               else
                 Element.none
-            , row [ width fill ]
-                [ el [ width <| fillPortion 4, alignTop ] <| viewFightLog model.showExpandedLogs model.fightLogs
-                , column [ width <| fillPortion 2, alignTop ]
-                    (viewBattleControls model)
-                ]
             ]
 
     else

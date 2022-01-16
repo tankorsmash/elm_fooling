@@ -839,41 +839,29 @@ updateOnSliderChanged model configType =
         FrequencyConfigType updateType ->
             updateFrequencyConfigType model updateType
 
-        --updateFrequencyConfigType model newValue
         VibratoConfigType updateType ->
-            noop
+            updateVibratoConfigType model updateType
 
-        --updateVibratoConfigType model newValue
         ArpeggiationConfigType updateType ->
-            noop
+            updateArpeggiationConfigType model updateType
 
-        --updateArpeggiationConfigType model newValue
         DutyConfigType updateType ->
-            noop
+            updateDutyConfigType model updateType
 
-        --updateDutyConfigType model newValue
         RetriggerConfigType updateType ->
-            noop
+            updateRetriggerConfigType model updateType
 
-        --updateRetriggerConfigType model newValue
         FlangerConfigType updateType ->
-            noop
+            updateFlangerConfigType model updateType
 
-        --updateFlangerConfigType model newValue
         LowPassFilterConfigType updateType ->
-            noop
+            updateLowPassFilterConfigType model updateType
 
-        --updateLowPassFilterConfigType model newValue
         HighPassFilterConfigType updateType ->
-            noop
+            updateHighPassFilterConfigType model updateType
 
-        --updateHighPassFilterConfigType model newValue
         MiscConfigType updateType ->
-            noop
-
-
-
---updateMiscConfigType model newValue
+            updateMiscConfigType model updateType
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )

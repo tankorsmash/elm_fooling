@@ -288,8 +288,8 @@ encodeHighPassFilter highPassFilter =
 decodeHighPassFilter : Decoder HighPassFilter
 decodeHighPassFilter =
     Decode.map2 HighPassFilter
-        (Decode.field "p_lpf_freq" Decode.float)
-        (Decode.field "p_lpf_ramp" Decode.float)
+        (Decode.field "p_hpf_freq" Decode.float)
+        (Decode.field "p_hpf_ramp" Decode.float)
 
 
 type alias Misc =
@@ -406,12 +406,31 @@ decodeSoundConfigB =
 
 -- decodeSoundConfig :  Decoder SoundConfig
 -- decodeSoundConfig =
+--         decodeSoundConfigA |>
+--         decodeSoundConfigB
 --     -- (Decode.map3 PartialSoundConfig
 --     (Decode.map3 SoundConfig
 --         decodeLowPassFilter
 --         decodeHighPassFilter
 --         decodeMisc)
 --
+
+
+combinePartialsIntoSoundConfig : PartialSoundConfigA -> PartialSoundConfigB -> SoundConfig
+combinePartialsIntoSoundConfig partialA partialB =
+    { -- { shape : Shape
+      shape = partialA.shape |> decodeShape
+    , envelope = partialA.envelope
+    , frequency = partialA.frequency
+    , vibrato = partialA.vibrato
+    , arpeggiation = partialA.arpeggiation
+    , duty = partialA.duty
+    , retrigger = partialA.retrigger
+    , flanger = partialA.flanger
+    , lowPassFilter = partialB.lowPassFilter
+    , highPassFilter = partialB.highPassFilter
+    , misc = partialB.misc
+    }
 
 
 type alias Model =
@@ -579,7 +598,10 @@ suite =
                     case ( decodedResultA, decodedResultB ) of
                         ( Ok decodedA, Ok decodedB ) ->
                             -- Expect.equal decoded expectedSoundConfig.misc
-                            Expect.pass
+                            let
+                                soundConfig = combinePartialsIntoSoundConfig decodedA decodedB
+                            in
+                            Expect.equal soundConfig expectedSoundConfig
 
                         ( Err err, _ ) ->
                             Expect.fail <| Decode.errorToString err

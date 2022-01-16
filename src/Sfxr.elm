@@ -939,11 +939,140 @@ viewEnvelope envelope =
         ]
 
 
+viewFrequency : Frequency -> Element Msg
+viewFrequency frequency =
+    let
+        onChange =
+            OnSliderChanged << FrequencyConfigType
+    in
+    column [ width fill ]
+        [ text "Frequency"
+        , paramSlider [] (FrqBase >> onChange) frequency.base
+        , paramSlider [] (FrqLimit >> onChange) frequency.limit
+        , paramSlider [] (FrqRamp >> onChange) frequency.ramp
+        , paramSlider [] (FrqDramp >> onChange) frequency.dramp
+        ]
+
+
+viewVibrato : Vibrato -> Element Msg
+viewVibrato vibrato =
+    let
+        onChange =
+            OnSliderChanged << VibratoConfigType
+    in
+    column [ width fill ]
+        [ text "Vibrato"
+        , paramSlider [] (VibStrength >> onChange) vibrato.strength
+        , paramSlider [] (VibSpeed >> onChange) vibrato.speed
+        ]
+
+
+viewArpeggiation : Arpeggiation -> Element Msg
+viewArpeggiation arpeggiation =
+    let
+        onChange =
+            OnSliderChanged << ArpeggiationConfigType
+    in
+    column [ width fill ]
+        [ text "Arpeggiation"
+        , paramSlider [] (ArpMod >> onChange) arpeggiation.mod
+        , paramSlider [] (ArpSpeed >> onChange) arpeggiation.speed
+        ]
+
+
+viewDuty : Duty -> Element Msg
+viewDuty duty =
+    let
+        onChange =
+            OnSliderChanged << DutyConfigType
+    in
+    column [ width fill ]
+        [ text "Duty"
+        , paramSlider [] (DtyDuty >> onChange) duty.duty
+        , paramSlider [] (DtyRamp >> onChange) duty.ramp
+        ]
+
+
+viewRetrigger : Retrigger -> Element Msg
+viewRetrigger retrigger =
+    let
+        onChange =
+            OnSliderChanged << RetriggerConfigType
+    in
+    column [ width fill ]
+        [ text "Retrigger"
+        , paramSlider [] (RetRepeatSpeed >> onChange) retrigger.repeatSpeed
+        ]
+
+
+
+viewFlanger : Flanger -> Element Msg
+viewFlanger flanger =
+    let
+        onChange =
+            OnSliderChanged << FlangerConfigType
+    in
+    column [ width fill ]
+        [ text "Flanger"
+        , paramSlider [] (FlaOffset >> onChange) flanger.offset
+        , paramSlider [] (FlaRamp >> onChange) flanger.ramp
+        ]
+
+
+viewLowPassFilter : LowPassFilter -> Element Msg
+viewLowPassFilter lowPassFilter =
+    let
+        onChange =
+            OnSliderChanged << LowPassFilterConfigType
+    in
+    column [ width fill ]
+        [ text "LowPassFilter"
+        , paramSlider [] (LpfFrequency >> onChange) lowPassFilter.frequency
+        , paramSlider [] (LpfRamp >> onChange) lowPassFilter.ramp
+        , paramSlider [] (LpfResonance >> onChange) lowPassFilter.resonance
+        ]
+
+viewHighPassFilter : HighPassFilter -> Element Msg
+viewHighPassFilter highPassFilter =
+    let
+        onChange =
+            OnSliderChanged << HighPassFilterConfigType
+    in
+    column [ width fill ]
+        [ text "HighPassFilter"
+        , paramSlider [] (HpfFrequency >> onChange) highPassFilter.frequency
+        , paramSlider [] (HpfRamp >> onChange) highPassFilter.ramp
+        ]
+
+
+viewMisc : Misc -> Element Msg
+viewMisc misc =
+    let
+        onChange =
+            OnSliderChanged << MiscConfigType
+    in
+    column [ width fill ]
+        [ text "Misc"
+        , paramSlider [] (MscVolume >> onChange) misc.volume
+        , paramSlider [] (round >> MscSampleRate >> onChange) <| toFloat misc.sampleRate
+        , paramSlider [] (round >> MscSampleSize >> onChange) <| toFloat misc.sampleSize
+        ]
+
+
 viewSliders : Model -> Element Msg
 viewSliders ({ soundConfig } as model) =
     column [ padding 10 ]
         [ viewShape soundConfig.shape
         , viewEnvelope soundConfig.envelope
+        , viewFrequency soundConfig.frequency
+        , viewVibrato soundConfig.vibrato
+        , viewArpeggiation soundConfig.arpeggiation
+        , viewDuty soundConfig.duty
+        , viewRetrigger soundConfig.retrigger
+        , viewFlanger soundConfig.flanger
+        , viewLowPassFilter soundConfig.lowPassFilter
+        , viewHighPassFilter soundConfig.highPassFilter
+        , viewMisc soundConfig.misc
         ]
 
 

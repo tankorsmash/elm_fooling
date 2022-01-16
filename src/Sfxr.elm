@@ -348,8 +348,59 @@ encodeSoundConfig soundConfig =
         )
 
 
+type alias PartialSoundConfigA =
+    -- { shape : Shape
+    { shape : Int
+    , envelope : Envelope
+    , frequency : Frequency
+    , vibrato : Vibrato
+    , arpeggiation : Arpeggiation
+    , duty : Duty
+    , retrigger : Retrigger
+    , flanger : Flanger
 
--- decodeSoundConfig : Decode.Value -> SoundConfig
+    -- , lowPassFilter : LowPassFilter
+    -- , highPassFilter : HighPassFilter
+    -- , misc : Misc
+    }
+
+
+type alias PartialSoundConfigB =
+    -- { shape : Shape
+    -- { shape : Int
+    -- , envelope : Envelope
+    -- , frequency : Frequency
+    -- , vibrato : Vibrato
+    -- , arpeggiation : Arpeggiation
+    -- , duty : Duty
+    -- , retrigger : Retrigger
+    -- , flanger : Flanger
+    { lowPassFilter : LowPassFilter
+    , highPassFilter : HighPassFilter
+    , misc : Misc
+    }
+
+
+decodeSoundConfigA : Decoder PartialSoundConfigA
+decodeSoundConfigA =
+    Decode.map8 PartialSoundConfigA
+        -- ((Decode.field "wave_type" (Decode.int)) |> Decode.andThen decodeShape)
+        (Decode.field "wave_type" Decode.int)
+        decodeEnvelope
+        decodeFrequency
+        decodeVibrato
+        decodeArpeggiation
+        decodeDuty
+        decodeRetrigger
+        decodeFlanger
+
+
+decodeSoundConfigB : Decoder PartialSoundConfigB
+decodeSoundConfigB =
+    Decode.map3 PartialSoundConfigB
+        decodeLowPassFilter
+        decodeHighPassFilter
+        decodeMisc
 
 
 type alias Model =
@@ -500,6 +551,20 @@ suite =
                     case decodedResult of
                         Ok decoded ->
                             Expect.equal decoded expectedSoundConfig.misc
+
+                        Err err ->
+                            Expect.fail <| Decode.errorToString err
+            , test "Decodes PartialSoundConfigA as you'd expect" <|
+                \_ ->
+                    let
+                        decodedResult : Result Decode.Error PartialSoundConfigA
+                        decodedResult =
+                            Decode.decodeString decodeSoundConfigA rawSampleSoundConfig
+                    in
+                    case decodedResult of
+                        Ok decoded ->
+                            -- Expect.equal decoded expectedSoundConfig.misc
+                            Expect.pass
 
                         Err err ->
                             Expect.fail <| Decode.errorToString err

@@ -442,27 +442,63 @@ init =
     }
 
 
-frnd : Random.Seed -> Float -> ( Float, Random.Seed )
-frnd floatSeed max =
-    Random.step (Random.float 0 max) floatSeed
+
+-- frnd : Float -> Random.Seed -> ( Float, Random.Seed )
+-- frnd max floatSeed =
+--     Random.step (Random.float 0 max) floatSeed
 
 
-getRandomHitHurt : Random.Seed -> SoundConfig
+getFloat : Float -> Random.Generator Float
+getFloat max =
+    Random.float 0 max
+
+
+getRandomHitHurt : Random.Seed -> ( SoundConfig, Random.Seed )
 getRandomHitHurt seed_ =
-    let
-        ( newSound, finalSeed ) =
-            ( initSoundConfig, seed_ )
-                |> (\( { frequency, envelope } as sc, seed ) ->
-                        let
-                            ( newBase, newSeed ) =
-                                frnd seed 0.6
-                        in
-                        ( { sc | frequency = { frequency | base = 0.2 + newBase } }
-                        , newSeed
-                        )
-                   )
-    in
-    newSound
+    ( initSoundConfig, seed_ )
+        |> (\( { frequency } as sc, seed ) ->
+                let
+                    ( newFrequency, newSeed ) =
+                        Random.step
+                            (Random.map2
+                                (\base ramp ->
+                                    { frequency
+                                        | base = 0.2 + base
+                                        , ramp = -0.3 - ramp
+                                    }
+                                )
+                                (getFloat 0.6)
+                                (getFloat 0.4)
+                            )
+                            seed
+                in
+                ( { sc | frequency = newFrequency }
+                , newSeed
+                )
+           )
+        |> (\( { envelope } as sc, seed ) ->
+                let
+                    ( newEnvelope, newSeed ) =
+                        Random.step
+                            (Random.map2
+                                (\sustain decay ->
+                                    { envelope
+                                        | attack = 0
+                                        , sustain = sustain
+                                        , decay = 0.1 + decay
+                                    }
+                                )
+                                (getFloat 0.1)
+                                (getFloat 0.2)
+                            )
+                            seed
+                in
+                ( { sc | envelope = newEnvelope }
+                , newSeed
+                )
+           )
+        |> --TODO wavetypes, and high pass filtering
+           identity
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -476,7 +512,11 @@ update msg model =
             noop
 
         PlaySound ->
-            ( model, sfxrOut <| encodeSoundConfig model.soundConfig )
+            let
+                ( soundConfig, newSeed ) =
+                    getRandomHitHurt model.globalSeed
+            in
+            ( { model | globalSeed = newSeed }, sfxrOut <| encodeSoundConfig soundConfig )
 
         FromPort str ->
             let

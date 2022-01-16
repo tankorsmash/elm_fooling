@@ -128,6 +128,7 @@ type Msg
     | PlaySound
     | FromPort String
     | OnSliderChanged ConfigType
+    | SetHitHurt
 
 
 type Shape
@@ -874,12 +875,17 @@ update msg model =
         Noop ->
             noop
 
-        PlaySound ->
+        SetHitHurt ->
             let
-                ( soundConfig, newSeed ) =
+                ( newSoundConfig, newSeed ) =
                     getRandomHitHurt model.globalSeed
             in
-            ( { model | globalSeed = newSeed }, sfxrOut <| encodeSoundConfig soundConfig )
+            ( { model | globalSeed = newSeed, soundConfig = newSoundConfig }
+            , sfxrOut <| encodeSoundConfig newSoundConfig
+            )
+
+        PlaySound ->
+            ( model, sfxrOut <| encodeSoundConfig model.soundConfig )
 
         FromPort str ->
             let
@@ -1065,7 +1071,7 @@ viewMisc misc =
 
 viewSliders : Model -> Element Msg
 viewSliders ({ soundConfig } as model) =
-    column [ padding 10, width fill, spacing 10]
+    column [ padding 10, width fill, spacing 10 ]
         [ viewShape soundConfig.shape
         , viewEnvelope soundConfig.envelope
         , viewFrequency soundConfig.frequency
@@ -1095,9 +1101,11 @@ view model =
         [ padding 20
         ]
     <|
-        column [width fill]
+        column [ width fill ]
             [ text "TEMP SFXR"
-            , UI.primary_button [] PlaySound "Play"
+            , row [width fill, spacing 10, padding 10] [UI.primary_button [] PlaySound "Play"
+            , UI.primary_button [] SetHitHurt "RNG Hit/Hurt"
+            ]
             , viewSliders model
             ]
 

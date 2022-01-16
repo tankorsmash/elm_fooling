@@ -50,10 +50,25 @@ import Test exposing (..)
 import Time
 
 
+type ConfigType
+    = ShapeConfigType
+    | EnvelopeConfigType
+    | FrequencyConfigType
+    | VibratoConfigType
+    | ArpeggiationConfigType
+    | DutyConfigType
+    | RetriggerConfigType
+    | FlangerConfigType
+    | LowPassFilterConfigType
+    | HighPassFilterConfigType
+    | MiscConfigType
+
+
 type Msg
     = Noop
     | PlaySound
     | FromPort String
+    | OnSliderChanged ConfigType Float
 
 
 type Shape
@@ -529,6 +544,11 @@ getRandomHitHurt seed_ =
            identity
 
 
+updateOnSliderChanged : Model -> ConfigType -> Float -> (Model, Cmd Msg)
+updateOnSliderChanged model configType newValue =
+    (model, Cmd.none)
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
@@ -553,6 +573,9 @@ update msg model =
             in
             noop
 
+        OnSliderChanged configType newValue ->
+            updateOnSliderChanged model configType newValue
+
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -572,9 +595,37 @@ viewShape shape =
         ]
 
 
+paramSlider : List (Element.Attribute Msg) -> (Float -> Msg) -> Float -> Element Msg
+paramSlider attrs onChange value =
+    Input.slider
+        ([ width fill ] ++ attrs)
+        { onChange = onChange
+        , label = Input.labelRight [] <| text <| String.fromFloat value
+        , min = 0.0
+        , max = 1.0
+        , value = value
+        , thumb = Input.defaultThumb
+        , step = Just 0.00001
+        }
+
+
+viewEnvelope : Envelope -> Element Msg
+viewEnvelope envelope =
+    column [ width fill ]
+        [ text "Envelope"
+        , paramSlider [] (always Noop) envelope.attack
+        , paramSlider [] (always Noop) envelope.sustain
+        , paramSlider [] (always Noop) envelope.punch
+        , paramSlider [] (always Noop) envelope.decay
+        ]
+
+
 viewSliders : Model -> Element Msg
 viewSliders ({ soundConfig } as model) =
-    column [ padding 10 ] [ viewShape soundConfig.shape ]
+    column [ padding 10 ]
+        [ viewShape soundConfig.shape
+        , viewEnvelope soundConfig.envelope
+        ]
 
 
 view : Model -> Html.Html Msg

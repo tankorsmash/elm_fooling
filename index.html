@@ -31,9 +31,9 @@
 			});
 
 			app.ports.sfxrOut.subscribe(function(outMsg) {
-				console.log("outMsg:", outMsg);
-					playSound(outMsg);
-				});
+				playSound(outMsg);
+			});
+
             }
 
             var execJsonp = function(url) {

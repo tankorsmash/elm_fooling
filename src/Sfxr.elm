@@ -1071,7 +1071,7 @@ viewMisc misc =
 
 viewSliders : Model -> Element Msg
 viewSliders ({ soundConfig } as model) =
-    column [ padding 10, width fill, spacing 10 ]
+    column [ padding 10, width (fill |> Element.maximum 1000), spacing 10, centerX ]
         [ viewShape soundConfig.shape
         , viewEnvelope soundConfig.envelope
         , viewFrequency soundConfig.frequency

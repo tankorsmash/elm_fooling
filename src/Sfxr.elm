@@ -608,9 +608,14 @@ updateShapeConfigType model updateType =
     Debug.todo "SHAPE NEEDS IMPLEMENTING" ( model, Cmd.none )
 
 
-withEnvelope : SoundConfig -> (Envelope -> Envelope) -> SoundConfig
-withEnvelope soundConfig updater =
-    { soundConfig | envelope = updater soundConfig.envelope }
+withFrequency : SoundConfig -> (Frequency -> Frequency) -> SoundConfig
+withFrequency soundConfig updater =
+    { soundConfig | frequency = updater soundConfig.frequency }
+
+
+withVibrato : SoundConfig -> (Vibrato -> Vibrato) -> SoundConfig
+withVibrato soundConfig updater =
+    { soundConfig | vibrato = updater soundConfig.vibrato }
 
 
 withSoundConfig : Model -> (SoundConfig -> SoundConfig) -> Model
@@ -621,6 +626,11 @@ withSoundConfig model updater =
 setSoundConfig : Model -> SoundConfig -> Model
 setSoundConfig model newSoundConfig =
     { model | soundConfig = newSoundConfig }
+
+
+withEnvelope : SoundConfig -> (Envelope -> Envelope) -> SoundConfig
+withEnvelope soundConfig updater =
+    { soundConfig | envelope = updater soundConfig.envelope }
 
 
 updateEnvelopeConfigType : Model -> EnvelopeUpdateType -> ( Model, Cmd Msg )
@@ -643,6 +653,176 @@ updateEnvelopeConfigType ({ soundConfig } as model) updateType =
         |> (\m -> ( m, Cmd.none ))
 
 
+updateFrequencyConfigType : Model -> FrequencyUpdateType -> ( Model, Cmd Msg )
+updateFrequencyConfigType ({ soundConfig } as model) updateType =
+    (case updateType of
+        FrqBase base ->
+            \frq -> { frq | base = base }
+
+        FrqLimit limit ->
+            \frq -> { frq | limit = limit }
+
+        FrqRamp ramp ->
+            \frq -> { frq | ramp = ramp }
+
+        FrqDramp dramp ->
+            \frq -> { frq | dramp = dramp }
+    )
+        |> withFrequency soundConfig
+        |> setSoundConfig model
+        |> (\m -> ( m, Cmd.none ))
+
+
+updateVibratoConfigType : Model -> VibratoUpdateType -> ( Model, Cmd Msg )
+updateVibratoConfigType ({ soundConfig } as model) updateType =
+    (case updateType of
+        VibStrength strength ->
+            \vib -> { vib | strength = strength }
+
+        VibSpeed speed ->
+            \vib -> { vib | speed = speed }
+    )
+        |> withVibrato soundConfig
+        |> setSoundConfig model
+        |> (\m -> ( m, Cmd.none ))
+
+
+withArpeggiation : SoundConfig -> (Arpeggiation -> Arpeggiation) -> SoundConfig
+withArpeggiation soundConfig updater =
+    { soundConfig | arpeggiation = updater soundConfig.arpeggiation }
+
+
+updateArpeggiationConfigType : Model -> ArpeggiationUpdateType -> ( Model, Cmd Msg )
+updateArpeggiationConfigType ({ soundConfig } as model) updateType =
+    (case updateType of
+        ArpMod mod ->
+            \arp -> { arp | mod = mod }
+
+        ArpSpeed speed ->
+            \arp -> { arp | speed = speed }
+    )
+        |> withArpeggiation soundConfig
+        |> setSoundConfig model
+        |> (\m -> ( m, Cmd.none ))
+
+
+withDuty : SoundConfig -> (Duty -> Duty) -> SoundConfig
+withDuty soundConfig updater =
+    { soundConfig | duty = updater soundConfig.duty }
+
+
+updateDutyConfigType : Model -> DutyUpdateType -> ( Model, Cmd Msg )
+updateDutyConfigType ({ soundConfig } as model) updateType =
+    (case updateType of
+        DtyDuty duty ->
+            \dty -> { dty | duty = duty }
+
+        DtyRamp ramp ->
+            \dty -> { dty | ramp = ramp }
+    )
+        |> withDuty soundConfig
+        |> setSoundConfig model
+        |> (\m -> ( m, Cmd.none ))
+
+
+withRetrigger : SoundConfig -> (Retrigger -> Retrigger) -> SoundConfig
+withRetrigger soundConfig updater =
+    { soundConfig | retrigger = updater soundConfig.retrigger }
+
+
+updateRetriggerConfigType : Model -> RetriggerUpdateType -> ( Model, Cmd Msg )
+updateRetriggerConfigType ({ soundConfig } as model) updateType =
+    (case updateType of
+        RetRepeatSpeed repeatSpeed ->
+            \ret -> { ret | repeatSpeed = repeatSpeed }
+    )
+        |> withRetrigger soundConfig
+        |> setSoundConfig model
+        |> (\m -> ( m, Cmd.none ))
+
+
+withFlanger : SoundConfig -> (Flanger -> Flanger) -> SoundConfig
+withFlanger soundConfig updater =
+    { soundConfig | flanger = updater soundConfig.flanger }
+
+
+updateFlangerConfigType : Model -> FlangerUpdateType -> ( Model, Cmd Msg )
+updateFlangerConfigType ({ soundConfig } as model) updateType =
+    (case updateType of
+        FlaOffset offset ->
+            \fla -> { fla | offset = offset }
+
+        FlaRamp ramp ->
+            \fla -> { fla | ramp = ramp }
+    )
+        |> withFlanger soundConfig
+        |> setSoundConfig model
+        |> (\m -> ( m, Cmd.none ))
+
+
+withLowPassFilter : SoundConfig -> (LowPassFilter -> LowPassFilter) -> SoundConfig
+withLowPassFilter soundConfig updater =
+    { soundConfig | lowPassFilter = updater soundConfig.lowPassFilter }
+
+
+updateLowPassFilterConfigType : Model -> LowPassFilterUpdateType -> ( Model, Cmd Msg )
+updateLowPassFilterConfigType ({ soundConfig } as model) updateType =
+    (case updateType of
+        LpfFrequency frequency ->
+            \lpf -> { lpf | frequency = frequency }
+
+        LpfRamp ramp ->
+            \lpf -> { lpf | ramp = ramp }
+
+        LpfResonance resonance ->
+            \lpf -> { lpf | resonance = resonance }
+    )
+        |> withLowPassFilter soundConfig
+        |> setSoundConfig model
+        |> (\m -> ( m, Cmd.none ))
+
+
+withHighPassFilter : SoundConfig -> (HighPassFilter -> HighPassFilter) -> SoundConfig
+withHighPassFilter soundConfig updater =
+    { soundConfig | highPassFilter = updater soundConfig.highPassFilter }
+
+
+updateHighPassFilterConfigType : Model -> HighPassFilterUpdateType -> ( Model, Cmd Msg )
+updateHighPassFilterConfigType ({ soundConfig } as model) updateType =
+    (case updateType of
+        HpfFrequency frequency ->
+            \hpf -> { hpf | frequency = frequency }
+
+        HpfRamp ramp ->
+            \hpf -> { hpf | ramp = ramp }
+    )
+        |> withHighPassFilter soundConfig
+        |> setSoundConfig model
+        |> (\m -> ( m, Cmd.none ))
+
+
+withMisc : SoundConfig -> (Misc -> Misc) -> SoundConfig
+withMisc soundConfig updater =
+    { soundConfig | misc = updater soundConfig.misc }
+
+
+updateMiscConfigType : Model -> MiscUpdateType -> ( Model, Cmd Msg )
+updateMiscConfigType ({ soundConfig } as model) updateType =
+    (case updateType of
+        MscVolume volume ->
+            \msc -> { msc | volume = volume }
+
+        MscSampleRate sampleRate ->
+            \msc -> { msc | sampleRate = sampleRate }
+
+        MscSampleSize sampleSize ->
+            \msc -> { msc | sampleSize = sampleSize }
+    )
+        |> withMisc soundConfig
+        |> setSoundConfig model
+        |> (\m -> ( m, Cmd.none ))
+
+
 updateOnSliderChanged : Model -> ConfigType -> ( Model, Cmd Msg )
 updateOnSliderChanged model configType =
     let
@@ -656,9 +836,8 @@ updateOnSliderChanged model configType =
         EnvelopeConfigType updateType ->
             updateEnvelopeConfigType model updateType
 
-        --updateEnvelopeConfigType model newValue
         FrequencyConfigType updateType ->
-            noop
+            updateFrequencyConfigType model updateType
 
         --updateFrequencyConfigType model newValue
         VibratoConfigType updateType ->

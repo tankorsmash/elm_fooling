@@ -467,6 +467,15 @@ port recv_reddit_listing : (Json.Decode.Value -> msg) -> Sub msg
 port exec_jsonp : String -> Cmd msg
 
 
+viewSfxr model =
+    if False then
+        div [ Html.Attributes.style "height" "150px" ]
+            [ Html.map GotSfxrMsg <| Sfxr.view model.sfxrModel ]
+
+    else
+        div [] []
+
+
 
 -- view : Model -> Html Msg
 
@@ -475,8 +484,7 @@ view : Model -> Browser.Document Msg
 view model =
     { title = tab_type_to_str model.current_tab ++ " | Elm Fooling"
     , body =
-        [ div [ Html.Attributes.style "height" "150px" ]
-            [ Html.map GotSfxrMsg <| Sfxr.view model.sfxrModel ]
+        [ viewSfxr model
         , case model.page_info.page of
             NotFoundPage ->
                 div [] [ text "Not found page" ]

@@ -44,6 +44,7 @@ import Json.Decode as Decode exposing (Decoder)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as Encode exposing (Value)
 import List.Extra
+import Random
 import Task
 import Test exposing (..)
 import Time
@@ -431,14 +432,40 @@ combinePartialsIntoSoundConfig partialA partialB =
 
 
 type alias Model =
-    { soundConfig : SoundConfig }
+    { soundConfig : SoundConfig, globalSeed : Random.Seed }
 
 
 init : Model
 init =
-    { soundConfig = initSoundConfig }
+    { soundConfig = initSoundConfig
+    , globalSeed = Random.initialSeed 12345
+    }
 
 
+frnd : Random.Seed -> Float -> ( Float, Random.Seed )
+frnd floatSeed max =
+    Random.step (Random.float 0 max) floatSeed
+
+
+getRandomHitHurt : Random.Seed -> SoundConfig
+getRandomHitHurt seed_ =
+    let
+        ( newSound, finalSeed ) =
+            ( initSoundConfig, seed_ )
+                |> (\( { frequency, envelope } as sc, seed ) ->
+                        let
+                            ( newBase, newSeed ) =
+                                frnd seed 0.6
+                        in
+                        ( { sc | frequency = { frequency | base = 0.2 + newBase } }
+                        , newSeed
+                        )
+                   )
+    in
+    newSound
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
         noop =
@@ -553,7 +580,6 @@ initSoundConfig =
     , highPassFilter = { frequency = 0, ramp = 0 }
     , misc = { volume = 0.05, sampleRate = 44100, sampleSize = 8 }
     }
-
 
 
 expectedSoundConfig : SoundConfig

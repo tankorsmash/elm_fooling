@@ -333,8 +333,8 @@ type alias SoundConfig =
 encodeSoundConfig : SoundConfig -> Encode.Value
 encodeSoundConfig soundConfig =
     Encode.object
-        ([ encodeShape soundConfig.shape
-         ]
+        ([ ( "oldParams", Encode.bool True ) ]
+            ++ [ encodeShape soundConfig.shape ]
             ++ encodeEnvelope soundConfig.envelope
             ++ encodeFrequency soundConfig.frequency
             ++ encodeVibrato soundConfig.vibrato
@@ -422,6 +422,33 @@ suite =
     describe "sfxr tests"
         [ describe "Encode/Decoding"
             [ test "Encodes as expect" <|
-                \_ -> Expect.true "ASD" True
+                \_ ->
+                    let
+                        soundConfig : SoundConfig
+                        soundConfig =
+                            { shape = Square
+                            , envelope =
+                                { attack = 0
+                                , sustain = 0.31718502829007483
+                                , punch = 0
+                                , decay = 0.2718540993592685
+                                }
+                            , frequency =
+                                { base = 0.26126191208337196
+                                , limit = 0
+                                , ramp = 0.43787689856926615
+                                , dramp = 0
+                                }
+                            , vibrato = { strength = 0, speed = 0 }
+                            , arpeggiation = { mod = 0, speed = 0 }
+                            , duty = { duty = 1, ramp = 0 }
+                            , retrigger = { repeatSpeed = 0.7558565452384385 }
+                            , flanger = { offset = 0, ramp = 0 }
+                            , lowPassFilter = { frequency = 1, ramp = 0, resonance = 0 }
+                            , highPassFilter = { frequency = 0, ramp = 0 }
+                            , misc = { volume = 0.05, sampleRate = 44100, sampleSize = 8 }
+                            }
+                    in
+                    Expect.true "ASD" True
             ]
         ]

@@ -127,7 +127,7 @@ type Msg
     = Noop
     | PlaySound
     | FromPort String
-    | OnSliderChanged ConfigType Float
+    | OnSliderChanged ConfigType
 
 
 type Shape
@@ -603,22 +603,46 @@ getRandomHitHurt seed_ =
            identity
 
 
-updateShapeConfigType model updateType newValue =
-    ( model, Cmd.none )
+updateShapeConfigType : Model -> ShapeUpdateType -> ( Model, Cmd Msg )
+updateShapeConfigType model updateType =
+    Debug.todo "SHAPE NEEDS IMPLEMENTING" ( model, Cmd.none )
 
 
-updateOnSliderChanged : Model -> ConfigType -> Float -> ( Model, Cmd Msg )
-updateOnSliderChanged model configType newValue =
+updateEnvelopeConfigType : Model -> EnvelopeUpdateType -> ( Model, Cmd Msg )
+updateEnvelopeConfigType model updateType =
+    let
+        { soundConfig } =
+            model
+
+        { envelope } =
+            soundConfig
+    in
+    (case updateType of
+        EnvAttack attack ->
+            { soundConfig | envelope = { envelope | attack = attack } }
+        EnvSustain sustain ->
+            { soundConfig | envelope = { envelope | sustain = sustain } }
+        EnvPunch punch ->
+            { soundConfig | envelope = { envelope | punch = punch } }
+        EnvDecay decay ->
+            { soundConfig | envelope = { envelope | decay = decay } }
+
+    )
+        |> (\sc -> ( { model | soundConfig = sc }, Cmd.none ))
+
+
+updateOnSliderChanged : Model -> ConfigType -> ( Model, Cmd Msg )
+updateOnSliderChanged model configType =
     let
         noop =
             ( model, Cmd.none )
     in
     case configType of
         ShapeConfigType updateType ->
-            updateShapeConfigType model updateType newValue
+            updateShapeConfigType model updateType
 
         EnvelopeConfigType updateType ->
-            noop
+            updateEnvelopeConfigType model updateType
 
         --updateEnvelopeConfigType model newValue
         FrequencyConfigType updateType ->
@@ -685,8 +709,8 @@ update msg model =
             in
             noop
 
-        OnSliderChanged configType newValue ->
-            updateOnSliderChanged model configType newValue
+        OnSliderChanged configType ->
+            updateOnSliderChanged model configType
 
 
 subscriptions : Model -> Sub Msg
@@ -723,12 +747,16 @@ paramSlider attrs onChange value =
 
 viewEnvelope : Envelope -> Element Msg
 viewEnvelope envelope =
+    let
+        onChange =
+            OnSliderChanged << EnvelopeConfigType
+    in
     column [ width fill ]
         [ text "Envelope"
-        , paramSlider [] (always Noop) envelope.attack
-        , paramSlider [] (always Noop) envelope.sustain
-        , paramSlider [] (always Noop) envelope.punch
-        , paramSlider [] (always Noop) envelope.decay
+        , paramSlider [] (EnvAttack >> onChange) envelope.attack
+        , paramSlider [] (EnvSustain >> onChange) envelope.sustain
+        , paramSlider [] (EnvPunch >> onChange) envelope.punch
+        , paramSlider [] (EnvDecay >> onChange) envelope.decay
         ]
 
 

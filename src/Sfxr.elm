@@ -453,6 +453,11 @@ getFloat max =
     Random.float 0 max
 
 
+flipCoin : Random.Generator Bool
+flipCoin =
+    Random.map (\n -> n < 50) (Random.int 1 100)
+
+
 getRandomHitHurt : Random.Seed -> ( SoundConfig, Random.Seed )
 getRandomHitHurt seed_ =
     ( initSoundConfig, seed_ )
@@ -494,6 +499,29 @@ getRandomHitHurt seed_ =
                             seed
                 in
                 ( { sc | envelope = newEnvelope }
+                , newSeed
+                )
+           )
+        |> (\( { highPassFilter } as sc, seed ) ->
+                let
+                    ( newHighPassFilter, newSeed ) =
+                        Random.step
+                            (Random.map2
+                                (\shouldFilter frequency ->
+                                    if shouldFilter then
+                                        { highPassFilter
+                                            | frequency = frequency
+                                        }
+
+                                    else
+                                        highPassFilter
+                                )
+                                flipCoin
+                                (getFloat 0.3)
+                            )
+                            seed
+                in
+                ( { sc | highPassFilter = newHighPassFilter }
                 , newSeed
                 )
            )

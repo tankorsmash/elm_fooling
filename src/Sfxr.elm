@@ -413,6 +413,7 @@ decodeSoundConfig =
 combinePartialsIntoSoundConfig : PartialSoundConfigA -> PartialSoundConfigB -> SoundConfig
 combinePartialsIntoSoundConfig partialA partialB =
     { -- { shape : Shape
+      --partialA
       shape = partialA.shape |> decodeShape
     , envelope = partialA.envelope
     , frequency = partialA.frequency
@@ -421,6 +422,8 @@ combinePartialsIntoSoundConfig partialA partialB =
     , duty = partialA.duty
     , retrigger = partialA.retrigger
     , flanger = partialA.flanger
+
+    --partialB
     , lowPassFilter = partialB.lowPassFilter
     , highPassFilter = partialB.highPassFilter
     , misc = partialB.misc
@@ -428,12 +431,12 @@ combinePartialsIntoSoundConfig partialA partialB =
 
 
 type alias Model =
-    {}
+    { soundConfig : SoundConfig }
 
 
 init : Model
 init =
-    {}
+    { soundConfig = initSoundConfig }
 
 
 update msg model =
@@ -446,7 +449,7 @@ update msg model =
             noop
 
         PlaySound ->
-            ( model, sfxrOut <| encodeSoundConfig expectedSoundConfig )
+            ( model, sfxrOut <| encodeSoundConfig model.soundConfig )
 
         FromPort str ->
             let
@@ -524,6 +527,33 @@ rawSampleSoundConfig =
 }"""
         |> --replace \r
            String.replace "\u{000D}" ""
+
+
+initSoundConfig : SoundConfig
+initSoundConfig =
+    { shape = Square
+    , envelope =
+        { attack = 0
+        , sustain = 0.3
+        , punch = 0
+        , decay = 0.4
+        }
+    , frequency =
+        { base = 0.3
+        , limit = 0
+        , ramp = 0.0
+        , dramp = 0
+        }
+    , vibrato = { strength = 0, speed = 0 }
+    , arpeggiation = { mod = 0, speed = 0 }
+    , duty = { duty = 0, ramp = 0 }
+    , retrigger = { repeatSpeed = 0.0 }
+    , flanger = { offset = 0, ramp = 0 }
+    , lowPassFilter = { frequency = 1, ramp = 0, resonance = 0 }
+    , highPassFilter = { frequency = 0, ramp = 0 }
+    , misc = { volume = 0.05, sampleRate = 44100, sampleSize = 8 }
+    }
+
 
 
 expectedSoundConfig : SoundConfig

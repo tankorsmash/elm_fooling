@@ -403,6 +403,17 @@ decodeSoundConfigB =
         decodeMisc
 
 
+
+-- decodeSoundConfig :  Decoder SoundConfig
+-- decodeSoundConfig =
+--     -- (Decode.map3 PartialSoundConfig
+--     (Decode.map3 SoundConfig
+--         decodeLowPassFilter
+--         decodeHighPassFilter
+--         decodeMisc)
+--
+
+
 type alias Model =
     {}
 
@@ -557,16 +568,23 @@ suite =
             , test "Decodes PartialSoundConfigA as you'd expect" <|
                 \_ ->
                     let
-                        decodedResult : Result Decode.Error PartialSoundConfigA
-                        decodedResult =
+                        decodedResultA : Result Decode.Error PartialSoundConfigA
+                        decodedResultA =
                             Decode.decodeString decodeSoundConfigA rawSampleSoundConfig
+
+                        decodedResultB : Result Decode.Error PartialSoundConfigB
+                        decodedResultB =
+                            Decode.decodeString decodeSoundConfigB rawSampleSoundConfig
                     in
-                    case decodedResult of
-                        Ok decoded ->
+                    case ( decodedResultA, decodedResultB ) of
+                        ( Ok decodedA, Ok decodedB ) ->
                             -- Expect.equal decoded expectedSoundConfig.misc
                             Expect.pass
 
-                        Err err ->
+                        ( Err err, _ ) ->
+                            Expect.fail <| Decode.errorToString err
+
+                        ( _, Err err ) ->
                             Expect.fail <| Decode.errorToString err
             ]
         ]

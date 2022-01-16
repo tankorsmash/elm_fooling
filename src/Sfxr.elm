@@ -403,17 +403,11 @@ decodeSoundConfigB =
         decodeMisc
 
 
-
--- decodeSoundConfig :  Decoder SoundConfig
--- decodeSoundConfig =
---         decodeSoundConfigA |>
---         decodeSoundConfigB
---     -- (Decode.map3 PartialSoundConfig
---     (Decode.map3 SoundConfig
---         decodeLowPassFilter
---         decodeHighPassFilter
---         decodeMisc)
---
+decodeSoundConfig : Decoder SoundConfig
+decodeSoundConfig =
+    Decode.map2 combinePartialsIntoSoundConfig
+        decodeSoundConfigA
+        decodeSoundConfigB
 
 
 combinePartialsIntoSoundConfig : PartialSoundConfigA -> PartialSoundConfigB -> SoundConfig
@@ -587,26 +581,16 @@ suite =
             , test "Decodes PartialSoundConfigA as you'd expect" <|
                 \_ ->
                     let
-                        decodedResultA : Result Decode.Error PartialSoundConfigA
-                        decodedResultA =
-                            Decode.decodeString decodeSoundConfigA rawSampleSoundConfig
-
-                        decodedResultB : Result Decode.Error PartialSoundConfigB
-                        decodedResultB =
-                            Decode.decodeString decodeSoundConfigB rawSampleSoundConfig
+                        decodedResult : Result Decode.Error SoundConfig
+                        decodedResult =
+                            Decode.decodeString decodeSoundConfig rawSampleSoundConfig
                     in
-                    case ( decodedResultA, decodedResultB ) of
-                        ( Ok decodedA, Ok decodedB ) ->
+                    case decodedResult of
+                        Ok decoded ->
                             -- Expect.equal decoded expectedSoundConfig.misc
-                            let
-                                soundConfig = combinePartialsIntoSoundConfig decodedA decodedB
-                            in
-                            Expect.equal soundConfig expectedSoundConfig
+                            Expect.equal decoded expectedSoundConfig
 
-                        ( Err err, _ ) ->
-                            Expect.fail <| Decode.errorToString err
-
-                        ( _, Err err ) ->
+                        Err err ->
                             Expect.fail <| Decode.errorToString err
             ]
         ]

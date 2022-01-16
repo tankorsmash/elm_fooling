@@ -624,25 +624,21 @@ setSoundConfig model newSoundConfig =
 
 
 updateEnvelopeConfigType : Model -> EnvelopeUpdateType -> ( Model, Cmd Msg )
-updateEnvelopeConfigType model updateType =
-    let
-        { soundConfig } =
-            model
-    in
-    (withEnvelope soundConfig <|
-        case updateType of
-            EnvAttack attack ->
-                \env -> { env | attack = attack }
+updateEnvelopeConfigType ({ soundConfig } as model) updateType =
+    (case updateType of
+        EnvAttack attack ->
+            \env -> { env | attack = attack }
 
-            EnvSustain sustain ->
-                \env -> { env | sustain = sustain }
+        EnvSustain sustain ->
+            \env -> { env | sustain = sustain }
 
-            EnvPunch punch ->
-                \env -> { env | punch = punch }
+        EnvPunch punch ->
+            \env -> { env | punch = punch }
 
-            EnvDecay decay ->
-                \env -> { env | decay = decay }
+        EnvDecay decay ->
+            \env -> { env | decay = decay }
     )
+        |> withEnvelope soundConfig
         |> setSoundConfig model
         |> (\m -> ( m, Cmd.none ))
 

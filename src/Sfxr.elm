@@ -136,7 +136,7 @@ type alias Frequency =
 
 encodeFrequency : Frequency -> List ( String, Encode.Value )
 encodeFrequency frequency =
-    [ ( "p_freq_base_freq", Encode.float frequency.base )
+    [ ( "p_base_freq", Encode.float frequency.base )
     , ( "p_freq_limit", Encode.float frequency.limit )
     , ( "p_freq_ramp", Encode.float frequency.ramp )
     , ( "p_freq_dramp", Encode.float frequency.dramp )
@@ -146,7 +146,7 @@ encodeFrequency frequency =
 decodeFrequency : Decoder Frequency
 decodeFrequency =
     Decode.map4 Frequency
-        (Decode.field "p_freq_base_freq" Decode.float)
+        (Decode.field "p_base_freq" Decode.float)
         (Decode.field "p_freq_limit" Decode.float)
         (Decode.field "p_freq_ramp" Decode.float)
         (Decode.field "p_freq_dramp" Decode.float)
@@ -452,7 +452,7 @@ update msg model =
             noop
 
         PlaySound ->
-            ( model, sfxrOut "PlaySound sent" )
+            ( model, sfxrOut <| encodeSoundConfig expectedSoundConfig )
 
         FromPort str ->
             let
@@ -494,7 +494,7 @@ view model =
 port sfxrIn : (String -> msg) -> Sub msg
 
 
-port sfxrOut : String -> Cmd msg
+port sfxrOut : Encode.Value -> Cmd msg
 
 
 rawSampleSoundConfig : String
@@ -506,7 +506,7 @@ rawSampleSoundConfig =
     "p_env_sustain": 0.31718502829007483,
     "p_env_punch": 0,
     "p_env_decay": 0.2718540993592685,
-    "p_freq_base_freq": 0.26126191208337196,
+    "p_base_freq": 0.26126191208337196,
     "p_freq_limit": 0,
     "p_freq_ramp": 0.43787689856926615,
     "p_freq_dramp": 0,

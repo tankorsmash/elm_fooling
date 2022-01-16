@@ -608,27 +608,43 @@ updateShapeConfigType model updateType =
     Debug.todo "SHAPE NEEDS IMPLEMENTING" ( model, Cmd.none )
 
 
+withEnvelope : SoundConfig -> (Envelope -> Envelope) -> SoundConfig
+withEnvelope soundConfig updater =
+    { soundConfig | envelope = updater soundConfig.envelope }
+
+
+withSoundConfig : Model -> (SoundConfig -> SoundConfig) -> Model
+withSoundConfig model updater =
+    { model | soundConfig = updater model.soundConfig }
+
+
+setSoundConfig : Model -> SoundConfig -> Model
+setSoundConfig model newSoundConfig =
+    { model | soundConfig = newSoundConfig }
+
+
 updateEnvelopeConfigType : Model -> EnvelopeUpdateType -> ( Model, Cmd Msg )
 updateEnvelopeConfigType model updateType =
     let
         { soundConfig } =
             model
-
-        { envelope } =
-            soundConfig
     in
-    (case updateType of
-        EnvAttack attack ->
-            { soundConfig | envelope = { envelope | attack = attack } }
-        EnvSustain sustain ->
-            { soundConfig | envelope = { envelope | sustain = sustain } }
-        EnvPunch punch ->
-            { soundConfig | envelope = { envelope | punch = punch } }
-        EnvDecay decay ->
-            { soundConfig | envelope = { envelope | decay = decay } }
+    (withEnvelope soundConfig <|
+        case updateType of
+            EnvAttack attack ->
+                \env -> { env | attack = attack }
 
+            EnvSustain sustain ->
+                \env -> { env | sustain = sustain }
+
+            EnvPunch punch ->
+                \env -> { env | punch = punch }
+
+            EnvDecay decay ->
+                \env -> { env | decay = decay }
     )
-        |> (\sc -> ( { model | soundConfig = sc }, Cmd.none ))
+        |> setSoundConfig model
+        |> (\m -> ( m, Cmd.none ))
 
 
 updateOnSliderChanged : Model -> ConfigType -> ( Model, Cmd Msg )

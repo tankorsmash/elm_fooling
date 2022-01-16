@@ -117,8 +117,8 @@ encodeEnvelope envelope =
     ]
 
 
-decodeEnvelope : Encode.Value -> Decoder Envelope
-decodeEnvelope obj =
+decodeEnvelope : Decoder Envelope
+decodeEnvelope =
     Decode.map4 Envelope
         (Decode.field "p_env_attack" Decode.float)
         (Decode.field "p_env_sustain" Decode.float)
@@ -143,8 +143,8 @@ encodeFrequency frequency =
     ]
 
 
-decodeFrequency : Encode.Value -> Decoder Frequency
-decodeFrequency obj =
+decodeFrequency : Decoder Frequency
+decodeFrequency =
     Decode.map4 Frequency
         (Decode.field "p_freq_base_freq" Decode.float)
         (Decode.field "p_freq_limit" Decode.float)
@@ -165,8 +165,8 @@ encodeVibrato vibrato =
     ]
 
 
-decodeVibrato : Encode.Value -> Decoder Vibrato
-decodeVibrato obj =
+decodeVibrato : Decoder Vibrato
+decodeVibrato =
     Decode.map2 Vibrato
         (Decode.field "p_vib_strength" Decode.float)
         (Decode.field "p_vib_speed" Decode.float)
@@ -185,8 +185,8 @@ encodeArpeggiation arpeggiation =
     ]
 
 
-decodeArpeggiation : Encode.Value -> Decoder Arpeggiation
-decodeArpeggiation obj =
+decodeArpeggiation : Decoder Arpeggiation
+decodeArpeggiation =
     Decode.map2 Arpeggiation
         (Decode.field "p_arp_mod" Decode.float)
         (Decode.field "p_arp_speed" Decode.float)
@@ -205,8 +205,8 @@ encodeDuty duty =
     ]
 
 
-decodeDuty : Encode.Value -> Decoder Duty
-decodeDuty obj =
+decodeDuty : Decoder Duty
+decodeDuty =
     Decode.map2 Duty
         (Decode.field "p_duty" Decode.float)
         (Decode.field "p_duty_ramp" Decode.float)
@@ -223,8 +223,8 @@ encodeRetrigger retrigger =
     ]
 
 
-decodeRetrigger : Encode.Value -> Decoder Retrigger
-decodeRetrigger obj =
+decodeRetrigger : Decoder Retrigger
+decodeRetrigger =
     Decode.map Retrigger
         (Decode.field "p_repeat_speed" Decode.float)
 
@@ -242,8 +242,8 @@ encodeFlanger flanger =
     ]
 
 
-decodeFlanger : Encode.Value -> Decoder Flanger
-decodeFlanger obj =
+decodeFlanger : Decoder Flanger
+decodeFlanger =
     Decode.map2 Flanger
         (Decode.field "p_pha_offset" Decode.float)
         (Decode.field "p_pha_ramp" Decode.float)
@@ -264,8 +264,8 @@ encodeLowPassFilter lowPassFilter =
     ]
 
 
-decodeLowPassFilter : Encode.Value -> Decoder LowPassFilter
-decodeLowPassFilter obj =
+decodeLowPassFilter : Decoder LowPassFilter
+decodeLowPassFilter =
     Decode.map3 LowPassFilter
         (Decode.field "p_lpf_freq" Decode.float)
         (Decode.field "p_lpf_ramp" Decode.float)
@@ -285,8 +285,8 @@ encodeHighPassFilter highPassFilter =
     ]
 
 
-decodeHighPassFilter : Encode.Value -> Decoder HighPassFilter
-decodeHighPassFilter obj =
+decodeHighPassFilter : Decoder HighPassFilter
+decodeHighPassFilter =
     Decode.map2 HighPassFilter
         (Decode.field "p_lpf_freq" Decode.float)
         (Decode.field "p_lpf_ramp" Decode.float)
@@ -307,8 +307,8 @@ encodeMisc misc =
     ]
 
 
-decodeMisc : Encode.Value -> Decoder Misc
-decodeMisc obj =
+decodeMisc : Decoder Misc
+decodeMisc =
     Decode.map3 Misc
         (Decode.field "sound_vol" Decode.float)
         (Decode.field "sample_rate" Decode.int)
@@ -489,5 +489,19 @@ suite =
                             Encode.encode 4 (encodeSoundConfig expectedSoundConfig)
                     in
                     Expect.equal rawSampleSoundConfig encoded
+            , test "Decodes Misc as you'd expect" <|
+                \_ ->
+                    let
+                        decodedResult : Result Decode.Error Misc
+                        decodedResult =
+                            -- Decode.decodeString decodeSoundConfig rawSampleSoundConfig
+                            Decode.decodeString decodeMisc rawSampleSoundConfig
+                    in
+                    case decodedResult of
+                        Ok decoded ->
+                            Expect.equal decoded expectedSoundConfig.misc
+
+                        Err err ->
+                            Expect.fail <| Decode.errorToString err
             ]
         ]

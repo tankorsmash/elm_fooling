@@ -525,7 +525,7 @@ getRandomHitHurt seed_ =
                 , newSeed
                 )
            )
-        |> --TODO wavetypes, and high pass filtering
+        |> --TODO wavetypes
            identity
 
 

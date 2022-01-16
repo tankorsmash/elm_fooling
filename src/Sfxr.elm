@@ -451,6 +451,32 @@ rawSampleSoundConfig =
            String.replace "\u{000D}" ""
 
 
+expectedSoundConfig : SoundConfig
+expectedSoundConfig =
+    { shape = Sawtooth
+    , envelope =
+        { attack = 0
+        , sustain = 0.31718502829007483
+        , punch = 0
+        , decay = 0.2718540993592685
+        }
+    , frequency =
+        { base = 0.26126191208337196
+        , limit = 0
+        , ramp = 0.43787689856926615
+        , dramp = 0
+        }
+    , vibrato = { strength = 0, speed = 0 }
+    , arpeggiation = { mod = 0, speed = 0 }
+    , duty = { duty = 1, ramp = 0 }
+    , retrigger = { repeatSpeed = 0.7558565452384385 }
+    , flanger = { offset = 0, ramp = 0 }
+    , lowPassFilter = { frequency = 1, ramp = 0, resonance = 0 }
+    , highPassFilter = { frequency = 0, ramp = 0 }
+    , misc = { volume = 0.05, sampleRate = 44100, sampleSize = 8 }
+    }
+
+
 suite : Test
 suite =
     -- todo "Implement our first test. See https://package.elm-lang.org/packages/elm-explorations/test/latest for how to do this!"
@@ -459,33 +485,8 @@ suite =
             [ test "Encodes as expect" <|
                 \_ ->
                     let
-                        soundConfig : SoundConfig
-                        soundConfig =
-                            { shape = Sawtooth
-                            , envelope =
-                                { attack = 0
-                                , sustain = 0.31718502829007483
-                                , punch = 0
-                                , decay = 0.2718540993592685
-                                }
-                            , frequency =
-                                { base = 0.26126191208337196
-                                , limit = 0
-                                , ramp = 0.43787689856926615
-                                , dramp = 0
-                                }
-                            , vibrato = { strength = 0, speed = 0 }
-                            , arpeggiation = { mod = 0, speed = 0 }
-                            , duty = { duty = 1, ramp = 0 }
-                            , retrigger = { repeatSpeed = 0.7558565452384385 }
-                            , flanger = { offset = 0, ramp = 0 }
-                            , lowPassFilter = { frequency = 1, ramp = 0, resonance = 0 }
-                            , highPassFilter = { frequency = 0, ramp = 0 }
-                            , misc = { volume = 0.05, sampleRate = 44100, sampleSize = 8 }
-                            }
-
                         encoded =
-                            Encode.encode 4 (encodeSoundConfig soundConfig)
+                            Encode.encode 4 (encodeSoundConfig expectedSoundConfig)
                     in
                     Expect.equal rawSampleSoundConfig encoded
             ]

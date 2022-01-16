@@ -562,6 +562,21 @@ subscriptions model =
         ]
 
 
+viewShape : Shape -> Element Msg
+viewShape shape =
+    row [ width fill ]
+        [ UI.secondary_button [] Noop "Square"
+        , UI.secondary_button [] Noop "Sawtooth"
+        , UI.secondary_button [] Noop "Sine"
+        , UI.secondary_button [] Noop "Noise"
+        ]
+
+
+viewSliders : Model -> Element Msg
+viewSliders ({ soundConfig } as model) =
+    column [ padding 10 ] [ viewShape soundConfig.shape ]
+
+
 view : Model -> Html.Html Msg
 view model =
     Element.layoutWith
@@ -580,6 +595,7 @@ view model =
         column []
             [ text "TEMP SFXR"
             , UI.primary_button [] PlaySound "Play"
+            , viewSliders model
             ]
 
 

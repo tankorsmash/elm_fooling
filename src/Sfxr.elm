@@ -280,8 +280,8 @@ type alias HighPassFilter =
 
 encodeHighPassFilter : HighPassFilter -> List ( String, Encode.Value )
 encodeHighPassFilter highPassFilter =
-    [ ( "p_lpf_freq", Encode.float highPassFilter.frequency )
-    , ( "p_lpf_ramp", Encode.float highPassFilter.ramp )
+    [ ( "p_hpf_freq", Encode.float highPassFilter.frequency )
+    , ( "p_hpf_ramp", Encode.float highPassFilter.ramp )
     ]
 
 
@@ -426,7 +426,7 @@ suite =
                     let
                         soundConfig : SoundConfig
                         soundConfig =
-                            { shape = Square
+                            { shape = Sawtooth
                             , envelope =
                                 { attack = 0
                                 , sustain = 0.31718502829007483
@@ -448,6 +448,8 @@ suite =
                             , highPassFilter = { frequency = 0, ramp = 0 }
                             , misc = { volume = 0.05, sampleRate = 44100, sampleSize = 8 }
                             }
+                        encoded = Encode.encode 4 (encodeSoundConfig soundConfig)
+                        _ = Debug.log "encoded" encoded
                     in
                     Expect.true "ASD" True
             ]

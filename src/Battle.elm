@@ -627,14 +627,21 @@ updateTick model time =
 
                                     else
                                         location
+
                                 newLocations =
                                     { locations
                                         | forest = locationRefiller locations.forest
                                         , mountains = locationRefiller locations.mountains
                                         , plains = locationRefiller locations.plains
                                     }
+
+                                newSecondsWaitedSince =
+                                    { secondsWaitedSince | lastLocationMonsterRefill = 0 }
                             in
-                            { m | locations = newLocations }
+                            { m
+                                | locations = newLocations
+                                , secondsWaitedSince = newSecondsWaitedSince
+                            }
 
                         else
                             m

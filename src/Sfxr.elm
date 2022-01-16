@@ -1,4 +1,4 @@
-port module Sfxr exposing (Model, Msg(..), init, subscriptions, update, view)
+port module Sfxr exposing (Model, Msg(..), init, subscriptions, suite, update, view)
 
 import Element
     exposing
@@ -271,6 +271,7 @@ decodeLowPassFilter obj =
         (Decode.field "p_lpf_ramp" Decode.float)
         (Decode.field "p_lpf_resonance" Decode.float)
 
+
 type alias HighPassFilter =
     { frequency : Float
     , ramp : Float
@@ -289,6 +290,7 @@ decodeHighPassFilter obj =
     Decode.map2 HighPassFilter
         (Decode.field "p_lpf_freq" Decode.float)
         (Decode.field "p_lpf_ramp" Decode.float)
+
 
 type alias Misc =
     { volume : Float
@@ -412,3 +414,14 @@ port sfxrIn : (String -> msg) -> Sub msg
 
 
 port sfxrOut : String -> Cmd msg
+
+
+suite : Test
+suite =
+    -- todo "Implement our first test. See https://package.elm-lang.org/packages/elm-explorations/test/latest for how to do this!"
+    describe "sfxr tests"
+        [ describe "Encode/Decoding"
+            [ test "Encodes as expect" <|
+                \_ -> Expect.true "ASD" True
+            ]
+        ]

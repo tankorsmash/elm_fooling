@@ -50,18 +50,77 @@ import Test exposing (..)
 import Time
 
 
+type ShapeUpdateType
+    = ShapeUpdateType Shape
+
+
+type EnvelopeUpdateType
+    = EnvAttack Float
+    | EnvSustain Float
+    | EnvPunch Float
+    | EnvDecay Float
+
+
+type FrequencyUpdateType
+    = FrqBase Float
+    | FrqLimit Float
+    | FrqRamp Float
+    | FrqDramp Float
+
+
+type VibratoUpdateType
+    = VibStrength Float
+    | VibSpeed Float
+
+
+type ArpeggiationUpdateType
+    = ArpMod Float
+    | ArpSpeed Float
+
+
+type DutyUpdateType
+    = DtyDuty Float
+    | DtyRamp Float
+
+
+type RetriggerUpdateType
+    = RetRepeatSpeed Float
+
+
+type FlangerUpdateType
+    = FlaOffset Float
+    | FlaRamp Float
+
+
+type LowPassFilterUpdateType
+    = LpfFrequency Float
+    | LpfRamp Float
+    | LpfResonance Float
+
+
+type HighPassFilterUpdateType
+    = HpfFrequency Float
+    | HpfRamp Float
+
+
+type MiscUpdateType
+    = MscVolume Float
+    | MscSampleRate Int
+    | MscSampleSize Int
+
+
 type ConfigType
-    = ShapeConfigType
-    | EnvelopeConfigType
-    | FrequencyConfigType
-    | VibratoConfigType
-    | ArpeggiationConfigType
-    | DutyConfigType
-    | RetriggerConfigType
-    | FlangerConfigType
-    | LowPassFilterConfigType
-    | HighPassFilterConfigType
-    | MiscConfigType
+    = ShapeConfigType ShapeUpdateType
+    | EnvelopeConfigType EnvelopeUpdateType
+    | FrequencyConfigType FrequencyUpdateType
+    | VibratoConfigType VibratoUpdateType
+    | ArpeggiationConfigType ArpeggiationUpdateType
+    | DutyConfigType DutyUpdateType
+    | RetriggerConfigType RetriggerUpdateType
+    | FlangerConfigType FlangerUpdateType
+    | LowPassFilterConfigType LowPassFilterUpdateType
+    | HighPassFilterConfigType HighPassFilterUpdateType
+    | MiscConfigType MiscUpdateType
 
 
 type Msg
@@ -544,9 +603,62 @@ getRandomHitHurt seed_ =
            identity
 
 
-updateOnSliderChanged : Model -> ConfigType -> Float -> (Model, Cmd Msg)
+updateShapeConfigType model updateType newValue =
+    ( model, Cmd.none )
+
+
+updateOnSliderChanged : Model -> ConfigType -> Float -> ( Model, Cmd Msg )
 updateOnSliderChanged model configType newValue =
-    (model, Cmd.none)
+    let
+        noop =
+            ( model, Cmd.none )
+    in
+    case configType of
+        ShapeConfigType updateType ->
+            updateShapeConfigType model updateType newValue
+
+        EnvelopeConfigType updateType ->
+            noop
+
+        --updateEnvelopeConfigType model newValue
+        FrequencyConfigType updateType ->
+            noop
+
+        --updateFrequencyConfigType model newValue
+        VibratoConfigType updateType ->
+            noop
+
+        --updateVibratoConfigType model newValue
+        ArpeggiationConfigType updateType ->
+            noop
+
+        --updateArpeggiationConfigType model newValue
+        DutyConfigType updateType ->
+            noop
+
+        --updateDutyConfigType model newValue
+        RetriggerConfigType updateType ->
+            noop
+
+        --updateRetriggerConfigType model newValue
+        FlangerConfigType updateType ->
+            noop
+
+        --updateFlangerConfigType model newValue
+        LowPassFilterConfigType updateType ->
+            noop
+
+        --updateLowPassFilterConfigType model newValue
+        HighPassFilterConfigType updateType ->
+            noop
+
+        --updateHighPassFilterConfigType model newValue
+        MiscConfigType updateType ->
+            noop
+
+
+
+--updateMiscConfigType model newValue
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )

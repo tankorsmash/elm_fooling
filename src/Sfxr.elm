@@ -910,12 +910,16 @@ viewShape shape =
         ]
 
 
+explain =
+    Element.explain Debug.todo
+
+
 paramSlider : List (Element.Attribute Msg) -> (Float -> Msg) -> Float -> Element Msg
 paramSlider attrs onChange value =
     Input.slider
         ([ width fill ] ++ attrs)
         { onChange = onChange
-        , label = Input.labelRight [] <| text <| String.fromFloat value
+        , label = Input.labelRight [ Element.width (Element.px 100) ] <| text <| String.fromFloat value
         , min = 0.0
         , max = 1.0
         , value = value
@@ -1005,7 +1009,6 @@ viewRetrigger retrigger =
         ]
 
 
-
 viewFlanger : Flanger -> Element Msg
 viewFlanger flanger =
     let
@@ -1031,6 +1034,7 @@ viewLowPassFilter lowPassFilter =
         , paramSlider [] (LpfRamp >> onChange) lowPassFilter.ramp
         , paramSlider [] (LpfResonance >> onChange) lowPassFilter.resonance
         ]
+
 
 viewHighPassFilter : HighPassFilter -> Element Msg
 viewHighPassFilter highPassFilter =
@@ -1061,7 +1065,7 @@ viewMisc misc =
 
 viewSliders : Model -> Element Msg
 viewSliders ({ soundConfig } as model) =
-    column [ padding 10 ]
+    column [ padding 10, width fill]
         [ viewShape soundConfig.shape
         , viewEnvelope soundConfig.envelope
         , viewFrequency soundConfig.frequency
@@ -1091,7 +1095,7 @@ view model =
         [ padding 20
         ]
     <|
-        column []
+        column [width fill]
             [ text "TEMP SFXR"
             , UI.primary_button [] PlaySound "Play"
             , viewSliders model

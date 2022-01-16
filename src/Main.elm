@@ -469,7 +469,7 @@ port exec_jsonp : String -> Cmd msg
 
 viewSfxr model =
     if True then
-        div [ Html.Attributes.style "height" "350px" ]
+        div []
             [ Html.map GotSfxrMsg <| Sfxr.view model.sfxrModel ]
 
     else

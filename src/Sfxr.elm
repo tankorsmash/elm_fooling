@@ -923,9 +923,12 @@ explain =
 paramSlider : List (Element.Attribute Msg) -> (Float -> Msg) -> Float -> Element Msg
 paramSlider attrs onChange value =
     Input.slider
-        ([ width fill ] ++ attrs)
+        ([ width fill, Background.color <| UI.color_black ] ++ attrs)
         { onChange = onChange
-        , label = Input.labelRight [ Element.width (Element.px 100) ] <| text <| String.fromFloat value
+        , label =
+            Input.labelRight
+                [ Element.width (Element.px 100) ]
+            <| text <| String.fromFloat value
         , min = 0.0
         , max = 1.0
         , value = value
@@ -1072,17 +1075,17 @@ viewMisc misc =
 viewSliders : Model -> Element Msg
 viewSliders ({ soundConfig } as model) =
     column [ padding 10, width (fill |> Element.maximum 1000), spacing 10, centerX ]
-        [ viewShape soundConfig.shape
-        , viewEnvelope soundConfig.envelope
-        , viewFrequency soundConfig.frequency
-        , viewVibrato soundConfig.vibrato
-        , viewArpeggiation soundConfig.arpeggiation
-        , viewDuty soundConfig.duty
-        , viewRetrigger soundConfig.retrigger
-        , viewFlanger soundConfig.flanger
-        , viewLowPassFilter soundConfig.lowPassFilter
-        , viewHighPassFilter soundConfig.highPassFilter
-        , viewMisc soundConfig.misc
+        [ Lazy.lazy viewShape soundConfig.shape
+        , Lazy.lazy viewEnvelope soundConfig.envelope
+        , Lazy.lazy viewFrequency soundConfig.frequency
+        , Lazy.lazy viewVibrato soundConfig.vibrato
+        , Lazy.lazy viewArpeggiation soundConfig.arpeggiation
+        , Lazy.lazy viewDuty soundConfig.duty
+        , Lazy.lazy viewRetrigger soundConfig.retrigger
+        , Lazy.lazy viewFlanger soundConfig.flanger
+        , Lazy.lazy viewLowPassFilter soundConfig.lowPassFilter
+        , Lazy.lazy viewHighPassFilter soundConfig.highPassFilter
+        , Lazy.lazy viewMisc soundConfig.misc
         ]
 
 
@@ -1103,10 +1106,11 @@ view model =
     <|
         column [ width fill ]
             [ text "TEMP SFXR"
-            , row [width fill, spacing 10, padding 10] [UI.primary_button [] PlaySound "Play"
-            , UI.primary_button [] SetHitHurt "RNG Hit/Hurt"
-            ]
-            , viewSliders model
+            , row [ width fill, spacing 10, padding 10 ]
+                [ UI.primary_button [] PlaySound "Play"
+                , UI.primary_button [] SetHitHurt "RNG Hit/Hurt"
+                ]
+            , Lazy.lazy viewSliders model
             ]
 
 

@@ -30,6 +30,7 @@ import Html
         )
 import Html.Attributes exposing (attribute, classList, href, property, src, style, value)
 import Html.Events exposing (onClick, onInput, onSubmit)
+import Html.Lazy
 import Http
 import ItemShop
 import Json.Decode exposing (Decoder, at, field, list, string)
@@ -418,7 +419,7 @@ homeView model =
             case model.current_tab of
                 ItemShopTab ->
                     Html.map GotItemShopMsg <|
-                        ItemShop.view model.item_shop_model
+                        Html.Lazy.lazy ItemShop.view model.item_shop_model
 
         --elm ui needs exactly one layout to exist with the stylesheet, all others
         -- need the `noStaticStyleSheet` option set, and force its height to 0

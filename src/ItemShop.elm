@@ -4774,7 +4774,7 @@ view model =
                 Element.map GotBattleMsg <|
                     (Maybe.map
                         (\player ->
-                            Battle.view
+                            Lazy.lazy Battle.view
                                 model.battleModel
                         )
                         (getPlayer model)

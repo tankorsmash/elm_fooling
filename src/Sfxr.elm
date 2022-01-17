@@ -604,9 +604,17 @@ getRandomHitHurt seed_ =
            identity
 
 
+withShape : SoundConfig -> Shape -> SoundConfig
+withShape soundConfig newShape =
+    { soundConfig | shape = newShape }
+
+
 updateShapeConfigType : Model -> ShapeUpdateType -> ( Model, Cmd Msg )
-updateShapeConfigType model updateType =
-    Debug.todo "SHAPE NEEDS IMPLEMENTING" ( model, Cmd.none )
+updateShapeConfigType ({ soundConfig } as model) (ShapeUpdateType shape) =
+    shape
+        |> withShape soundConfig
+        |> setSoundConfig model
+        |> (\m -> ( m, Cmd.none ))
 
 
 withFrequency : SoundConfig -> (Frequency -> Frequency) -> SoundConfig
@@ -908,11 +916,15 @@ subscriptions model =
 
 viewShape : Shape -> Element Msg
 viewShape shape =
+    let
+        onChange =
+            OnSliderChanged << ShapeConfigType << ShapeUpdateType
+    in
     row [ width fill ]
-        [ UI.secondary_button [] Noop "Square"
-        , UI.secondary_button [] Noop "Sawtooth"
-        , UI.secondary_button [] Noop "Sine"
-        , UI.secondary_button [] Noop "Noise"
+        [ UI.secondary_button [] (Square |> onChange) "Square"
+        , UI.secondary_button [] (Sawtooth |> onChange) "Sawtooth"
+        , UI.secondary_button [] (Sine |> onChange) "Sine"
+        , UI.secondary_button [] (Noise |> onChange) "Noise"
         ]
 
 

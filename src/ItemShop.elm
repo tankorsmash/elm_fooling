@@ -3770,7 +3770,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
             el
                 [ Font.size 10
                 , Events.onClick (ChangeInventorySortType sortType)
-                , noUserSelect
+                , UI.noUserSelect
                 , Border.rounded 2
                 , Element.mouseOver [ Background.color UI.color_very_light_grey ]
                 , padding 2
@@ -3908,10 +3908,10 @@ render_inventory_grid model header character shop_trends hovered_item context co
                                 \item ->
                                     el
                                         (if getQuantity item.quantity == 0 then
-                                            [ cssRule "opacity" "0.5", height fill ]
+                                            [ UI.cssRule "opacity" "0.5", height fill ]
 
                                          else
-                                            [ cssRule "opacity" "1.0", height fill ]
+                                            [ UI.cssRule "opacity" "1.0", height fill ]
                                         )
                                     <|
                                         el [ height fill, centerY ] <|
@@ -4372,7 +4372,7 @@ showHideDebugInventoriesButton attrs show_debug_inventories =
             else
                 "Show Debug"
     in
-    UI.danger_button (defineHtmlId "show_debug_inventories" :: attrs)
+    UI.danger_button (UI.defineHtmlId "show_debug_inventories" :: attrs)
         ToggleShowDebugInventories
         buttonText
 
@@ -4634,31 +4634,6 @@ view_items_unlocked_tab_type colorTheme item_db =
         ]
 
 
-cssRule : String -> String -> Element.Attribute Msg
-cssRule name value =
-    Html.Attributes.style name value |> Element.htmlAttribute
-
-
-defineHtmlId : String -> Element.Attribute Msg
-defineHtmlId name =
-    Html.Attributes.id name |> Element.htmlAttribute
-
-
-noUserSelect : Element.Attribute Msg
-noUserSelect =
-    Html.Attributes.style "userSelect" "none" |> Element.htmlAttribute
-
-
-pointerEventsNone : Element.Attribute Msg
-pointerEventsNone =
-    Html.Attributes.style "pointer-events" "none" |> Element.htmlAttribute
-
-
-pointerEventsAll : Element.Attribute Msg
-pointerEventsAll =
-    Html.Attributes.style "pointer-events" "all" |> Element.htmlAttribute
-
-
 viewOverlay : Model -> Element Msg
 viewOverlay model =
     model
@@ -4669,7 +4644,7 @@ viewOverlay model =
                     [ width fill
                     , height fill
                     , Font.size 12
-                    , pointerEventsNone
+                    , UI.pointerEventsNone
                     , padding 1
                     , Element.inFront <|
                         if model.shouldDisplayShowDebugInventoriesOverlay then
@@ -4695,11 +4670,11 @@ viewOverlay model =
                             )
                         , Border.width 1
                         , Border.rounded 3
-                        , pointerEventsAll
+                        , UI.pointerEventsAll
                         , padding 10
                         ]
                     <|
-                        row [ noUserSelect ]
+                        row [ UI.noUserSelect ]
                             [ text "Held: "
                             , UI.render_gp model.colorTheme <| player.held_gold
                             , text " "

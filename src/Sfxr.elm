@@ -922,13 +922,44 @@ explain =
 
 paramSlider : List (Element.Attribute Msg) -> (Float -> Msg) -> Float -> Element Msg
 paramSlider attrs onChange value =
+    let
+        leftSize =
+            round <| value * 1000
+
+        rightSize =
+            round <| (1 - value) * 1000
+
+        background =
+            row [ width fill, height <| Element.px 6, centerY ]
+                [ el
+                    [ Background.color <| UI.color_black
+                    , width <| fillPortion leftSize
+                    , height fill
+                    , Border.width 1
+                    , Border.rounded 2
+                    ]
+                  <|
+                    Element.none
+                , el
+                    [ Background.color <| UI.color_grey
+                    , width <| fillPortion rightSize
+                    , height fill
+                    , Border.width 1
+                    , Border.rounded 2
+                    ]
+                  <|
+                    Element.none
+                ]
+    in
     Input.slider
-        ([ width fill, Background.color <| UI.color_black ] ++ attrs)
+        ([ width fill, Element.behindContent background ] ++ attrs)
         { onChange = onChange
         , label =
             Input.labelRight
                 [ Element.width (Element.px 100) ]
-            <| text <| String.fromFloat value
+            <|
+                text <|
+                    String.fromFloat value
         , min = 0.0
         , max = 1.0
         , value = value

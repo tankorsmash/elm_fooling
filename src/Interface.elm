@@ -434,6 +434,36 @@ renderBlood_sized colorTheme count font_size =
         , Element.el [ Font.size font_size, font_blood ] (text "blood")
         ]
 
+nbsp : String
+nbsp =
+    "\u{00A0}"
+
 
 blankChar =
     "\u{2003}"
+
+
+cssRule : String -> String -> Element.Attribute msg
+cssRule name value =
+    Html.Attributes.style name value |> Element.htmlAttribute
+
+
+defineHtmlId : String -> Element.Attribute msg
+defineHtmlId name =
+    Html.Attributes.id name |> Element.htmlAttribute
+
+
+noUserSelect : Element.Attribute msg
+noUserSelect =
+    Html.Attributes.style "userSelect" "none" |> Element.htmlAttribute
+
+
+pointerEventsNone : Element.Attribute msg
+pointerEventsNone =
+    Html.Attributes.style "pointer-events" "none" |> Element.htmlAttribute
+
+
+pointerEventsAll : Element.Attribute msg
+pointerEventsAll =
+    Html.Attributes.style "pointer-events" "all" |> Element.htmlAttribute
+

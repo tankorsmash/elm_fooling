@@ -78,6 +78,10 @@ color_black : Color
 color_black =
     rgb 0 0 0
 
+color_off_black : Color
+color_off_black =
+    hex_to_color "#0a0a0a"
+
 
 hex_to_color : String -> Color
 hex_to_color hex_str =

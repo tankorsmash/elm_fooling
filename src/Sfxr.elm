@@ -930,9 +930,13 @@ paramSlider attrs onChange value =
             round <| (1 - value) * 1000
 
         background =
-            row [ width fill, height <| Element.px 6, centerY ]
+            row
+                [ width fill
+                , height <| Element.px 6
+                , centerY
+                ]
                 [ el
-                    [ Background.color <| UI.color_black
+                    [ Background.color <| UI.color_off_black
                     , width <| fillPortion leftSize
                     , height fill
                     , Border.width 1
@@ -952,18 +956,32 @@ paramSlider attrs onChange value =
                 ]
     in
     Input.slider
-        ([ width fill, Element.behindContent background ] ++ attrs)
+        ([ width fill
+         , Element.behindContent background
+         , Element.mouseOver [ Element.scale 2.0, Background.color <| UI.color_primary ]
+         ]
+            ++ attrs
+        )
         { onChange = onChange
         , label =
             Input.labelRight
                 [ Element.width (Element.px 100) ]
             <|
-                text <|
-                    String.fromFloat value
+                (text <| String.fromFloat value)
         , min = 0.0
         , max = 1.0
         , value = value
-        , thumb = Input.defaultThumb
+        , thumb =
+            -- Input.defaultThumb
+            Input.thumb
+                [ Element.mouseOver [ Element.scale 2.0, Background.color <| UI.color_primary ]
+                , height <| Element.px 20
+                , width <| Element.px 20
+                , Background.color UI.color_grey
+                , Border.rounded 10
+                , Border.width 2
+                , Border.color UI.color_off_black
+                ]
         , step = Just 0.00001
         }
 

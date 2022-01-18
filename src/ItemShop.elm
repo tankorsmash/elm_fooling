@@ -2499,12 +2499,10 @@ apply_upgrades player model =
 
 update_player : Model -> Model
 update_player model =
-    case getPlayer model of
-        Just player ->
-            apply_upgrades player model
-
-        Nothing ->
-            Debug.log "error: cant find player" model
+    getPlayer model
+        |> Maybe.map
+            (\player -> apply_upgrades player model)
+        |> Maybe.withDefault model
 
 
 get_trend_for_item : ShopTrends -> Item -> Float

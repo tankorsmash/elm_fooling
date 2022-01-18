@@ -139,6 +139,11 @@ type alias Monster =
     }
 
 
+setGolem : DamagedMonster -> Model -> Model
+setGolem newGolem model =
+    { model | golem = newGolem }
+
+
 monsterStatMap :
     (Monster -> IntStat)
     -> (Monster -> IntStat -> Monster)
@@ -1406,19 +1411,34 @@ suite =
                             model : Model
                             model =
                                 init { held_blood = 100, held_gold = 0 }
-                                    |> (\m ->
-                                            { m
-                                                | golem = LivingMonster testGolem
-                                            }
-                                       )
+                                    |> (setGolem <| LivingMonster testGolem)
                         in
                         Expect.equal (testGolem.statStamina.curVal + staminaToGain) <|
                             (increaseGolemStamina model staminaToGain
                                 |> .golem
                                 |> monsterMap
-                                    (\g ->
-                                        g.statStamina.curVal
-                                    )
+                                    (.statStamina >> .curVal)
+                            )
+                , fuzz (Fuzz.intRange 0 90) "dead golems do not get sp" <|
+                    \staminaToGain ->
+                        let
+                            testGolem : Monster
+                            testGolem =
+                                createMonster "Test Golem" 99 99 99
+                                    |> monsterStatMapStamina (setStatCurVal 0)
+                                    |> --make sure there's always enough stats to gain
+                                       monsterStatMapStamina (setStatMaxVal (staminaToGain * 2))
+
+                            model : Model
+                            model =
+                                init { held_blood = 100, held_gold = 0 }
+                                    |> (setGolem <| DeadMonster testGolem)
+                        in
+                        Expect.equal (testGolem.statStamina.curVal + 0) <|
+                            (increaseGolemStamina model staminaToGain
+                                |> .golem
+                                |> monsterMap
+                                    (.statStamina >> .curVal)
                             )
                 ]
             ]

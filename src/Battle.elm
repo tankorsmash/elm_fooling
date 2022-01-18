@@ -1,4 +1,4 @@
-module Battle exposing (DefeatAction(..), Model, Msg(..), OutMsg(..), init, subscriptions, suite, update, view)
+module Battle exposing (DefeatAction(..), Model, Msg(..), OutMsg(..), increaseGolemStamina, init, subscriptions, suite, update, view)
 
 import Array
 import Browser.Dom
@@ -55,7 +55,7 @@ import List.Extra
 import Random
 import Random.List
 import Task
-import Test exposing (..)
+import Test exposing (Test, describe, fuzz, test)
 import Time
 import Tuple3
 import UUID exposing (UUID)
@@ -817,7 +817,7 @@ monsterMap callback damagedMonster =
             callback monster
 
 
-{-| does something on the actual monster and returns anything
+{-| does something on the actual monster and returns the same type of DamagedMonster
 -}
 monsterIdentityMap : (Monster -> Monster) -> DamagedMonster -> DamagedMonster
 monsterIdentityMap callback damagedMonster =
@@ -1364,5 +1364,62 @@ attrNone =
     Element.htmlAttribute <| Html.Attributes.class ""
 
 
+{-| this is exposed to ItemShop, so im keeping it as broad as possible, so that
+ItemShop doesn't need to know much about it. we'll see if its a good idea
+-}
+increaseGolemStamina : Model -> Int -> Model
+increaseGolemStamina ({ golem } as model) staminaToGain =
+    model
+        |> (\m ->
+                { m
+                    | golem =
+                        monsterLivingMap
+                            (monsterStatMapStamina (addToStatCurVal staminaToGain))
+                            m.golem
+                }
+           )
+
+
+natural =
+    Fuzz.intRange 0 Random.maxInt
+
+
+positive =
+    Fuzz.intRange 0 Random.maxInt
+
+
+suite : Test
 suite =
-    ()
+    describe "root test suite"
+        [ describe "golem stuff"
+            [ describe "golem's blood link sp gain "
+                [ fuzz (Fuzz.intRange 0 90) "living golem gets sp" <|
+                    \staminaToGain ->
+                        let
+                            testGolem : Monster
+                            testGolem =
+                                createMonster "Test Golem" 99 99 99
+                                    |> monsterStatMapStamina (setStatCurVal 0)
+                                    |> --make sure there's always enough stats to gain
+                                       monsterStatMapStamina (setStatMaxVal (staminaToGain * 2))
+
+                            model : Model
+                            model =
+                                init { held_blood = 100, held_gold = 0 }
+                                    |> (\m ->
+                                            { m
+                                                | golem = LivingMonster testGolem
+                                            }
+                                       )
+                        in
+                        Expect.equal (testGolem.statStamina.curVal + staminaToGain) <|
+                            (increaseGolemStamina model staminaToGain
+                                |> .golem
+                                |> monsterMap
+                                    (\g ->
+                                        g.statStamina.curVal
+                                    )
+                            )
+                ]
+            ]
+        ]

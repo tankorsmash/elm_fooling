@@ -2446,18 +2446,19 @@ add_player_gpm player to_add =
         player
 
 
+bloodCostForRefillSp =
+    3
+
+
 add_golem_sp_from_blood : Character -> Int -> Battle.Model -> ( Character, Battle.Model )
 add_golem_sp_from_blood player level battleModel =
     -- if player has enough gold, subtract it, and add 1 SP to golem
     let
         { held_blood } =
             player
-
-        bloodCost =
-            3
     in
-    if held_blood >= bloodCost then
-        ( { player | held_blood = held_blood - bloodCost }
+    if held_blood >= (bloodCostForRefillSp * level) then
+        ( { player | held_blood = held_blood - (bloodCostForRefillSp * level) }
           --TODO increase the SP on the golem
         , battleModel
         )
@@ -5501,5 +5502,27 @@ suite =
             , test "scaling IncreaseIncome upgrade with level 5" <|
                 \_ ->
                     Expect.equal (setPrice 270) <| scale_increase_income_cost 5
+            , fuzz (Fuzz.intRange 1 10) "AutomaticBPtoSP takes bp and converts to bp on a timer" <|
+                \upgradeLevel ->
+                    let
+                        upgrade =
+                            AutomaticBPtoSP upgradeLevel
+
+                        upgrader player =
+                            apply_upgrade upgrade ( player, test_model )
+                    in
+                    case getPlayer test_model of
+                        Just player ->
+                            let
+                                expectedNewPlayer =
+                                    { player | held_blood = player.held_blood - (bloodCostForRefillSp * upgradeLevel) }
+
+                                expected =
+                                    ( expectedNewPlayer, withCharacter expectedNewPlayer test_model )
+                            in
+                            Expect.equal expected (upgrader player)
+
+                        Nothing ->
+                            Expect.fail "couldnt find player in model"
             ]
         ]

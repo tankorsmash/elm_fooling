@@ -2445,35 +2445,46 @@ add_player_gpm player to_add =
     else
         player
 
-add_golem_sp_from_blood : Character -> Int -> Character
-add_golem_sp_from_blood player level =
-    player
-    -- let
-    --     { held_gold } =
-    --         player
-    --
-    --     max_gold =
-    --         50
-    -- in
-    -- if held_gold < max_gold then
-    --     { player | held_gold = min max_gold <| held_gold + to_add }
-    --
-    -- else
-    --     player
+
+add_golem_sp_from_blood : Character -> Int -> Battle.Model -> ( Character, Battle.Model )
+add_golem_sp_from_blood player level battleModel =
+    -- if player has enough gold, subtract it, and add 1 SP to golem
+    let
+        { held_blood } =
+            player
+
+        bloodCost =
+            3
+    in
+    if held_blood >= bloodCost then
+        ( { player | held_blood = held_blood - bloodCost }
+          --TODO increase the SP on the golem
+        , battleModel
+        )
+
+    else
+        ( player, battleModel )
 
 
 apply_upgrade : PlayerUpgrade -> ( Character, Model ) -> ( Character, Model )
 apply_upgrade upgrade ( player, model ) =
-    let
-        new_player =
-            case upgrade of
-                AutomaticGPM to_add ->
+    case upgrade of
+        AutomaticGPM to_add ->
+            let
+                newPlayer =
                     add_player_gpm player to_add
+            in
+            ( newPlayer, withCharacter newPlayer model )
 
-                AutomaticBPtoSP level ->
-                    add_golem_sp_from_blood player level
-    in
-    ( new_player, withCharacter new_player model )
+        AutomaticBPtoSP level ->
+            let
+                ( newPlayer, newBattleModel ) =
+                    add_golem_sp_from_blood player level model.battleModel
+            in
+            ( newPlayer
+            , withCharacter newPlayer model
+                |> (\m -> { m | battleModel = newBattleModel })
+            )
 
 
 apply_upgrades : Character -> Model -> Model
@@ -5051,7 +5062,8 @@ special_actions_display colorTheme player_upgrades hovered_tooltip player ai_upd
                                 AutomaticGPM lvl ->
                                     lvl
 
-                                _ -> acc
+                                _ ->
+                                    acc
                         )
                         1
                         player_upgrades

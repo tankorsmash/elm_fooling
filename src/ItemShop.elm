@@ -5278,28 +5278,23 @@ suite =
                         |> Expect.notEqual orig_len
             , test "make sure a special actions cost is removed from the player" <|
                 \_ ->
-                    let
-                        model =
-                            test_model
-                    in
-                    model
+                    test_model
                         |> getPlayer
-                        |> (\mb_player ->
-                                case mb_player of
-                                    Just orig_player ->
-                                        update_special_action InviteTrader (setPrice 10) test_model
-                                            |> (\( new_model, _ ) ->
-                                                    case getPlayer new_model of
-                                                        Just new_player ->
-                                                            Expect.equal (orig_player.held_gold - 10) <| new_player.held_gold
+                        |> Maybe.andThen
+                            (\orig_player ->
+                                update_special_action InviteTrader (setPrice 10) test_model
+                                    |> (\( new_model, _ ) ->
+                                            case getPlayer new_model of
+                                                Just new_player ->
+                                                    Expect.equal (orig_player.held_gold - 10) <| new_player.held_gold
 
-                                                        Nothing ->
-                                                            Expect.fail "A player should be present in the model characters after a special action"
-                                               )
-
-                                    Nothing ->
-                                        Expect.fail "a player should exist in the initial model"
-                           )
+                                                Nothing ->
+                                                    Expect.fail "A player should be present in the model characters after a special action"
+                                       )
+                                    |> Just
+                            )
+                        |> Maybe.withDefault
+                            (Expect.fail "a player should exist in the initial model")
             , test "test adding an existing item to inventory records updates the qty instead of appending a new item" <|
                 \_ ->
                     let

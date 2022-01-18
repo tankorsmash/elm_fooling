@@ -577,6 +577,7 @@ type TabType
 
 type PlayerUpgrade
     = AutomaticGPM Int
+    | AutomaticBPtoSP Int
 
 
 type PlayerActionLog
@@ -2298,8 +2299,13 @@ special_action_increase_income model =
                 automaticGpmLevel =
                     model.player_upgrades
                         |> List.filterMap
-                            (\(AutomaticGPM level) ->
-                                Just level
+                            (\upgrade ->
+                                case upgrade of
+                                    AutomaticGPM level ->
+                                        Just level
+
+                                    _ ->
+                                        Nothing
                             )
                         |> List.head
                         |> Maybe.withDefault 1
@@ -2316,8 +2322,13 @@ special_action_increase_income model =
                             { m
                                 | player_upgrades =
                                     List.map
-                                        (\(AutomaticGPM level) ->
-                                            AutomaticGPM (level + 1)
+                                        (\upgrade ->
+                                            case upgrade of
+                                                AutomaticGPM level ->
+                                                    AutomaticGPM (level + 1)
+
+                                                _ ->
+                                                    upgrade
                                         )
                                         m.player_upgrades
                             }
@@ -2434,6 +2445,22 @@ add_player_gpm player to_add =
     else
         player
 
+add_golem_sp_from_blood : Character -> Int -> Character
+add_golem_sp_from_blood player level =
+    player
+    -- let
+    --     { held_gold } =
+    --         player
+    --
+    --     max_gold =
+    --         50
+    -- in
+    -- if held_gold < max_gold then
+    --     { player | held_gold = min max_gold <| held_gold + to_add }
+    --
+    -- else
+    --     player
+
 
 apply_upgrade : PlayerUpgrade -> ( Character, Model ) -> ( Character, Model )
 apply_upgrade upgrade ( player, model ) =
@@ -2442,6 +2469,9 @@ apply_upgrade upgrade ( player, model ) =
             case upgrade of
                 AutomaticGPM to_add ->
                     add_player_gpm player to_add
+
+                AutomaticBPtoSP level ->
+                    add_golem_sp_from_blood player level
     in
     ( new_player, withCharacter new_player model )
 
@@ -4326,8 +4356,11 @@ render_single_player_action_log item_db player_action_log =
 render_single_player_upgrade : UI.ColorTheme -> PlayerUpgrade -> Element Msg
 render_single_player_upgrade colorTheme player_upgrade =
     case player_upgrade of
-        AutomaticGPM gpm ->
-            paragraph [] [ text "Income: ", UI.render_gp colorTheme gpm, text "/sec" ]
+        AutomaticGPM lvl ->
+            paragraph [] [ text "Income: ", UI.render_gp colorTheme lvl, text "/sec" ]
+
+        AutomaticBPtoSP lvl ->
+            paragraph [] [ text "BP to SP: ", UI.render_gp colorTheme lvl, text "5/sec" ]
 
 
 player_upgrades_display : UI.ColorTheme -> List PlayerUpgrade -> Element Msg
@@ -5017,6 +5050,8 @@ special_actions_display colorTheme player_upgrades hovered_tooltip player ai_upd
                             case u of
                                 AutomaticGPM lvl ->
                                     lvl
+
+                                _ -> acc
                         )
                         1
                         player_upgrades

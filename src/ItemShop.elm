@@ -5032,14 +5032,18 @@ special_actions_display colorTheme player_upgrades hovered_tooltip player ai_upd
     in
     column [ width fill, spacing 10, paddingXY 0 10 ]
         [ el [ font_scaled 2, border_bottom 2 ] <| text "Special Actions"
-        , Element.wrappedRow [ width fill, spacingXY 10 10 ]
-            [ button_toggle_ai_pause
-            , button_battle
-            , button_increase_income
-            , button_search
-            , button_unlock_item
-            , button_high_desire
-            , button_low_desire
+        , Element.wrappedRow [ width fill, spacingXY 20 0 ]
+            [ Element.wrappedRow [ width <| fillPortion 1, spacingXY 10 10, alignTop ]
+                [ button_toggle_ai_pause
+                , button_battle
+                ]
+            , Element.wrappedRow [ width <| fillPortion 3, spacingXY 10 10, alignTop ]
+                [ button_increase_income
+                , button_search
+                , button_unlock_item
+                , button_high_desire
+                , button_low_desire
+                ]
             ]
         ]
 

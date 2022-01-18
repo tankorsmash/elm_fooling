@@ -73,6 +73,7 @@ type Msg
     | ToggleShowLocationTypeMenu
     | ChangeLocation LocationId
     | LevelUpGolem
+    | RefillGolemSp
 
 
 type DefeatAction
@@ -778,6 +779,27 @@ update model battleMsg =
             in
             ( { model | golem = newGolem }, Cmd.none, NoOutMsg )
 
+        RefillGolemSp ->
+            if canAffordRefillSp model.player then
+                let
+                    newGolem =
+                        monsterIdentityMap
+                            (monsterStatMapStamina (addToStatCurVal 1))
+                            model.golem
+
+                    newPlayer =
+                        model.player
+                            |> (\p ->
+                                    { p
+                                        | held_blood = p.held_blood - refillGolemSpCost
+                                    }
+                               )
+                in
+                ( { model | golem = newGolem, player = newPlayer }, Cmd.none, NoOutMsg )
+
+            else
+                ( model, Cmd.none, NoOutMsg )
+
 
 
 -- end of update
@@ -965,6 +987,16 @@ fillMin pxWidth =
     fill |> Element.minimum pxWidth
 
 
+refillGolemSpCost : Int
+refillGolemSpCost =
+    5
+
+
+canAffordRefillSp : BattleCharacter -> Bool
+canAffordRefillSp player =
+    player.held_blood >= refillGolemSpCost
+
+
 viewBattleControls : Model -> List (Element Msg)
 viewBattleControls { golem, player, enemyMonster } =
     let
@@ -1006,6 +1038,9 @@ viewBattleControls { golem, player, enemyMonster } =
                 DeadMonster _ ->
                     False
 
+        golemSpRefillable =
+            monsterMap (\g -> g.statStamina.curVal < g.statStamina.maxVal)
+
         controlButton : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
         controlButton attrs msg txt =
             UI.outline_button ([ centerX, width (fillMax 150) ] ++ attrs) msg txt
@@ -1045,10 +1080,16 @@ viewBattleControls { golem, player, enemyMonster } =
             ]
             (conditionalMsg (golemLevelupable && canAffordGolemLevelUp) LevelUpGolem)
             "Strengthen"
-        , -- Noop
-          controlButton []
-            Noop
-            "Harden (No-op)"
+        , -- Refill SP
+          controlButton
+            [ Element.alpha <|
+                conditionalAlpha (not <| golemSpRefillable golem) (not <| canAffordRefillSp player)
+            ]
+            (conditionalMsg
+                (golemSpRefillable golem && canAffordRefillSp player)
+                RefillGolemSp
+            )
+            "Envigorate"
         ]
     , UI.outline_button
         [ centerX, width (fillMax 150) ]
@@ -1321,6 +1362,7 @@ subscriptions model =
 attrNone : Element.Attribute Msg
 attrNone =
     Element.htmlAttribute <| Html.Attributes.class ""
+
 
 suite =
     ()

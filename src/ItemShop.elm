@@ -5505,17 +5505,16 @@ suite =
             , fuzz (Fuzz.intRange 1 10) "AutomaticBPtoSP takes bp and converts to bp on a timer" <|
                 \upgradeLevel ->
                     let
-                        upgrade =
-                            AutomaticBPtoSP upgradeLevel
-
                         upgrader player =
-                            apply_upgrade upgrade ( player, test_model )
+                            apply_upgrade (AutomaticBPtoSP upgradeLevel) ( player, test_model )
                     in
                     case getPlayer test_model of
                         Just player ->
                             let
                                 expectedNewPlayer =
-                                    { player | held_blood = player.held_blood - (bloodCostForRefillSp * upgradeLevel) }
+                                    { player
+                                        | held_blood = player.held_blood - (bloodCostForRefillSp * upgradeLevel)
+                                    }
 
                                 expected =
                                     ( expectedNewPlayer, withCharacter expectedNewPlayer test_model )

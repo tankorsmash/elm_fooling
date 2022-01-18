@@ -1374,15 +1374,10 @@ ItemShop doesn't need to know much about it. we'll see if its a good idea
 -}
 increaseGolemStamina : Model -> Int -> Model
 increaseGolemStamina ({ golem } as model) staminaToGain =
-    model
-        |> (\m ->
-                { m
-                    | golem =
-                        monsterLivingMap
-                            (monsterStatMapStamina (addToStatCurVal staminaToGain))
-                            m.golem
-                }
-           )
+    golem
+        |> monsterLivingMap
+            (monsterStatMapStamina (addToStatCurVal staminaToGain))
+        |> (\g -> setGolem g model)
 
 
 natural =

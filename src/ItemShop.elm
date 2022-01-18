@@ -179,8 +179,8 @@ encodeTradeParty trade_party =
                 "CharacterParty__" ++ UUID.toString char_id
 
 
-trade_party_to_str : List Character -> TradeParty -> String
-trade_party_to_str all_characters party =
+trade_party_to_str : Characters -> TradeParty -> String
+trade_party_to_str (Characters { player, shop, others }) party =
     case party of
         ShopParty ->
             "Shop"
@@ -189,7 +189,10 @@ trade_party_to_str all_characters party =
             "Player"
 
         CharacterParty char_id ->
-            case List.head <| List.filter (.char_id >> (==) char_id) all_characters of
+            case
+                List.head <|
+                    List.filter (.char_id >> (==) char_id) others
+            of
                 Just character ->
                     character.name
 
@@ -434,8 +437,65 @@ type alias Character =
     }
 
 
-type alias Characters =
-    List Character
+type Player
+    = Player Character
+
+
+type Shop
+    = Shop Character
+
+
+type Characters
+    = Characters { player : Player, shop : Shop, others : List Character }
+
+
+charactersToList : Characters -> List Character
+charactersToList (Characters { player, shop, others }) =
+    player :: shop :: others
+
+
+mapCharacters : (Character -> a) -> Characters -> Characters
+mapCharacters mapFunc ((Characters { player, shop, others }) as characters) =
+    let
+        rawChars =
+            characters
+                |> charactersToList
+                |> List.map mapFunc
+
+        matchesPlayerId =
+            charIdMatches player.char_id
+
+        matchesShopId =
+            charIdMatches shop.char_id
+
+        newPlayer =
+            rawChars
+                |> List.filter matchesPlayerId
+                |> List.head
+                |> --FIXME this is hacky because we KNOW player and shop are present
+                   Maybe.withDefault player
+
+        newShop =
+            rawChars
+                |> List.filter matchesShopId
+                |> List.head
+                |> --FIXME this is hacky because we KNOW player and shop are present
+                   Maybe.withDefault shop
+
+        newOthers =
+            List.filter (\c -> not (matchesPlayerId c || matchesShopId c)) rawChars
+    in
+    Characters { player = newPlayer, shop = newShop, others = newOthers }
+
+
+charactersLength : Characters -> Int
+charactersLength (Characters { player, shop, others }) =
+    2 + List.length others
+
+
+addOther : Characters -> Character -> Characters
+addOther (Characters { player, shop, others }) newOther =
+    Characters { player = player, shop = shop, others = List.append others [ newOther ] }
 
 
 type alias CharacterId =
@@ -603,7 +663,7 @@ type alias Model =
     , player_id : CharacterId
     , player_upgrades : List PlayerUpgrade
     , shop_id : CharacterId
-    , characters : List Character
+    , characters : Characters
     , hovered_item_in_character : Maybe ( CharacterId, Item )
     , shop_trends : ShopTrends
     , historical_shop_trends : List ShopTrends
@@ -643,7 +703,7 @@ type AiActionChoice
 type alias AiUpdateData =
     { shop_trends : ShopTrends
     , historical_shop_trends : List ShopTrends
-    , characters : List Character
+    , characters : Characters
     , ai_tick_seed : Random.Seed
     , item_db : ItemDb
     }
@@ -1180,9 +1240,9 @@ init hash key =
                 , party = ShopParty
             }
 
-        characters : List Character
+        characters : Characters
         characters =
-            [ player, shop ] ++ initial_characters item_db
+            Characters player shop (initial_characters item_db)
 
         initial_tab_type : TabType
         initial_tab_type =
@@ -1592,9 +1652,8 @@ updateBattleOutMsg battleOutMsg model =
                     let
                         ( mbNewItem, newSeed ) =
                             pick_random_unlocked_item_from_db model.item_db model.global_seed
-                    in
-                    Maybe.map2
-                        (\shop newItem ->
+
+                        withNewItem (Shop shop) newItem =
                             withCharacter
                                 (add_inventory_record_to_character
                                     { item = newItem
@@ -1605,8 +1664,9 @@ updateBattleOutMsg battleOutMsg model =
                                 )
                                 { model | global_seed = newSeed }
                                 |> append_player_action_log (MonsterDeliveredItemToShop newItem.id)
-                        )
-                        (getShop model)
+                    in
+                    Maybe.map
+                        (withNewItem (getShop model.characters))
                         mbNewItem
                         |> Maybe.withDefault model
                         |> (\m -> ( m, Cmd.none ))
@@ -1627,14 +1687,9 @@ updateBattleOutMsg battleOutMsg model =
             ( model, Cmd.none )
 
 
-mapPlayer : (Character -> Character) -> Model -> Model
-mapPlayer callback model =
-    case getPlayer model of
-        Just player ->
-            withCharacter (callback player) model
-
-        Nothing ->
-            model
+mapPlayer : (Character -> Character) -> Characters -> Characters
+mapPlayer callback (Characters { player, shop, others }) =
+    Characters { player = callback player, shop = shop, others = others }
 
 
 {-| builds a new Battle.Model with the latest data we want
@@ -1687,8 +1742,8 @@ update msg model =
             ( { model | hovered_item_in_character = Nothing }, Cmd.none )
 
         PlayerBuyItemFromShop item qty ->
-            case ( getShop model, getPlayer model ) of
-                ( Just shop, Just player ) ->
+            case ( getShop model.characters, getPlayer model.characters ) of
+                ( Shop shop, Player player ) ->
                     let
                         -- ( new_shop_trends, new_shop, new_player ) =
                         trade_record =
@@ -1716,12 +1771,9 @@ update msg model =
                     , Cmd.none
                     )
 
-                _ ->
-                    ( model, Cmd.none )
-
         PlayerSellItemToShop item qty ->
-            case ( getShop model, getPlayer model ) of
-                ( Just shop, Just player ) ->
+            case ( getShop model.characters, getPlayer model.characters ) of
+                ( Shop shop, Player player ) ->
                     let
                         trade_order =
                             { item = item, qty = qty }
@@ -1752,9 +1804,6 @@ update msg model =
                         |> withCharacter new_trade_context.to_party
                     , Cmd.none
                     )
-
-                _ ->
-                    ( model, Cmd.none )
 
         StartTrendsHover ->
             ( { model | shop_trends_hovered = True }, Cmd.none )
@@ -1888,8 +1937,9 @@ update msg model =
 
         ToggleHideNonZeroRows char_id ->
             let
+                new_characters : Characters
                 new_characters =
-                    List.map
+                    mapCharacters
                         (\char ->
                             if char.char_id /= char_id then
                                 char
@@ -2143,7 +2193,7 @@ handle_invite_trader model =
             model
 
         name =
-            "Character " ++ (String.fromInt <| List.length model.characters + 1)
+            "Character " ++ (String.fromInt <| charactersLength model.characters + 1)
 
         invited_character =
             createCharacter (generate_uuid name) name
@@ -2184,13 +2234,12 @@ handle_invite_trader model =
     in
     { model
         | characters =
-            List.append
+            addOther
                 characters
-                [ { invited_character
+                { invited_character
                     | held_gold = 50
                     , held_items = held_items
-                  }
-                ]
+                }
         , global_seed = new_global_seed
     }
         |> append_player_action_log TookSpecialActionInviteTrader
@@ -2973,7 +3022,7 @@ update_ai ai_tick_time shop_char_id char_id ({ shop_trends, historical_shop_tren
 
                 new_characters : Characters
                 new_characters =
-                    List.map
+                    mapCharacters
                         (\c ->
                             if c.char_id == character.char_id then
                                 ai_update_record.character
@@ -3044,7 +3093,7 @@ update_ai_chars model =
         new_ai_data : AiUpdateData
         new_ai_data =
             old_characters
-                |> exclude_player_and_shop model
+                |> getOthers
                 |> List.map .char_id
                 |> List.foldl
                     (update_ai ai_tick_time shop_id)
@@ -3242,8 +3291,8 @@ border_bottom bord =
     Border.widthEach { bottom = bord, left = 0, right = 0, top = 0 }
 
 
-render_single_trade_log_entry : UI.ColorTheme -> ItemDb -> List Character -> ItemTradeLog -> Element msg
-render_single_trade_log_entry colorTheme item_db all_characters trade_log =
+render_single_trade_log_entry : UI.ColorTheme -> ItemDb -> Characters -> ItemTradeLog -> Element msg
+render_single_trade_log_entry colorTheme item_db ((Characters { player, shop, others }) as characters) trade_log =
     let
         { from_party, to_party, item_id, quantity, gold_cost } =
             trade_log
@@ -3293,7 +3342,7 @@ render_single_trade_log_entry colorTheme item_db all_characters trade_log =
             paragraph []
                 [ text <|
                     "Shop --> "
-                        ++ trade_party_to_str all_characters to_party
+                        ++ trade_party_to_str characters to_party
                         ++ " "
                         ++ item_name
                         ++ " ("
@@ -3307,7 +3356,7 @@ render_single_trade_log_entry colorTheme item_db all_characters trade_log =
             paragraph []
                 [ text <|
                     "Shop <-- "
-                        ++ trade_party_to_str all_characters from_party
+                        ++ trade_party_to_str characters from_party
                         ++ " "
                         ++ item_name
                         ++ " ("
@@ -3322,9 +3371,9 @@ render_single_trade_log_entry colorTheme item_db all_characters trade_log =
                 [ text <|
                     item_name
                         ++ " was traded from "
-                        ++ trade_party_to_str all_characters from_party
+                        ++ trade_party_to_str characters from_party
                         ++ " to "
-                        ++ trade_party_to_str all_characters to_party
+                        ++ trade_party_to_str characters to_party
                         ++ " ("
                         ++ qty_str
                         ++ ") "
@@ -3333,8 +3382,8 @@ render_single_trade_log_entry colorTheme item_db all_characters trade_log =
                 ]
 
 
-trends_display : UI.ColorTheme -> Bool -> ItemDb -> ShopTrends -> List Character -> Bool -> Element.Element Msg
-trends_display colorTheme shiftIsPressed item_db shop_trends all_characters is_expanded =
+trends_display : UI.ColorTheme -> Bool -> ItemDb -> ShopTrends -> Characters -> Bool -> Element.Element Msg
+trends_display colorTheme shiftIsPressed item_db shop_trends ((Characters { player, shop, others }) as characters) is_expanded =
     let
         render_single_popularity : ( Int, Float ) -> Element.Element msg
         render_single_popularity ( type_id, popularity ) =
@@ -3384,7 +3433,7 @@ trends_display colorTheme shiftIsPressed item_db shop_trends all_characters is_e
                 "There have been "
                     ++ (String.fromInt <| List.length shop_trends.item_trade_logs)
                     ++ " trades, and "
-                    ++ (String.fromInt <| List.length all_characters)
+                    ++ (String.fromInt <| charactersLength characters)
                     ++ " traders."
             ]
 
@@ -3429,7 +3478,7 @@ trends_display colorTheme shiftIsPressed item_db shop_trends all_characters is_e
                         ]
                     ]
                         ++ (List.map
-                                (render_single_trade_log_entry colorTheme item_db all_characters)
+                                (render_single_trade_log_entry colorTheme item_db characters)
                             <|
                                 List.take
                                     (if shiftIsPressed then
@@ -4020,11 +4069,19 @@ sortByInvRecName =
     .item >> .name
 
 
-exclude_player_and_shop : { a | player_id : CharacterId, shop_id : CharacterId } -> List Character -> List Character
-exclude_player_and_shop { player_id, shop_id } characters =
-    List.filter
-        (\c -> c.char_id /= player_id && c.char_id /= shop_id)
-        characters
+getPlayer : Characters -> Player
+getPlayer (Characters { player, shop, others }) =
+    player
+
+
+getShop : Characters -> Shop
+getShop (Characters { player, shop, others }) =
+    shop
+
+
+getOthers : Characters -> List Character
+getOthers characters =
+    characters.others
 
 
 float_to_percent : Float -> String
@@ -4290,21 +4347,23 @@ charts_display historical_shop_trends hovered_trend_chart =
                 chart_elements
 
 
+charIdMatches : CharacterId -> Character -> Bool
+charIdMatches char_id_to_match { char_id } =
+    char_id == char_id_to_match
+
+
 getCharacter : Characters -> CharacterId -> Maybe Character
-getCharacter characters char_id =
-    characters
-        |> List.filter (.char_id >> (==) char_id)
-        |> List.head
+getCharacter (Characters { player, shop, others }) char_id =
+    if charIdMatches char_id player then
+        Just player
 
+    else if charIdMatches char_id shop then
+        Just Shop
 
-getPlayer : Model -> Maybe Character
-getPlayer { characters, player_id } =
-    getCharacter characters player_id
-
-
-getShop : Model -> Maybe Character
-getShop { characters, shop_id } =
-    getCharacter characters shop_id
+    else
+        others
+            |> List.filter (charIdMatches char_id)
+            |> List.head
 
 
 withCharacter : Character -> Model -> Model
@@ -4420,22 +4479,16 @@ showHideDebugInventoriesButton attrs show_debug_inventories =
         buttonText
 
 
-shopInventoryControls : Maybe Character -> ShopTrends -> InventoryRecord -> Element Msg
-shopInventoryControls maybe_player shop_trends { item, quantity, avg_price } =
+shopInventoryControls : Player -> ShopTrends -> InventoryRecord -> Element Msg
+shopInventoryControls (Player player) shop_trends { item, quantity, avg_price } =
     shop_buy_button
         (get_single_adjusted_item_cost shop_trends item)
-        (case maybe_player of
-            Just player ->
-                player.held_gold
-
-            Nothing ->
-                99999
-        )
+        player.held_gold
         { item = item, quantity = quantity, avg_price = avg_price }
 
 
-playerInventoryControls : Character -> ( Bool, ShopTrends ) -> InventoryRecord -> Element Msg
-playerInventoryControls player ( shiftIsPressed, shop_trends ) { item, quantity, avg_price } =
+playerInventoryControls : ( Bool, ShopTrends ) -> InventoryRecord -> Element Msg
+playerInventoryControls ( shiftIsPressed, shop_trends ) { item, quantity, avg_price } =
     let
         hasItemsToSell =
             getQuantity quantity >= 1
@@ -4460,9 +4513,21 @@ view_shop_tab_type model =
         welcome_header =
             Element.el [ font_scaled 3, padding_bottom 10 ] <| text "Welcome to the Item Shop!"
 
+        playerChar : Character
+        playerChar =
+            case getPlayer model.characters of
+                Player p ->
+                    p
+
+        shopChar : Character
+        shopChar =
+            case getShop model.characters of
+                Shop s ->
+                    s
+
         debug_inventories : List (Element Msg)
         debug_inventories =
-            exclude_player_and_shop model model.characters
+            getOthers model.characters
                 |> List.sortBy (.char_id >> UUID.toString)
                 |> List.map
                     (\character ->
@@ -4478,14 +4543,6 @@ view_shop_tab_type model =
                                 (always Element.none)
                             )
                     )
-
-        maybe_shop : Maybe Character
-        maybe_shop =
-            getShop model
-
-        maybe_player : Maybe Character
-        maybe_player =
-            getPlayer model
 
         paused_border_attrs =
             [ Border.color
@@ -4551,12 +4608,9 @@ view_shop_tab_type model =
                 [ el [ width <| fillPortion 3, alignTop ] <| Lazy.lazy2 player_action_log_display model.item_db model.historical_player_actions
                 , el [ width <| fillPortion 7, alignTop ] <| Lazy.lazy2 player_upgrades_display model.colorTheme model.player_upgrades
                 ]
-            , case maybe_player of
-                Just player ->
+            , case getPlayer model.characters of
+                Player player ->
                     special_actions_display model.colorTheme model.player_upgrades model.hovered_tooltip player model.ai_updates_paused
-
-                Nothing ->
-                    Element.none
             , trends_display
                 model.colorTheme
                 model.shiftIsPressed
@@ -4565,33 +4619,23 @@ view_shop_tab_type model =
                 model.characters
                 model.shop_trends_hovered
             , Element.el [ paddingXY 0 0, width fill ] <|
-                case maybe_shop of
-                    Just shop ->
-                        render_inventory_grid
-                            model
-                            "Items For Sale"
-                            shop
-                            model.shop_trends
-                            model.hovered_item_in_character
-                            ShopItems
-                            (shopInventoryControls maybe_player model.shop_trends)
-
-                    Nothing ->
-                        el [ Font.color <| rgb 1 0 0, font_scaled 5 ] <| text "ERR: Can't find shop"
+                render_inventory_grid
+                    model
+                    "Items For Sale"
+                    shopChar
+                    model.shop_trends
+                    model.hovered_item_in_character
+                    ShopItems
+                    (shopInventoryControls (getPlayer model.characters) model.shop_trends)
             , Element.el [ paddingXY 0 10, width fill ] <|
-                case maybe_player of
-                    Just player ->
-                        render_inventory_grid
-                            model
-                            "Items In Inventory"
-                            player
-                            model.shop_trends
-                            model.hovered_item_in_character
-                            InventoryItems
-                            (playerInventoryControls player ( model.shiftIsPressed, model.shop_trends ))
-
-                    Nothing ->
-                        text "Can't find player"
+                render_inventory_grid
+                    model
+                    "Items In Inventory"
+                    playerChar
+                    model.shop_trends
+                    model.hovered_item_in_character
+                    InventoryItems
+                    (playerInventoryControls ( model.shiftIsPressed, model.shop_trends ))
             ]
                 ++ [ column [ width fill ] <|
                         showHideDebugInventoriesButton [] model.show_debug_inventories

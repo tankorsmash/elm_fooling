@@ -1269,7 +1269,7 @@ init hash key =
         initModel : Model
         initModel =
             { colorTheme = BrightTheme
-            , player_upgrades = [ AutomaticGPM 1 ]
+            , player_upgrades = [ AutomaticGPM 1, AutomaticBPtoSP 1 ]
             , shop_id = .char_id (getInnerShop shop)
             , characters = characters
             , hovered_item_in_character = Nothing
@@ -4438,14 +4438,14 @@ render_single_player_upgrade colorTheme player_upgrade =
             paragraph [] [ text "Income: ", UI.render_gp colorTheme lvl, text "/sec" ]
 
         AutomaticBPtoSP lvl ->
-            paragraph [] [ text "BP to SP: ", UI.render_gp colorTheme lvl, text "5/sec" ]
+            paragraph [] [ text "BP to SP: ", UI.render_gp colorTheme lvl, text "/5sec" ]
 
 
 player_upgrades_display : UI.ColorTheme -> List PlayerUpgrade -> Element Msg
 player_upgrades_display colorTheme player_upgrades =
     column [ height fill ]
         ([ el [ font_scaled 2, border_bottom 2, alignTop ] <| text "Upgrades" ]
-            ++ [ column [ paddingXY 0 10 ] <| List.map (render_single_player_upgrade colorTheme) player_upgrades ]
+            ++ [ column [ paddingXY 0 10, spacing 5 ] <| List.map (render_single_player_upgrade colorTheme) player_upgrades ]
         )
 
 

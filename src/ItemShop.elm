@@ -2509,14 +2509,14 @@ bloodCostForRefillSp =
     3
 
 
-add_golem_sp_from_blood : Character -> Int -> Battle.Model -> ( Character, Battle.Model )
-add_golem_sp_from_blood player level battleModel =
+addGolemSpFromBlood : Character -> Int -> Battle.Model -> ( Character, Battle.Model )
+addGolemSpFromBlood player level battleModel =
     -- if player has enough gold, subtract it, and add 1 SP to golem
     let
         { held_blood } =
             player
     in
-    if held_blood >= (bloodCostForRefillSp * level) then
+    if held_blood >= (bloodCostForRefillSp * level) && Battle.doesGolemNeedStamina battleModel then
         ( { player | held_blood = held_blood - (bloodCostForRefillSp * level) }
           --TODO increase the SP on the golem
         , battleModel
@@ -2539,7 +2539,7 @@ apply_upgrade upgrade ( player, model ) =
         AutomaticBPtoSP level ->
             let
                 ( newPlayer, newBattleModel ) =
-                    add_golem_sp_from_blood player level model.battleModel
+                    addGolemSpFromBlood player level model.battleModel
             in
             ( newPlayer
             , withCharacter newPlayer model

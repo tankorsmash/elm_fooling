@@ -1,4 +1,4 @@
-module Battle exposing (DefeatAction(..), Model, Msg(..), OutMsg(..), increaseGolemStamina, init, subscriptions, suite, update, view)
+module Battle exposing (DefeatAction(..), Model, Msg(..), OutMsg(..), doesGolemNeedStamina, increaseGolemStamina, init, subscriptions, suite, update, view)
 
 import Array
 import Browser.Dom
@@ -125,6 +125,25 @@ setStatMaxVal newMaxVal stat =
 setStatInitialVal : Int -> IntStat -> IntStat
 setStatInitialVal newInitialVal stat =
     { stat | initialVal = newInitialVal }
+
+
+isStatMaxVal : IntStat -> Bool
+isStatMaxVal stat =
+    stat.curVal == stat.maxVal
+
+isStatNotMax : IntStat -> Bool
+isStatNotMax stat =
+    stat.curVal /= stat.maxVal
+
+
+isStatEmpty : IntStat -> Bool
+isStatEmpty stat =
+    stat.curVal == 0
+
+
+isStatNotEmpty : IntStat -> Bool
+isStatNotEmpty stat =
+    stat.curVal /= 0
 
 
 type alias Monster =
@@ -1378,6 +1397,21 @@ increaseGolemStamina ({ golem } as model) staminaToGain =
         |> monsterLivingMap
             (monsterStatMapStamina (addToStatCurVal staminaToGain))
         |> (\g -> setGolem g model)
+
+
+{-| this is exposed to ItemShop, so im keeping it as broad as possible, so that
+ItemShop doesn't need to know much about it. we'll see if its a good idea
+-}
+doesGolemNeedStamina : Model -> Bool
+doesGolemNeedStamina ({ golem } as model) =
+    case golem of
+        LivingMonster livingGolem ->
+            livingGolem
+                |> .statStamina
+                |> isStatNotMax
+
+        DeadMonster _ ->
+            False
 
 
 natural =

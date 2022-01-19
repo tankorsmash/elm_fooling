@@ -2510,16 +2510,14 @@ bloodCostForRefillSp =
 
 
 addGolemSpFromBlood : Character -> Int -> Battle.Model -> ( Character, Battle.Model )
-addGolemSpFromBlood player level battleModel =
-    -- if player has enough gold, subtract it, and add 1 SP to golem
-    let
-        { held_blood } =
-            player
-    in
-    if held_blood >= (bloodCostForRefillSp * level) && Battle.doesGolemNeedStamina battleModel then
+addGolemSpFromBlood ({ held_blood } as player) level battleModel =
+    -- if player has enough gold, subtract it, and add 1*level SP to golem
+    if
+        (held_blood >= (bloodCostForRefillSp * level))
+            && Battle.doesGolemNeedStamina battleModel
+    then
         ( { player | held_blood = held_blood - (bloodCostForRefillSp * level) }
-          --TODO increase the SP on the golem
-        , battleModel
+        , Battle.increaseGolemStamina battleModel level
         )
 
     else

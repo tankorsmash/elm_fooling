@@ -5511,23 +5511,62 @@ suite =
             , test "scaling IncreaseIncome upgrade with level 5" <|
                 \_ ->
                     Expect.equal (setPrice 270) <| scale_increase_income_cost 5
-            , fuzz (Fuzz.intRange 1 10) "AutomaticBPtoSP takes bp and converts to bp on a timer" <|
-                \upgradeLevel ->
-                    let
-                        upgrader player =
-                            apply_upgrade (AutomaticBPtoSP upgradeLevel) ( player, test_model )
-                    in
-                    case getPlayer test_model.characters of
-                        Player player ->
-                            let
-                                expectedNewPlayer =
-                                    { player
-                                        | held_blood = player.held_blood - (bloodCostForRefillSp * upgradeLevel)
-                                    }
 
-                                expected =
-                                    ( expectedNewPlayer, withCharacter expectedNewPlayer test_model )
-                            in
-                            Expect.equal expected (upgrader player)
+            -- , fuzz (Fuzz.intRange 1 10) "AutomaticBPtoSP takes bp and converts to bp on a timer" <|
+            , describe "AutomaticBPtoSP takes bp and converts to bp on a timer" <|
+                --TODO make sure it only gives sp if it needs to
+                -- TODO make sure it only takes bp if it needs to
+                let
+                    newBattleModel =
+                        Battle.increaseGolemStamina test_model.battleModel -110
+
+                    newTestModel =
+                        { test_model | battleModel = newBattleModel }
+                in
+                case getPlayer newTestModel.characters of
+                    Player player ->
+                        [ fuzz (Fuzz.intRange 1 10) "SP goes up" <|
+                            \upgradeLevel ->
+                                let
+                                    upgrader p =
+                                        apply_upgrade (AutomaticBPtoSP upgradeLevel) ( p, newTestModel )
+                                in
+                                let
+                                    expectedNewPlayer =
+                                        { player
+                                            | held_blood = player.held_blood - (bloodCostForRefillSp * upgradeLevel)
+                                        }
+
+                                    intendedBattleModel =
+                                        Battle.increaseGolemStamina newBattleModel upgradeLevel
+
+                                    expectedPlayerAndModel : ( Character, Model )
+                                    expectedPlayerAndModel =
+                                        ( expectedNewPlayer
+                                        , withCharacter expectedNewPlayer { newTestModel | battleModel = intendedBattleModel }
+                                        )
+
+                                    expectedModel =
+                                        Tuple.second expectedPlayerAndModel
+
+                                    expectedBattleModel =
+                                        expectedModel.battleModel
+
+                                    expectedGolem =
+                                        expectedBattleModel.golem
+
+                                    ( resultPlayer, resultModel ) =
+                                        upgrader player
+                                in
+                                Expect.equal
+                                    (Battle.monsterMap
+                                        (.statStamina >> .curVal)
+                                        expectedGolem
+                                    )
+                                    (Battle.monsterMap
+                                        (.statStamina >> .curVal)
+                                        resultModel.battleModel.golem
+                                    )
+                        ]
             ]
         ]

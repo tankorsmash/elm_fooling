@@ -1,4 +1,4 @@
-module Battle exposing (DefeatAction(..), Model, Msg(..), OutMsg(..), doesGolemNeedStamina, increaseGolemStamina, init, subscriptions, suite, update, view)
+module Battle exposing (DefeatAction(..), Model, Msg(..), OutMsg(..), doesGolemNeedStamina, increaseGolemStamina, init, monsterMap, subscriptions, suite, update, view)
 
 import Array
 import Browser.Dom
@@ -114,7 +114,12 @@ addToStatMaxVal addedMaxVal stat =
 
 addToStatCurVal : Int -> IntStat -> IntStat
 addToStatCurVal addedCurVal stat =
-    { stat | curVal = stat.curVal + addedCurVal |> min stat.maxVal }
+    { stat
+        | curVal =
+            (stat.curVal + addedCurVal)
+                |> min stat.maxVal
+                |> max 0
+    }
 
 
 setStatMaxVal : Int -> IntStat -> IntStat
@@ -130,6 +135,7 @@ setStatInitialVal newInitialVal stat =
 isStatMaxVal : IntStat -> Bool
 isStatMaxVal stat =
     stat.curVal == stat.maxVal
+
 
 isStatNotMax : IntStat -> Bool
 isStatNotMax stat =

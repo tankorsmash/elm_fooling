@@ -441,8 +441,18 @@ type Player
     = Player Character
 
 
+getInnerPlayer : Player -> Character
+getInnerPlayer (Player player) =
+    player
+
+
 type Shop
     = Shop Character
+
+
+getInnerShop : Shop -> Character
+getInnerShop (Shop shop) =
+    shop
 
 
 type Characters
@@ -451,36 +461,39 @@ type Characters
 
 charactersToList : Characters -> List Character
 charactersToList (Characters { player, shop, others }) =
-    player :: shop :: others
+    getInnerPlayer player :: getInnerShop shop :: others
 
 
-mapCharacters : (Character -> a) -> Characters -> Characters
+mapCharacters : (Character -> Character) -> Characters -> Characters
 mapCharacters mapFunc ((Characters { player, shop, others }) as characters) =
     let
+        rawChars : List Character
         rawChars =
             characters
                 |> charactersToList
                 |> List.map mapFunc
 
         matchesPlayerId =
-            charIdMatches player.char_id
+            charIdMatches (.char_id (getInnerPlayer player))
 
         matchesShopId =
-            charIdMatches shop.char_id
+            charIdMatches (.char_id (getInnerShop shop))
 
         newPlayer =
             rawChars
                 |> List.filter matchesPlayerId
                 |> List.head
                 |> --FIXME this is hacky because we KNOW player and shop are present
-                   Maybe.withDefault player
+                   Maybe.withDefault (getInnerPlayer player)
+                |> Player
 
         newShop =
             rawChars
                 |> List.filter matchesShopId
                 |> List.head
                 |> --FIXME this is hacky because we KNOW player and shop are present
-                   Maybe.withDefault shop
+                   Maybe.withDefault (getInnerShop shop)
+                |> Shop
 
         newOthers =
             List.filter (\c -> not (matchesPlayerId c || matchesShopId c)) rawChars
@@ -660,7 +673,6 @@ type InventorySortType
 
 type alias Model =
     { colorTheme : UI.ColorTheme
-    , player_id : CharacterId
     , player_upgrades : List PlayerUpgrade
     , shop_id : CharacterId
     , characters : Characters
@@ -1223,26 +1235,28 @@ init hash key =
         item_db =
             initial_item_db
 
-        player : Character
+        player : Player
         player =
-            { player_base_char
-                | held_items = initial_owned_items item_db
-                , held_gold = 25
-                , party = PlayerParty
-                , held_blood = 100
-            }
+            Player
+                { player_base_char
+                    | held_items = initial_owned_items item_db
+                    , held_gold = 25
+                    , party = PlayerParty
+                    , held_blood = 100
+                }
 
-        shop : Character
+        shop : Shop
         shop =
-            { shop_base_char
-                | held_items = initial_items_for_sale item_db
-                , held_gold = 999999999
-                , party = ShopParty
-            }
+            Shop
+                { shop_base_char
+                    | held_items = initial_items_for_sale item_db
+                    , held_gold = 999999999
+                    , party = ShopParty
+                }
 
         characters : Characters
         characters =
-            Characters player shop (initial_characters item_db)
+            Characters { player = player, shop = shop, others = initial_characters item_db }
 
         initial_tab_type : TabType
         initial_tab_type =
@@ -1250,14 +1264,13 @@ init hash key =
 
         battleModel : Battle.Model
         battleModel =
-            Battle.init player
+            Battle.init (getInnerPlayer player)
 
         initModel : Model
         initModel =
             { colorTheme = BrightTheme
-            , player_id = player.char_id
             , player_upgrades = [ AutomaticGPM 1 ]
-            , shop_id = shop.char_id
+            , shop_id = .char_id (getInnerShop shop)
             , characters = characters
             , hovered_item_in_character = Nothing
             , shop_trends = initial_shop_trends
@@ -1689,44 +1702,47 @@ updateBattleOutMsg battleOutMsg model =
 
 mapPlayer : (Character -> Character) -> Characters -> Characters
 mapPlayer callback (Characters { player, shop, others }) =
-    Characters { player = callback player, shop = shop, others = others }
+    Characters { player = Player <| callback (getInnerPlayer player), shop = shop, others = others }
 
 
 {-| builds a new Battle.Model with the latest data we want
 -}
 transferToBattleModel : Model -> Battle.Model
 transferToBattleModel model =
-    model
-        |> getPlayer
-        |> Maybe.map
-            (\p ->
-                let
-                    { battleModel } =
-                        model
+    case getPlayer model.characters of
+        Player p ->
+            let
+                { battleModel } =
+                    model
 
-                    battlePlayer =
-                        battleModel.player
+                battlePlayer =
+                    battleModel.player
 
-                    newPlayer =
-                        { battlePlayer | held_gold = p.held_gold, held_blood = p.held_blood }
-                in
-                { battleModel | player = newPlayer }
-            )
-        |> Maybe.withDefault model.battleModel
+                newPlayer =
+                    { battlePlayer | held_gold = p.held_gold, held_blood = p.held_blood }
+            in
+            { battleModel | player = newPlayer }
 
 
 transferFromBattleModel : Model -> Battle.Model -> Model
 transferFromBattleModel model newBattleModel =
-    { model
-        | battleModel = newBattleModel
-    }
-        |> mapPlayer
-            (\player ->
-                { player
-                    | held_gold = newBattleModel.player.held_gold
-                    , held_blood = newBattleModel.player.held_blood
-                }
-            )
+    let
+        newModel =
+            { model
+                | battleModel = newBattleModel
+            }
+
+        newCharacters =
+            newModel.characters
+                |> mapPlayer
+                    (\player ->
+                        { player
+                            | held_gold = newBattleModel.player.held_gold
+                            , held_blood = newBattleModel.player.held_blood
+                        }
+                    )
+    in
+    { newModel | characters = newCharacters }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -2064,28 +2080,32 @@ update msg model =
             )
 
         SacrificeItem item ->
-            ( mapPlayer
-                (\player ->
-                    let
-                        itemGoldCost =
-                            get_adjusted_item_cost
-                                model.shop_trends
-                                item
-                                (setQuantity 1)
+            let
+                newCharacters =
+                    mapPlayer
+                        (\player ->
+                            let
+                                itemGoldCost =
+                                    get_adjusted_item_cost
+                                        model.shop_trends
+                                        item
+                                        (setQuantity 1)
 
-                        newItems =
-                            remove_item_from_inventory_records
-                                player.held_items
-                                item
-                                (setQuantity 1)
-                                itemGoldCost
-                    in
-                    { player
-                        | held_items = newItems
-                        , held_blood = player.held_blood + itemGoldCost
-                    }
-                )
-                model
+                                newItems =
+                                    remove_item_from_inventory_records
+                                        player.held_items
+                                        item
+                                        (setQuantity 1)
+                                        itemGoldCost
+                            in
+                            { player
+                                | held_items = newItems
+                                , held_blood = player.held_blood + itemGoldCost
+                            }
+                        )
+                        model.characters
+            in
+            ( { model | characters = newCharacters }
             , Cmd.none
             )
 
@@ -2339,11 +2359,8 @@ update_shop_trends model update_st_func =
 
 special_action_increase_income : Model -> Model
 special_action_increase_income model =
-    case getPlayer model of
-        Nothing ->
-            model
-
-        Just player ->
+    case getPlayer model.characters of
+        Player player ->
             let
                 automaticGpmLevel =
                     model.player_upgrades
@@ -2433,17 +2450,9 @@ subGold character price =
 
 update_special_action : SpecialAction -> Price -> Model -> ( Model, Cmd Msg )
 update_special_action special_action price model =
-    getPlayer model
-        |> Maybe.andThen
-            (\player ->
-                if hasEnoughGold player price then
-                    Just player
-
-                else
-                    Nothing
-            )
-        |> Maybe.map
-            (\player ->
+    case getPlayer model.characters of
+        Player player ->
+            if hasEnoughGold player price then
                 model
                     |> withCharacter (subGold player price)
                     |> (\new_model ->
@@ -2473,8 +2482,9 @@ update_special_action special_action price model =
                                 IncreaseIncome ->
                                     ( special_action_increase_income model, Cmd.none )
                        )
-            )
-        |> Maybe.withDefault ( model, Cmd.none )
+
+            else
+                ( model, Cmd.none )
 
 
 {-| adds 1 gold per second. GPM is a misnomer
@@ -2548,10 +2558,9 @@ apply_upgrades player model =
 
 update_player : Model -> Model
 update_player model =
-    getPlayer model
-        |> Maybe.map
-            (\player -> apply_upgrades player model)
-        |> Maybe.withDefault model
+    case getPlayer model.characters of
+        Player player ->
+            apply_upgrades player model
 
 
 get_trend_for_item : ShopTrends -> Item -> Float
@@ -4080,8 +4089,8 @@ getShop (Characters { player, shop, others }) =
 
 
 getOthers : Characters -> List Character
-getOthers characters =
-    characters.others
+getOthers (Characters { player, shop, others }) =
+    others
 
 
 float_to_percent : Float -> String
@@ -4354,11 +4363,11 @@ charIdMatches char_id_to_match { char_id } =
 
 getCharacter : Characters -> CharacterId -> Maybe Character
 getCharacter (Characters { player, shop, others }) char_id =
-    if charIdMatches char_id player then
-        Just player
+    if charIdMatches char_id (getInnerPlayer player) then
+        Just (getInnerPlayer player)
 
-    else if charIdMatches char_id shop then
-        Just Shop
+    else if charIdMatches char_id (getInnerShop shop) then
+        Just (getInnerShop shop)
 
     else
         others
@@ -4370,15 +4379,15 @@ withCharacter : Character -> Model -> Model
 withCharacter new_char model =
     let
         new_characters =
-            List.map
-                (\char ->
-                    if char.char_id == new_char.char_id then
-                        new_char
+            model.characters
+                |> mapCharacters
+                    (\char ->
+                        if char.char_id == new_char.char_id then
+                            new_char
 
-                    else
-                        char
-                )
-                model.characters
+                        else
+                            char
+                    )
     in
     { model | characters = new_characters }
 
@@ -4723,52 +4732,48 @@ view_items_unlocked_tab_type colorTheme item_db =
 
 viewOverlay : Model -> Element Msg
 viewOverlay model =
-    model
-        |> getPlayer
-        |> Maybe.map
-            (\player ->
-                el
-                    [ width fill
-                    , height fill
-                    , Font.size 12
-                    , UI.pointerEventsNone
-                    , padding 1
-                    , Element.inFront <|
-                        if model.shouldDisplayShowDebugInventoriesOverlay then
-                            el [ width fill, padding 10 ] <|
-                                showHideDebugInventoriesButton [ width fill ] model.show_debug_inventories
+    case getPlayer model.characters of
+        Player player ->
+            el
+                [ width fill
+                , height fill
+                , Font.size 12
+                , UI.pointerEventsNone
+                , padding 1
+                , Element.inFront <|
+                    if model.shouldDisplayShowDebugInventoriesOverlay then
+                        el [ width fill, padding 10 ] <|
+                            showHideDebugInventoriesButton [ width fill ] model.show_debug_inventories
 
-                        else
-                            Element.none
+                    else
+                        Element.none
+                ]
+            <|
+                el
+                    [ Font.alignRight
+                    , Element.alignRight
+                    , Element.alignBottom
+                    , defaultBackgroundColor model.colorTheme
+                    , Border.color
+                        (case model.colorTheme of
+                            BrightTheme ->
+                                UI.color_ultra_light_grey
+
+                            DarkTheme ->
+                                UI.convertColor Color.lightCharcoal
+                        )
+                    , Border.width 1
+                    , Border.rounded 3
+                    , UI.pointerEventsAll
+                    , padding 10
                     ]
                 <|
-                    el
-                        [ Font.alignRight
-                        , Element.alignRight
-                        , Element.alignBottom
-                        , defaultBackgroundColor model.colorTheme
-                        , Border.color
-                            (case model.colorTheme of
-                                BrightTheme ->
-                                    UI.color_ultra_light_grey
-
-                                DarkTheme ->
-                                    UI.convertColor Color.lightCharcoal
-                            )
-                        , Border.width 1
-                        , Border.rounded 3
-                        , UI.pointerEventsAll
-                        , padding 10
+                    row [ UI.noUserSelect ]
+                        [ text "Held: "
+                        , UI.render_gp model.colorTheme <| player.held_gold
+                        , text " "
+                        , UI.renderBlood model.colorTheme <| player.held_blood
                         ]
-                    <|
-                        row [ UI.noUserSelect ]
-                            [ text "Held: "
-                            , UI.render_gp model.colorTheme <| player.held_gold
-                            , text " "
-                            , UI.renderBlood model.colorTheme <| player.held_blood
-                            ]
-            )
-        |> Maybe.withDefault Element.none
 
 
 defaultSolidColor colorTheme =
@@ -4834,14 +4839,10 @@ view model =
 
             BattleTabType ->
                 Element.map GotBattleMsg <|
-                    (Maybe.map
-                        (\player ->
+                    case getPlayer model.characters of
+                        Player player ->
                             Lazy.lazy Battle.view
                                 model.battleModel
-                        )
-                        (getPlayer model)
-                        |> Maybe.withDefault (el [ Font.color UI.color_danger ] <| text "ERR: NO PLAYER")
-                    )
 
 
 scaled : Int -> Int
@@ -5320,23 +5321,14 @@ suite =
                         |> Expect.notEqual orig_len
             , test "make sure a special actions cost is removed from the player" <|
                 \_ ->
-                    test_model
-                        |> getPlayer
-                        |> Maybe.andThen
-                            (\orig_player ->
-                                update_special_action InviteTrader (setPrice 10) test_model
-                                    |> (\( new_model, _ ) ->
-                                            case getPlayer new_model of
-                                                Just new_player ->
-                                                    Expect.equal (orig_player.held_gold - 10) <| new_player.held_gold
-
-                                                Nothing ->
-                                                    Expect.fail "A player should be present in the model characters after a special action"
-                                       )
-                                    |> Just
-                            )
-                        |> Maybe.withDefault
-                            (Expect.fail "a player should exist in the initial model")
+                    case getPlayer test_model.characters of
+                        Player orig_player ->
+                            update_special_action InviteTrader (setPrice 10) test_model
+                                |> (\( new_model, _ ) ->
+                                        case getPlayer new_model.characters of
+                                            Player new_player ->
+                                                Expect.equal (orig_player.held_gold - 10) <| new_player.held_gold
+                                   )
             , test "test adding an existing item to inventory records updates the qty instead of appending a new item" <|
                 \_ ->
                     let
@@ -5420,20 +5412,14 @@ suite =
                         |> Expect.true "contains an unlocked itemdbrecord, since we just asked to unlock it"
             , test "AutomaticGPM works with 1 level" <|
                 \_ ->
-                    case getPlayer test_model of
-                        Just player ->
+                    case getPlayer test_model.characters of
+                        Player player ->
                             update_player test_model
                                 |> (\m ->
-                                        case getPlayer m of
-                                            Just updated_player ->
+                                        case getPlayer m.characters of
+                                            Player updated_player ->
                                                 Expect.equal (player.held_gold + 1) updated_player.held_gold
-
-                                            Nothing ->
-                                                Expect.fail "Couldnt find updated player"
                                    )
-
-                        Nothing ->
-                            Expect.fail "Couldn't find player"
             , fuzz (tuple ( int, Fuzz.intRange 1 Random.maxInt )) "removing all quantities leaves avg cost of 0" <|
                 \( qtyToAdd, totalCost ) ->
                     let
@@ -5495,38 +5481,26 @@ suite =
                             expectation
             , test "AutomaticGPM works with 10 levels" <|
                 \_ ->
-                    case getPlayer test_model of
-                        Just player ->
+                    case getPlayer test_model.characters of
+                        Player player ->
                             update_player { test_model | player_upgrades = [ AutomaticGPM 10 ] }
                                 |> (\m ->
-                                        case getPlayer m of
-                                            Just updated_player ->
+                                        case getPlayer m.characters of
+                                            Player updated_player ->
                                                 Expect.equal (player.held_gold + 10) updated_player.held_gold
-
-                                            Nothing ->
-                                                Expect.fail "Couldnt find updated player"
                                    )
-
-                        Nothing ->
-                            Expect.fail "Couldn't find player"
             , fuzz int "AutomaticGPM doesn't go past 50" <|
                 \to_add ->
-                    case getPlayer test_model of
-                        Just player ->
+                    case getPlayer test_model.characters of
+                        Player player ->
                             update_player { test_model | player_upgrades = [ AutomaticGPM to_add ] }
                                 |> (\m ->
-                                        case getPlayer m of
-                                            Just updated_player ->
+                                        case getPlayer m.characters of
+                                            Player updated_player ->
                                                 Expect.true
                                                     "Can't have more than 50 max gold"
                                                     (updated_player.held_gold <= 50)
-
-                                            Nothing ->
-                                                Expect.fail "Couldnt find updated player"
                                    )
-
-                        Nothing ->
-                            Expect.fail "Couldn't find player"
             , test "scaling IncreaseIncome upgrade with level 2" <|
                 \_ ->
                     Expect.equal (setPrice 60) <| scale_increase_income_cost 2
@@ -5545,8 +5519,8 @@ suite =
                         upgrader player =
                             apply_upgrade (AutomaticBPtoSP upgradeLevel) ( player, test_model )
                     in
-                    case getPlayer test_model of
-                        Just player ->
+                    case getPlayer test_model.characters of
+                        Player player ->
                             let
                                 expectedNewPlayer =
                                     { player
@@ -5557,8 +5531,5 @@ suite =
                                     ( expectedNewPlayer, withCharacter expectedNewPlayer test_model )
                             in
                             Expect.equal expected (upgrader player)
-
-                        Nothing ->
-                            Expect.fail "couldnt find player in model"
             ]
         ]

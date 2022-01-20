@@ -472,7 +472,7 @@ encodeActionLogType action_log_type =
             Encode.list identity [ Encode.string "WantedButCouldntTrade", encodeWantedAction wanted_action ]
 
         FetchedItem item_id ->
-            Encode.list identity [ Encode.string "FetchedItem", Encode.string <| UUID.toString item_id ]
+            Encode.list identity [ Encode.string "FetchedItem", encodeItemId item_id ]
 
         DidNothing ->
             Encode.list identity [ Encode.string "DidNothing" ]
@@ -541,7 +541,7 @@ type alias ItemTradeLog =
 encodeItemTradeLog : ItemTradeLog -> Decode.Value
 encodeItemTradeLog item_trade_log =
     Encode.object
-        [ ( "item_id", Encode.string <| UUID.toString item_trade_log.item_id )
+        [ ( "item_id", encodeItemId item_trade_log.item_id )
         , ( "quantity", Encode.int <| getQuantity item_trade_log.quantity )
         , ( "gold_cost", Encode.int item_trade_log.gold_cost )
         , ( "from_party", encodeTradeParty item_trade_log.from_party )
@@ -719,25 +719,42 @@ updateTradeStats item_db_record new_trade_stats =
     { item_db_record | trade_stats = new_trade_stats }
 
 
+encodeItemDbTradeStats : ItemDbTradeStats -> Decode.Value
+encodeItemDbTradeStats {times_you_sold, times_you_bought, times_others_traded} =
+    Encode.object
+        [ ( "times_you_sold", Encode.int times_you_sold)
+        , ( "times_you_bought", Encode.int times_you_bought)
+        , ( "times_others_traded", Encode.int times_others_traded)
+        ]
+
+
 type alias ItemDb =
     Dict.Dict ItemIdStr ItemDbRecord
 
 
+encodeItemId : ItemId -> Decode.Value
+encodeItemId item_id =
+    item_id |> UUID.toString |> Encode.string
+
+
 encodeItemDbRecord : ItemDbRecord -> Decode.Value
-encodeItemDbRecord item_db_record =
+encodeItemDbRecord { item, is_unlocked, trade_stats } =
     Encode.object
-        []
+        [ ( "item_id", encodeItemId item.id )
+        , ( "is_unlocked", Encode.bool is_unlocked )
+        , ( "trade_stats", encodeItemDbTradeStats trade_stats )
+        ]
 
 
 encodeItemDb : ItemDb -> Decode.Value
 encodeItemDb item_db =
-        Encode.dict identity encodeItemDbRecord item_db
+    Encode.dict identity encodeItemDbRecord item_db
 
 
 encodeInventoryRecord : InventoryRecord -> Decode.Value
 encodeInventoryRecord { item, quantity, avg_price } =
     Encode.object
-        [ ( "item_id", Encode.string <| UUID.toString item.id )
+        [ ( "item_id", encodeItemId item.id )
         , ( "quantity", Encode.int <| getQuantity quantity )
         , ( "avg_price", Encode.int <| getPrice avg_price )
         ]

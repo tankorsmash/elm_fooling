@@ -391,6 +391,16 @@ type WantedAction
     | WantedToSell
 
 
+encodeWantedAction : WantedAction -> Decode.Value
+encodeWantedAction wanted_action =
+    case wanted_action of
+        WantedToBuy ->
+            Encode.string "WantedToBuy"
+
+        WantedToSell ->
+            Encode.string "WantedToSell"
+
+
 type ActionLogType
     = Traded ItemTradeLog
     | WantedButCouldntTrade WantedAction
@@ -398,10 +408,34 @@ type ActionLogType
     | DidNothing
 
 
+encodeActionLogType : ActionLogType -> Decode.Value
+encodeActionLogType action_log_type =
+    case action_log_type of
+        Traded item_trade_log ->
+            Encode.list identity [ Encode.string "Traded", encodeActionLogType action_log_type ]
+
+        WantedButCouldntTrade wanted_action ->
+            Encode.list identity [ Encode.string "WantedButCouldntTrade", encodeWantedAction wanted_action ]
+
+        FetchedItem item_id ->
+            Encode.list identity [ Encode.string "FetchedItem", Encode.string <| UUID.toString item_id ]
+
+        DidNothing ->
+            Encode.list identity [ Encode.string "DidNothing" ]
+
+
 type alias ActionLog =
     { log_type : ActionLogType
     , time : Time.Posix
     }
+
+
+encodeActionLog : ActionLog -> Decode.Value
+encodeActionLog { log_type, time } =
+    Encode.object
+        [ ( "log_type", encodeActionLogType log_type )
+        , ( "time", Encode.int <| Time.posixToMillis time )
+        ]
 
 
 type alias ItemTradeLog =
@@ -411,6 +445,17 @@ type alias ItemTradeLog =
     , from_party : TradeParty
     , to_party : TradeParty
     }
+
+
+encodeTradeLog : ItemTradeLog -> Decode.Value
+encodeTradeLog item_trade_log =
+    Encode.object
+        [ ( "item_id", Encode.string <| UUID.toString item_trade_log.item_id )
+        , ( "quantity", Encode.int <| getQuantity item_trade_log.quantity )
+        , ( "gold_cost", Encode.int item_trade_log.gold_cost )
+        , ( "from_party", encodeTradeParty item_trade_log.from_party )
+        , ( "to_party", encodeTradeParty item_trade_log.to_party )
+        ]
 
 
 type alias TrendTolerance =
@@ -586,6 +631,49 @@ encodeInventoryRecord { item, quantity, avg_price } =
         ]
 
 
+encodeItemSentiments : ItemSentiments -> Decode.Value
+encodeItemSentiments item_sentiments =
+    Encode.dict String.fromInt Encode.float item_sentiments
+
+
+encodeTrendTolerance : TrendTolerance -> Decode.Value
+encodeTrendTolerance trend_tolerance =
+    Encode.object
+        [ ( "buy", encodeItemSentiments trend_tolerance.buy )
+        , ( "sell", encodeItemSentiments trend_tolerance.sell )
+        ]
+
+
+encodeNullable : (value -> Encode.Value) -> Maybe value -> Encode.Value
+encodeNullable valueEncoder maybeValue =
+    case maybeValue of
+        Just value ->
+            valueEncoder value
+
+        Nothing ->
+            Encode.null
+
+
+encodeItemType : ItemType -> Decode.Value
+encodeItemType item_type =
+    Encode.string <|
+        case item_type of
+            Weapon ->
+                "Weapon"
+
+            Armor ->
+                "Armor"
+
+            Spellbook ->
+                "Spellbook"
+
+            Furniture ->
+                "Furniture"
+
+            Food ->
+                "Food"
+
+
 encodeCharacter : Character -> Value
 encodeCharacter character =
     Encode.object
@@ -594,13 +682,11 @@ encodeCharacter character =
         , ( "char_id", Encode.string <| UUID.toString character.char_id )
         , ( "name", Encode.string character.name )
         , ( "party", encodeTradeParty character.party )
-
-        -- , "trend_tolerance", Encode.TrendTolerance
-        -- , "item_types_desired", Encode.ItemSentiments
-        -- , "action_log", Encode.List ActionLog
+        , ( "trend_tolerance", encodeTrendTolerance character.trend_tolerance )
+        , ( "item_types_desired", encodeItemSentiments character.item_types_desired )
+        , ( "action_log", Encode.list encodeActionLog character.action_log )
         , ( "hide_zero_qty_inv_rows", Encode.bool character.hide_zero_qty_inv_rows )
-
-        -- , "displayedItemType", Encode.Maybe ItemType
+        , ( "displayedItemType", encodeNullable encodeItemType character.displayedItemType )
         , ( "held_blood", Encode.int character.held_blood )
         ]
 
@@ -5511,7 +5597,6 @@ suite =
             , test "scaling IncreaseIncome upgrade with level 5" <|
                 \_ ->
                     Expect.equal (setPrice 270) <| scale_increase_income_cost 5
-
             , describe "AutomaticBPtoSP takes bp and converts to bp on a timer" <|
                 let
                     newBattleModel =

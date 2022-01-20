@@ -5546,22 +5546,17 @@ suite =
                                         , withCharacter expectedNewPlayer { newTestModel | battleModel = intendedBattleModel }
                                         )
 
-                                    expectedModel =
-                                        Tuple.second expectedPlayerAndModel
-
-                                    expectedBattleModel =
-                                        expectedModel.battleModel
-
-                                    expectedGolem =
-                                        expectedBattleModel.golem
-
                                     ( resultPlayer, resultModel ) =
                                         upgrader player
                                 in
                                 Expect.equal
                                     (Battle.monsterMap
                                         (.statStamina >> .curVal)
-                                        expectedGolem
+                                        (expectedPlayerAndModel
+                                            |> Tuple.second
+                                            |> .battleModel
+                                            |> .golem
+                                        )
                                     )
                                     (Battle.monsterMap
                                         (.statStamina >> .curVal)

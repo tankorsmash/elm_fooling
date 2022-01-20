@@ -55,6 +55,7 @@ import Html.Attributes exposing (attribute, classList, href, property, src, styl
 import Html.Events
 import Interface as UI exposing (ColorTheme(..))
 import Json.Decode as Decode exposing (Decoder, field)
+import Json.Decode.Extra as DecodeExtra
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as Encode exposing (Value)
 import List.Extra
@@ -193,7 +194,7 @@ decodeTradeParty =
                 unknown ->
                     case String.split "CharacterParty__" unknown of
                         _ :: uuid :: rest ->
-                            case (UUID.fromString uuid) of
+                            case UUID.fromString uuid of
                                 Ok char_id ->
                                     Just <| CharacterParty char_id
 
@@ -795,6 +796,64 @@ decodeCharacterA item_db =
 
 
 
+-- decodeItemSentiments : Decoder (Dict.Dict ItemTypeId Float)
+-- decodeItemSentiments =
+
+
+{-| if any of the first elements in the tuple are nothing, return nothing,
+otherwise, return Just results
+-}
+combineFirst : List ( Maybe a, b ) -> Maybe (List ( a, b ))
+combineFirst list =
+    List.foldr
+        (\( maybeA, b ) maybeAcc ->
+            case ( maybeAcc, maybeA ) of
+                ( Nothing, _ ) ->
+                    Nothing
+
+                ( Just _, Nothing ) ->
+                    Nothing
+
+                ( Just acc, Just a ) ->
+                    Just (( a, b ) :: acc)
+        )
+        (Just [])
+        list
+
+
+decodeTrendTolerance : Decoder TrendTolerance
+decodeTrendTolerance =
+    Decode.map2 TrendTolerance
+        -- buy
+        (Decode.keyValuePairs Decode.float
+            |> Decode.andThen
+                (\pairs ->
+                    pairs
+                        |> List.map (Tuple.mapFirst String.toInt)
+                        |> combineFirst
+                        |> Result.fromMaybe "A Buy ItemSentiment item id isn't an int"
+                        |> DecodeExtra.fromResult
+                        |> Decode.map Dict.fromList
+                )
+        )
+        -- sell
+        (Decode.keyValuePairs Decode.float
+            |> Decode.andThen
+                (\pairs ->
+                    pairs
+                        |> List.map (Tuple.mapFirst String.toInt)
+                        |> combineFirst
+                        |> Result.fromMaybe "A Sell ItemSentiment item id isn't an int"
+                        |> DecodeExtra.fromResult
+                        |> Decode.map Dict.fromList
+                )
+        )
+
+
+
+-- decodeCharacterB : Decoder CharacterPartialB
+-- decodeCharacterB item_db =
+--     Decode.map5 CharacterPartialB
 -- decodeCharacter : Decoder Character
 -- decodeCharacter =
 --     Decode.map (createCharacter (generate_uuid "ASDSD")) Decode.string

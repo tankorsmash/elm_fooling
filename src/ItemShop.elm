@@ -5512,10 +5512,7 @@ suite =
                 \_ ->
                     Expect.equal (setPrice 270) <| scale_increase_income_cost 5
 
-            -- , fuzz (Fuzz.intRange 1 10) "AutomaticBPtoSP takes bp and converts to bp on a timer" <|
             , describe "AutomaticBPtoSP takes bp and converts to bp on a timer" <|
-                --TODO make sure it only gives sp if it needs to
-                -- TODO make sure it only takes bp if it needs to
                 let
                     newBattleModel =
                         Battle.increaseGolemStamina test_model.battleModel -110

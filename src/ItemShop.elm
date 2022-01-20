@@ -952,11 +952,30 @@ decodeCharacterB =
         (field "held_blood" Decode.int)
 
 
+combineCharacterPartials : CharacterPartialA -> CharacterPartialB -> Character
+combineCharacterPartials charPartA charPartB =
+    { -- partial A
+      held_items = charPartA.held_items
+    , held_gold = charPartA.held_gold
+    , char_id = charPartA.char_id
+    , name = charPartA.name
+    , party = charPartA.party
 
--- decodeCharacter : Decoder Character
--- decodeCharacter =
---     Decode.map (createCharacter (generate_uuid "ASDSD")) Decode.string
---
+    -- partial B
+    , trend_tolerance = charPartB.trend_tolerance
+    , item_types_desired = charPartB.item_types_desired
+    , action_log = charPartB.action_log
+    , hide_zero_qty_inv_rows = charPartB.hide_zero_qty_inv_rows
+    , displayedItemType = charPartB.displayedItemType
+    , held_blood = charPartB.held_blood
+    }
+
+
+decodeCharacter : ItemDb -> Decoder Character
+decodeCharacter item_db =
+    Decode.map2 combineCharacterPartials
+        (decodeCharacterA item_db)
+        decodeCharacterB
 
 
 updateItemDbFromTradeRecord : ItemDb -> (ItemDbTradeStats -> Int -> ItemDbTradeStats) -> TradeRecord -> ItemDb

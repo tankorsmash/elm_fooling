@@ -928,10 +928,8 @@ decodeItemSentiments errMsg =
 decodeTrendTolerance : Decoder TrendTolerance
 decodeTrendTolerance =
     Decode.map2 TrendTolerance
-        -- buy
-        (decodeItemSentiments "Buy ItemSentiments has invalid item type id")
-        -- sell
-        (decodeItemSentiments "Sell ItemSentiments has invalid item type id")
+        (field "buy" (decodeItemSentiments "Buy ItemSentiments has invalid item type id"))
+        (field "sell" (decodeItemSentiments "Sell ItemSentiments has invalid item type id"))
 
 
 decodeActionLog : Decoder ActionLog
@@ -5522,7 +5520,49 @@ suite : Test
 suite =
     -- todo "Implement our first test. See https://package.elm-lang.org/packages/elm-explorations/test/latest for how to do this!"
     describe "root test suite"
-        [ describe "Basic math check for changing averages"
+        [ describe "encoders"
+            [ test "basic character encoding/decoding" <|
+                \_ ->
+                    let
+                        inputChar =
+                            createCharacter (generate_uuid "josh") "josh"
+
+                        item_db =
+                            initial_item_db
+
+                        encodedChar : String
+                        encodedChar =
+                            Encode.encode 0 (encodeCharacter inputChar)
+
+                        decodedCharResult : Result Decode.Error Character
+                        decodedCharResult =
+                            Decode.decodeString (decodeCharacter item_db) encodedChar
+                    in
+                    Expect.ok decodedCharResult
+            , test "encoding/decoding item type sentiments" <|
+                \_ ->
+                    let
+                        emptyItemSentiments : ItemSentiments
+                        emptyItemSentiments =
+                            Dict.empty
+
+                        encoded =
+                            Encode.encode 0 (encodeItemSentiments emptyItemSentiments)
+                    in
+                    Expect.ok <| Decode.decodeString (decodeItemSentiments "invalid") encoded
+            , test "encoding/decoding trend tolerance" <|
+                \_ ->
+                    let
+                        emptyTrendTolerance : TrendTolerance
+                        emptyTrendTolerance =
+                            { buy = Dict.empty, sell = Dict.empty }
+
+                        encoded =
+                            Encode.encode 0 (encodeTrendTolerance emptyTrendTolerance)
+                    in
+                    Expect.ok <| Decode.decodeString decodeTrendTolerance encoded
+            ]
+        , describe "Basic math check for changing averages"
             [ test "Adding nothing changes nothing in average" <|
                 \_ ->
                     let

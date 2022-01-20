@@ -54,7 +54,7 @@ import Html
 import Html.Attributes exposing (attribute, classList, href, property, src, style, value)
 import Html.Events
 import Interface as UI exposing (ColorTheme(..))
-import Json.Decode as Decode exposing (Decoder)
+import Json.Decode as Decode exposing (Decoder, field)
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as Encode exposing (Value)
 import List.Extra
@@ -177,6 +177,42 @@ encodeTradeParty trade_party =
 
             CharacterParty char_id ->
                 "CharacterParty__" ++ UUID.toString char_id
+
+
+decodeTradeParty : Decoder TradeParty
+decodeTradeParty =
+    Decode.map
+        (\str ->
+            case str of
+                "ShopParty" ->
+                    Just ShopParty
+
+                "PlayerParty" ->
+                    Just PlayerParty
+
+                unknown ->
+                    case String.split "CharacterParty__" unknown of
+                        _ :: uuid :: rest ->
+                            case (UUID.fromString uuid) of
+                                Ok char_id ->
+                                    Just <| CharacterParty char_id
+
+                                Err _ ->
+                                    Nothing
+
+                        anythingelse ->
+                            Nothing
+        )
+        Decode.string
+        |> Decode.andThen
+            (\maybe_trade_party ->
+                case maybe_trade_party of
+                    Just trade_party ->
+                        Decode.succeed trade_party
+
+                    Nothing ->
+                        Decode.fail "not a valid trade party"
+            )
 
 
 trade_party_to_str : Characters -> TradeParty -> String
@@ -631,6 +667,32 @@ encodeInventoryRecord { item, quantity, avg_price } =
         ]
 
 
+decodeQuantity : Decoder Quantity
+decodeQuantity =
+    Decode.map setQuantity
+        Decode.int
+
+
+decodePrice : Decoder Price
+decodePrice =
+    Decode.map setPrice
+        Decode.int
+
+
+decodeItemFromItemId : ItemDb -> Decoder Item
+decodeItemFromItemId item_db =
+    Decode.map (lookup_item_id_default item_db)
+        UUID.jsonDecoder
+
+
+decodeInventoryRecord : ItemDb -> Decoder InventoryRecord
+decodeInventoryRecord item_db =
+    Decode.map3 InventoryRecord
+        (field "item_id" (decodeItemFromItemId item_db))
+        (field "quantity" decodeQuantity)
+        (field "avg_price" decodePrice)
+
+
 encodeItemSentiments : ItemSentiments -> Decode.Value
 encodeItemSentiments item_sentiments =
     Encode.dict String.fromInt Encode.float item_sentiments
@@ -674,6 +736,37 @@ encodeItemType item_type =
                 "Food"
 
 
+type alias CharacterPartialA =
+    { held_items : InventoryRecords
+    , held_gold : Int
+    , char_id : CharacterId
+    , name : String
+    , party : TradeParty
+
+    -- , trend_tolerance : TrendTolerance
+    -- , item_types_desired : ItemSentiments
+    -- , action_log : List ActionLog
+    -- , hide_zero_qty_inv_rows : Bool
+    -- , displayedItemType : Maybe ItemType
+    -- , held_blood : Int
+    }
+
+
+type alias CharacterPartialB =
+    -- { held_items : InventoryRecords
+    -- , held_gold : Int
+    -- , char_id : CharacterId
+    -- , name : String
+    -- , party : TradeParty
+    { trend_tolerance : TrendTolerance
+    , item_types_desired : ItemSentiments
+    , action_log : List ActionLog
+    , hide_zero_qty_inv_rows : Bool
+    , displayedItemType : Maybe ItemType
+    , held_blood : Int
+    }
+
+
 encodeCharacter : Character -> Value
 encodeCharacter character =
     Encode.object
@@ -689,6 +782,23 @@ encodeCharacter character =
         , ( "displayedItemType", encodeNullable encodeItemType character.displayedItemType )
         , ( "held_blood", Encode.int character.held_blood )
         ]
+
+
+decodeCharacterA : ItemDb -> Decoder CharacterPartialA
+decodeCharacterA item_db =
+    Decode.map5 CharacterPartialA
+        (Decode.field "held_items" (Decode.list (decodeInventoryRecord item_db)))
+        (Decode.field "held_gold" Decode.int)
+        (Decode.field "char_id" UUID.jsonDecoder)
+        (Decode.field "name" Decode.string)
+        (Decode.field "party" decodeTradeParty)
+
+
+
+-- decodeCharacter : Decoder Character
+-- decodeCharacter =
+--     Decode.map (createCharacter (generate_uuid "ASDSD")) Decode.string
+--
 
 
 updateItemDbFromTradeRecord : ItemDb -> (ItemDbTradeStats -> Int -> ItemDbTradeStats) -> TradeRecord -> ItemDb

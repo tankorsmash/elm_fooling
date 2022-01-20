@@ -263,36 +263,40 @@ type SpecialAction
     | IncreaseIncome
 
 
-type Msg
-    = Noop
-    | MouseEnterShopItem ListContext ( CharacterId, Item )
+type UiOptionMsg
+    = MouseEnterShopItem ListContext ( CharacterId, Item )
     | MouseLeaveShopItem ListContext ( CharacterId, Item )
-    | PlayerBuyItemFromShop Item Quantity
-    | PlayerSellItemToShop Item Quantity
-    | StartTrendsHover
-    | EndTrendsHover
-    | TickSecond Time.Posix
-      -- | OnTrendChartHover (List (CI.One TrendSnapshot CI.Dot))
-    | ToggleShowMainChart
-    | OnTrendChartHover (List (CI.One TrendChartDatum CI.Dot))
-    | ToggleShowDebugInventories
-    | KeyPressedMsg KeyEventMsg
-    | KeyReleasedMsg KeyEventMsg
     | StartTooltipHover String
     | EndTooltipHover String
     | GotTooltipSize (Result Browser.Dom.Error Browser.Dom.Element)
-    | OnSpecialAction SpecialAction Price
-    | ToggleHideNonZeroRows CharacterId
-    | ChangeTabType TabType
-    | CycleFilterDisplayedItemsForward CharacterId (Maybe ItemType)
-    | CycleFilterDisplayedItemsBackward CharacterId (Maybe ItemType)
     | ScrollViewport
     | GotViewport Browser.Dom.Viewport
     | GotShowDebugElement (Result Browser.Dom.Error Browser.Dom.Element)
+    | ChangeInventorySortType InventorySortType
+    | StartTrendsHover
+    | EndTrendsHover
+    | CycleFilterDisplayedItemsForward CharacterId (Maybe ItemType)
+    | CycleFilterDisplayedItemsBackward CharacterId (Maybe ItemType)
+    | ToggleHideNonZeroRows CharacterId
+    | ToggleShowMainChart
+      -- | OnTrendChartHover (List (CI.One TrendSnapshot CI.Dot))
+    | OnTrendChartHover (List (CI.One TrendChartDatum CI.Dot))
+    | ToggleShowDebugInventories
+
+
+type Msg
+    = Noop
+    | PlayerBuyItemFromShop Item Quantity
+    | PlayerSellItemToShop Item Quantity
+    | TickSecond Time.Posix
+    | KeyPressedMsg KeyEventMsg
+    | KeyReleasedMsg KeyEventMsg
+    | OnSpecialAction SpecialAction Price
+    | ChangeTabType TabType
     | SacrificeItem Item
     | ToggleColorTheme
     | GotBattleMsg Battle.Msg
-    | ChangeInventorySortType InventorySortType
+    | GotUiOptionsMsg UiOptionMsg
 
 
 type alias TradeOrder =
@@ -1096,35 +1100,40 @@ type InventorySortType
     | SortByItemDesc
 
 
+type alias UiOptions =
+    { shiftIsPressed : Bool
+    , hovered_trend_chart : List (CI.One TrendChartDatum CI.Dot)
+    , show_main_chart : Bool
+    , hovered_tooltip : HoveredTooltip
+    , cached_tooltip_offsets : Dict.Dict String TooltipData
+    , globalViewport : Maybe Browser.Dom.Viewport
+    , showDebugInventoriesElement : Maybe Browser.Dom.Element
+    , shouldDisplayShowDebugInventoriesOverlay : Bool
+    , inventorySortType : InventorySortType
+    , inventorySortDir : SortDirection
+    , shop_trends_hovered : Bool
+    , hovered_item_in_character : Maybe ( CharacterId, Item )
+    , show_debug_inventories : Bool
+    , show_charts_in_hovered_item : Bool
+    }
+
+
 type alias Model =
     { colorTheme : UI.ColorTheme
     , player_upgrades : List PlayerUpgrade
     , shop_id : CharacterId
     , characters : Characters
-    , hovered_item_in_character : Maybe ( CharacterId, Item )
     , shop_trends : ShopTrends
     , historical_shop_trends : List ShopTrends
     , historical_player_actions : List PlayerActionLog
-    , shop_trends_hovered : Bool
     , item_db : ItemDb
-    , show_main_chart : Bool
-    , hovered_trend_chart : List (CI.One TrendChartDatum CI.Dot)
     , ai_tick_time : Time.Posix --used to seed the ai randomness
-    , show_debug_inventories : Bool
-    , show_charts_in_hovered_item : Bool
-    , shiftIsPressed : Bool
-    , hovered_tooltip : HoveredTooltip
-    , cached_tooltip_offsets : Dict.Dict String TooltipData
     , global_seed : Random.Seed --used to seed anything; will be constantly changed throughout the app
     , ai_updates_paused : Bool
     , tab_type : TabType
-    , globalViewport : Maybe Browser.Dom.Viewport
-    , showDebugInventoriesElement : Maybe Browser.Dom.Element
-    , shouldDisplayShowDebugInventoriesOverlay : Bool
     , battleModel : Battle.Model
     , browserNavKey : Maybe Nav.Key
-    , inventorySortType : InventorySortType
-    , inventorySortDir : SortDirection
+    , uiOptions : UiOptions
     }
 
 
@@ -1691,26 +1700,35 @@ init hash key =
         battleModel =
             Battle.init (getInnerPlayer player)
 
+        initUiOptions : UiOptions
+        initUiOptions =
+            { shiftIsPressed = False
+            , hovered_trend_chart = []
+            , show_main_chart = True
+            , hovered_tooltip = NoHoveredTooltip
+            , cached_tooltip_offsets = Dict.empty
+            , globalViewport = Nothing
+            , showDebugInventoriesElement = Nothing
+            , shouldDisplayShowDebugInventoriesOverlay = False
+            , inventorySortType = SortByName
+            , inventorySortDir = Ascending
+            , show_debug_inventories = True
+            , hovered_item_in_character = Nothing
+            , shop_trends_hovered = False
+            , show_charts_in_hovered_item = False
+            }
+
         initModel : Model
         initModel =
             { colorTheme = BrightTheme
             , player_upgrades = [ AutomaticGPM 1, AutomaticBPtoSP 1 ]
             , shop_id = .char_id (getInnerShop shop)
             , characters = characters
-            , hovered_item_in_character = Nothing
             , shop_trends = initial_shop_trends
             , item_db = item_db
             , historical_shop_trends = []
             , historical_player_actions = [ WelcomeMessageActionLog ]
-            , shop_trends_hovered = False
             , ai_tick_time = Time.millisToPosix -1
-            , show_main_chart = True
-            , hovered_trend_chart = []
-            , show_debug_inventories = True
-            , show_charts_in_hovered_item = False
-            , shiftIsPressed = False
-            , hovered_tooltip = NoHoveredTooltip
-            , cached_tooltip_offsets = Dict.empty
             , global_seed = Random.initialSeed 4
             , ai_updates_paused =
                 if initial_tab_type == ShopTabType || initial_tab_type == BattleTabType then
@@ -1719,13 +1737,9 @@ init hash key =
                 else
                     True
             , tab_type = initial_tab_type
-            , globalViewport = Nothing
-            , showDebugInventoriesElement = Nothing
-            , shouldDisplayShowDebugInventoriesOverlay = False
             , battleModel = battleModel
             , browserNavKey = key
-            , inventorySortType = SortByName
-            , inventorySortDir = Ascending
+            , uiOptions = initUiOptions
             }
     in
     ( initModel
@@ -2170,136 +2184,43 @@ transferFromBattleModel model newBattleModel =
     { newModel | characters = newCharacters }
 
 
-update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
-    case msg of
-        Noop ->
+updateUiOptions : UiOptionMsg -> Model -> ( Model, Cmd Msg )
+updateUiOptions uiOptMsg model =
+    let
+        noop =
             ( model, Cmd.none )
 
+        updateUiOption updater m =
+            { m | uiOptions = updater m.uiOptions }
+    in
+    case uiOptMsg of
         MouseEnterShopItem context item ->
-            ( { model | hovered_item_in_character = Just item }, Cmd.none )
+            -- ( { model | hovered_item_in_character = Just item }, Cmd.none )
+            ( updateUiOption (\uio -> { uio | hovered_item_in_character = Just item }) model
+            , Cmd.none
+            )
 
         MouseLeaveShopItem context item ->
-            ( { model | hovered_item_in_character = Nothing }, Cmd.none )
-
-        PlayerBuyItemFromShop item qty ->
-            case ( getShop model.characters, getPlayer model.characters ) of
-                ( Shop shop, Player player ) ->
-                    let
-                        -- ( new_shop_trends, new_shop, new_player ) =
-                        trade_record =
-                            sell_items_from_party_to_other
-                                { shop_trends = model.shop_trends
-                                , from_party = shop
-                                , to_party = player
-                                }
-                                { item = item, qty = qty }
-
-                        new_trade_context =
-                            getTradeContext trade_record
-
-                        new_item_db =
-                            updateItemDbFromTradeRecord model.item_db updateTimesYouBought trade_record
-                    in
-                    ( { model
-                        | shop_trends = new_trade_context.shop_trends
-                        , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
-                        , item_db = new_item_db
-                      }
-                        --it doesn't matter who was what party, they're still getting updated
-                        |> withCharacter new_trade_context.to_party
-                        |> withCharacter new_trade_context.from_party
-                    , Cmd.none
-                    )
-
-        PlayerSellItemToShop item qty ->
-            case ( getShop model.characters, getPlayer model.characters ) of
-                ( Shop shop, Player player ) ->
-                    let
-                        trade_order =
-                            { item = item, qty = qty }
-
-                        orig_trade_context =
-                            { shop_trends = model.shop_trends
-                            , from_party = player
-                            , to_party = shop
-                            }
-
-                        trade_record =
-                            sell_items_from_party_to_other
-                                orig_trade_context
-                                trade_order
-
-                        new_trade_context =
-                            getTradeContext trade_record
-
-                        new_item_db =
-                            updateItemDbFromTradeRecord model.item_db updateTimesYouSold trade_record
-                    in
-                    ( { model
-                        | shop_trends = new_trade_context.shop_trends
-                        , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
-                        , item_db = new_item_db
-                      }
-                        |> withCharacter new_trade_context.from_party
-                        |> withCharacter new_trade_context.to_party
-                    , Cmd.none
-                    )
-
-        StartTrendsHover ->
-            ( { model | shop_trends_hovered = True }, Cmd.none )
-
-        EndTrendsHover ->
-            ( { model | shop_trends_hovered = False }, Cmd.none )
-
-        TickSecond time ->
-            if not model.ai_updates_paused then
-                ( { model | ai_tick_time = time }
-                    |> update_player
-                    |> update_ai_chars
-                , Cmd.none
-                )
-
-            else
-                ( model, Cmd.none )
-
-        ToggleShowMainChart ->
-            ( { model | show_main_chart = not model.show_main_chart }, Cmd.none )
-
-        OnTrendChartHover hovered ->
-            ( { model | hovered_trend_chart = hovered }, Cmd.none )
-
-        ToggleShowDebugInventories ->
-            ( { model | show_debug_inventories = not model.show_debug_inventories }, Cmd.none )
-
-        KeyPressedMsg key_event_msg ->
-            case key_event_msg of
-                KeyEventShift ->
-                    ( { model | show_charts_in_hovered_item = True, shiftIsPressed = True }, Cmd.none )
-
-                _ ->
-                    ( model, Cmd.none )
-
-        KeyReleasedMsg key_event_msg ->
-            case key_event_msg of
-                KeyEventShift ->
-                    ( { model | show_charts_in_hovered_item = False, shiftIsPressed = False }, Cmd.none )
-
-                _ ->
-                    ( model, Cmd.none )
+            ( updateUiOption (\uio -> { uio | hovered_item_in_character = Nothing }) model
+            , Cmd.none
+            )
 
         StartTooltipHover tooltip_id ->
-            ( { model
-                | hovered_tooltip =
-                    Dict.get tooltip_id model.cached_tooltip_offsets
-                        |> Maybe.withDefault { offset_x = 0, offset_y = 0, hovered_tooltip_id = tooltip_id }
-                        |> HoveredTooltipWithoutOffset
-              }
-            , Task.attempt GotTooltipSize (Browser.Dom.getElement ("tooltip__" ++ tooltip_id))
+            ( updateUiOption
+                (\uio ->
+                    { uio
+                        | hovered_tooltip =
+                            Dict.get tooltip_id uio.cached_tooltip_offsets
+                                |> Maybe.withDefault { offset_x = 0, offset_y = 0, hovered_tooltip_id = tooltip_id }
+                                |> HoveredTooltipWithoutOffset
+                    }
+                )
+                model
+            , Task.attempt (GotUiOptionsMsg << GotTooltipSize) (Browser.Dom.getElement ("tooltip__" ++ tooltip_id))
             )
 
         EndTooltipHover tooltip_id ->
-            ( { model | hovered_tooltip = NoHoveredTooltip }, Cmd.none )
+            ( updateUiOption (\uio -> { uio | hovered_tooltip = NoHoveredTooltip }) model, Cmd.none )
 
         GotTooltipSize tooltip_size_result ->
             case tooltip_size_result of
@@ -2338,7 +2259,7 @@ update msg model =
                                 else
                                     floor <| 0
                     in
-                    case model.hovered_tooltip of
+                    case model.uiOptions.hovered_tooltip of
                         NoHoveredTooltip ->
                             ( model, Cmd.none )
 
@@ -2351,10 +2272,14 @@ update msg model =
                                     , hovered_tooltip_id = old_tooltip_data.hovered_tooltip_id
                                     }
                             in
-                            ( { model
-                                | cached_tooltip_offsets = Dict.insert old_tooltip_data.hovered_tooltip_id new_tooltip_data model.cached_tooltip_offsets
-                                , hovered_tooltip = HoveredTooltipWithOffset new_tooltip_data
-                              }
+                            ( updateUiOption
+                                (\uio ->
+                                    { uio
+                                        | cached_tooltip_offsets = Dict.insert old_tooltip_data.hovered_tooltip_id new_tooltip_data uio.cached_tooltip_offsets
+                                        , hovered_tooltip = HoveredTooltipWithOffset new_tooltip_data
+                                    }
+                                )
+                                model
                             , Cmd.none
                             )
 
@@ -2366,15 +2291,30 @@ update msg model =
                                         , offset_y = offset_y
                                     }
                             in
-                            ( { model | hovered_tooltip = HoveredTooltipWithOffset new_tooltip_data }
+                            ( updateUiOption (\uio -> { uio | hovered_tooltip = HoveredTooltipWithOffset new_tooltip_data }) model
                             , Cmd.none
                             )
 
-                Err error ->
-                    ( model, Cmd.none )
+                Err _ ->
+                    noop
 
-        OnSpecialAction special_action price ->
-            update_special_action special_action price model
+        StartTrendsHover ->
+            ( updateUiOption (\uio -> { uio | shop_trends_hovered = True }) model, Cmd.none )
+
+        EndTrendsHover ->
+            ( updateUiOption (\uio -> { uio | shop_trends_hovered = False }) model, Cmd.none )
+
+        ToggleShowMainChart ->
+            ( updateUiOption (\uio -> { uio | show_main_chart = not uio.show_main_chart }) model, Cmd.none )
+
+        OnTrendChartHover hovered ->
+            ( updateUiOption (\uio -> { uio | hovered_trend_chart = hovered }) model, Cmd.none )
+
+        ToggleShowDebugInventories ->
+            ( updateUiOption (\uio -> { uio | show_debug_inventories = not uio.show_debug_inventories }) model, Cmd.none )
+
+        ChangeInventorySortType inventorySortType ->
+            ( updateUiOption (\uio -> { uio | inventorySortType = inventorySortType }) model, Cmd.none )
 
         ToggleHideNonZeroRows char_id ->
             let
@@ -2393,18 +2333,6 @@ update msg model =
                         model.characters
             in
             ( { model | characters = new_characters }, Cmd.none )
-
-        ChangeTabType tab_type ->
-            ( { model | tab_type = tab_type }
-            , case model.browserNavKey of
-                Just key ->
-                    Nav.pushUrl
-                        key
-                        ("#" ++ tabTypeToString tab_type)
-
-                Nothing ->
-                    Cmd.none
-            )
 
         CycleFilterDisplayedItemsForward character_id mb_item_type ->
             let
@@ -2470,38 +2398,169 @@ update msg model =
                     ( model, Cmd.none )
 
         ScrollViewport ->
-            ( model, Task.perform GotViewport Browser.Dom.getViewport )
+            ( model, Task.perform (GotUiOptionsMsg << GotViewport) Browser.Dom.getViewport )
 
         GotViewport viewport ->
-            ( { model | globalViewport = Just viewport }
-            , Task.attempt GotShowDebugElement
+            ( updateUiOption (\uio -> { uio | globalViewport = Just viewport }) model
+            , Task.attempt (GotUiOptionsMsg << GotShowDebugElement)
                 (Browser.Dom.getElement "show_debug_inventories")
             )
 
         GotShowDebugElement attemptedElement ->
-            let
-                ( modelElement, shouldDisplayShowDebugInventoriesOverlay ) =
-                    case attemptedElement of
-                        Ok element ->
-                            let
-                                shouldDisplay =
-                                    model.globalViewport
-                                        |> Maybe.map
-                                            (\gvp -> isElementOnScreen gvp element)
-                                        |> Maybe.withDefault False
-                            in
-                            ( Just element, shouldDisplay )
+            ( updateUiOption
+                (\uio ->
+                    let
+                        ( modelElement, shouldDisplayShowDebugInventoriesOverlay ) =
+                            case attemptedElement of
+                                Ok element ->
+                                    let
+                                        shouldDisplay =
+                                            model.uiOptions.globalViewport
+                                                |> Maybe.map
+                                                    (\gvp -> isElementOnScreen gvp element)
+                                                |> Maybe.withDefault False
+                                    in
+                                    ( Just element, shouldDisplay )
 
-                        Err _ ->
-                            ( Nothing, False )
-            in
-            ( { model
-                | showDebugInventoriesElement =
-                    modelElement
-                , shouldDisplayShowDebugInventoriesOverlay =
-                    shouldDisplayShowDebugInventoriesOverlay
-              }
+                                Err _ ->
+                                    ( Nothing, False )
+                    in
+                    { uio
+                        | showDebugInventoriesElement =
+                            modelElement
+                        , shouldDisplayShowDebugInventoriesOverlay =
+                            shouldDisplayShowDebugInventoriesOverlay
+                    }
+                )
+                model
             , Cmd.none
+            )
+
+
+update : Msg -> Model -> ( Model, Cmd Msg )
+update msg model =
+    case msg of
+        Noop ->
+            ( model, Cmd.none )
+
+        PlayerBuyItemFromShop item qty ->
+            case ( getShop model.characters, getPlayer model.characters ) of
+                ( Shop shop, Player player ) ->
+                    let
+                        -- ( new_shop_trends, new_shop, new_player ) =
+                        trade_record =
+                            sell_items_from_party_to_other
+                                { shop_trends = model.shop_trends
+                                , from_party = shop
+                                , to_party = player
+                                }
+                                { item = item, qty = qty }
+
+                        new_trade_context =
+                            getTradeContext trade_record
+
+                        new_item_db =
+                            updateItemDbFromTradeRecord model.item_db updateTimesYouBought trade_record
+                    in
+                    ( { model
+                        | shop_trends = new_trade_context.shop_trends
+                        , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
+                        , item_db = new_item_db
+                      }
+                        --it doesn't matter who was what party, they're still getting updated
+                        |> withCharacter new_trade_context.to_party
+                        |> withCharacter new_trade_context.from_party
+                    , Cmd.none
+                    )
+
+        PlayerSellItemToShop item qty ->
+            case ( getShop model.characters, getPlayer model.characters ) of
+                ( Shop shop, Player player ) ->
+                    let
+                        trade_order =
+                            { item = item, qty = qty }
+
+                        orig_trade_context =
+                            { shop_trends = model.shop_trends
+                            , from_party = player
+                            , to_party = shop
+                            }
+
+                        trade_record =
+                            sell_items_from_party_to_other
+                                orig_trade_context
+                                trade_order
+
+                        new_trade_context =
+                            getTradeContext trade_record
+
+                        new_item_db =
+                            updateItemDbFromTradeRecord model.item_db updateTimesYouSold trade_record
+                    in
+                    ( { model
+                        | shop_trends = new_trade_context.shop_trends
+                        , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
+                        , item_db = new_item_db
+                      }
+                        |> withCharacter new_trade_context.from_party
+                        |> withCharacter new_trade_context.to_party
+                    , Cmd.none
+                    )
+
+        TickSecond time ->
+            if not model.ai_updates_paused then
+                ( { model | ai_tick_time = time }
+                    |> update_player
+                    |> update_ai_chars
+                , Cmd.none
+                )
+
+            else
+                ( model, Cmd.none )
+
+        KeyPressedMsg key_event_msg ->
+            case key_event_msg of
+                KeyEventShift ->
+                    let
+                        { uiOptions } =
+                            model
+
+                        newUiOptions =
+                            { uiOptions | show_charts_in_hovered_item = True, shiftIsPressed = True }
+                    in
+                    ( { model | uiOptions = newUiOptions }, Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        KeyReleasedMsg key_event_msg ->
+            case key_event_msg of
+                KeyEventShift ->
+                    let
+                        { uiOptions } =
+                            model
+
+                        newUiOptions =
+                            { uiOptions | show_charts_in_hovered_item = False, shiftIsPressed = False }
+                    in
+                    ( { model | uiOptions = newUiOptions }, Cmd.none )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        OnSpecialAction special_action price ->
+            update_special_action special_action price model
+
+        ChangeTabType tab_type ->
+            ( { model | tab_type = tab_type }
+            , case model.browserNavKey of
+                Just key ->
+                    Nav.pushUrl
+                        key
+                        ("#" ++ tabTypeToString tab_type)
+
+                Nothing ->
+                    Cmd.none
             )
 
         SacrificeItem item ->
@@ -2564,8 +2623,8 @@ update msg model =
             in
             ( newModel, newCmds )
 
-        ChangeInventorySortType inventorySortType ->
-            ( { model | inventorySortType = inventorySortType }, Cmd.none )
+        GotUiOptionsMsg uiOptMsg ->
+            updateUiOptions uiOptMsg model
 
 
 
@@ -3929,8 +3988,8 @@ trends_display colorTheme shiftIsPressed item_db shop_trends ((Characters { play
     column
         ([ width fill ]
             ++ (if has_trades then
-                    [ Events.onMouseEnter <| StartTrendsHover
-                    , Events.onMouseLeave <| EndTrendsHover
+                    [ Events.onMouseEnter <| GotUiOptionsMsg StartTrendsHover
+                    , Events.onMouseLeave <| GotUiOptionsMsg EndTrendsHover
                     ]
 
                 else
@@ -4049,9 +4108,10 @@ render_inventory_grid model header character shop_trends hovered_item context co
         is_player_context =
             context == InventoryItems
 
-        { historical_shop_trends, item_db, show_charts_in_hovered_item } =
+        { historical_shop_trends, item_db} =
             model
 
+        {show_charts_in_hovered_item} = model.uiOptions
         buildCompare : (a -> comparable) -> (a -> a -> Order)
         buildCompare getter =
             \left right ->
@@ -4059,7 +4119,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
 
         sortFunc : InventoryRecord -> InventoryRecord -> Order
         sortFunc =
-            case model.inventorySortType of
+            case model.uiOptions.inventorySortType of
                 SortByName ->
                     buildCompare (.item >> .name)
 
@@ -4172,7 +4232,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
         rendered_inventory_controls =
             [ row [ spacingXY 10 0 ]
                 [ UI.primary_button []
-                    (ToggleHideNonZeroRows character.char_id)
+                    (GotUiOptionsMsg <| ToggleHideNonZeroRows character.char_id)
                     (if hide_zero_qty_inv_rows then
                         "Show Nonzero"
 
@@ -4181,10 +4241,10 @@ render_inventory_grid model header character shop_trends hovered_item context co
                     )
                 , UI.secondary_button
                     [ Html.Events.preventDefaultOn "contextmenu"
-                        (Decode.succeed <| ( CycleFilterDisplayedItemsBackward character.char_id character.displayedItemType, True ))
+                        (Decode.succeed <| ( GotUiOptionsMsg <| CycleFilterDisplayedItemsBackward character.char_id character.displayedItemType, True ))
                         |> Element.htmlAttribute
                     ]
-                    (CycleFilterDisplayedItemsForward character.char_id character.displayedItemType)
+                    (GotUiOptionsMsg <| CycleFilterDisplayedItemsForward character.char_id character.displayedItemType)
                   <|
                     "Filter: "
                         ++ (case character.displayedItemType of
@@ -4281,8 +4341,8 @@ render_inventory_grid model header character shop_trends hovered_item context co
 
         mouse_hover_attrs : Item -> List (Element.Attribute Msg)
         mouse_hover_attrs item =
-            [ Events.onMouseEnter <| MouseEnterShopItem context ( char_id, item )
-            , Events.onMouseLeave <| MouseLeaveShopItem context ( char_id, item )
+            [ Events.onMouseEnter <| GotUiOptionsMsg <| MouseEnterShopItem context ( char_id, item )
+            , Events.onMouseLeave <| GotUiOptionsMsg <| MouseLeaveShopItem context ( char_id, item )
 
             -- , Element.below (expanded_display item)
             ]
@@ -4290,7 +4350,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
         small_header str sortType =
             el
                 [ Font.size 10
-                , Events.onClick (ChangeInventorySortType sortType)
+                , Events.onClick (GotUiOptionsMsg <| ChangeInventorySortType sortType)
                 , UI.noUserSelect
                 , Border.rounded 2
                 , Element.mouseOver [ Background.color UI.color_very_light_grey ]
@@ -4300,8 +4360,8 @@ render_inventory_grid model header character shop_trends hovered_item context co
             <|
                 text
                     (str
-                        ++ (if model.inventorySortType == sortType then
-                                case model.inventorySortDir of
+                        ++ (if model.uiOptions.inventorySortType == sortType then
+                                case model.uiOptions.inventorySortDir of
                                     Descending ->
                                         "▲"
 
@@ -4600,8 +4660,8 @@ small_charts_display historical_shop_trends item_type =
             [ CA.height chart_height
             , CA.width chart_width
             , CA.padding { top = 10, bottom = 5, left = 10, right = 10 }
-            , CE.onMouseMove OnTrendChartHover (CE.getNearest CI.dots)
-            , CE.onMouseLeave (OnTrendChartHover [])
+            , CE.onMouseMove (GotUiOptionsMsg << OnTrendChartHover) (CE.getNearest CI.dots)
+            , CE.onMouseLeave ((GotUiOptionsMsg << OnTrendChartHover) [])
             , CA.domain
                 [ CA.lowest 0.5 CA.orLower
                 , CA.highest 1.5 CA.orHigher
@@ -4742,8 +4802,8 @@ charts_display historical_shop_trends hovered_trend_chart =
             [ CA.height chart_height
             , CA.width chart_width
             , CA.padding { top = 10, bottom = 5, left = 10, right = 10 }
-            , CE.onMouseMove OnTrendChartHover (CE.getNearest CI.dots)
-            , CE.onMouseLeave (OnTrendChartHover [])
+            , CE.onMouseMove (GotUiOptionsMsg << OnTrendChartHover) (CE.getNearest CI.dots)
+            , CE.onMouseLeave ((GotUiOptionsMsg << OnTrendChartHover) [])
             , CA.domain
                 [ CA.lowest 0.5 CA.orLower
                 , CA.highest 1.5 CA.orHigher
@@ -4907,7 +4967,7 @@ showHideDebugInventoriesButton attrs show_debug_inventories =
                 "Show Debug"
     in
     UI.danger_button (UI.defineHtmlId "show_debug_inventories" :: attrs)
-        ToggleShowDebugInventories
+        (GotUiOptionsMsg ToggleShowDebugInventories)
         buttonText
 
 
@@ -4970,7 +5030,7 @@ view_shop_tab_type model =
                                 (character.name ++ "'s Inventory")
                                 character
                                 model.shop_trends
-                                model.hovered_item_in_character
+                                model.uiOptions.hovered_item_in_character
                                 CharacterItems
                                 (always Element.none)
                             )
@@ -5016,8 +5076,8 @@ view_shop_tab_type model =
                     , label =
                         UI.secondary_button [] (ChangeTabType ItemsUnlockedTabType) "View Items"
                     }
-                , UI.outline_button [] ToggleShowMainChart <|
-                    if model.show_main_chart then
+                , UI.outline_button [] (GotUiOptionsMsg ToggleShowMainChart) <|
+                    if model.uiOptions.show_main_chart then
                         "Hide Charts"
 
                     else
@@ -5030,8 +5090,8 @@ view_shop_tab_type model =
                         DarkTheme ->
                             "Brighten"
                 ]
-            , if model.show_main_chart then
-                Element.el [ paddingXY 0 10, width fill ] <| charts_display model.historical_shop_trends model.hovered_trend_chart
+            , if model.uiOptions.show_main_chart then
+                Element.el [ paddingXY 0 10, width fill ] <| charts_display model.historical_shop_trends model.uiOptions.hovered_trend_chart
 
               else
                 Element.none
@@ -5042,21 +5102,21 @@ view_shop_tab_type model =
                 ]
             , case getPlayer model.characters of
                 Player player ->
-                    special_actions_display model.colorTheme model.player_upgrades model.hovered_tooltip player model.ai_updates_paused
+                    special_actions_display model.colorTheme model.player_upgrades model.uiOptions.hovered_tooltip player model.ai_updates_paused
             , trends_display
                 model.colorTheme
-                model.shiftIsPressed
+                model.uiOptions.shiftIsPressed
                 model.item_db
                 model.shop_trends
                 model.characters
-                model.shop_trends_hovered
+                model.uiOptions.shop_trends_hovered
             , Element.el [ paddingXY 0 0, width fill ] <|
                 render_inventory_grid
                     model
                     "Items For Sale"
                     shopChar
                     model.shop_trends
-                    model.hovered_item_in_character
+                    model.uiOptions.hovered_item_in_character
                     ShopItems
                     (shopInventoryControls (getPlayer model.characters) model.shop_trends)
             , Element.el [ paddingXY 0 10, width fill ] <|
@@ -5065,13 +5125,13 @@ view_shop_tab_type model =
                     "Items In Inventory"
                     playerChar
                     model.shop_trends
-                    model.hovered_item_in_character
+                    model.uiOptions.hovered_item_in_character
                     InventoryItems
-                    (playerInventoryControls ( model.shiftIsPressed, model.shop_trends ))
+                    (playerInventoryControls ( model.uiOptions.shiftIsPressed, model.shop_trends ))
             ]
                 ++ [ column [ width fill ] <|
-                        showHideDebugInventoriesButton [] model.show_debug_inventories
-                            :: (if model.show_debug_inventories then
+                        showHideDebugInventoriesButton [] model.uiOptions.show_debug_inventories
+                            :: (if model.uiOptions.show_debug_inventories then
                                     debug_inventories
 
                                 else
@@ -5164,9 +5224,9 @@ viewOverlay model =
                 , UI.pointerEventsNone
                 , padding 1
                 , Element.inFront <|
-                    if model.shouldDisplayShowDebugInventoriesOverlay then
+                    if model.uiOptions.shouldDisplayShowDebugInventoriesOverlay then
                         el [ width fill, padding 10 ] <|
-                            showHideDebugInventoriesButton [ width fill ] model.show_debug_inventories
+                            showHideDebugInventoriesButton [ width fill ] model.uiOptions.show_debug_inventories
 
                     else
                         Element.none
@@ -5245,8 +5305,8 @@ view model =
         }
         [ Element.htmlAttribute <| Html.Attributes.id "itemshop"
         , Element.inFront <| viewOverlay model
-        , Element.htmlAttribute <| Html.Events.on "wheel" (Decode.succeed ScrollViewport)
-        , Element.htmlAttribute <| Html.Events.on "scroll" (Decode.succeed ScrollViewport)
+        , Element.htmlAttribute <| Html.Events.on "wheel" (Decode.succeed (GotUiOptionsMsg ScrollViewport))
+        , Element.htmlAttribute <| Html.Events.on "scroll" (Decode.succeed (GotUiOptionsMsg ScrollViewport))
         , width fill
         , padding 20
         , defaultBackgroundColor model.colorTheme
@@ -5358,8 +5418,8 @@ primary_button_tooltip colorTheme custom_attrs on_press label { tooltip_id, tool
                 []
     in
     UI.primary_button
-        ([ Events.onMouseLeave <| EndTooltipHover tooltip_id
-         , Events.onMouseEnter <| StartTooltipHover tooltip_id
+        ([ Events.onMouseLeave <| GotUiOptionsMsg <| EndTooltipHover tooltip_id
+         , Events.onMouseEnter <| GotUiOptionsMsg <| StartTooltipHover tooltip_id
          ]
             ++ tooltip_attr
             ++ custom_attrs

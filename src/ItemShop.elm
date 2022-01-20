@@ -5639,6 +5639,33 @@ suite =
                             Encode.encode 0 (encodeTrendTolerance emptyTrendTolerance)
                     in
                     Expect.ok <| Decode.decodeString decodeTrendTolerance encoded
+            , describe "item db encoding/decoding"
+                [ test "item db basic encoding"
+                    (\_ ->
+                        let
+                            item_db =
+                                initial_item_db
+                        in
+                        Expect.ok
+                            (Encode.encode 0 (encodeItemDb item_db)
+                                |> Decode.decodeString (decodeItemDb initial_item_db)
+                            )
+                    )
+                , test "item db test empty, make sure its not adding anything"
+                    (\_ ->
+                        let
+                            item_db =
+                                Dict.empty
+
+                            decodedItemDb =
+                                item_db
+                                    |> (\idb -> Encode.encode 0 (encodeItemDb idb))
+                                    |> Decode.decodeString (decodeItemDb initial_item_db)
+                                    |> Result.withDefault initial_item_db
+                        in
+                        Expect.equal 0 (Dict.size decodedItemDb)
+                    )
+                ]
             ]
         , describe "Basic math check for changing averages"
             [ test "Adding nothing changes nothing in average" <|

@@ -720,12 +720,20 @@ updateTradeStats item_db_record new_trade_stats =
 
 
 encodeItemDbTradeStats : ItemDbTradeStats -> Decode.Value
-encodeItemDbTradeStats {times_you_sold, times_you_bought, times_others_traded} =
+encodeItemDbTradeStats { times_you_sold, times_you_bought, times_others_traded } =
     Encode.object
-        [ ( "times_you_sold", Encode.int times_you_sold)
-        , ( "times_you_bought", Encode.int times_you_bought)
-        , ( "times_others_traded", Encode.int times_others_traded)
+        [ ( "times_you_sold", Encode.int times_you_sold )
+        , ( "times_you_bought", Encode.int times_you_bought )
+        , ( "times_others_traded", Encode.int times_others_traded )
         ]
+
+
+decodeItemDbTradeStats : Decoder ItemDbTradeStats
+decodeItemDbTradeStats =
+    Decode.map3 ItemDbTradeStats
+        (field "times_you_sold" Decode.int)
+        (field "times_you_bought" Decode.int)
+        (field "times_others_traded" Decode.int)
 
 
 type alias ItemDb =
@@ -746,9 +754,27 @@ encodeItemDbRecord { item, is_unlocked, trade_stats } =
         ]
 
 
+{-| takes a default itemdb to fill the item with, and then it adds the actual data i guess
+-}
+decodeItemDbRecord : ItemDb -> Decoder ItemDbRecord
+decodeItemDbRecord item_db =
+    Decode.map3 ItemDbRecord
+        (field "item_id"
+            (Decode.map (lookup_item_id_default item_db) UUID.jsonDecoder)
+        )
+        (field "is_unlocked" Decode.bool)
+        (field "trade_stats" decodeItemDbTradeStats)
+
+
 encodeItemDb : ItemDb -> Decode.Value
 encodeItemDb item_db =
     Encode.dict identity encodeItemDbRecord item_db
+
+
+decodeItemDb : ItemDb -> Decoder ItemDb
+decodeItemDb initial_item_db_ =
+    Decode.map Dict.fromList <|
+        Decode.keyValuePairs (decodeItemDbRecord initial_item_db_)
 
 
 encodeInventoryRecord : InventoryRecord -> Decode.Value

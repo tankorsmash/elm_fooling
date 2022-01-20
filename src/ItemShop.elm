@@ -5521,24 +5521,48 @@ suite =
     -- todo "Implement our first test. See https://package.elm-lang.org/packages/elm-explorations/test/latest for how to do this!"
     describe "root test suite"
         [ describe "encoders"
-            [ test "basic character encoding/decoding" <|
-                \_ ->
-                    let
-                        inputChar =
-                            createCharacter (generate_uuid "josh") "josh"
+            [ describe "basic character encoding/decoding" <|
+                let
+                    inputChar : Character
+                    inputChar =
+                        createCharacter (generate_uuid "josh") "josh"
+                            |> (\c -> { c | name = "mike" })
+                            |> (\c ->
+                                    { c
+                                        | held_items =
+                                            [ { item =
+                                                    lookup_item_id_str_default item_db
+                                                        "6b7e301d-ab12-5e81-acfc-547e63004ffa"
+                                              , quantity = setQuantity 8
+                                              , avg_price = setPrice 20
+                                              }
+                                            ]
+                                    }
+                               )
 
-                        item_db =
-                            initial_item_db
+                    item_db =
+                        initial_item_db
 
-                        encodedChar : String
-                        encodedChar =
-                            Encode.encode 0 (encodeCharacter inputChar)
+                    encodedChar : String
+                    encodedChar =
+                        Encode.encode 0 (encodeCharacter inputChar)
 
-                        decodedCharResult : Result Decode.Error Character
-                        decodedCharResult =
-                            Decode.decodeString (decodeCharacter item_db) encodedChar
-                    in
-                    Expect.ok decodedCharResult
+                    decodedCharResult : Result Decode.Error Character
+                    decodedCharResult =
+                        Decode.decodeString (decodeCharacter item_db) encodedChar
+                in
+                [ test "decode successfully"
+                    (\_ -> Expect.ok decodedCharResult)
+                , test "make sure they're the same thing"
+                    (\_ ->
+                        case decodedCharResult of
+                            Err _ ->
+                                Expect.fail "didnt decode right"
+
+                            Ok decodedChar ->
+                                Expect.equal inputChar decodedChar
+                    )
+                ]
             , test "encoding/decoding item type sentiments" <|
                 \_ ->
                     let

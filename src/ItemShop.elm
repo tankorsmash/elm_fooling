@@ -438,6 +438,23 @@ encodeWantedAction wanted_action =
             Encode.string "WantedToSell"
 
 
+decodeWantedAction : Decoder WantedAction
+decodeWantedAction =
+    Decode.string
+        |> Decode.andThen
+            (\str ->
+                case str of
+                    "WantedToBuy" ->
+                        Decode.succeed WantedToBuy
+
+                    "WantedToSell" ->
+                        Decode.succeed WantedToSell
+
+                    _ ->
+                        Decode.fail "invalid wanted action"
+            )
+
+
 type ActionLogType
     = Traded ItemTradeLog
     | WantedButCouldntTrade WantedAction
@@ -449,7 +466,7 @@ encodeActionLogType : ActionLogType -> Decode.Value
 encodeActionLogType action_log_type =
     case action_log_type of
         Traded item_trade_log ->
-            Encode.list identity [ Encode.string "Traded", encodeActionLogType action_log_type ]
+            Encode.list identity [ Encode.string "Traded", encodeItemTradeLog item_trade_log ]
 
         WantedButCouldntTrade wanted_action ->
             Encode.list identity [ Encode.string "WantedButCouldntTrade", encodeWantedAction wanted_action ]
@@ -459,6 +476,43 @@ encodeActionLogType action_log_type =
 
         DidNothing ->
             Encode.list identity [ Encode.string "DidNothing" ]
+
+
+decodeActionLogType : Decoder ActionLogType
+decodeActionLogType =
+    Decode.list Decode.string
+        |> Decode.andThen
+            (\all_action_log_type_str ->
+                case all_action_log_type_str of
+                    [] ->
+                        Decode.fail "Not a valid ActionLogType"
+
+                    single_action_log_type :: [] ->
+                        case single_action_log_type of
+                            "DidNothing" ->
+                                Decode.succeed DidNothing
+
+                            _ ->
+                                Decode.fail "single action log type provided was invalid"
+
+                    multiple_action_log_type ->
+                        case multiple_action_log_type of
+                            "WantedButCouldntTrade" :: wanted_action :: [] ->
+                                Decode.map WantedButCouldntTrade decodeWantedAction
+
+                            "Traded" :: item_trade_log :: [] ->
+                                Decode.map Traded decodeItemTradeLog
+
+                            "FetchedItem" :: item_id :: [] ->
+                                Decode.map FetchedItem UUID.jsonDecoder
+
+                            [] ->
+                                Decode.fail <| "multiple action log type is empty, somehow: "
+
+                            _ ->
+                                Decode.fail "unrecognized multipart action log"
+             -- Decode.succeed DidNothing
+            )
 
 
 type alias ActionLog =
@@ -484,8 +538,8 @@ type alias ItemTradeLog =
     }
 
 
-encodeTradeLog : ItemTradeLog -> Decode.Value
-encodeTradeLog item_trade_log =
+encodeItemTradeLog : ItemTradeLog -> Decode.Value
+encodeItemTradeLog item_trade_log =
     Encode.object
         [ ( "item_id", Encode.string <| UUID.toString item_trade_log.item_id )
         , ( "quantity", Encode.int <| getQuantity item_trade_log.quantity )
@@ -493,6 +547,16 @@ encodeTradeLog item_trade_log =
         , ( "from_party", encodeTradeParty item_trade_log.from_party )
         , ( "to_party", encodeTradeParty item_trade_log.to_party )
         ]
+
+
+decodeItemTradeLog : Decoder ItemTradeLog
+decodeItemTradeLog =
+    Decode.map5 ItemTradeLog
+        (field "item_id" UUID.jsonDecoder)
+        (field "quantity" decodeQuantity)
+        (field "gold_cost" Decode.int)
+        (field "from_party" decodeTradeParty)
+        (field "to_party" decodeTradeParty)
 
 
 type alias TrendTolerance =
@@ -737,6 +801,32 @@ encodeItemType item_type =
                 "Food"
 
 
+decodeItemType : Decoder ItemType
+decodeItemType =
+    Decode.string
+        |> Decode.andThen
+            (\item_type_str ->
+                case item_type_str of
+                    "Weapon" ->
+                        Decode.succeed Weapon
+
+                    "Armor" ->
+                        Decode.succeed Armor
+
+                    "Spellbook" ->
+                        Decode.succeed Spellbook
+
+                    "Furniture" ->
+                        Decode.succeed Furniture
+
+                    "Food" ->
+                        Decode.succeed Food
+
+                    _ ->
+                        Decode.fail <| "Unknown item type str: " ++ item_type_str
+            )
+
+
 type alias CharacterPartialA =
     { held_items : InventoryRecords
     , held_gold : Int
@@ -844,10 +934,25 @@ decodeTrendTolerance =
         (decodeItemSentiments "Sell ItemSentiments has invalid item type id")
 
 
+decodeActionLog : Decoder ActionLog
+decodeActionLog =
+    Decode.map2 ActionLog
+        (field "log_type" decodeActionLogType)
+        (field "time" (Decode.map Time.millisToPosix Decode.int))
 
--- decodeCharacterB : Decoder CharacterPartialB
--- decodeCharacterB item_db =
---     Decode.map5 CharacterPartialB
+
+decodeCharacterB : Decoder CharacterPartialB
+decodeCharacterB =
+    Decode.map6 CharacterPartialB
+        (field "trend_tolerance" decodeTrendTolerance)
+        (field "item_types_desired" (decodeItemSentiments "item types desired has an invalid item type id"))
+        (field "action_log" (Decode.list decodeActionLog))
+        (field "hide_zero_qty_inv_rows" Decode.bool)
+        (field "displayedItemType" (Decode.maybe decodeItemType))
+        (field "held_blood" Decode.int)
+
+
+
 -- decodeCharacter : Decoder Character
 -- decodeCharacter =
 --     Decode.map (createCharacter (generate_uuid "ASDSD")) Decode.string

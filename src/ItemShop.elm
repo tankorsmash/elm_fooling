@@ -723,6 +723,17 @@ type alias ItemDb =
     Dict.Dict ItemIdStr ItemDbRecord
 
 
+encodeItemDbRecord : ItemDbRecord -> Decode.Value
+encodeItemDbRecord item_db_record =
+    Encode.object
+        []
+
+
+encodeItemDb : ItemDb -> Decode.Value
+encodeItemDb item_db =
+        Encode.dict identity encodeItemDbRecord item_db
+
+
 encodeInventoryRecord : InventoryRecord -> Decode.Value
 encodeInventoryRecord { item, quantity, avg_price } =
     Encode.object

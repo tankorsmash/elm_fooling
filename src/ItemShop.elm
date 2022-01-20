@@ -821,33 +821,27 @@ combineFirst list =
         list
 
 
+decodeItemSentiments : String -> Decoder ItemSentiments
+decodeItemSentiments errMsg =
+    Decode.keyValuePairs Decode.float
+        |> Decode.andThen
+            (\pairs ->
+                pairs
+                    |> List.map (Tuple.mapFirst String.toInt)
+                    |> combineFirst
+                    |> Result.fromMaybe errMsg
+                    |> DecodeExtra.fromResult
+                    |> Decode.map Dict.fromList
+            )
+
+
 decodeTrendTolerance : Decoder TrendTolerance
 decodeTrendTolerance =
     Decode.map2 TrendTolerance
         -- buy
-        (Decode.keyValuePairs Decode.float
-            |> Decode.andThen
-                (\pairs ->
-                    pairs
-                        |> List.map (Tuple.mapFirst String.toInt)
-                        |> combineFirst
-                        |> Result.fromMaybe "A Buy ItemSentiment item id isn't an int"
-                        |> DecodeExtra.fromResult
-                        |> Decode.map Dict.fromList
-                )
-        )
+        (decodeItemSentiments "Buy ItemSentiments has invalid item type id")
         -- sell
-        (Decode.keyValuePairs Decode.float
-            |> Decode.andThen
-                (\pairs ->
-                    pairs
-                        |> List.map (Tuple.mapFirst String.toInt)
-                        |> combineFirst
-                        |> Result.fromMaybe "A Sell ItemSentiment item id isn't an int"
-                        |> DecodeExtra.fromResult
-                        |> Decode.map Dict.fromList
-                )
-        )
+        (decodeItemSentiments "Sell ItemSentiments has invalid item type id")
 
 
 

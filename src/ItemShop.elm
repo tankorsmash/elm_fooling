@@ -1696,9 +1696,18 @@ init hash key =
         initial_tab_type =
             stringToTabType hash
 
+        spRefillUpgradeLvl =
+            1
+
+        spRefillUpgrade =
+            AutomaticBPtoSP spRefillUpgradeLvl
+
+        playerUpgrades =
+            [ AutomaticGPM 1, spRefillUpgrade ]
+
         battleModel : Battle.Model
         battleModel =
-            Battle.init (getInnerPlayer player)
+            Battle.init (getInnerPlayer player) spRefillUpgradeLvl
 
         initUiOptions : UiOptions
         initUiOptions =
@@ -1721,7 +1730,7 @@ init hash key =
         initModel : Model
         initModel =
             { colorTheme = BrightTheme
-            , player_upgrades = [ AutomaticGPM 1, AutomaticBPtoSP 1 ]
+            , player_upgrades = playerUpgrades
             , shop_id = .char_id (getInnerShop shop)
             , characters = characters
             , shop_trends = initial_shop_trends
@@ -2182,8 +2191,22 @@ transferToBattleModel model =
                         | held_gold = p.held_gold
                         , held_blood = p.held_blood
                     }
+
+                spRefillAmount =
+                    Debug.log "refill amount" <|
+                        List.foldl
+                            (\upgrade acc ->
+                                case upgrade of
+                                    AutomaticBPtoSP level ->
+                                        level
+
+                                    _ ->
+                                        acc
+                            )
+                            0
+                            model.player_upgrades
             in
-            { battleModel | player = newPlayer }
+            { battleModel | player = newPlayer, spRefillAmount = spRefillAmount }
 
 
 setBattleModel : Model -> Battle.Model -> Model
@@ -4943,7 +4966,7 @@ render_single_player_upgrade colorTheme player_upgrade =
                 [ text "Bloodfeed lv"
                 , text <| String.fromInt lvl
                 , text ": "
-                , UI.renderBlood colorTheme (-lvl)
+                , UI.renderBlood colorTheme -lvl
                 , text "/sec +"
                 , text <| String.fromInt lvl
                 , el [ Font.size 12 ] <| text "stamina"

@@ -406,6 +406,7 @@ type alias Model =
     , fightLogs : List FightLog
     , showExpandedLogs : Bool
     , player : BattleCharacter --NOTE: this is hackily read from in ItemShop's updateBattleOutMsg and used to update ItemShop's player. FIXME hack on that for sure
+    , spRefillAmount : Int --NOTE: this is from ItemShop's update too
     , secondsWaitedSince : SecondsWaitedSince
     , shouldShowLocationTypeMenu : Bool
     , currentLocationId : LocationId
@@ -435,8 +436,8 @@ debugMode =
     True
 
 
-init : { a | held_blood : Int, held_gold : Int } -> Model
-init { held_blood, held_gold } =
+init : { a | held_blood : Int, held_gold : Int } -> Int -> Model
+init { held_blood, held_gold } spRefillAmount =
     let
         locations : Locations
         locations =
@@ -456,6 +457,7 @@ init { held_blood, held_gold } =
     , fightLogs = []
     , showExpandedLogs = False
     , player = { held_blood = held_blood, held_gold = held_gold }
+    , spRefillAmount = spRefillAmount
     , secondsWaitedSince =
         { lastSpRefill = 0
         , lastLocationMonsterRefill = 0
@@ -631,7 +633,7 @@ updateTick model time =
                             let
                                 newGolem =
                                     monsterLivingMap
-                                        (monsterStatMapStamina (addToStatCurVal 1))
+                                        (monsterStatMapStamina (addToStatCurVal model.spRefillAmount))
                                         m.golem
 
                                 newSecondsWaitedSince =
@@ -1442,7 +1444,7 @@ suite =
 
                             model : Model
                             model =
-                                init { held_blood = 100, held_gold = 0 }
+                                init { held_blood = 100, held_gold = 0 } staminaToGain
                                     |> (setGolem <| LivingMonster testGolem)
                         in
                         Expect.equal (testGolem.statStamina.curVal + staminaToGain) <|
@@ -1463,7 +1465,7 @@ suite =
 
                             model : Model
                             model =
-                                init { held_blood = 100, held_gold = 0 }
+                                init { held_blood = 100, held_gold = 0 } staminaToGain
                                     |> (setGolem <| DeadMonster testGolem)
                         in
                         Expect.equal (testGolem.statStamina.curVal + 0) <|

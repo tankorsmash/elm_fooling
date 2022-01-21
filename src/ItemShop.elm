@@ -2098,18 +2098,14 @@ NOTE: silently fails without matching a character
 replaceCharacter : Character -> Model -> Model
 replaceCharacter new_char model =
     let
-        new_characters =
-            model.characters
-                |> mapCharacters
-                    (\char ->
-                        if char.char_id == new_char.char_id then
-                            new_char
+        characterReplacer other_char =
+            if other_char.char_id == new_char.char_id then
+                new_char
 
-                        else
-                            char
-                    )
+            else
+                other_char
     in
-    { model | characters = new_characters }
+    { model | characters = mapCharacters characterReplacer model.characters }
 
 
 updateBattleOutMsg : Battle.OutMsg -> Model -> ( Model, Cmd Msg )

@@ -2193,18 +2193,17 @@ transferToBattleModel model =
                     }
 
                 spRefillAmount =
-                    Debug.log "refill amount" <|
-                        List.foldl
-                            (\upgrade acc ->
-                                case upgrade of
-                                    AutomaticBPtoSP level ->
-                                        level
+                    List.foldl
+                        (\upgrade acc ->
+                            case upgrade of
+                                AutomaticBPtoSP level ->
+                                    level
 
-                                    _ ->
-                                        acc
-                            )
-                            0
-                            model.player_upgrades
+                                _ ->
+                                    acc
+                        )
+                        0
+                        model.player_upgrades
             in
             { battleModel | player = newPlayer, spRefillAmount = spRefillAmount }
 

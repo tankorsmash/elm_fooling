@@ -3041,8 +3041,8 @@ addGolemSpFromBlood ({ held_blood } as player) level battleModel =
         ( player, battleModel )
 
 
-apply_upgrade : PlayerUpgrade -> ( Character, Model ) -> ( Character, Model )
-apply_upgrade upgrade ( player, model ) =
+applyUpgrade : PlayerUpgrade -> ( Character, Model ) -> ( Character, Model )
+applyUpgrade upgrade ( player, model ) =
     case upgrade of
         AutomaticGPM to_add ->
             let
@@ -3062,11 +3062,11 @@ apply_upgrade upgrade ( player, model ) =
             )
 
 
-apply_upgrades : Character -> Model -> Model
-apply_upgrades player model =
+applyUpgrades : Character -> Model -> Model
+applyUpgrades player model =
     let
         ( new_player, new_model ) =
-            List.foldl apply_upgrade ( player, model ) model.player_upgrades
+            List.foldl applyUpgrade ( player, model ) model.player_upgrades
     in
     new_model
 
@@ -3075,7 +3075,7 @@ update_player : Model -> Model
 update_player model =
     case getPlayer model.characters of
         Player player ->
-            apply_upgrades player model
+            applyUpgrades player model
 
 
 get_trend_for_item : ShopTrends -> Item -> Float
@@ -6121,7 +6121,7 @@ suite =
                             \upgradeLevel ->
                                 let
                                     upgrader p =
-                                        apply_upgrade (AutomaticBPtoSP upgradeLevel) ( p, newTestModel )
+                                        applyUpgrade (AutomaticBPtoSP upgradeLevel) ( p, newTestModel )
                                 in
                                 let
                                     expectedNewPlayer =
@@ -6172,7 +6172,7 @@ suite =
                                         )
 
                                     ( resultPlayer, resultModel ) =
-                                        apply_upgrade (AutomaticBPtoSP upgradeLevel) ( player, newTestModel )
+                                        applyUpgrade (AutomaticBPtoSP upgradeLevel) ( player, newTestModel )
                                 in
                                 Expect.equal
                                     (expectedPlayerAndModel

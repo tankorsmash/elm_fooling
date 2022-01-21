@@ -6166,8 +6166,15 @@ suite =
                     newBattleModel =
                         Battle.increaseGolemStamina test_model.battleModel -110
 
+                    secondsWaitedSince =
+                        test_model.secondsWaitedSince
+
                     newTestModel =
-                        { test_model | battleModel = newBattleModel }
+                        { test_model
+                            | battleModel = newBattleModel
+                            -- means the next apply upgrade will trigger the timer
+                            , secondsWaitedSince = { secondsWaitedSince | lastSpRefill = Battle.secondsRequiredForSpRefill }
+                        }
                 in
                 case getPlayer newTestModel.characters of
                     Player player ->

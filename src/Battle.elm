@@ -611,7 +611,7 @@ updateTick : Model -> Time.Posix -> ( Model, Cmd Msg, OutMsg )
 updateTick model time =
     let
         origSecondsWaitedSince =
-             model.secondsWaitedSince
+            model.secondsWaitedSince
 
         incrSecondsWaitedSince =
             { origSecondsWaitedSince
@@ -622,7 +622,7 @@ updateTick model time =
         newModel =
             model
                 |> --apply incremented ticks to all times
-                   (\({ secondsWaitedSince } as m) ->
+                   (\m ->
                         { m | secondsWaitedSince = incrSecondsWaitedSince }
                    )
                 |> -- golem sp refil
@@ -636,7 +636,6 @@ updateTick model time =
 
                                 newSecondsWaitedSince =
                                     { secondsWaitedSince | lastSpRefill = 0 }
-
                             in
                             { m
                                 | golem = newGolem
@@ -679,10 +678,7 @@ updateTick model time =
                             m
                    )
     in
-    ( newModel
-    , Cmd.none
-    , NoOutMsg
-    )
+    ( newModel, Cmd.none, NoOutMsg )
 
 
 {-| called from ItemShop.updateBattleOutMsg, which does some post processing

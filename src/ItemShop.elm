@@ -1118,9 +1118,15 @@ type alias UiOptions =
     }
 
 
+type alias SecondsWaitedSince =
+    { lastSpRefill : Int
+    }
+
+
 type alias Model =
     { colorTheme : UI.ColorTheme
     , player_upgrades : List PlayerUpgrade
+    , secondsWaitedSince : SecondsWaitedSince
     , shop_id : CharacterId
     , characters : Characters
     , shop_trends : ShopTrends
@@ -1731,6 +1737,7 @@ init hash key =
         initModel =
             { colorTheme = BrightTheme
             , player_upgrades = playerUpgrades
+            , secondsWaitedSince = { lastSpRefill = 0 }
             , shop_id = .char_id (getInnerShop shop)
             , characters = characters
             , shop_trends = initial_shop_trends
@@ -3063,8 +3070,13 @@ addGolemSpFromBlood ({ held_blood } as player) level battleModel =
         ( player, battleModel )
 
 
+setSecondsWaited : Model -> SecondsWaitedSince -> Model
+setSecondsWaited model newSecondsWaitedSince =
+    { model | secondsWaitedSince = newSecondsWaitedSince }
+
+
 applyUpgrade : PlayerUpgrade -> ( Character, Model ) -> ( Character, Model )
-applyUpgrade upgrade ( player, model ) =
+applyUpgrade upgrade ( player, { secondsWaitedSince } as model ) =
     case upgrade of
         AutomaticGPM to_add ->
             let
@@ -3074,14 +3086,26 @@ applyUpgrade upgrade ( player, model ) =
             ( newPlayer, replaceCharacter newPlayer model )
 
         AutomaticBPtoSP level ->
-            let
-                ( newPlayer, newBattleModel ) =
-                    addGolemSpFromBlood player level model.battleModel
-            in
-            ( newPlayer
-            , replaceCharacter newPlayer model
-                |> (\m -> { m | battleModel = newBattleModel })
-            )
+            if model.secondsWaitedSince.lastSpRefill >= Battle.secondsRequiredForSpRefill then
+                let
+                    ( newPlayer, newBattleModel ) =
+                        addGolemSpFromBlood player level model.battleModel
+
+                    newSecondsWaitedSince =
+                        { secondsWaitedSince | lastSpRefill = 0 }
+                in
+                ( newPlayer
+                , replaceCharacter newPlayer model
+                    |> (\m -> { m | battleModel = newBattleModel })
+                    |> (\m -> setSecondsWaited m newSecondsWaitedSince)
+                )
+
+            else
+                let
+                    newSecondsWaitedSince =
+                        { secondsWaitedSince | lastSpRefill = secondsWaitedSince.lastSpRefill + 1 }
+                in
+                ( player, setSecondsWaited model newSecondsWaitedSince )
 
 
 applyUpgrades : Character -> Model -> Model
@@ -4966,8 +4990,7 @@ render_single_player_upgrade colorTheme player_upgrade =
                 , text <| String.fromInt lvl
                 , text ": "
                 , UI.renderBlood colorTheme -lvl
-                , text "/sec +"
-                , text <| String.fromInt lvl
+                , text <| " +" ++ String.fromInt lvl
                 , el [ Font.size 12 ] <| text "stamina"
                 , text "/5sec"
                 ]

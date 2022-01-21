@@ -1,4 +1,4 @@
-module Battle exposing (DefeatAction(..), Model, Msg(..), OutMsg(..), doesGolemNeedStamina, increaseGolemStamina, init, monsterMap, subscriptions, suite, update, view)
+module Battle exposing (DefeatAction(..), Model, Msg(..), OutMsg(..), doesGolemNeedStamina, secondsRequiredForSpRefill, increaseGolemStamina, init, monsterMap, subscriptions, suite, update, view)
 
 import Array
 import Browser.Dom
@@ -627,26 +627,27 @@ updateTick model time =
                    (\m ->
                         { m | secondsWaitedSince = incrSecondsWaitedSince }
                    )
-                |> -- golem sp refil
-                   (\({ secondsWaitedSince } as m) ->
-                        if secondsWaitedSince.lastSpRefill >= secondsRequiredForSpRefill then
-                            let
-                                newGolem =
-                                    monsterLivingMap
-                                        (monsterStatMapStamina (addToStatCurVal model.spRefillAmount))
-                                        m.golem
-
-                                newSecondsWaitedSince =
-                                    { secondsWaitedSince | lastSpRefill = 0 }
-                            in
-                            { m
-                                | golem = newGolem
-                                , secondsWaitedSince = newSecondsWaitedSince
-                            }
-
-                        else
-                            m
-                   )
+                -- HANDLED In ItemShop now
+                -- |> -- golem sp refil
+                --    (\({ secondsWaitedSince } as m) ->
+                --         if secondsWaitedSince.lastSpRefill >= secondsRequiredForSpRefill then
+                --             let
+                --                 newGolem =
+                --                     monsterLivingMap
+                --                         (monsterStatMapStamina (addToStatCurVal model.spRefillAmount))
+                --                         m.golem
+                --
+                --                 newSecondsWaitedSince =
+                --                     { secondsWaitedSince | lastSpRefill = 0 }
+                --             in
+                --             { m
+                --                 | golem = newGolem
+                --                 , secondsWaitedSince = newSecondsWaitedSince
+                --             }
+                --
+                --         else
+                --             m
+                --    )
                 |> -- location monster refil
                    (\({ secondsWaitedSince, locations } as m) ->
                         if m.secondsWaitedSince.lastLocationMonsterRefill >= secondsRequiredForLocationMonsterRefill then

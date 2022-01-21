@@ -177,6 +177,10 @@ color_secondary : Color
 color_secondary =
     convertColor Color.charcoal
 
+color_secondary_bright : Color
+color_secondary_bright =
+    convertColor Color.lightCharcoal
+
 
 color_danger : Color
 color_danger =
@@ -220,7 +224,7 @@ common_button_attrs { font_color, button_color, hovered_button_color, hovered_fo
     , Element.mouseOver
         [ Background.color <| hovered_button_color
         , Border.color <| hovered_button_color
-        , Font.color <| rgb 0 0 0
+        , Font.color <| hovered_font_color
         ]
     ]
 
@@ -232,7 +236,7 @@ primary_button_custom custom_attrs on_press label =
             { font_color = color_white
             , button_color = color_primary
             , hovered_button_color = primary_color_bright
-            , hovered_font_color = color_black
+            , hovered_font_color = color_white
             }
             ++ custom_attrs
         )
@@ -250,8 +254,8 @@ secondary_button_custom custom_attrs on_press label =
         (common_button_attrs
             { font_color = color_white
             , button_color = color_secondary
-            , hovered_button_color = color_secondary --_bright
-            , hovered_font_color = color_black
+            , hovered_button_color = color_secondary_bright
+            , hovered_font_color = color_white
             }
             ++ custom_attrs
         )
@@ -317,7 +321,7 @@ danger_button_custom custom_attrs on_press label =
             { font_color = color_white
             , button_color = color_danger
             , hovered_button_color = color_danger_bright
-            , hovered_font_color = color_black
+            , hovered_font_color = color_white
             }
             ++ custom_attrs
         )

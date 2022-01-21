@@ -2092,6 +2092,26 @@ sell_items_from_party_to_other orig_trade_context { item, qty } =
         IncompleteTradeRecord orig_trade_context
 
 
+{-| doesn't _add_ a character, only replaces an existing one
+NOTE: silently fails without matching a character
+-}
+replaceCharacter : Character -> Model -> Model
+replaceCharacter new_char model =
+    let
+        new_characters =
+            model.characters
+                |> mapCharacters
+                    (\char ->
+                        if char.char_id == new_char.char_id then
+                            new_char
+
+                        else
+                            char
+                    )
+    in
+    { model | characters = new_characters }
+
+
 updateBattleOutMsg : Battle.OutMsg -> Model -> ( Model, Cmd Msg )
 updateBattleOutMsg battleOutMsg model =
     case battleOutMsg of
@@ -2106,7 +2126,7 @@ updateBattleOutMsg battleOutMsg model =
                             pick_random_unlocked_item_from_db model.item_db model.global_seed
 
                         withNewItem (Shop shop) newItem =
-                            withCharacter
+                            replaceCharacter
                                 (add_inventory_record_to_character
                                     { item = newItem
                                     , quantity = setQuantity 1
@@ -2184,18 +2204,19 @@ transferFromBattleModel model newBattleModel =
     { newModel | characters = newCharacters }
 
 
+updateUiOption : (UiOptions -> UiOptions) -> Model -> Model
+updateUiOption updater m =
+    { m | uiOptions = updater m.uiOptions }
+
+
 updateUiOptions : UiOptionMsg -> Model -> ( Model, Cmd Msg )
 updateUiOptions uiOptMsg model =
     let
         noop =
             ( model, Cmd.none )
-
-        updateUiOption updater m =
-            { m | uiOptions = updater m.uiOptions }
     in
     case uiOptMsg of
         MouseEnterShopItem context item ->
-            -- ( { model | hovered_item_in_character = Just item }, Cmd.none )
             ( updateUiOption (\uio -> { uio | hovered_item_in_character = Just item }) model
             , Cmd.none
             )
@@ -2360,7 +2381,7 @@ updateUiOptions uiOptMsg model =
                                     Maybe.map ((+) 1) curIdx
                                         |> Maybe.andThen getIdx
                     in
-                    ( withCharacter { character | displayedItemType = newItemType } model, Cmd.none )
+                    ( replaceCharacter { character | displayedItemType = newItemType } model, Cmd.none )
 
                 Nothing ->
                     ( model, Cmd.none )
@@ -2392,7 +2413,7 @@ updateUiOptions uiOptMsg model =
                                         |> Debug.log "curIdx"
                                         |> Maybe.andThen getIdx
                     in
-                    ( withCharacter { character | displayedItemType = newItemType } model, Cmd.none )
+                    ( replaceCharacter { character | displayedItemType = newItemType } model, Cmd.none )
 
                 Nothing ->
                     ( model, Cmd.none )
@@ -2468,8 +2489,8 @@ update msg model =
                         , item_db = new_item_db
                       }
                         --it doesn't matter who was what party, they're still getting updated
-                        |> withCharacter new_trade_context.to_party
-                        |> withCharacter new_trade_context.from_party
+                        |> replaceCharacter new_trade_context.to_party
+                        |> replaceCharacter new_trade_context.from_party
                     , Cmd.none
                     )
 
@@ -2502,8 +2523,8 @@ update msg model =
                         , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
                         , item_db = new_item_db
                       }
-                        |> withCharacter new_trade_context.from_party
-                        |> withCharacter new_trade_context.to_party
+                        |> replaceCharacter new_trade_context.from_party
+                        |> replaceCharacter new_trade_context.to_party
                     , Cmd.none
                     )
 
@@ -2866,7 +2887,7 @@ special_action_increase_income model =
             in
             if hasEnoughGold player upgradeCost then
                 model
-                    |> withCharacter
+                    |> replaceCharacter
                         (subGold player upgradeCost)
                     |> (\m ->
                             { m
@@ -2938,7 +2959,7 @@ update_special_action special_action price model =
         Player player ->
             if hasEnoughGold player price then
                 model
-                    |> withCharacter (subGold player price)
+                    |> replaceCharacter (subGold player price)
                     |> (\new_model ->
                             case special_action of
                                 InviteTrader ->
@@ -3016,7 +3037,7 @@ apply_upgrade upgrade ( player, model ) =
                 newPlayer =
                     add_player_gpm player to_add
             in
-            ( newPlayer, withCharacter newPlayer model )
+            ( newPlayer, replaceCharacter newPlayer model )
 
         AutomaticBPtoSP level ->
             let
@@ -3024,7 +3045,7 @@ apply_upgrade upgrade ( player, model ) =
                     addGolemSpFromBlood player level model.battleModel
             in
             ( newPlayer
-            , withCharacter newPlayer model
+            , replaceCharacter newPlayer model
                 |> (\m -> { m | battleModel = newBattleModel })
             )
 
@@ -4108,10 +4129,12 @@ render_inventory_grid model header character shop_trends hovered_item context co
         is_player_context =
             context == InventoryItems
 
-        { historical_shop_trends, item_db} =
+        { historical_shop_trends, item_db } =
             model
 
-        {show_charts_in_hovered_item} = model.uiOptions
+        { show_charts_in_hovered_item } =
+            model.uiOptions
+
         buildCompare : (a -> comparable) -> (a -> a -> Order)
         buildCompare getter =
             \left right ->
@@ -4856,23 +4879,6 @@ getCharacter (Characters { player, shop, others }) char_id =
         others
             |> List.filter (charIdMatches char_id)
             |> List.head
-
-
-withCharacter : Character -> Model -> Model
-withCharacter new_char model =
-    let
-        new_characters =
-            model.characters
-                |> mapCharacters
-                    (\char ->
-                        if char.char_id == new_char.char_id then
-                            new_char
-
-                        else
-                            char
-                    )
-    in
-    { model | characters = new_characters }
 
 
 render_single_player_action_log : ItemDb -> PlayerActionLog -> Element Msg
@@ -6117,7 +6123,7 @@ suite =
                                     expectedPlayerAndModel : ( Character, Model )
                                     expectedPlayerAndModel =
                                         ( expectedNewPlayer
-                                        , withCharacter expectedNewPlayer { newTestModel | battleModel = intendedBattleModel }
+                                        , replaceCharacter expectedNewPlayer { newTestModel | battleModel = intendedBattleModel }
                                         )
 
                                     ( resultPlayer, resultModel ) =
@@ -6150,7 +6156,7 @@ suite =
                                     expectedPlayerAndModel : ( Character, Model )
                                     expectedPlayerAndModel =
                                         ( expectedNewPlayer
-                                        , withCharacter expectedNewPlayer { newTestModel | battleModel = intendedBattleModel }
+                                        , replaceCharacter expectedNewPlayer { newTestModel | battleModel = intendedBattleModel }
                                         )
 
                                     ( resultPlayer, resultModel ) =

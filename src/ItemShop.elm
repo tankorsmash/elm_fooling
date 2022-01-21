@@ -1721,7 +1721,7 @@ init hash key =
             , shouldDisplayShowDebugInventoriesOverlay = False
             , inventorySortType = SortByName
             , inventorySortDir = Ascending
-            , show_debug_inventories = True
+            , show_debug_inventories = False
             , hovered_item_in_character = Nothing
             , shop_trends_hovered = False
             , show_charts_in_hovered_item = False
@@ -5123,7 +5123,7 @@ view_shop_tab_type model =
                 [ Element.link []
                     { url = "#items"
                     , label =
-                        UI.secondary_button [] (ChangeTabType ItemsUnlockedTabType) "View Items"
+                        UI.secondary_button [] (ChangeTabType ItemsUnlockedTabType) "View Codex"
                     }
                 , UI.outline_button [] (GotUiOptionsMsg ToggleShowMainChart) <|
                     if model.uiOptions.show_main_chart then

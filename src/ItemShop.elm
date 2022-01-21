@@ -2157,7 +2157,11 @@ updateBattleOutMsg battleOutMsg model =
 
 mapPlayer : (Character -> Character) -> Characters -> Characters
 mapPlayer callback (Characters { player, shop, others }) =
-    Characters { player = Player <| callback (getInnerPlayer player), shop = shop, others = others }
+    Characters
+        { player = Player <| callback (getInnerPlayer player)
+        , shop = shop
+        , others = others
+        }
 
 
 {-| builds a new Battle.Model with the latest data we want
@@ -2174,22 +2178,34 @@ transferToBattleModel model =
                     battleModel.player
 
                 newPlayer =
-                    { battlePlayer | held_gold = p.held_gold, held_blood = p.held_blood }
+                    { battlePlayer
+                        | held_gold = p.held_gold
+                        , held_blood = p.held_blood
+                    }
             in
             { battleModel | player = newPlayer }
+
+
+setBattleModel : Model -> Battle.Model -> Model
+setBattleModel model battleModel =
+    { model | battleModel = battleModel }
+
+
+setCharacters : Model -> Characters -> Model
+setCharacters model newCharacters =
+    { model | characters = newCharacters }
 
 
 transferFromBattleModel : Model -> Battle.Model -> Model
 transferFromBattleModel model newBattleModel =
     let
         newModel =
-            { model
-                | battleModel = newBattleModel
-            }
+            setBattleModel model newBattleModel
 
         newCharacters =
             newModel.characters
-                |> mapPlayer
+                |> --set blood and gold
+                   mapPlayer
                     (\player ->
                         { player
                             | held_gold = newBattleModel.player.held_gold
@@ -2197,7 +2213,7 @@ transferFromBattleModel model newBattleModel =
                         }
                     )
     in
-    { newModel | characters = newCharacters }
+    setCharacters model newCharacters
 
 
 updateUiOption : (UiOptions -> UiOptions) -> Model -> Model

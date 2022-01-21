@@ -3851,7 +3851,7 @@ render_single_trade_log_entry colorTheme item_db ((Characters { player, shop, ot
 
         rendered_cost : Element msg
         rendered_cost =
-            UI.render_gp colorTheme gold_cost
+            UI.renderGp colorTheme gold_cost
 
         item_name =
             case maybe_item of
@@ -4368,7 +4368,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                             ]
                         , paragraph [] <|
                             [ text "Current Price: "
-                            , UI.render_gp model.colorTheme (current_price item)
+                            , UI.renderGp model.colorTheme (current_price item)
                             ]
                                 ++ (if
                                         is_item_trending
@@ -4378,7 +4378,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                                             /= current_price item
                                     then
                                         [ text " (originally "
-                                        , UI.render_gp model.colorTheme item.raw_gold_cost
+                                        , UI.renderGp model.colorTheme item.raw_gold_cost
                                         , text ")"
                                         ]
 
@@ -4463,7 +4463,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                                     adjustedPrice - getPrice avg_price
                             in
                             paragraph [] <|
-                                [ UI.render_gp model.colorTheme <|
+                                [ UI.renderGp model.colorTheme <|
                                     get_single_adjusted_item_cost shop_trends item
                                 ]
                                     ++ [ if context /= ShopItems && priceDiff /= 0 && getQuantity quantity /= 0 then
@@ -4491,7 +4491,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
 
                                 _ ->
                                     if getQuantity quantity /= 0 then
-                                        UI.render_gp model.colorTheme <| getPrice avg_price
+                                        UI.renderGp model.colorTheme <| getPrice avg_price
 
                                     else
                                         Element.none
@@ -4566,7 +4566,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                     [ row [ centerX, width Element.shrink, spacingXY 10 0 ]
                         [ row [ Font.alignRight ]
                             [ text "Held: "
-                            , UI.render_gp model.colorTheme held_gold
+                            , UI.renderGp model.colorTheme held_gold
                             ]
                         , if is_player_context && character.held_blood > 0 then
                             row [ width fill ]
@@ -4958,7 +4958,7 @@ render_single_player_upgrade : UI.ColorTheme -> PlayerUpgrade -> Element Msg
 render_single_player_upgrade colorTheme player_upgrade =
     case player_upgrade of
         AutomaticGPM lvl ->
-            paragraph [] [ text "Income: ", UI.render_gp colorTheme lvl, text "/sec" ]
+            paragraph [] [ text "Income: ", UI.renderGp colorTheme lvl, text "/sec" ]
 
         AutomaticBPtoSP lvl ->
             paragraph []
@@ -5204,7 +5204,7 @@ render_item_db_item colorTheme { item, trade_stats, is_unlocked } =
             [ item_type_to_pretty_string item.item_type
                 |> text
             , item.raw_gold_cost
-                |> UI.render_gp colorTheme
+                |> UI.renderGp colorTheme
                 |> el [ alignRight ]
             ]
         , row [ width fill, Font.size 12 ]
@@ -5302,7 +5302,7 @@ viewOverlay model =
                 <|
                     row [ UI.noUserSelect ]
                         [ text "Held: "
-                        , UI.render_gp model.colorTheme <| player.held_gold
+                        , UI.renderGp model.colorTheme <| player.held_gold
                         , text " "
                         , UI.renderBlood model.colorTheme <| player.held_blood
                         ]
@@ -5512,7 +5512,7 @@ build_special_action_button colorTheme hovered_tooltip character special_action 
                         if price /= Free then
                             let
                                 renderedCost =
-                                    UI.render_gp colorTheme <| getPrice price
+                                    UI.renderGp colorTheme <| getPrice price
                             in
                             buildTooltipElementConfig t <|
                                 column []

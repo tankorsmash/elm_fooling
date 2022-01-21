@@ -394,18 +394,18 @@ font_blood =
     Font.color <| color_danger
 
 
-render_gp : ColorTheme -> Int -> Element msg
-render_gp colorTheme count =
-    render_gp_sized colorTheme count 12
+renderGp : ColorTheme -> Int -> Element msg
+renderGp colorTheme count =
+    renderGpSized colorTheme count 12
 
 
-render_gp_string : ColorTheme -> Int -> String
-render_gp_string colorTheme count =
+renderGpString : ColorTheme -> Int -> String
+renderGpString colorTheme count =
     String.fromInt count ++ "gp"
 
 
-render_gp_sized : ColorTheme -> Int -> Int -> Element msg
-render_gp_sized colorTheme count font_size =
+renderGpSized : ColorTheme -> Int -> Int -> Element msg
+renderGpSized colorTheme count font_size =
     paragraph []
         [ text <| String.fromInt count
         , Element.el

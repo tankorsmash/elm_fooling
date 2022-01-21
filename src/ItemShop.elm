@@ -2213,7 +2213,7 @@ transferFromBattleModel model newBattleModel =
                         }
                     )
     in
-    setCharacters model newCharacters
+    setCharacters newModel newCharacters
 
 
 updateUiOption : (UiOptions -> UiOptions) -> Model -> Model

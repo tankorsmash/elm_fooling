@@ -611,7 +611,7 @@ updateTick : Model -> Time.Posix -> ( Model, Cmd Msg, OutMsg )
 updateTick model time =
     let
         origSecondsWaitedSince =
-            model.secondsWaitedSince
+             model.secondsWaitedSince
 
         incrSecondsWaitedSince =
             { origSecondsWaitedSince
@@ -636,6 +636,7 @@ updateTick model time =
 
                                 newSecondsWaitedSince =
                                     { secondsWaitedSince | lastSpRefill = 0 }
+
                             in
                             { m
                                 | golem = newGolem

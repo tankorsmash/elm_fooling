@@ -4939,7 +4939,16 @@ render_single_player_upgrade colorTheme player_upgrade =
             paragraph [] [ text "Income: ", UI.render_gp colorTheme lvl, text "/sec" ]
 
         AutomaticBPtoSP lvl ->
-            paragraph [] [ text "BP to SP: ", UI.render_gp colorTheme lvl, text "/5sec" ]
+            paragraph []
+                [ text "Bloodfeed lv"
+                , text <| String.fromInt lvl
+                , text ": "
+                , UI.renderBlood colorTheme (-lvl)
+                , text "/sec +"
+                , text <| String.fromInt lvl
+                , el [ Font.size 12 ] <| text "stamina"
+                , text "/5sec"
+                ]
 
 
 player_upgrades_display : UI.ColorTheme -> List PlayerUpgrade -> Element Msg

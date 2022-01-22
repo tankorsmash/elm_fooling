@@ -1054,21 +1054,6 @@ updateItemDbFromTradeRecord item_db record_updater trade_record =
                     item_db
 
 
-type alias TooltipId =
-    String
-
-
-type alias TooltipData =
-    { offset_x : Float
-    , offset_y : Float
-    , hovered_tooltip_id : String
-    }
-
-
-type HoveredTooltip
-    = NoHoveredTooltip
-    | HoveredTooltipWithoutOffset TooltipData
-    | HoveredTooltipWithOffset TooltipData
 
 
 type TabType
@@ -1104,8 +1089,8 @@ type alias UiOptions =
     { shiftIsPressed : Bool
     , hovered_trend_chart : List (CI.One TrendChartDatum CI.Dot)
     , show_main_chart : Bool
-    , hovered_tooltip : HoveredTooltip
-    , cached_tooltip_offsets : Dict.Dict String TooltipData
+    , hovered_tooltip : UI.HoveredTooltip
+    , cached_tooltip_offsets : Dict.Dict String UI.TooltipData
     , globalViewport : Maybe Browser.Dom.Viewport
     , showDebugInventoriesElement : Maybe Browser.Dom.Element
     , shouldDisplayShowDebugInventoriesOverlay : Bool
@@ -1720,7 +1705,7 @@ init hash key =
             { shiftIsPressed = False
             , hovered_trend_chart = []
             , show_main_chart = True
-            , hovered_tooltip = NoHoveredTooltip
+            , hovered_tooltip = UI.NoHoveredTooltip
             , cached_tooltip_offsets = Dict.empty
             , globalViewport = Nothing
             , showDebugInventoriesElement = Nothing
@@ -2274,7 +2259,7 @@ updateUiOptions uiOptMsg model =
                         | hovered_tooltip =
                             Dict.get tooltip_id uio.cached_tooltip_offsets
                                 |> Maybe.withDefault { offset_x = 0, offset_y = 0, hovered_tooltip_id = tooltip_id }
-                                |> HoveredTooltipWithoutOffset
+                                |> UI.HoveredTooltipWithoutOffset
                     }
                 )
                 model
@@ -2282,7 +2267,7 @@ updateUiOptions uiOptMsg model =
             )
 
         EndTooltipHover tooltip_id ->
-            ( updateUiOption (\uio -> { uio | hovered_tooltip = NoHoveredTooltip }) model, Cmd.none )
+            ( updateUiOption (\uio -> { uio | hovered_tooltip = UI.NoHoveredTooltip }) model, Cmd.none )
 
         GotTooltipSize tooltip_size_result ->
             case tooltip_size_result of
@@ -2322,10 +2307,10 @@ updateUiOptions uiOptMsg model =
                                     floor <| 0
                     in
                     case model.uiOptions.hovered_tooltip of
-                        NoHoveredTooltip ->
+                        UI.NoHoveredTooltip ->
                             ( model, Cmd.none )
 
-                        HoveredTooltipWithoutOffset old_tooltip_data ->
+                        UI.HoveredTooltipWithoutOffset old_tooltip_data ->
                             let
                                 new_tooltip_data =
                                     -- have to add the old offsets back in, because the new tooltip_size_result includes the cached size, so it needs to be accounted for
@@ -2338,14 +2323,14 @@ updateUiOptions uiOptMsg model =
                                 (\uio ->
                                     { uio
                                         | cached_tooltip_offsets = Dict.insert old_tooltip_data.hovered_tooltip_id new_tooltip_data uio.cached_tooltip_offsets
-                                        , hovered_tooltip = HoveredTooltipWithOffset new_tooltip_data
+                                        , hovered_tooltip = UI.HoveredTooltipWithOffset new_tooltip_data
                                     }
                                 )
                                 model
                             , Cmd.none
                             )
 
-                        HoveredTooltipWithOffset old_tooltip_data ->
+                        UI.HoveredTooltipWithOffset old_tooltip_data ->
                             let
                                 new_tooltip_data =
                                     { old_tooltip_data
@@ -2353,7 +2338,7 @@ updateUiOptions uiOptMsg model =
                                         , offset_y = offset_y
                                     }
                             in
-                            ( updateUiOption (\uio -> { uio | hovered_tooltip = HoveredTooltipWithOffset new_tooltip_data }) model
+                            ( updateUiOption (\uio -> { uio | hovered_tooltip = UI.HoveredTooltipWithOffset new_tooltip_data }) model
                             , Cmd.none
                             )
 
@@ -5410,24 +5395,24 @@ font_scaled scale =
     Font.size <| scaled scale
 
 
-hoveredTooltipMatchesId : HoveredTooltip -> String -> Bool
+hoveredTooltipMatchesId : UI.HoveredTooltip -> String -> Bool
 hoveredTooltipMatchesId hovered_tooltip tooltip_id =
     case hovered_tooltip of
-        HoveredTooltipWithoutOffset tooltip_data ->
+        UI.HoveredTooltipWithoutOffset tooltip_data ->
             if tooltip_data.hovered_tooltip_id == tooltip_id then
                 True
 
             else
                 False
 
-        HoveredTooltipWithOffset hovered_tooltip_data ->
+        UI.HoveredTooltipWithOffset hovered_tooltip_data ->
             if hovered_tooltip_data.hovered_tooltip_id == tooltip_id then
                 True
 
             else
                 False
 
-        NoHoveredTooltip ->
+        UI.NoHoveredTooltip ->
             False
 
 
@@ -5437,16 +5422,16 @@ primary_button_tooltip :
     -> Msg
     -> String
     -> TooltipConfig
-    -> HoveredTooltip
+    -> UI.HoveredTooltip
     -> Element Msg
 primary_button_tooltip colorTheme custom_attrs on_press label { tooltip_id, tooltip_body } hovered_tooltip =
     let
         { offset_x, offset_y } =
             case hovered_tooltip of
-                HoveredTooltipWithOffset data ->
+                UI.HoveredTooltipWithOffset data ->
                     data
 
-                HoveredTooltipWithoutOffset cached_data ->
+                UI.HoveredTooltipWithoutOffset cached_data ->
                     cached_data
 
                 _ ->
@@ -5507,14 +5492,14 @@ buildTooltipTextConfig text =
     }
 
 
-buildTooltipElementConfig : TooltipId -> Element Msg -> TooltipConfig
+buildTooltipElementConfig : UI.TooltipId -> Element Msg -> TooltipConfig
 buildTooltipElementConfig tooltip_id element =
     { tooltip_id = UUID.forName tooltip_id UUID.dnsNamespace |> UUID.toString
     , tooltip_body = TooltipElement element
     }
 
 
-build_special_action_button : UI.ColorTheme -> HoveredTooltip -> Character -> SpecialAction -> String -> String -> Price -> Element Msg
+build_special_action_button : UI.ColorTheme -> UI.HoveredTooltip -> Character -> SpecialAction -> String -> String -> Price -> Element Msg
 build_special_action_button colorTheme hovered_tooltip character special_action title tooltip_text price =
     let
         is_disabled =
@@ -5591,7 +5576,7 @@ scale_increase_income_cost current_level =
     (20 + (5 * current_level * current_level) * 2) |> setPrice
 
 
-special_actions_display : UI.ColorTheme -> List PlayerUpgrade -> HoveredTooltip -> Character -> Bool -> Element Msg
+special_actions_display : UI.ColorTheme -> List PlayerUpgrade -> UI.HoveredTooltip -> Character -> Bool -> Element Msg
 special_actions_display colorTheme player_upgrades hovered_tooltip player ai_updates_paused =
     let
         button_toggle_ai_pause =

@@ -69,6 +69,23 @@ type ColorTheme
     | DarkTheme
 
 
+type alias TooltipData =
+    { offset_x : Float
+    , offset_y : Float
+    , hovered_tooltip_id : String
+    }
+
+
+type HoveredTooltip
+    = NoHoveredTooltip
+    | HoveredTooltipWithoutOffset TooltipData
+    | HoveredTooltipWithOffset TooltipData
+
+
+type alias TooltipId =
+    String
+
+
 color_white : Color
 color_white =
     rgb 1 1 1
@@ -77,6 +94,7 @@ color_white =
 color_black : Color
 color_black =
     rgb 0 0 0
+
 
 color_off_black : Color
 color_off_black =
@@ -176,6 +194,7 @@ color_pastel_red_7 =
 color_secondary : Color
 color_secondary =
     convertColor Color.charcoal
+
 
 color_secondary_bright : Color
 color_secondary_bright =
@@ -442,6 +461,7 @@ renderBlood_sized colorTheme count font_size =
         , Element.el [ Font.size font_size, font_blood ] (text "blood")
         ]
 
+
 nbsp : String
 nbsp =
     "\u{00A0}"
@@ -474,4 +494,3 @@ pointerEventsNone =
 pointerEventsAll : Element.Attribute msg
 pointerEventsAll =
     Html.Attributes.style "pointer-events" "all" |> Element.htmlAttribute
-

@@ -74,6 +74,7 @@ type Msg
     | ChangeLocation LocationId
     | LevelUpGolem
     | RefillGolemSp
+    | GotUiOptionsMsg UiOptionMsg
 
 
 type DefeatAction
@@ -85,6 +86,15 @@ type OutMsg
     = NoOutMsg
     | ReturnToShop
     | OnMonsterDefeat DefeatAction
+
+
+type
+    UiOptionMsg
+    -- = MouseEnterShopItem ListContext ( CharacterId, Item )
+    -- | MouseLeaveShopItem ListContext ( CharacterId, Item )
+    = StartTooltipHover String
+    | EndTooltipHover String
+    | GotTooltipSize (Result Browser.Dom.Error Browser.Dom.Element)
 
 
 type alias IntStat =
@@ -398,6 +408,12 @@ type alias SecondsWaitedSince =
     }
 
 
+type alias UiOptions =
+    { hoveredTooltip : UI.HoveredTooltip
+    , cachedTooltipOffsets : Dict.Dict String UI.TooltipData
+    }
+
+
 type alias Model =
     { golem : DamagedMonster
     , enemyMonster : Maybe DamagedMonster
@@ -410,6 +426,7 @@ type alias Model =
     , shouldShowLocationTypeMenu : Bool
     , currentLocationId : LocationId
     , locations : Locations
+    , uiOptions : UiOptions
     }
 
 
@@ -460,8 +477,8 @@ init { held_blood, held_gold } spRefillAmount =
     , secondsWaitedSince = { lastLocationMonsterRefill = 0 }
     , shouldShowLocationTypeMenu = False
     , currentLocationId = locations.forest.locationId
-    , locations =
-        locations
+    , locations = locations
+    , uiOptions = { hoveredTooltip = UI.NoHoveredTooltip, cachedTooltipOffsets = Dict.empty }
     }
 
 
@@ -658,11 +675,20 @@ updateTick model time =
     ( newModel, Cmd.none, NoOutMsg )
 
 
+updateUiOption : (UiOptions -> UiOptions) -> Model -> Model
+updateUiOption updater m =
+    { m | uiOptions = updater m.uiOptions }
+
+
 {-| called from ItemShop.updateBattleOutMsg, which does some post processing
 like reading what Battle.Model.player's held\_gold and held\_blood are
 -}
 update : Model -> Msg -> ( Model, Cmd Msg, OutMsg )
 update model battleMsg =
+    let
+        noop =
+            ( model, Cmd.none, NoOutMsg )
+    in
     case battleMsg of
         Noop ->
             ( model, Cmd.none, NoOutMsg )
@@ -803,6 +829,104 @@ update model battleMsg =
 
             else
                 ( model, Cmd.none, NoOutMsg )
+
+        GotUiOptionsMsg uiMsg ->
+            case uiMsg of
+                StartTooltipHover tooltip_id ->
+                    ( updateUiOption
+                        (\uio ->
+                            { uio
+                                | hoveredTooltip =
+                                    Dict.get tooltip_id uio.cachedTooltipOffsets
+                                        |> Maybe.withDefault { offset_x = 0, offset_y = 0, hovered_tooltip_id = tooltip_id }
+                                        |> UI.HoveredTooltipWithoutOffset
+                            }
+                        )
+                        model
+                    , Task.attempt (GotUiOptionsMsg << GotTooltipSize) (Browser.Dom.getElement ("tooltip__" ++ tooltip_id))
+                    , NoOutMsg
+                    )
+
+                EndTooltipHover tooltip_id ->
+                    ( updateUiOption (\uio -> { uio | hoveredTooltip = UI.NoHoveredTooltip }) model, Cmd.none, NoOutMsg )
+
+                GotTooltipSize tooltip_size_result ->
+                    case tooltip_size_result of
+                        Ok sizes ->
+                            let
+                                viewport_width =
+                                    sizes.viewport.width
+
+                                viewport_height =
+                                    sizes.viewport.height
+
+                                { x, y, width, height } =
+                                    sizes.element
+
+                                offset_x : Float
+                                offset_x =
+                                    toFloat <|
+                                        if x < 0 then
+                                            floor <| abs x + 10
+
+                                        else if x + width > viewport_width then
+                                            floor <| (viewport_width - (x + width)) - 10
+
+                                        else
+                                            floor <| 0
+
+                                offset_y : Float
+                                offset_y =
+                                    toFloat <|
+                                        if y < 0 then
+                                            floor <| abs y + 10
+
+                                        else if y + height > viewport_height then
+                                            floor <| (viewport_height - (y + height)) - 10
+
+                                        else
+                                            floor <| 0
+                            in
+                            case model.uiOptions.hoveredTooltip of
+                                UI.NoHoveredTooltip ->
+                                    noop
+
+                                UI.HoveredTooltipWithoutOffset oldTooltipData ->
+                                    let
+                                        newTooltipData =
+                                            -- have to add the old offsets back in, because the new tooltip_size_result includes the cached size, so it needs to be accounted for
+                                            { offset_x = offset_x + oldTooltipData.offset_x
+                                            , offset_y = offset_y + oldTooltipData.offset_y
+                                            , hovered_tooltip_id = oldTooltipData.hovered_tooltip_id
+                                            }
+                                    in
+                                    ( updateUiOption
+                                        (\uio ->
+                                            { uio
+                                                | cachedTooltipOffsets = Dict.insert oldTooltipData.hovered_tooltip_id newTooltipData uio.cachedTooltipOffsets
+                                                , hoveredTooltip = UI.HoveredTooltipWithOffset newTooltipData
+                                            }
+                                        )
+                                        model
+                                    , Cmd.none
+                                    , NoOutMsg
+                                    )
+
+                                UI.HoveredTooltipWithOffset oldTooltipData ->
+                                    let
+                                        newTooltipData =
+                                            { oldTooltipData
+                                                | offset_x = offset_x
+                                                , offset_y = offset_y
+                                            }
+                                    in
+                                    ( updateUiOption (\uio -> { uio | hoveredTooltip = UI.HoveredTooltipWithOffset newTooltipData }) model
+                                    , Cmd.none
+                                    , NoOutMsg
+                                    )
+
+                        Err _ ->
+                            noop
 
 
 

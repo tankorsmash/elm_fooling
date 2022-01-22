@@ -1,4 +1,4 @@
-module Battle exposing (DefeatAction(..), Model, Msg(..), OutMsg(..), doesGolemNeedStamina, secondsRequiredForSpRefill, increaseGolemStamina, init, monsterMap, subscriptions, suite, update, view)
+module Battle exposing (DefeatAction(..), Model, Msg(..), OutMsg(..), doesGolemNeedStamina, increaseGolemStamina, init, monsterMap, secondsRequiredForSpRefill, subscriptions, suite, update, view)
 
 import Array
 import Browser.Dom
@@ -394,8 +394,7 @@ mapCurrentLocation model locationUpdater =
 
 
 type alias SecondsWaitedSince =
-    { lastSpRefill : Int
-    , lastLocationMonsterRefill : Int
+    { lastLocationMonsterRefill : Int
     }
 
 
@@ -458,10 +457,7 @@ init { held_blood, held_gold } spRefillAmount =
     , showExpandedLogs = False
     , player = { held_blood = held_blood, held_gold = held_gold }
     , spRefillAmount = spRefillAmount
-    , secondsWaitedSince =
-        { lastSpRefill = 0
-        , lastLocationMonsterRefill = 0
-        }
+    , secondsWaitedSince = { lastLocationMonsterRefill = 0 }
     , shouldShowLocationTypeMenu = False
     , currentLocationId = locations.forest.locationId
     , locations =
@@ -617,8 +613,7 @@ updateTick model time =
 
         incrSecondsWaitedSince =
             { origSecondsWaitedSince
-                | lastSpRefill = origSecondsWaitedSince.lastSpRefill + 1
-                , lastLocationMonsterRefill = origSecondsWaitedSince.lastLocationMonsterRefill + 1
+                | lastLocationMonsterRefill = origSecondsWaitedSince.lastLocationMonsterRefill + 1
             }
 
         newModel =
@@ -627,27 +622,6 @@ updateTick model time =
                    (\m ->
                         { m | secondsWaitedSince = incrSecondsWaitedSince }
                    )
-                -- HANDLED In ItemShop now
-                -- |> -- golem sp refil
-                --    (\({ secondsWaitedSince } as m) ->
-                --         if secondsWaitedSince.lastSpRefill >= secondsRequiredForSpRefill then
-                --             let
-                --                 newGolem =
-                --                     monsterLivingMap
-                --                         (monsterStatMapStamina (addToStatCurVal model.spRefillAmount))
-                --                         m.golem
-                --
-                --                 newSecondsWaitedSince =
-                --                     { secondsWaitedSince | lastSpRefill = 0 }
-                --             in
-                --             { m
-                --                 | golem = newGolem
-                --                 , secondsWaitedSince = newSecondsWaitedSince
-                --             }
-                --
-                --         else
-                --             m
-                --    )
                 |> -- location monster refil
                    (\({ secondsWaitedSince, locations } as m) ->
                         if m.secondsWaitedSince.lastLocationMonsterRefill >= secondsRequiredForLocationMonsterRefill then
@@ -1224,9 +1198,6 @@ view model =
                     , column [ width fill, paddingXY 0 20 ]
                         [ el [ Font.underline ] <|
                             text "Debug"
-                        , text <|
-                            "Time Until SP Recharge: "
-                                ++ String.fromInt (secondsRequiredForSpRefill - model.secondsWaitedSince.lastSpRefill)
                         , text <|
                             "Time Until Location Monster Refill: "
                                 ++ String.fromInt (secondsRequiredForLocationMonsterRefill - model.secondsWaitedSince.lastLocationMonsterRefill)

@@ -838,7 +838,7 @@ update model battleMsg =
                             { uio
                                 | hoveredTooltip =
                                     Dict.get tooltip_id uio.cachedTooltipOffsets
-                                        |> Maybe.withDefault { offset_x = 0, offset_y = 0, hovered_tooltip_id = tooltip_id }
+                                        |> Maybe.withDefault { offsetX = 0, offsetY = 0, hoveredTooltipId = tooltip_id }
                                         |> UI.HoveredTooltipWithoutOffset
                             }
                         )
@@ -863,8 +863,8 @@ update model battleMsg =
                                 { x, y, width, height } =
                                     sizes.element
 
-                                offset_x : Float
-                                offset_x =
+                                offsetX : Float
+                                offsetX =
                                     toFloat <|
                                         if x < 0 then
                                             floor <| abs x + 10
@@ -875,8 +875,8 @@ update model battleMsg =
                                         else
                                             floor <| 0
 
-                                offset_y : Float
-                                offset_y =
+                                offsetY : Float
+                                offsetY =
                                     toFloat <|
                                         if y < 0 then
                                             floor <| abs y + 10
@@ -895,15 +895,15 @@ update model battleMsg =
                                     let
                                         newTooltipData =
                                             -- have to add the old offsets back in, because the new tooltip_size_result includes the cached size, so it needs to be accounted for
-                                            { offset_x = offset_x + oldTooltipData.offset_x
-                                            , offset_y = offset_y + oldTooltipData.offset_y
-                                            , hovered_tooltip_id = oldTooltipData.hovered_tooltip_id
+                                            { offsetX = offsetX + oldTooltipData.offsetX
+                                            , offsetY = offsetY + oldTooltipData.offsetY
+                                            , hoveredTooltipId = oldTooltipData.hoveredTooltipId
                                             }
                                     in
                                     ( updateUiOption
                                         (\uio ->
                                             { uio
-                                                | cachedTooltipOffsets = Dict.insert oldTooltipData.hovered_tooltip_id newTooltipData uio.cachedTooltipOffsets
+                                                | cachedTooltipOffsets = Dict.insert oldTooltipData.hoveredTooltipId newTooltipData uio.cachedTooltipOffsets
                                                 , hoveredTooltip = UI.HoveredTooltipWithOffset newTooltipData
                                             }
                                         )
@@ -916,8 +916,8 @@ update model battleMsg =
                                     let
                                         newTooltipData =
                                             { oldTooltipData
-                                                | offset_x = offset_x
-                                                , offset_y = offset_y
+                                                | offsetX = offsetX
+                                                , offsetY = offsetY
                                             }
                                     in
                                     ( updateUiOption (\uio -> { uio | hoveredTooltip = UI.HoveredTooltipWithOffset newTooltipData }) model

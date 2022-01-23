@@ -1089,7 +1089,7 @@ type alias UiOptions =
     { shiftIsPressed : Bool
     , hovered_trend_chart : List (CI.One TrendChartDatum CI.Dot)
     , show_main_chart : Bool
-    , hovered_tooltip : UI.HoveredTooltip
+    , hoveredTooltip : UI.HoveredTooltip
     , cached_tooltip_offsets : Dict.Dict String UI.TooltipData
     , globalViewport : Maybe Browser.Dom.Viewport
     , showDebugInventoriesElement : Maybe Browser.Dom.Element
@@ -1705,7 +1705,7 @@ init hash key =
             { shiftIsPressed = False
             , hovered_trend_chart = []
             , show_main_chart = True
-            , hovered_tooltip = UI.NoHoveredTooltip
+            , hoveredTooltip = UI.NoHoveredTooltip
             , cached_tooltip_offsets = Dict.empty
             , globalViewport = Nothing
             , showDebugInventoriesElement = Nothing
@@ -2256,9 +2256,9 @@ updateUiOptions uiOptMsg model =
             ( updateUiOption
                 (\uio ->
                     { uio
-                        | hovered_tooltip =
+                        | hoveredTooltip =
                             Dict.get tooltip_id uio.cached_tooltip_offsets
-                                |> Maybe.withDefault { offset_x = 0, offset_y = 0, hovered_tooltip_id = tooltip_id }
+                                |> Maybe.withDefault { offsetX = 0, offsetY = 0, hoveredTooltipId = tooltip_id }
                                 |> UI.HoveredTooltipWithoutOffset
                     }
                 )
@@ -2267,7 +2267,7 @@ updateUiOptions uiOptMsg model =
             )
 
         EndTooltipHover tooltip_id ->
-            ( updateUiOption (\uio -> { uio | hovered_tooltip = UI.NoHoveredTooltip }) model, Cmd.none )
+            ( updateUiOption (\uio -> { uio | hoveredTooltip = UI.NoHoveredTooltip }) model, Cmd.none )
 
         GotTooltipSize tooltip_size_result ->
             case tooltip_size_result of
@@ -2282,8 +2282,8 @@ updateUiOptions uiOptMsg model =
                         { x, y, width, height } =
                             sizes.element
 
-                        offset_x : Float
-                        offset_x =
+                        offsetX : Float
+                        offsetX =
                             toFloat <|
                                 if x < 0 then
                                     floor <| abs x + 10
@@ -2294,8 +2294,8 @@ updateUiOptions uiOptMsg model =
                                 else
                                     floor <| 0
 
-                        offset_y : Float
-                        offset_y =
+                        offsetY : Float
+                        offsetY =
                             toFloat <|
                                 if y < 0 then
                                     floor <| abs y + 10
@@ -2306,39 +2306,39 @@ updateUiOptions uiOptMsg model =
                                 else
                                     floor <| 0
                     in
-                    case model.uiOptions.hovered_tooltip of
+                    case model.uiOptions.hoveredTooltip of
                         UI.NoHoveredTooltip ->
                             ( model, Cmd.none )
 
-                        UI.HoveredTooltipWithoutOffset old_tooltip_data ->
+                        UI.HoveredTooltipWithoutOffset oldTooltipData ->
                             let
                                 new_tooltip_data =
                                     -- have to add the old offsets back in, because the new tooltip_size_result includes the cached size, so it needs to be accounted for
-                                    { offset_x = offset_x + old_tooltip_data.offset_x
-                                    , offset_y = offset_y + old_tooltip_data.offset_y
-                                    , hovered_tooltip_id = old_tooltip_data.hovered_tooltip_id
+                                    { offsetX = offsetX + oldTooltipData.offsetX
+                                    , offsetY = offsetY + oldTooltipData.offsetY
+                                    , hoveredTooltipId = oldTooltipData.hoveredTooltipId
                                     }
                             in
                             ( updateUiOption
                                 (\uio ->
                                     { uio
-                                        | cached_tooltip_offsets = Dict.insert old_tooltip_data.hovered_tooltip_id new_tooltip_data uio.cached_tooltip_offsets
-                                        , hovered_tooltip = UI.HoveredTooltipWithOffset new_tooltip_data
+                                        | cached_tooltip_offsets = Dict.insert oldTooltipData.hoveredTooltipId new_tooltip_data uio.cached_tooltip_offsets
+                                        , hoveredTooltip = UI.HoveredTooltipWithOffset new_tooltip_data
                                     }
                                 )
                                 model
                             , Cmd.none
                             )
 
-                        UI.HoveredTooltipWithOffset old_tooltip_data ->
+                        UI.HoveredTooltipWithOffset oldTooltipData ->
                             let
                                 new_tooltip_data =
-                                    { old_tooltip_data
-                                        | offset_x = offset_x
-                                        , offset_y = offset_y
+                                    { oldTooltipData
+                                        | offsetX = offsetX
+                                        , offsetY = offsetY
                                     }
                             in
-                            ( updateUiOption (\uio -> { uio | hovered_tooltip = UI.HoveredTooltipWithOffset new_tooltip_data }) model
+                            ( updateUiOption (\uio -> { uio | hoveredTooltip = UI.HoveredTooltipWithOffset new_tooltip_data }) model
                             , Cmd.none
                             )
 
@@ -5159,7 +5159,7 @@ view_shop_tab_type model =
                 ]
             , case getPlayer model.characters of
                 Player player ->
-                    special_actions_display model.colorTheme model.player_upgrades model.uiOptions.hovered_tooltip player model.ai_updates_paused
+                    special_actions_display model.colorTheme model.player_upgrades model.uiOptions.hoveredTooltip player model.ai_updates_paused
             , trends_display
                 model.colorTheme
                 model.uiOptions.shiftIsPressed
@@ -5396,17 +5396,17 @@ font_scaled scale =
 
 
 hoveredTooltipMatchesId : UI.HoveredTooltip -> String -> Bool
-hoveredTooltipMatchesId hovered_tooltip tooltip_id =
-    case hovered_tooltip of
+hoveredTooltipMatchesId hoveredTooltip tooltip_id =
+    case hoveredTooltip of
         UI.HoveredTooltipWithoutOffset tooltip_data ->
-            if tooltip_data.hovered_tooltip_id == tooltip_id then
+            if tooltip_data.hoveredTooltipId == tooltip_id then
                 True
 
             else
                 False
 
-        UI.HoveredTooltipWithOffset hovered_tooltip_data ->
-            if hovered_tooltip_data.hovered_tooltip_id == tooltip_id then
+        UI.HoveredTooltipWithOffset hoveredTooltip_data ->
+            if hoveredTooltip_data.hoveredTooltipId == tooltip_id then
                 True
 
             else
@@ -5424,18 +5424,10 @@ primary_button_tooltip :
     -> TooltipConfig
     -> UI.HoveredTooltip
     -> Element Msg
-primary_button_tooltip colorTheme custom_attrs on_press label { tooltip_id, tooltip_body } hovered_tooltip =
+primary_button_tooltip colorTheme custom_attrs on_press label { tooltip_id, tooltip_body } hoveredTooltip =
     let
-        { offset_x, offset_y } =
-            case hovered_tooltip of
-                UI.HoveredTooltipWithOffset data ->
-                    data
-
-                UI.HoveredTooltipWithoutOffset cached_data ->
-                    cached_data
-
-                _ ->
-                    { offset_x = 0, offset_y = 0, hovered_tooltip_id = "UNUSED" }
+        { offsetX, offsetY } =
+            UI.getTooltipOffset hoveredTooltip
 
         tooltip_el =
             Element.el
@@ -5446,12 +5438,12 @@ primary_button_tooltip colorTheme custom_attrs on_press label { tooltip_id, tool
                 , Border.rounded 3
                 , Border.width 2
                 , padding 10
-                , if offset_y == 0 then
+                , if offsetY == 0 then
                     Element.moveUp 20
 
                   else
-                    Element.moveDown offset_y
-                , Element.moveRight offset_x
+                    Element.moveDown offsetY
+                , Element.moveRight offsetX
                 , centerX
                 , Element.htmlAttribute <|
                     Html.Attributes.id ("tooltip__" ++ tooltip_id)
@@ -5468,7 +5460,7 @@ primary_button_tooltip colorTheme custom_attrs on_press label { tooltip_id, tool
             target offsetWidth
 
         tooltip_attr =
-            if hoveredTooltipMatchesId hovered_tooltip tooltip_id then
+            if hoveredTooltipMatchesId hoveredTooltip tooltip_id then
                 [ Element.above tooltip_el ]
 
             else
@@ -5500,7 +5492,7 @@ buildTooltipElementConfig tooltip_id element =
 
 
 build_special_action_button : UI.ColorTheme -> UI.HoveredTooltip -> Character -> SpecialAction -> String -> String -> Price -> Element Msg
-build_special_action_button colorTheme hovered_tooltip character special_action title tooltip_text price =
+build_special_action_button colorTheme hoveredTooltip character special_action title tooltip_text price =
     let
         is_disabled =
             case price of
@@ -5541,7 +5533,7 @@ build_special_action_button colorTheme hovered_tooltip character special_action 
                 [ Background.color UI.color_grey
                 , Border.color UI.color_grey
                 ]
-                    ++ (if hoveredTooltipMatchesId hovered_tooltip tooltip_config.tooltip_id then
+                    ++ (if hoveredTooltipMatchesId hoveredTooltip tooltip_config.tooltip_id then
                             [ Background.color <| rgb 0 0 0
                             , Border.color <| rgb 0 0 0
 
@@ -5568,7 +5560,7 @@ build_special_action_button colorTheme hovered_tooltip character special_action 
         msg
         title
         tooltip_config
-        hovered_tooltip
+        hoveredTooltip
 
 
 scale_increase_income_cost : Int -> Price
@@ -5577,12 +5569,12 @@ scale_increase_income_cost current_level =
 
 
 special_actions_display : UI.ColorTheme -> List PlayerUpgrade -> UI.HoveredTooltip -> Character -> Bool -> Element Msg
-special_actions_display colorTheme player_upgrades hovered_tooltip player ai_updates_paused =
+special_actions_display colorTheme player_upgrades hoveredTooltip player ai_updates_paused =
     let
         button_toggle_ai_pause =
             build_special_action_button
                 colorTheme
-                hovered_tooltip
+                hoveredTooltip
                 player
                 TogglePauseAi
                 (if ai_updates_paused then
@@ -5600,7 +5592,7 @@ special_actions_display colorTheme player_upgrades hovered_tooltip player ai_upd
         button_search =
             build_special_action_button
                 colorTheme
-                hovered_tooltip
+                hoveredTooltip
                 player
                 InviteTrader
                 "Invite Trader"
@@ -5610,7 +5602,7 @@ special_actions_display colorTheme player_upgrades hovered_tooltip player ai_upd
         button_high_desire =
             build_special_action_button
                 colorTheme
-                hovered_tooltip
+                hoveredTooltip
                 player
                 (TriggerEvent (EventVeryDesiredItemType Nothing))
                 "Spread Good Rumour"
@@ -5620,7 +5612,7 @@ special_actions_display colorTheme player_upgrades hovered_tooltip player ai_upd
         button_low_desire =
             build_special_action_button
                 colorTheme
-                hovered_tooltip
+                hoveredTooltip
                 player
                 (TriggerEvent (EventLeastDesiredItemType Nothing))
                 "Spread Bad Rumour"
@@ -5630,7 +5622,7 @@ special_actions_display colorTheme player_upgrades hovered_tooltip player ai_upd
         button_unlock_item =
             build_special_action_button
                 colorTheme
-                hovered_tooltip
+                hoveredTooltip
                 player
                 UnlockItem
                 "Item Search"
@@ -5654,7 +5646,7 @@ special_actions_display colorTheme player_upgrades hovered_tooltip player ai_upd
             in
             build_special_action_button
                 colorTheme
-                hovered_tooltip
+                hoveredTooltip
                 player
                 IncreaseIncome
                 "Invest"

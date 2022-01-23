@@ -1,4 +1,4 @@
-module Interface exposing (ButtonConfig, ColorTheme(..), HoveredTooltip(..), TooltipData, TooltipId, blankChar, clipText, colorFromInt, color_black, color_danger, color_danger_bright, color_grey, color_light_grey, color_off_black, color_pastel_green_1, color_pastel_green_2, color_pastel_green_3, color_pastel_green_4, color_pastel_green_5, color_pastel_green_6, color_pastel_green_7, color_pastel_red_1, color_pastel_red_2, color_pastel_red_3, color_pastel_red_4, color_pastel_red_5, color_pastel_red_6, color_pastel_red_7, color_primary, color_secondary, color_secondary_bright, color_ultra_light_grey, color_very_light_grey, color_very_very_light_grey, color_white, common_button_attrs, convertColor, cssRule, danger_button, danger_button_custom, defineHtmlId, font_blood, font_grey, hex_to_color, monospace, nbsp, noUserSelect, outline_button, outline_button_custom, pointerEventsAll, pointerEventsNone, primary_button, primary_button_custom, primary_color_bright, renderBlood, renderBlood_sized, renderBlood_string, renderGp, renderGpSized, renderGpString, scrollbarYEl, secondary_button, secondary_button_custom)
+module Interface exposing (ButtonConfig, ColorTheme(..), HoveredTooltip(..), TooltipData, TooltipId, blankChar, clipText, colorFromInt, color_black, color_danger, color_danger_bright, color_grey, color_light_grey, color_off_black, color_pastel_green_1, color_pastel_green_2, color_pastel_green_3, color_pastel_green_4, color_pastel_green_5, color_pastel_green_6, color_pastel_green_7, color_pastel_red_1, color_pastel_red_2, color_pastel_red_3, color_pastel_red_4, color_pastel_red_5, color_pastel_red_6, color_pastel_red_7, color_primary, color_secondary, color_secondary_bright, color_ultra_light_grey, color_very_light_grey, color_very_very_light_grey, color_white, common_button_attrs, convertColor, cssRule, danger_button, danger_button_custom, defineHtmlId, font_blood, font_grey, getTooltipOffset, hex_to_color, monospace, nbsp, noUserSelect, outline_button, outline_button_custom, pointerEventsAll, pointerEventsNone, primary_button, primary_button_custom, primary_color_bright, renderBlood, renderBlood_sized, renderBlood_string, renderGp, renderGpSized, renderGpString, scrollbarYEl, secondary_button, secondary_button_custom)
 
 import Array
 import Browser.Dom
@@ -70,9 +70,9 @@ type ColorTheme
 
 
 type alias TooltipData =
-    { offset_x : Float
-    , offset_y : Float
-    , hovered_tooltip_id : String
+    { offsetX : Float
+    , offsetY : Float
+    , hoveredTooltipId : String
     }
 
 
@@ -80,6 +80,19 @@ type HoveredTooltip
     = NoHoveredTooltip
     | HoveredTooltipWithoutOffset TooltipData
     | HoveredTooltipWithOffset TooltipData
+
+
+getTooltipOffset : HoveredTooltip -> { offsetX : Float, offsetY : Float }
+getTooltipOffset hoveredTooltip =
+    case hoveredTooltip of
+        HoveredTooltipWithOffset data ->
+            { offsetX = data.offsetX, offsetY = data.offsetY }
+
+        HoveredTooltipWithoutOffset cached_data ->
+            { offsetX = cached_data.offsetX, offsetY = cached_data.offsetY }
+
+        _ ->
+            { offsetX = 0, offsetY = 0 }
 
 
 type alias TooltipId =

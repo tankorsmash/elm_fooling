@@ -921,10 +921,10 @@ viewShape shape =
             OnSliderChanged << ShapeConfigType << ShapeUpdateType
     in
     row [ width fill ]
-        [ UI.secondary_button [] (Square |> onChange) "Square"
-        , UI.secondary_button [] (Sawtooth |> onChange) "Sawtooth"
-        , UI.secondary_button [] (Sine |> onChange) "Sine"
-        , UI.secondary_button [] (Noise |> onChange) "Noise"
+        [ UI.secondary_button { colorTheme = UI.BrightTheme, customAttrs = [], onPressMsg = Square |> onChange, textLabel = "Square" }
+        , UI.secondary_button { colorTheme = UI.BrightTheme, customAttrs = [], onPressMsg = Sawtooth |> onChange, textLabel = "Sawtooth" }
+        , UI.secondary_button { colorTheme = UI.BrightTheme, customAttrs = [], onPressMsg = Sine |> onChange, textLabel = "Sine" }
+        , UI.secondary_button { colorTheme = UI.BrightTheme, customAttrs = [], onPressMsg = Noise |> onChange, textLabel = "Noise" }
         ]
 
 
@@ -1168,8 +1168,8 @@ view model =
         column [ width fill ]
             [ text "TEMP SFXR"
             , row [ width fill, spacing 10, padding 10 ]
-                [ UI.primary_button [] PlaySound "Play"
-                , UI.primary_button [] SetHitHurt "RNG Hit/Hurt"
+                [ UI.primary_button { colorTheme = UI.BrightTheme, customAttrs = [], onPressMsg = PlaySound, textLabel = "Play" }
+                , UI.primary_button { colorTheme = UI.BrightTheme, customAttrs = [], onPressMsg = SetHitHurt, textLabel = "RNG Hit/Hurt" }
                 ]
             , Lazy.lazy viewSliders model
             ]

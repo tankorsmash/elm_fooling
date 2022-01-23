@@ -88,7 +88,8 @@ type OutMsg
     | OnMonsterDefeat DefeatAction
 
 
-type UiOptionMsg
+type
+    UiOptionMsg
     -- = MouseEnterShopItem ListContext ( CharacterId, Item )
     -- | MouseLeaveShopItem ListContext ( CharacterId, Item )
     = GotTooltipMsg UI.TooltipMsg
@@ -1250,6 +1251,10 @@ dividingLine =
         ]
 
 
+replaceMeColorTheme =
+    UI.BrightTheme
+
+
 view : Model -> Element Msg
 view model =
     if not model.shouldShowLocationTypeMenu then
@@ -1260,7 +1265,7 @@ view model =
                     [ Element.el [ alignLeft ] <| viewMonsterInBattle model.golem True ]
                 , column [ centerX, spacing 10 ]
                     [ let
-                        ( buttonType, msg, txt ) =
+                        ( buttonType, onPressMsg, textLabel ) =
                             case ( model.golem, model.enemyMonster ) of
                                 ( LivingMonster _, Just (LivingMonster _) ) ->
                                     ( UI.primary_button, Fight, "Continue Fight" )
@@ -1275,15 +1280,18 @@ view model =
                                     ( UI.danger_button, Noop, "You're dead" )
                       in
                       buttonType
-                        [ width (fillMin 125)
-                        , if msg == Noop then
-                            Element.mouseOver []
+                        { customAttrs =
+                            [ width (fillMin 125)
+                            , if onPressMsg == Noop then
+                                Element.mouseOver []
 
-                          else
-                            attrNone
-                        ]
-                        msg
-                        txt
+                              else
+                                attrNone
+                            ]
+                        , onPressMsg = onPressMsg
+                        , textLabel = textLabel
+                        , colorTheme = replaceMeColorTheme
+                        }
                     , let
                         currentLocation =
                             getCurrentLocation model
@@ -1349,17 +1357,19 @@ view model =
                     |> List.map
                         (\location ->
                             UI.secondary_button_custom
-                                [ width fill ]
-                                (ChangeLocation location.locationId)
-                                (column [ centerX, spacing 5 ]
-                                    [ el [ centerX ] <| text location.name
-                                    , el [ centerX, Font.size 12 ] <|
-                                        column [ width fill ]
-                                            [ el [ Font.underline, centerX, width fill ] <| text "Monsters Remain"
-                                            , el [ centerX ] <| text <| String.fromInt location.monstersLeft
-                                            ]
-                                    ]
-                                )
+                                { colorTheme = replaceMeColorTheme
+                                , customAttrs = [ width fill ]
+                                , onPressMsg = ChangeLocation location.locationId
+                                , customLabel =
+                                    column [ centerX, spacing 5 ]
+                                        [ el [ centerX ] <| text location.name
+                                        , el [ centerX, Font.size 12 ] <|
+                                            column [ width fill ]
+                                                [ el [ Font.underline, centerX, width fill ] <| text "Monsters Remain"
+                                                , el [ centerX ] <| text <| String.fromInt location.monstersLeft
+                                                ]
+                                        ]
+                                }
                         )
                 )
             ]

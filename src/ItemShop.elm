@@ -3725,8 +3725,8 @@ render_item_type shop_trends item_type =
         ]
 
 
-shop_buy_button : Int -> Int -> InventoryRecord -> Element Msg
-shop_buy_button gold_cost gold_in_pocket { item, quantity, avg_price } =
+shop_buy_button : ColorTheme -> Int -> Int -> InventoryRecord -> Element Msg
+shop_buy_button colorTheme gold_cost gold_in_pocket { item, quantity, avg_price } =
     let
         can_afford =
             gold_in_pocket >= gold_cost
@@ -3739,20 +3739,24 @@ shop_buy_button gold_cost gold_in_pocket { item, quantity, avg_price } =
                 UI.secondary_button
     in
     button_type
-        [ getQuantity quantity < 1 |> Element.transparent
-        , width (fill |> Element.minimum 120)
-        ]
-        (PlayerBuyItemFromShop item (Quantity 1))
-    <|
-        if can_afford then
-            "BUY"
+        { colorTheme = colorTheme
+        , customAttrs =
+            [ getQuantity quantity < 1 |> Element.transparent
+            , width (fill |> Element.minimum 120)
+            ]
+        , onPressMsg =
+            PlayerBuyItemFromShop item (Quantity 1)
+        , textLabel =
+            if can_afford then
+                "BUY"
 
-        else
-            "Need GP"
+            else
+                "Need GP"
+        }
 
 
-shop_sell_button : Bool -> InventoryRecord -> Element Msg
-shop_sell_button has_items_to_sell_ { item } =
+shop_sell_button : ColorTheme -> Bool -> InventoryRecord -> Element Msg
+shop_sell_button colorTheme has_items_to_sell_ { item } =
     let
         button_type =
             if has_items_to_sell_ then
@@ -3769,11 +3773,15 @@ shop_sell_button has_items_to_sell_ { item } =
                 "Need GP"
     in
     button_type
-        [ Element.transparent <| not has_items_to_sell_
-        , width (fill |> Element.minimum 120)
-        ]
-        (PlayerSellItemToShop item (Quantity 1))
-        buttonText
+        { customAttrs =
+            [ Element.transparent <| not has_items_to_sell_
+            , width (fill |> Element.minimum 120)
+            ]
+        , onPressMsg =
+            PlayerSellItemToShop item (Quantity 1)
+        , textLabel = buttonText
+        , colorTheme = colorTheme
+        }
 
 
 explain =
@@ -4285,29 +4293,35 @@ render_inventory_grid model header character shop_trends hovered_item context co
         rendered_inventory_controls : List (Element Msg)
         rendered_inventory_controls =
             [ row [ spacingXY 10 0 ]
-                [ UI.primary_button []
-                    (GotUiOptionsMsg <| ToggleHideNonZeroRows character.char_id)
-                    (if hide_zero_qty_inv_rows then
-                        "Show Nonzero"
+                [ UI.primary_button
+                    { customAttrs = []
+                    , onPressMsg = GotUiOptionsMsg <| ToggleHideNonZeroRows character.char_id
+                    , textLabel =
+                        if hide_zero_qty_inv_rows then
+                            "Show Nonzero"
 
-                     else
-                        "Hide Nonzero"
-                    )
+                        else
+                            "Hide Nonzero"
+                    , colorTheme = model.colorTheme
+                    }
                 , UI.secondary_button
-                    [ Html.Events.preventDefaultOn "contextmenu"
-                        (Decode.succeed <| ( GotUiOptionsMsg <| CycleFilterDisplayedItemsBackward character.char_id character.displayedItemType, True ))
-                        |> Element.htmlAttribute
-                    ]
-                    (GotUiOptionsMsg <| CycleFilterDisplayedItemsForward character.char_id character.displayedItemType)
-                  <|
-                    "Filter: "
-                        ++ (case character.displayedItemType of
-                                Nothing ->
-                                    "All"
+                    { colorTheme = model.colorTheme
+                    , customAttrs =
+                        [ Html.Events.preventDefaultOn "contextmenu"
+                            (Decode.succeed <| ( GotUiOptionsMsg <| CycleFilterDisplayedItemsBackward character.char_id character.displayedItemType, True ))
+                            |> Element.htmlAttribute
+                        ]
+                    , onPressMsg = GotUiOptionsMsg <| CycleFilterDisplayedItemsForward character.char_id character.displayedItemType
+                    , textLabel =
+                        "Filter: "
+                            ++ (case character.displayedItemType of
+                                    Nothing ->
+                                        "All"
 
-                                Just itemType ->
-                                    item_type_to_pretty_string itemType
-                           )
+                                    Just itemType ->
+                                        item_type_to_pretty_string itemType
+                               )
+                    }
                 ]
             ]
 
@@ -5001,8 +5015,8 @@ player_action_log_display item_db player_action_logs =
         )
 
 
-showHideDebugInventoriesButton : List (Element.Attribute Msg) -> Bool -> Element Msg
-showHideDebugInventoriesButton attrs show_debug_inventories =
+showHideDebugInventoriesButton : ColorTheme -> List (Element.Attribute Msg) -> Bool -> Element Msg
+showHideDebugInventoriesButton colorTheme attrs show_debug_inventories =
     let
         buttonText =
             if show_debug_inventories then
@@ -5011,37 +5025,45 @@ showHideDebugInventoriesButton attrs show_debug_inventories =
             else
                 "Show Debug"
     in
-    UI.danger_button (UI.defineHtmlId "show_debug_inventories" :: attrs)
-        (GotUiOptionsMsg ToggleShowDebugInventories)
-        buttonText
+    UI.danger_button
+        { customAttrs = UI.defineHtmlId "show_debug_inventories" :: attrs
+        , onPressMsg = GotUiOptionsMsg ToggleShowDebugInventories
+        , textLabel = buttonText
+        , colorTheme = colorTheme
+        }
 
 
-shopInventoryControls : Player -> ShopTrends -> InventoryRecord -> Element Msg
-shopInventoryControls (Player player) shop_trends { item, quantity, avg_price } =
+shopInventoryControls : ColorTheme -> Player -> ShopTrends -> InventoryRecord -> Element Msg
+shopInventoryControls colorTheme (Player player) shop_trends { item, quantity, avg_price } =
     shop_buy_button
+        colorTheme
         (get_single_adjusted_item_cost shop_trends item)
         player.held_gold
         { item = item, quantity = quantity, avg_price = avg_price }
 
 
-playerInventoryControls : ( Bool, ShopTrends ) -> InventoryRecord -> Element Msg
-playerInventoryControls ( shiftIsPressed, shop_trends ) { item, quantity, avg_price } =
+playerInventoryControls : ColorTheme -> ( Bool, ShopTrends ) -> InventoryRecord -> Element Msg
+playerInventoryControls colorTheme ( shiftIsPressed, shop_trends ) { item, quantity, avg_price } =
     let
         hasItemsToSell =
             getQuantity quantity >= 1
     in
     if not shiftIsPressed then
         shop_sell_button
+            colorTheme
             hasItemsToSell
             { item = item, quantity = setQuantity 1, avg_price = avg_price }
 
     else
         UI.danger_button
-            [ Element.transparent <| not hasItemsToSell
-            , width (fill |> Element.minimum 120)
-            ]
-            (SacrificeItem item)
-            "Sacrifice"
+            { customAttrs =
+                [ Element.transparent <| not hasItemsToSell
+                , width (fill |> Element.minimum 120)
+                ]
+            , onPressMsg = SacrificeItem item
+            , textLabel = "Sacrifice"
+            , colorTheme = colorTheme
+            }
 
 
 view_shop_tab_type : Model -> Element Msg
@@ -5119,7 +5141,12 @@ view_shop_tab_type model =
                 [ Element.link []
                     { url = "#items"
                     , label =
-                        UI.secondary_button [] (ChangeTabType ItemsUnlockedTabType) "View Codex"
+                        UI.secondary_button
+                            { colorTheme = model.colorTheme
+                            , customAttrs = []
+                            , onPressMsg = ChangeTabType ItemsUnlockedTabType
+                            , textLabel = "View Codex"
+                            }
                     }
                 , UI.outline_button [] (GotUiOptionsMsg ToggleShowMainChart) <|
                     if model.uiOptions.show_main_chart then
@@ -5163,7 +5190,7 @@ view_shop_tab_type model =
                     model.shop_trends
                     model.uiOptions.hovered_item_in_character
                     ShopItems
-                    (shopInventoryControls (getPlayer model.characters) model.shop_trends)
+                    (shopInventoryControls model.colorTheme (getPlayer model.characters) model.shop_trends)
             , Element.el [ paddingXY 0 10, width fill ] <|
                 render_inventory_grid
                     model
@@ -5172,10 +5199,10 @@ view_shop_tab_type model =
                     model.shop_trends
                     model.uiOptions.hovered_item_in_character
                     InventoryItems
-                    (playerInventoryControls ( model.uiOptions.shiftIsPressed, model.shop_trends ))
+                    (playerInventoryControls model.colorTheme ( model.uiOptions.shiftIsPressed, model.shop_trends ))
             ]
                 ++ [ column [ width fill ] <|
-                        showHideDebugInventoriesButton [] model.uiOptions.show_debug_inventories
+                        showHideDebugInventoriesButton model.colorTheme [] model.uiOptions.show_debug_inventories
                             :: (if model.uiOptions.show_debug_inventories then
                                     debug_inventories
 
@@ -5239,7 +5266,7 @@ view_items_unlocked_tab_type colorTheme item_db =
         back_btn =
             Element.link []
                 { url = "#shop"
-                , label = UI.danger_button [] (ChangeTabType ShopTabType) "Back to Shop"
+                , label = UI.danger_button { customAttrs = [], onPressMsg = ChangeTabType ShopTabType, textLabel = "Back to Shop", colorTheme = colorTheme }
                 }
 
         -- item_grid : Element Msg
@@ -5271,7 +5298,7 @@ viewOverlay model =
                 , Element.inFront <|
                     if model.uiOptions.shouldDisplayShowDebugInventoriesOverlay then
                         el [ width fill, padding 10 ] <|
-                            showHideDebugInventoriesButton [ width fill ] model.uiOptions.show_debug_inventories
+                            showHideDebugInventoriesButton model.colorTheme [ width fill ] model.uiOptions.show_debug_inventories
 
                     else
                         Element.none
@@ -5416,7 +5443,7 @@ build_special_action_button colorTheme hoveredTooltip character special_action t
         { colorTheme = colorTheme
         , customAttrs = button_attrs
         , onPressMsg = msg
-        , label = title
+        , textLabel = title
         }
         tooltip_config
         hoveredTooltip
@@ -5446,7 +5473,12 @@ special_actions_display colorTheme player_upgrades hoveredTooltip player ai_upda
                 Free
 
         button_battle =
-            UI.primary_button [] (ChangeTabType BattleTabType) "To Battle!"
+            UI.primary_button
+                { colorTheme = colorTheme
+                , customAttrs = []
+                , onPressMsg = ChangeTabType BattleTabType
+                , textLabel = "To Battle!"
+                }
 
         button_search =
             build_special_action_button

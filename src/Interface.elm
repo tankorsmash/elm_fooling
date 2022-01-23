@@ -279,7 +279,7 @@ common_button_attrs { font_color, button_color, hovered_button_color, hovered_fo
 
 
 primary_button_custom : List (Element.Attribute msg) -> msg -> Element msg -> Element msg
-primary_button_custom custom_attrs on_press label =
+primary_button_custom customAttrs onPressMsg label =
     Input.button
         (common_button_attrs
             { font_color = color_white
@@ -287,18 +287,18 @@ primary_button_custom custom_attrs on_press label =
             , hovered_button_color = primary_color_bright
             , hovered_font_color = color_white
             }
-            ++ custom_attrs
+            ++ customAttrs
         )
-        { onPress = Just on_press, label = label }
+        { onPress = Just onPressMsg, label = label }
 
 
 primary_button : List (Element.Attribute msg) -> msg -> String -> Element msg
-primary_button custom_attrs on_press label =
-    primary_button_custom custom_attrs on_press (text label)
+primary_button customAttrs onPressMsg label =
+    primary_button_custom customAttrs onPressMsg (text label)
 
 
 secondary_button_custom : List (Element.Attribute msg) -> msg -> Element msg -> Element msg
-secondary_button_custom custom_attrs on_press label =
+secondary_button_custom customAttrs onPressMsg label =
     Input.button
         (common_button_attrs
             { font_color = color_white
@@ -306,18 +306,18 @@ secondary_button_custom custom_attrs on_press label =
             , hovered_button_color = color_secondary_bright
             , hovered_font_color = color_white
             }
-            ++ custom_attrs
+            ++ customAttrs
         )
-        { onPress = Just on_press, label = label }
+        { onPress = Just onPressMsg, label = label }
 
 
 secondary_button : List (Element.Attribute msg) -> msg -> String -> Element msg
-secondary_button custom_attrs on_press label =
-    secondary_button_custom custom_attrs on_press (text label)
+secondary_button customAttrs onPressMsg label =
+    secondary_button_custom customAttrs onPressMsg (text label)
 
 
 outline_button_custom : List (Element.Attribute msg) -> msg -> Element msg -> Element msg
-outline_button_custom custom_attrs on_press label =
+outline_button_custom customAttrs onPressMsg label =
     Input.button
         ([ -- bs4-like values
            Font.color color_secondary
@@ -333,14 +333,14 @@ outline_button_custom custom_attrs on_press label =
             , Font.color <| color_white
             ]
          ]
-            ++ custom_attrs
+            ++ customAttrs
         )
-        { onPress = Just on_press, label = label }
+        { onPress = Just onPressMsg, label = label }
 
 
 outline_button : List (Element.Attribute msg) -> msg -> String -> Element msg
-outline_button custom_attrs on_press label =
-    outline_button_custom custom_attrs on_press (text label)
+outline_button customAttrs onPressMsg label =
+    outline_button_custom customAttrs onPressMsg (text label)
 
 
 
@@ -348,7 +348,7 @@ outline_button custom_attrs on_press label =
 
 
 scrollbarYEl : List (Element.Attribute msg) -> Element msg -> Element msg
-scrollbarYEl custom_attrs body =
+scrollbarYEl customAttrs body =
     el [ height fill, width fill ] <|
         el
             ([ Element.htmlAttribute <| Html.Attributes.style "position" "absolute"
@@ -358,13 +358,13 @@ scrollbarYEl custom_attrs body =
              , Element.htmlAttribute <| Html.Attributes.style "left" "0"
              , Element.scrollbarY
              ]
-                ++ custom_attrs
+                ++ customAttrs
             )
             body
 
 
 danger_button_custom : List (Element.Attribute msg) -> msg -> Element msg -> Element msg
-danger_button_custom custom_attrs on_press label =
+danger_button_custom customAttrs onPressMsg label =
     Input.button
         (common_button_attrs
             { font_color = color_white
@@ -372,14 +372,14 @@ danger_button_custom custom_attrs on_press label =
             , hovered_button_color = color_danger_bright
             , hovered_font_color = color_white
             }
-            ++ custom_attrs
+            ++ customAttrs
         )
-        { onPress = Just on_press, label = label }
+        { onPress = Just onPressMsg, label = label }
 
 
 danger_button : List (Element.Attribute msg) -> msg -> String -> Element msg
-danger_button custom_attrs on_press label_str =
-    danger_button_custom custom_attrs on_press <| text label_str
+danger_button customAttrs onPressMsg label_str =
+    danger_button_custom customAttrs onPressMsg <| text label_str
 
 
 convertColor : Color.Color -> Element.Color
@@ -598,12 +598,12 @@ primary_button_tooltip :
     -> TooltipConfig msg
     -> HoveredTooltip
     -> Element msg
-primary_button_tooltip colorTheme custom_attrs on_press label { onTooltipMsg, tooltip_id, tooltip_body } hoveredTooltip =
+primary_button_tooltip colorTheme customAttrs onPressMsg label { onTooltipMsg, tooltip_id, tooltip_body } hoveredTooltip =
     let
         tooltip_el =
             tooltipElem colorTheme tooltip_id hoveredTooltip tooltip_body
 
-        tooltip_attr =
+        tooltipAttr =
             if hoveredTooltipMatchesId hoveredTooltip tooltip_id then
                 [ Element.above tooltip_el ]
 
@@ -614,10 +614,10 @@ primary_button_tooltip colorTheme custom_attrs on_press label { onTooltipMsg, to
         ([ Events.onMouseLeave <| onTooltipMsg <| EndTooltipHover tooltip_id
          , Events.onMouseEnter <| onTooltipMsg <| StartTooltipHover tooltip_id
          ]
-            ++ tooltip_attr
-            ++ custom_attrs
+            ++ tooltipAttr
+            ++ customAttrs
         )
-        on_press
+        onPressMsg
         label
 
 

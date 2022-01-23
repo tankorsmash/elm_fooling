@@ -99,6 +99,10 @@ type TooltipMsg
     | EndTooltipHover String
 
 
+type alias StandardButton msg =
+    List (Element.Attribute msg) -> msg -> String -> Element msg
+
+
 getTooltipOffset : HoveredTooltip -> { offsetX : Float, offsetY : Float }
 getTooltipOffset hoveredTooltip =
     case hoveredTooltip of
@@ -590,15 +594,45 @@ tooltipElem colorTheme tooltip_id hoveredTooltip tooltip_body =
                 elem
 
 
+
+wrapButtonWithTooltip : StandardButton msg -> ButtonParams msg -> TooltipConfig msg -> HoveredTooltip -> Element msg
+wrapButtonWithTooltip standardButton {colorTheme, customAttrs, onPressMsg, label} { onTooltipMsg, tooltip_id, tooltip_body } hoveredTooltip =
+    let
+        tooltip_el =
+            tooltipElem colorTheme tooltip_id hoveredTooltip tooltip_body
+
+        tooltipAttr =
+            if hoveredTooltipMatchesId hoveredTooltip tooltip_id then
+                [ Element.above tooltip_el ]
+
+            else
+                []
+    in
+    standardButton
+        ([ Events.onMouseLeave <| onTooltipMsg <| EndTooltipHover tooltip_id
+         , Events.onMouseEnter <| onTooltipMsg <| StartTooltipHover tooltip_id
+         ]
+            ++ tooltipAttr
+            ++ customAttrs
+        )
+        onPressMsg
+        label
+
+
+type alias ButtonParams msg =
+    { colorTheme : ColorTheme
+    , customAttrs : List (Element.Attribute msg)
+    , label : String
+    , onPressMsg : msg
+    }
+
+
 primary_button_tooltip :
-    ColorTheme
-    -> List (Element.Attribute msg)
-    -> msg
-    -> String
+    ButtonParams msg
     -> TooltipConfig msg
     -> HoveredTooltip
     -> Element msg
-primary_button_tooltip colorTheme customAttrs onPressMsg label { onTooltipMsg, tooltip_id, tooltip_body } hoveredTooltip =
+primary_button_tooltip {colorTheme, customAttrs, onPressMsg, label} { onTooltipMsg, tooltip_id, tooltip_body } hoveredTooltip =
     let
         tooltip_el =
             tooltipElem colorTheme tooltip_id hoveredTooltip tooltip_body

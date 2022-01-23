@@ -5412,10 +5412,12 @@ build_special_action_button colorTheme hoveredTooltip character special_action t
             else
                 Noop
     in
-    UI.primary_button_tooltip colorTheme
-        button_attrs
-        msg
-        title
+    UI.primary_button_tooltip
+        { colorTheme = colorTheme
+        , customAttrs = button_attrs
+        , onPressMsg = msg
+        , label = title
+        }
         tooltip_config
         hoveredTooltip
 

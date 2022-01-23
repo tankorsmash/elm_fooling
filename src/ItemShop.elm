@@ -266,8 +266,7 @@ type SpecialAction
 type UiOptionMsg
     = MouseEnterShopItem ListContext ( CharacterId, Item )
     | MouseLeaveShopItem ListContext ( CharacterId, Item )
-    | StartTooltipHover String
-    | EndTooltipHover String
+    | GotTooltipMsg UI.TooltipMsg
     | GotTooltipSize (Result Browser.Dom.Error Browser.Dom.Element)
     | ScrollViewport
     | GotViewport Browser.Dom.Viewport
@@ -1164,17 +1163,6 @@ type alias TradeContext =
 type TradeRecord
     = IncompleteTradeRecord TradeContext
     | CompletedTradeRecord TradeContext ItemTradeLog
-
-
-type TooltipBody
-    = TooltipText String
-    | TooltipElement (Element Msg)
-
-
-type alias TooltipConfig =
-    { tooltip_id : String
-    , tooltip_body : TooltipBody
-    }
 
 
 is_item_trade_log_to_shop : ItemTradeLog -> Bool
@@ -2250,22 +2238,24 @@ updateUiOptions uiOptMsg model =
             , Cmd.none
             )
 
-        StartTooltipHover tooltip_id ->
-            ( updateUiOption
-                (\uio ->
-                    { uio
-                        | hoveredTooltip =
-                            Dict.get tooltip_id uio.cached_tooltip_offsets
-                                |> Maybe.withDefault { offsetX = 0, offsetY = 0, hoveredTooltipId = tooltip_id }
-                                |> UI.HoveredTooltipWithoutOffset
-                    }
-                )
-                model
-            , Task.attempt (GotUiOptionsMsg << GotTooltipSize) (Browser.Dom.getElement ("tooltip__" ++ tooltip_id))
-            )
+        GotTooltipMsg tooltipMsg ->
+            case tooltipMsg of
+                UI.StartTooltipHover tooltip_id ->
+                    ( updateUiOption
+                        (\uio ->
+                            { uio
+                                | hoveredTooltip =
+                                    Dict.get tooltip_id uio.cached_tooltip_offsets
+                                        |> Maybe.withDefault { offsetX = 0, offsetY = 0, hoveredTooltipId = tooltip_id }
+                                        |> UI.HoveredTooltipWithoutOffset
+                            }
+                        )
+                        model
+                    , Task.attempt (GotUiOptionsMsg << GotTooltipSize) (Browser.Dom.getElement ("tooltip__" ++ tooltip_id))
+                    )
 
-        EndTooltipHover tooltip_id ->
-            ( updateUiOption (\uio -> { uio | hoveredTooltip = UI.NoHoveredTooltip }) model, Cmd.none )
+                UI.EndTooltipHover tooltip_id ->
+                    ( updateUiOption (\uio -> { uio | hoveredTooltip = UI.NoHoveredTooltip }) model, Cmd.none )
 
         GotTooltipSize tooltip_size_result ->
             case tooltip_size_result of
@@ -4001,7 +3991,7 @@ trends_display colorTheme shiftIsPressed item_db shop_trends ((Characters { play
             Element.below <|
                 column
                     [ width fill
-                    , defaultBackgroundColor colorTheme
+                    , UI.defaultBackgroundColor colorTheme
                     , Border.color <| rgb 0.35 0.35 0.35
                     , Border.rounded 3
                     , Border.width 2
@@ -4065,7 +4055,7 @@ trends_display colorTheme shiftIsPressed item_db shop_trends ((Characters { play
                )
         )
     <|
-        [ el [ font_scaled 2, border_bottom 2 ] <| text "Shop Trends"
+        [ el [ UI.font_scaled 2, border_bottom 2 ] <| text "Shop Trends"
         , rendered_popularity
         ]
 
@@ -4565,11 +4555,11 @@ render_inventory_grid model header character shop_trends hovered_item context co
                     )
     in
     Element.column [ width fill, spacingXY 0 5, height fill ] <|
-        [ Element.row [ font_scaled 2, width fill ]
+        [ Element.row [ UI.font_scaled 2, width fill ]
             [ Element.el [ border_bottom 2 ] <| text header
             , text "   "
             , if not is_shop_context then
-                row [ width fill, font_scaled 1, centerX, spacingXY 10 0 ] <|
+                row [ width fill, UI.font_scaled 1, centerX, spacingXY 10 0 ] <|
                     [ row [ centerX, width Element.shrink, spacingXY 10 0 ]
                         [ row [ Font.alignRight ]
                             [ text "Held: "
@@ -4982,7 +4972,7 @@ render_single_player_upgrade colorTheme player_upgrade =
 player_upgrades_display : UI.ColorTheme -> List PlayerUpgrade -> Element Msg
 player_upgrades_display colorTheme player_upgrades =
     column [ height fill ]
-        ([ el [ font_scaled 2, border_bottom 2, alignTop ] <| text "Upgrades" ]
+        ([ el [ UI.font_scaled 2, border_bottom 2, alignTop ] <| text "Upgrades" ]
             ++ [ column [ paddingXY 0 10, spacing 5 ] <| List.map (render_single_player_upgrade colorTheme) player_upgrades ]
         )
 
@@ -4990,7 +4980,7 @@ player_upgrades_display colorTheme player_upgrades =
 player_action_log_display : ItemDb -> List PlayerActionLog -> Element Msg
 player_action_log_display item_db player_action_logs =
     column [ height fill ]
-        ([ el [ font_scaled 2, border_bottom 2, alignTop ] <| text "Action Log" ]
+        ([ el [ UI.font_scaled 2, border_bottom 2, alignTop ] <| text "Action Log" ]
             ++ [ column [ paddingXY 0 10, Element.spacing 4 ]
                     (player_action_logs
                         |> List.reverse
@@ -5058,7 +5048,7 @@ view_shop_tab_type : Model -> Element Msg
 view_shop_tab_type model =
     let
         welcome_header =
-            Element.el [ font_scaled 3, padding_bottom 10 ] <| text "Welcome to the Item Shop!"
+            Element.el [ UI.font_scaled 3, padding_bottom 10 ] <| text "Welcome to the Item Shop!"
 
         playerChar : Character
         playerChar =
@@ -5106,7 +5096,7 @@ view_shop_tab_type model =
 
         unpaused_border_attrs =
             [ Border.color
-                (defaultSolidColor model.colorTheme)
+                (UI.defaultSolidColor model.colorTheme)
             , Border.width 10
             , Border.dashed
             ]
@@ -5122,7 +5112,7 @@ view_shop_tab_type model =
         )
     <|
         Element.column
-            [ width fill, font_scaled 1, height fill ]
+            [ width fill, UI.font_scaled 1, height fill ]
         <|
             [ welcome_header
             , row [ spacing 5, width fill ]
@@ -5291,7 +5281,7 @@ viewOverlay model =
                     [ Font.alignRight
                     , Element.alignRight
                     , Element.alignBottom
-                    , defaultBackgroundColor model.colorTheme
+                    , UI.defaultBackgroundColor model.colorTheme
                     , Border.color
                         (case model.colorTheme of
                             BrightTheme ->
@@ -5314,36 +5304,8 @@ viewOverlay model =
                         ]
 
 
-defaultSolidColor colorTheme =
-    case colorTheme of
-        BrightTheme ->
-            UI.convertColor Color.white
-
-        DarkTheme ->
-            UI.convertColor Color.darkCharcoal
-
-
-defaultBackgroundColor colorTheme =
-    defaultSolidColor colorTheme
-        |> Background.color
-
-
-defaultTextColor colorTheme =
-    case colorTheme of
-        BrightTheme ->
-            UI.convertColor Color.black
-
-        DarkTheme ->
-            UI.hex_to_color "#ccc"
-
-
 
 -- convertColor Color.grey
-
-
-defaultFontColor colorTheme =
-    defaultTextColor colorTheme
-        |> Font.color
 
 
 view : Model -> Html.Html Msg
@@ -5364,8 +5326,8 @@ view model =
         , Element.htmlAttribute <| Html.Events.on "scroll" (Decode.succeed (GotUiOptionsMsg ScrollViewport))
         , width fill
         , padding 20
-        , defaultBackgroundColor model.colorTheme
-        , defaultFontColor model.colorTheme
+        , UI.defaultBackgroundColor model.colorTheme
+        , UI.defaultFontColor model.colorTheme
         ]
     <|
         case model.tab_type of
@@ -5383,91 +5345,6 @@ view model =
                                 model.battleModel
 
 
-scaled : Int -> Int
-scaled val =
-    modular 14 1.25 val |> round
-
-
-font_scaled : Int -> Element.Attribute msg
-font_scaled scale =
-    Font.size <| scaled scale
-
-
-primary_button_tooltip :
-    UI.ColorTheme
-    -> List (Element.Attribute Msg)
-    -> Msg
-    -> String
-    -> TooltipConfig
-    -> UI.HoveredTooltip
-    -> Element Msg
-primary_button_tooltip colorTheme custom_attrs on_press label { tooltip_id, tooltip_body } hoveredTooltip =
-    let
-        { offsetX, offsetY } =
-            UI.getTooltipOffset hoveredTooltip
-
-        tooltip_el =
-            Element.el
-                [ width Element.shrink
-                , defaultFontColor colorTheme
-                , defaultBackgroundColor colorTheme
-                , Border.color <| UI.convertColor Color.charcoal
-                , Border.rounded 3
-                , Border.width 2
-                , padding 10
-                , if offsetY == 0 then
-                    Element.moveUp 20
-
-                  else
-                    Element.moveDown offsetY
-                , Element.moveRight offsetX
-                , centerX
-                , Element.htmlAttribute <|
-                    Html.Attributes.id ("tooltip__" ++ tooltip_id)
-                ]
-            <|
-                case tooltip_body of
-                    TooltipText tt_text ->
-                        text tt_text
-
-                    TooltipElement elem ->
-                        elem
-
-        offset_w =
-            target offsetWidth
-
-        tooltip_attr =
-            if UI.hoveredTooltipMatchesId hoveredTooltip tooltip_id then
-                [ Element.above tooltip_el ]
-
-            else
-                []
-    in
-    UI.primary_button
-        ([ Events.onMouseLeave <| GotUiOptionsMsg <| EndTooltipHover tooltip_id
-         , Events.onMouseEnter <| GotUiOptionsMsg <| StartTooltipHover tooltip_id
-         ]
-            ++ tooltip_attr
-            ++ custom_attrs
-        )
-        on_press
-        label
-
-
-buildTooltipTextConfig : String -> TooltipConfig
-buildTooltipTextConfig text =
-    { tooltip_id = UUID.forName text UUID.dnsNamespace |> UUID.toString
-    , tooltip_body = TooltipText text
-    }
-
-
-buildTooltipElementConfig : UI.TooltipId -> Element Msg -> TooltipConfig
-buildTooltipElementConfig tooltip_id element =
-    { tooltip_id = UUID.forName tooltip_id UUID.dnsNamespace |> UUID.toString
-    , tooltip_body = TooltipElement element
-    }
-
-
 build_special_action_button : UI.ColorTheme -> UI.HoveredTooltip -> Character -> SpecialAction -> String -> String -> Price -> Element Msg
 build_special_action_button colorTheme hoveredTooltip character special_action title tooltip_text price =
     let
@@ -5483,6 +5360,7 @@ build_special_action_button colorTheme hoveredTooltip character special_action t
                     else
                         True
 
+        tooltip_config : UI.TooltipConfig Msg
         tooltip_config =
             tooltip_text
                 |> (\t ->
@@ -5491,8 +5369,8 @@ build_special_action_button colorTheme hoveredTooltip character special_action t
                                 renderedCost =
                                     UI.renderGp colorTheme <| getPrice price
                             in
-                            buildTooltipElementConfig t <|
-                                column []
+                            UI.buildTooltipElementConfig t
+                                (column []
                                     [ text t
                                     , el [ centerX, padding 1, Font.color UI.color_grey ] <| text "___"
                                     , paragraph [ padding 10, centerX, Font.size 14 ]
@@ -5500,9 +5378,11 @@ build_special_action_button colorTheme hoveredTooltip character special_action t
                                         , renderedCost
                                         ]
                                     ]
+                                )
+                                (GotUiOptionsMsg << GotTooltipMsg)
 
                         else
-                            buildTooltipTextConfig t
+                            UI.buildTooltipTextConfig t (GotUiOptionsMsg << GotTooltipMsg)
                    )
 
         button_attrs =
@@ -5532,7 +5412,7 @@ build_special_action_button colorTheme hoveredTooltip character special_action t
             else
                 Noop
     in
-    primary_button_tooltip colorTheme
+    UI.primary_button_tooltip colorTheme
         button_attrs
         msg
         title
@@ -5631,7 +5511,7 @@ special_actions_display colorTheme player_upgrades hoveredTooltip player ai_upda
                 (scale_increase_income_cost income_level)
     in
     column [ width fill, spacing 10, paddingXY 0 10 ]
-        [ el [ font_scaled 2, border_bottom 2 ] <| text "Special Actions"
+        [ el [ UI.font_scaled 2, border_bottom 2 ] <| text "Special Actions"
         , Element.wrappedRow [ width fill, spacingXY 20 0 ]
             [ Element.wrappedRow [ width <| fillPortion 1, spacingXY 10 10, alignTop ]
                 [ button_toggle_ai_pause

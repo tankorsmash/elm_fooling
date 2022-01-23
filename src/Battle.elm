@@ -88,12 +88,10 @@ type OutMsg
     | OnMonsterDefeat DefeatAction
 
 
-type
-    UiOptionMsg
+type UiOptionMsg
     -- = MouseEnterShopItem ListContext ( CharacterId, Item )
     -- | MouseLeaveShopItem ListContext ( CharacterId, Item )
-    = StartTooltipHover String
-    | EndTooltipHover String
+    = GotTooltipMsg UI.TooltipMsg
     | GotTooltipSize (Result Browser.Dom.Error Browser.Dom.Element)
 
 
@@ -832,23 +830,25 @@ update model battleMsg =
 
         GotUiOptionsMsg uiMsg ->
             case uiMsg of
-                StartTooltipHover tooltip_id ->
-                    ( updateUiOption
-                        (\uio ->
-                            { uio
-                                | hoveredTooltip =
-                                    Dict.get tooltip_id uio.cachedTooltipOffsets
-                                        |> Maybe.withDefault { offsetX = 0, offsetY = 0, hoveredTooltipId = tooltip_id }
-                                        |> UI.HoveredTooltipWithoutOffset
-                            }
-                        )
-                        model
-                    , Task.attempt (GotUiOptionsMsg << GotTooltipSize) (Browser.Dom.getElement ("tooltip__" ++ tooltip_id))
-                    , NoOutMsg
-                    )
+                GotTooltipMsg tooltipMsg ->
+                    case tooltipMsg of
+                        UI.StartTooltipHover tooltip_id ->
+                            ( updateUiOption
+                                (\uio ->
+                                    { uio
+                                        | hoveredTooltip =
+                                            Dict.get tooltip_id uio.cachedTooltipOffsets
+                                                |> Maybe.withDefault { offsetX = 0, offsetY = 0, hoveredTooltipId = tooltip_id }
+                                                |> UI.HoveredTooltipWithoutOffset
+                                    }
+                                )
+                                model
+                            , Task.attempt (GotUiOptionsMsg << GotTooltipSize) (Browser.Dom.getElement ("tooltip__" ++ tooltip_id))
+                            , NoOutMsg
+                            )
 
-                EndTooltipHover tooltip_id ->
-                    ( updateUiOption (\uio -> { uio | hoveredTooltip = UI.NoHoveredTooltip }) model, Cmd.none, NoOutMsg )
+                        UI.EndTooltipHover tooltip_id ->
+                            ( updateUiOption (\uio -> { uio | hoveredTooltip = UI.NoHoveredTooltip }) model, Cmd.none, NoOutMsg )
 
                 GotTooltipSize tooltip_size_result ->
                     case tooltip_size_result of

@@ -1,4 +1,4 @@
-module Interface exposing (hoveredTooltipMatchesId, ButtonConfig, ColorTheme(..), HoveredTooltip(..), TooltipData, TooltipId, blankChar, clipText, colorFromInt, color_black, color_danger, color_danger_bright, color_grey, color_light_grey, color_off_black, color_pastel_green_1, color_pastel_green_2, color_pastel_green_3, color_pastel_green_4, color_pastel_green_5, color_pastel_green_6, color_pastel_green_7, color_pastel_red_1, color_pastel_red_2, color_pastel_red_3, color_pastel_red_4, color_pastel_red_5, color_pastel_red_6, color_pastel_red_7, color_primary, color_secondary, color_secondary_bright, color_ultra_light_grey, color_very_light_grey, color_very_very_light_grey, color_white, common_button_attrs, convertColor, cssRule, danger_button, danger_button_custom, defineHtmlId, font_blood, font_grey, getTooltipOffset, hex_to_color, monospace, nbsp, noUserSelect, outline_button, outline_button_custom, pointerEventsAll, pointerEventsNone, primary_button, primary_button_custom, primary_color_bright, renderBlood, renderBlood_sized, renderBlood_string, renderGp, renderGpSized, renderGpString, scrollbarYEl, secondary_button, secondary_button_custom)
+module Interface exposing (ButtonConfig, ColorTheme(..), HoveredTooltip(..), TooltipBody(..), TooltipConfig, TooltipData, TooltipId, TooltipMsg(..), blankChar, buildTooltipElementConfig, buildTooltipTextConfig, clipText, colorFromInt, color_black, color_danger, color_danger_bright, color_grey, color_light_grey, color_off_black, color_pastel_green_1, color_pastel_green_2, color_pastel_green_3, color_pastel_green_4, color_pastel_green_5, color_pastel_green_6, color_pastel_green_7, color_pastel_red_1, color_pastel_red_2, color_pastel_red_3, color_pastel_red_4, color_pastel_red_5, color_pastel_red_6, color_pastel_red_7, color_primary, color_secondary, color_secondary_bright, color_ultra_light_grey, color_very_light_grey, color_very_very_light_grey, color_white, common_button_attrs, convertColor, cssRule, danger_button, danger_button_custom, defaultBackgroundColor, defaultFontColor, defaultSolidColor, defaultTextColor, defineHtmlId, font_blood, font_grey, font_scaled, getTooltipOffset, hex_to_color, hoveredTooltipMatchesId, monospace, nbsp, noUserSelect, outline_button, outline_button_custom, pointerEventsAll, pointerEventsNone, primary_button, primary_button_custom, primary_button_tooltip, primary_color_bright, renderBlood, renderBlood_sized, renderBlood_string, renderGp, renderGpSized, renderGpString, scaled, scrollbarYEl, secondary_button, secondary_button_custom)
 
 import Array
 import Browser.Dom
@@ -80,6 +80,23 @@ type HoveredTooltip
     = NoHoveredTooltip
     | HoveredTooltipWithoutOffset TooltipData
     | HoveredTooltipWithOffset TooltipData
+
+
+type TooltipBody msg
+    = TooltipText String
+    | TooltipElement (Element msg)
+
+
+type alias TooltipConfig msg =
+    { tooltip_id : String
+    , tooltip_body : TooltipBody msg
+    , onTooltipMsg : TooltipMsg -> msg
+    }
+
+
+type TooltipMsg
+    = StartTooltipHover String
+    | EndTooltipHover String
 
 
 getTooltipOffset : HoveredTooltip -> { offsetX : Float, offsetY : Float }
@@ -508,6 +525,7 @@ pointerEventsAll : Element.Attribute msg
 pointerEventsAll =
     Html.Attributes.style "pointer-events" "all" |> Element.htmlAttribute
 
+
 hoveredTooltipMatchesId : HoveredTooltip -> String -> Bool
 hoveredTooltipMatchesId hoveredTooltip tooltip_id =
     case hoveredTooltip of
@@ -528,3 +546,114 @@ hoveredTooltipMatchesId hoveredTooltip tooltip_id =
         NoHoveredTooltip ->
             False
 
+
+scaled : Int -> Int
+scaled val =
+    modular 14 1.25 val |> round
+
+
+font_scaled : Int -> Element.Attribute msg
+font_scaled scale =
+    Font.size <| scaled scale
+
+
+primary_button_tooltip :
+    ColorTheme
+    -> List (Element.Attribute msg)
+    -> msg
+    -> String
+    -> TooltipConfig msg
+    -> HoveredTooltip
+    -> Element msg
+primary_button_tooltip colorTheme custom_attrs on_press label { onTooltipMsg, tooltip_id, tooltip_body } hoveredTooltip =
+    let
+        { offsetX, offsetY } =
+            getTooltipOffset hoveredTooltip
+
+        tooltip_el =
+            Element.el
+                [ width Element.shrink
+                , defaultFontColor colorTheme
+                , defaultBackgroundColor colorTheme
+                , Border.color <| convertColor Color.charcoal
+                , Border.rounded 3
+                , Border.width 2
+                , padding 10
+                , if offsetY == 0 then
+                    Element.moveUp 20
+
+                  else
+                    Element.moveDown offsetY
+                , Element.moveRight offsetX
+                , centerX
+                , Element.htmlAttribute <|
+                    Html.Attributes.id ("tooltip__" ++ tooltip_id)
+                ]
+            <|
+                case tooltip_body of
+                    TooltipText tt_text ->
+                        text tt_text
+
+                    TooltipElement elem ->
+                        elem
+
+        tooltip_attr =
+            if hoveredTooltipMatchesId hoveredTooltip tooltip_id then
+                [ Element.above tooltip_el ]
+
+            else
+                []
+    in
+    primary_button
+        ([ Events.onMouseLeave <| onTooltipMsg <| EndTooltipHover tooltip_id
+         , Events.onMouseEnter <| onTooltipMsg <| StartTooltipHover tooltip_id
+         ]
+            ++ tooltip_attr
+            ++ custom_attrs
+        )
+        on_press
+        label
+
+
+buildTooltipTextConfig : String -> (TooltipMsg -> msg) -> TooltipConfig msg
+buildTooltipTextConfig text onTooltipMsg =
+    { tooltip_id = UUID.forName text UUID.dnsNamespace |> UUID.toString
+    , tooltip_body = TooltipText text
+    , onTooltipMsg = onTooltipMsg
+    }
+
+
+buildTooltipElementConfig : TooltipId -> Element msg -> (TooltipMsg -> msg) -> TooltipConfig msg
+buildTooltipElementConfig tooltip_id element onTooltipMsg =
+    { tooltip_id = UUID.forName tooltip_id UUID.dnsNamespace |> UUID.toString
+    , tooltip_body = TooltipElement element
+    , onTooltipMsg = onTooltipMsg
+    }
+
+
+defaultFontColor colorTheme =
+    defaultTextColor colorTheme
+        |> Font.color
+
+
+defaultSolidColor colorTheme =
+    case colorTheme of
+        BrightTheme ->
+            convertColor Color.white
+
+        DarkTheme ->
+            convertColor Color.darkCharcoal
+
+
+defaultBackgroundColor colorTheme =
+    defaultSolidColor colorTheme
+        |> Background.color
+
+
+defaultTextColor colorTheme =
+    case colorTheme of
+        BrightTheme ->
+            convertColor Color.black
+
+        DarkTheme ->
+            hex_to_color "#ccc"

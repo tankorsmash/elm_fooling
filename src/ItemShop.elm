@@ -1054,8 +1054,6 @@ updateItemDbFromTradeRecord item_db record_updater trade_record =
                     item_db
 
 
-
-
 type TabType
     = ShopTabType
     | ItemsUnlockedTabType
@@ -5395,27 +5393,6 @@ font_scaled scale =
     Font.size <| scaled scale
 
 
-hoveredTooltipMatchesId : UI.HoveredTooltip -> String -> Bool
-hoveredTooltipMatchesId hoveredTooltip tooltip_id =
-    case hoveredTooltip of
-        UI.HoveredTooltipWithoutOffset tooltip_data ->
-            if tooltip_data.hoveredTooltipId == tooltip_id then
-                True
-
-            else
-                False
-
-        UI.HoveredTooltipWithOffset hoveredTooltip_data ->
-            if hoveredTooltip_data.hoveredTooltipId == tooltip_id then
-                True
-
-            else
-                False
-
-        UI.NoHoveredTooltip ->
-            False
-
-
 primary_button_tooltip :
     UI.ColorTheme
     -> List (Element.Attribute Msg)
@@ -5460,7 +5437,7 @@ primary_button_tooltip colorTheme custom_attrs on_press label { tooltip_id, tool
             target offsetWidth
 
         tooltip_attr =
-            if hoveredTooltipMatchesId hoveredTooltip tooltip_id then
+            if UI.hoveredTooltipMatchesId hoveredTooltip tooltip_id then
                 [ Element.above tooltip_el ]
 
             else
@@ -5533,7 +5510,7 @@ build_special_action_button colorTheme hoveredTooltip character special_action t
                 [ Background.color UI.color_grey
                 , Border.color UI.color_grey
                 ]
-                    ++ (if hoveredTooltipMatchesId hoveredTooltip tooltip_config.tooltip_id then
+                    ++ (if UI.hoveredTooltipMatchesId hoveredTooltip tooltip_config.tooltip_id then
                             [ Background.color <| rgb 0 0 0
                             , Border.color <| rgb 0 0 0
 
@@ -6149,6 +6126,7 @@ suite =
                     newTestModel =
                         { test_model
                             | battleModel = newBattleModel
+
                             -- means the next apply upgrade will trigger the timer
                             , secondsWaitedSince = { secondsWaitedSince | lastSpRefill = Battle.secondsRequiredForSpRefill }
                         }

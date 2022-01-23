@@ -529,15 +529,15 @@ pointerEventsAll =
 hoveredTooltipMatchesId : HoveredTooltip -> String -> Bool
 hoveredTooltipMatchesId hoveredTooltip tooltip_id =
     case hoveredTooltip of
-        HoveredTooltipWithoutOffset tooltip_data ->
-            if tooltip_data.hoveredTooltipId == tooltip_id then
+        HoveredTooltipWithoutOffset tooltipData ->
+            if tooltipData.hoveredTooltipId == tooltip_id then
                 True
 
             else
                 False
 
-        HoveredTooltipWithOffset hoveredTooltip_data ->
-            if hoveredTooltip_data.hoveredTooltipId == tooltip_id then
+        HoveredTooltipWithOffset hoveredTooltipData ->
+            if hoveredTooltipData.hoveredTooltipId == tooltip_id then
                 True
 
             else
@@ -557,6 +557,39 @@ font_scaled scale =
     Font.size <| scaled scale
 
 
+tooltipElem : ColorTheme -> String -> HoveredTooltip -> TooltipBody msg -> Element msg
+tooltipElem colorTheme tooltip_id hoveredTooltip tooltip_body =
+    let
+        { offsetX, offsetY } =
+            getTooltipOffset hoveredTooltip
+    in
+    Element.el
+        [ width Element.shrink
+        , defaultFontColor colorTheme
+        , defaultBackgroundColor colorTheme
+        , Border.color <| convertColor Color.charcoal
+        , Border.rounded 3
+        , Border.width 2
+        , padding 10
+        , if offsetY == 0 then
+            Element.moveUp 20
+
+          else
+            Element.moveDown offsetY
+        , Element.moveRight offsetX
+        , centerX
+        , Element.htmlAttribute <|
+            Html.Attributes.id ("tooltip__" ++ tooltip_id)
+        ]
+    <|
+        case tooltip_body of
+            TooltipText tt_text ->
+                text tt_text
+
+            TooltipElement elem ->
+                elem
+
+
 primary_button_tooltip :
     ColorTheme
     -> List (Element.Attribute msg)
@@ -567,35 +600,8 @@ primary_button_tooltip :
     -> Element msg
 primary_button_tooltip colorTheme custom_attrs on_press label { onTooltipMsg, tooltip_id, tooltip_body } hoveredTooltip =
     let
-        { offsetX, offsetY } =
-            getTooltipOffset hoveredTooltip
-
         tooltip_el =
-            Element.el
-                [ width Element.shrink
-                , defaultFontColor colorTheme
-                , defaultBackgroundColor colorTheme
-                , Border.color <| convertColor Color.charcoal
-                , Border.rounded 3
-                , Border.width 2
-                , padding 10
-                , if offsetY == 0 then
-                    Element.moveUp 20
-
-                  else
-                    Element.moveDown offsetY
-                , Element.moveRight offsetX
-                , centerX
-                , Element.htmlAttribute <|
-                    Html.Attributes.id ("tooltip__" ++ tooltip_id)
-                ]
-            <|
-                case tooltip_body of
-                    TooltipText tt_text ->
-                        text tt_text
-
-                    TooltipElement elem ->
-                        elem
+            tooltipElem colorTheme tooltip_id hoveredTooltip tooltip_body
 
         tooltip_attr =
             if hoveredTooltipMatchesId hoveredTooltip tooltip_id then
@@ -631,11 +637,13 @@ buildTooltipElementConfig tooltip_id element onTooltipMsg =
     }
 
 
+defaultFontColor : ColorTheme -> Element.Attribute msg
 defaultFontColor colorTheme =
     defaultTextColor colorTheme
         |> Font.color
 
 
+defaultSolidColor : ColorTheme -> Color
 defaultSolidColor colorTheme =
     case colorTheme of
         BrightTheme ->
@@ -645,11 +653,13 @@ defaultSolidColor colorTheme =
             convertColor Color.darkCharcoal
 
 
+defaultBackgroundColor : ColorTheme -> Element.Attribute msg
 defaultBackgroundColor colorTheme =
     defaultSolidColor colorTheme
         |> Background.color
 
 
+defaultTextColor : ColorTheme -> Color
 defaultTextColor colorTheme =
     case colorTheme of
         BrightTheme ->

@@ -1,4 +1,4 @@
-module Interface exposing (ButtonConfig, ButtonCustomParams, ButtonParams(..), ButtonTextParams, ButtonType(..), ColorTheme(..), HoveredTooltip(..), StandardButton, TooltipBody(..), TooltipConfig, TooltipData, TooltipId, TooltipMsg(..), blankChar, buildTooltipElementConfig, buildTooltipTextConfig, button, clipText, colorFromInt, color_black, color_danger, color_danger_bright, color_grey, color_light_grey, color_off_black, color_pastel_green_1, color_pastel_green_2, color_pastel_green_3, color_pastel_green_4, color_pastel_green_5, color_pastel_green_6, color_pastel_green_7, color_pastel_red_1, color_pastel_red_2, color_pastel_red_3, color_pastel_red_4, color_pastel_red_5, color_pastel_red_6, color_pastel_red_7, color_primary, color_secondary, color_secondary_bright, color_ultra_light_grey, color_very_light_grey, color_very_very_light_grey, color_white, common_button_attrs, convertColor, cssRule, dangerButtonConfig, defaultBackgroundColor, defaultFontColor, defaultSolidColor, defaultTextColor, defineHtmlId, font_blood, font_grey, font_scaled, getButtonConfig, getTooltipOffset, hex_to_color, hoveredTooltipMatchesId, monospace, nbsp, noUserSelect, outlineButtonConfig, outline_button, outline_button_custom, pointerEventsAll, pointerEventsNone, primaryButton, primaryButtonConfig, primary_button_tooltip, primary_color_bright, renderBlood, renderBlood_sized, renderBlood_string, renderGp, renderGpSized, renderGpString, scaled, scrollbarYEl, secondaryButtonConfig, tooltipElem, wrapButtonWithTooltip)
+module Interface exposing (ButtonConfig, ButtonCustomParams, ButtonParams(..), ButtonTextParams, ButtonType(..), ColorTheme(..), HoveredTooltip(..), StandardButton, TooltipBody(..), TooltipConfig, TooltipData, TooltipId, TooltipMsg(..), blankChar, buildTooltipElementConfig, buildTooltipTextConfig, button, buttonWithTooltip, clipText, colorFromInt, color_black, color_danger, color_danger_bright, color_grey, color_light_grey, color_off_black, color_pastel_green_1, color_pastel_green_2, color_pastel_green_3, color_pastel_green_4, color_pastel_green_5, color_pastel_green_6, color_pastel_green_7, color_pastel_red_1, color_pastel_red_2, color_pastel_red_3, color_pastel_red_4, color_pastel_red_5, color_pastel_red_6, color_pastel_red_7, color_primary, color_secondary, color_secondary_bright, color_ultra_light_grey, color_very_light_grey, color_very_very_light_grey, color_white, common_button_attrs, convertColor, cssRule, dangerButtonConfig, defaultBackgroundColor, defaultFontColor, defaultSolidColor, defaultTextColor, defineHtmlId, font_blood, font_grey, font_scaled, getButtonConfig, getTooltipOffset, hex_to_color, hoveredTooltipMatchesId, monospace, nbsp, noUserSelect, outlineButtonConfig, outline_button, outline_button_custom, pointerEventsAll, pointerEventsNone, primaryButton, primaryButtonConfig, primary_button, primary_button_custom, primary_button_tooltip, primary_color_bright, renderBlood, renderBlood_sized, renderBlood_string, renderGp, renderGpSized, renderGpString, scaled, scrollbarYEl, secondaryButtonConfig, tooltipElem, wrapButtonWithTooltip)
 
 import Array
 import Browser.Dom
@@ -387,6 +387,38 @@ button params =
         CustomParams { buttonType, customAttrs, onPressMsg, customLabel } ->
             Input.button
                 (common_button_attrs (getButtonConfig buttonType) ++ customAttrs)
+                { onPress = Just onPressMsg, label = customLabel }
+
+
+buttonWithTooltip : ButtonParams msg -> TooltipConfig msg -> HoveredTooltip -> Element msg
+buttonWithTooltip params { tooltip_id, tooltip_body, onTooltipMsg } hoveredTooltip =
+    let
+        tooltip_el =
+            \clrTheme -> tooltipElem clrTheme tooltip_id hoveredTooltip tooltip_body
+
+        mouseAttrs =
+            [ Events.onMouseLeave <| onTooltipMsg <| EndTooltipHover tooltip_id
+            , Events.onMouseEnter <| onTooltipMsg <| StartTooltipHover tooltip_id
+            ]
+
+        tooltipAttr clrTheme =
+            if hoveredTooltipMatchesId hoveredTooltip tooltip_id then
+                [ Element.above (tooltip_el clrTheme)
+                ]
+                    ++ mouseAttrs
+
+            else
+                mouseAttrs
+    in
+    case params of
+        TextParams { colorTheme, buttonType, customAttrs, onPressMsg, textLabel } ->
+            Input.button
+                (common_button_attrs (getButtonConfig buttonType) ++ tooltipAttr colorTheme ++ customAttrs)
+                { onPress = Just onPressMsg, label = text textLabel }
+
+        CustomParams { colorTheme, buttonType, customAttrs, onPressMsg, customLabel } ->
+            Input.button
+                (common_button_attrs (getButtonConfig buttonType) ++ tooltipAttr colorTheme ++ customAttrs)
                 { onPress = Just onPressMsg, label = customLabel }
 
 

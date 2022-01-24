@@ -1120,6 +1120,21 @@ refillGolemSpCost : Int
 refillGolemSpCost =
     5
 
+-- sample tooltip
+-- UI.buttonWithTooltip
+--         (UI.TextParams
+--             { buttonType = UI.Primary
+--             , colorTheme = replaceMeColorTheme
+--             , customAttrs = []
+--             , onPressMsg = Noop
+--             , textLabel = "test"
+--             }
+--         )
+--         { onTooltipMsg = GotUiOptionsMsg << GotTooltipMsg
+--         , tooltip_body = UI.TooltipText "body test"
+--         , tooltip_id = "ssssdsdsd"
+--         }
+--         uiOptions.hoveredTooltip
 
 canAffordRefillSp : BattleCharacter -> Bool
 canAffordRefillSp player =
@@ -1127,7 +1142,7 @@ canAffordRefillSp player =
 
 
 viewBattleControls : Model -> List (Element Msg)
-viewBattleControls { golem, player, enemyMonster } =
+viewBattleControls { golem, player, enemyMonster, uiOptions } =
     let
         canAffordHealGolem =
             player.held_blood >= healGolemBloodCost
@@ -1177,7 +1192,7 @@ viewBattleControls { golem, player, enemyMonster } =
         canChangeLocationNow =
             canChangeLocation golem enemyMonster
     in
-    [ el [ centerX, width (fillMax 150) ] <|
+    [  el [ centerX, width (fillMax 150) ] <|
         -- Toggle Details
         controlButton []
             ToggleShowExpandedLogs

@@ -1255,6 +1255,22 @@ initial_item_db =
                 , id = UUID.forName "iron helm" UUID.dnsNamespace
                 }
               )
+            , ( False
+              , { name = "Iron Boot"
+                , item_type = Armor
+                , raw_gold_cost = 21
+                , description = "A pair of boots made of iron"
+                , id = UUID.forName "iron boot" UUID.dnsNamespace
+                }
+              )
+            , ( False
+              , { name = "Iron Shoulderguards"
+                , item_type = Armor
+                , raw_gold_cost = 17
+                , description = "A pair of shoulderguards made of iron"
+                , id = UUID.forName "iron shoulderguards" UUID.dnsNamespace
+                }
+              )
             , ( True
               , { name = "Sword"
                 , item_type = Weapon
@@ -1279,6 +1295,38 @@ initial_item_db =
                 , id = UUID.forName "broadheaded axe" UUID.dnsNamespace
                 }
               )
+            , ( False
+              , { name = "Bronze Scythe"
+                , item_type = Weapon
+                , raw_gold_cost = 16
+                , description = "A large tool made for harvesting"
+                , id = UUID.forName "bronze scythe" UUID.dnsNamespace
+                }
+              )
+            , ( False
+              , { name = "Bronze calipers"
+                , item_type = Weapon
+                , raw_gold_cost = 10
+                , description = "A small tool used for measuring. It appears to have some blood on it."
+                , id = UUID.forName "bronze calipers" UUID.dnsNamespace
+                }
+              )
+            , ( False
+              , { name = "Diamond-hilted Axe"
+                , item_type = Weapon
+                , raw_gold_cost = 100
+                , description = "A ornately-decorated axe"
+                , id = UUID.forName "diamond-hilted axe" UUID.dnsNamespace
+                }
+              )
+            , ( False
+              , { name = "Zweihander"
+                , item_type = Weapon
+                , raw_gold_cost = 50
+                , description = "A two-handed sword"
+                , id = UUID.forName "zweihander" UUID.dnsNamespace
+                }
+              )
             , ( True
               , { name = "Book of the Dead"
                 , item_type = Spellbook
@@ -1301,6 +1349,22 @@ initial_item_db =
                 , raw_gold_cost = 30
                 , description = "Gently pulses."
                 , id = UUID.forName "book of the mender" UUID.dnsNamespace
+                }
+              )
+            , ( False
+              , { name = "Book of Animation"
+                , item_type = Spellbook
+                , raw_gold_cost = 35
+                , description = "Moves on its own."
+                , id = UUID.forName "book of animation" UUID.dnsNamespace
+                }
+              )
+            , ( False
+              , { name = "Book of Pain"
+                , item_type = Spellbook
+                , raw_gold_cost = 90
+                , description = "Simply touching it hurts."
+                , id = UUID.forName "book of pain" UUID.dnsNamespace
                 }
               )
             , ( True
@@ -1349,6 +1413,22 @@ initial_item_db =
                 , raw_gold_cost = 15
                 , description = "You'd not like to eat one of these."
                 , id = UUID.forName "veggiepie" UUID.dnsNamespace
+                }
+              )
+            , ( False
+              , { name = "Poutine"
+                , item_type = Food
+                , raw_gold_cost = 25
+                , description = "A foreign meal, fit for a king"
+                , id = UUID.forName "poutine" UUID.dnsNamespace
+                }
+              )
+            , ( False
+              , { name = "Elvenloaf"
+                , item_type = Food
+                , raw_gold_cost = 95
+                , description = "Strangely round load of baked flour"
+                , id = UUID.forName "elvenloaf" UUID.dnsNamespace
                 }
               )
             , ( True

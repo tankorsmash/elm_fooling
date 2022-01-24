@@ -1268,30 +1268,33 @@ view model =
                         ( buttonType, onPressMsg, textLabel ) =
                             case ( model.golem, model.enemyMonster ) of
                                 ( LivingMonster _, Just (LivingMonster _) ) ->
-                                    ( UI.primary_button, Fight, "Continue Fight" )
+                                    ( UI.Primary, Fight, "Continue Fight" )
 
                                 ( LivingMonster _, Just (DeadMonster _) ) ->
-                                    ( UI.secondary_button, FindNewEnemy, "Find New Enemy" )
+                                    ( UI.Secondary, FindNewEnemy, "Find New Enemy" )
 
                                 ( LivingMonster _, Nothing ) ->
-                                    ( UI.secondary_button, FindNewEnemy, "Find New Enemy" )
+                                    ( UI.Secondary, FindNewEnemy, "Find New Enemy" )
 
                                 ( DeadMonster _, _ ) ->
-                                    ( UI.danger_button, Noop, "You're dead" )
+                                    ( UI.Danger, Noop, "You're dead" )
                       in
-                      buttonType
-                        { customAttrs =
-                            [ width (fillMin 125)
-                            , if onPressMsg == Noop then
-                                Element.mouseOver []
+                      UI.button
+                        (UI.TextParams <|
+                            { buttonType = buttonType
+                            , customAttrs =
+                                [ width (fillMin 125)
+                                , if onPressMsg == Noop then
+                                    Element.mouseOver []
 
-                              else
-                                attrNone
-                            ]
-                        , onPressMsg = onPressMsg
-                        , textLabel = textLabel
-                        , colorTheme = replaceMeColorTheme
-                        }
+                                  else
+                                    attrNone
+                                ]
+                            , onPressMsg = onPressMsg
+                            , textLabel = textLabel
+                            , colorTheme = replaceMeColorTheme
+                            }
+                        )
                     , let
                         currentLocation =
                             getCurrentLocation model
@@ -1356,20 +1359,22 @@ view model =
                     |> getLocationsList
                     |> List.map
                         (\location ->
-                            UI.secondary_button_custom
-                                { colorTheme = replaceMeColorTheme
-                                , customAttrs = [ width fill ]
-                                , onPressMsg = ChangeLocation location.locationId
-                                , customLabel =
-                                    column [ centerX, spacing 5 ]
-                                        [ el [ centerX ] <| text location.name
-                                        , el [ centerX, Font.size 12 ] <|
-                                            column [ width fill ]
-                                                [ el [ Font.underline, centerX, width fill ] <| text "Monsters Remain"
-                                                , el [ centerX ] <| text <| String.fromInt location.monstersLeft
-                                                ]
-                                        ]
-                                }
+                            UI.button <|
+                                UI.CustomParams
+                                    { buttonType = UI.Secondary
+                                    , colorTheme = replaceMeColorTheme
+                                    , customAttrs = [ width fill ]
+                                    , onPressMsg = ChangeLocation location.locationId
+                                    , customLabel =
+                                        column [ centerX, spacing 5 ]
+                                            [ el [ centerX ] <| text location.name
+                                            , el [ centerX, Font.size 12 ] <|
+                                                column [ width fill ]
+                                                    [ el [ Font.underline, centerX, width fill ] <| text "Monsters Remain"
+                                                    , el [ centerX ] <| text <| String.fromInt location.monstersLeft
+                                                    ]
+                                            ]
+                                    }
                         )
                 )
             ]

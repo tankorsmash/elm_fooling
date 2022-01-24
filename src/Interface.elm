@@ -434,15 +434,13 @@ buttonWithTooltip params { tooltip_id, tooltip_body, onTooltipMsg } hoveredToolt
     case params of
         TextParams { colorTheme, buttonType, customAttrs, onPressMsg, textLabel } ->
             Input.button
-                (common_button_attrs (getButtonConfig buttonType) ++ tooltipAttr colorTheme ++ customAttrs)
+                (addButtonAttrs buttonType (tooltipAttr colorTheme ++ customAttrs))
                 { onPress = Just onPressMsg, label = text textLabel }
 
         CustomParams { colorTheme, buttonType, customAttrs, onPressMsg, customLabel } ->
             Input.button
-                (common_button_attrs (getButtonConfig buttonType) ++ tooltipAttr colorTheme ++ customAttrs)
+                (addButtonAttrs buttonType (tooltipAttr colorTheme ++ customAttrs))
                 { onPress = Just onPressMsg, label = customLabel }
-
-
 
 
 outline_button_custom : List (Element.Attribute msg) -> msg -> Element msg -> Element msg
@@ -716,8 +714,8 @@ tooltipElem colorTheme tooltip_id hoveredTooltip tooltip_body =
                 elem
 
 
-wrapButtonWithTooltip : StandardButton msg -> ButtonTextParams msg -> TooltipConfig msg -> HoveredTooltip -> Element msg
-wrapButtonWithTooltip standardButton { colorTheme, customAttrs, onPressMsg, textLabel } { onTooltipMsg, tooltip_id, tooltip_body } hoveredTooltip =
+wrapButtonWithTooltip : ButtonTextParams msg -> TooltipConfig msg -> HoveredTooltip -> Element msg
+wrapButtonWithTooltip { buttonType, colorTheme, customAttrs, onPressMsg, textLabel } { onTooltipMsg, tooltip_id, tooltip_body } hoveredTooltip =
     let
         tooltip_el =
             tooltipElem colorTheme tooltip_id hoveredTooltip tooltip_body
@@ -729,18 +727,19 @@ wrapButtonWithTooltip standardButton { colorTheme, customAttrs, onPressMsg, text
             else
                 []
     in
-    standardButton
-        { buttonType = Primary
-        , customAttrs =
-            [ Events.onMouseLeave <| onTooltipMsg <| EndTooltipHover tooltip_id
-            , Events.onMouseEnter <| onTooltipMsg <| StartTooltipHover tooltip_id
-            ]
-                ++ tooltipAttr
-                ++ customAttrs
-        , onPressMsg = onPressMsg
-        , colorTheme = colorTheme
-        , textLabel = textLabel
-        }
+    button <|
+        TextParams
+            { buttonType = buttonType
+            , customAttrs =
+                [ Events.onMouseLeave <| onTooltipMsg <| EndTooltipHover tooltip_id
+                , Events.onMouseEnter <| onTooltipMsg <| StartTooltipHover tooltip_id
+                ]
+                    ++ tooltipAttr
+                    ++ customAttrs
+            , onPressMsg = onPressMsg
+            , colorTheme = colorTheme
+            , textLabel = textLabel
+            }
 
 
 primary_button_tooltip :

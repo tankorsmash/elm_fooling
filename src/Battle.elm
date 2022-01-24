@@ -1120,6 +1120,8 @@ refillGolemSpCost : Int
 refillGolemSpCost =
     5
 
+
+
 -- sample tooltip
 -- UI.buttonWithTooltip
 --         (UI.TextParams
@@ -1135,6 +1137,7 @@ refillGolemSpCost =
 --         , tooltip_id = "ssssdsdsd"
 --         }
 --         uiOptions.hoveredTooltip
+
 
 canAffordRefillSp : BattleCharacter -> Bool
 canAffordRefillSp player =
@@ -1185,31 +1188,47 @@ viewBattleControls { golem, player, enemyMonster, uiOptions } =
         golemSpRefillable =
             monsterMap (\g -> g.statStamina.curVal < g.statStamina.maxVal)
 
-        controlButton : List (Element.Attribute Msg) -> Msg -> String -> Element Msg
-        controlButton attrs msg txt =
-            UI.outline_button ([ centerX, width (fillMax 150) ] ++ attrs) msg txt
+        controlButton : List (Element.Attribute Msg) -> Msg -> String -> String -> Element Msg
+        controlButton attrs msg txt tooltipText =
+            UI.buttonWithTooltip
+                (UI.TextParams
+                    { colorTheme = UI.BrightTheme
+                    , onPressMsg = msg
+                    , textLabel = txt
+                    , buttonType = UI.Outline
+                    , customAttrs = [ centerX, width (fillMax 150) ] ++ attrs
+                    }
+                )
+                { tooltip_id = "control_button__" ++ txt
+                , tooltip_body = UI.TooltipText tooltipText
+                , onTooltipMsg = GotUiOptionsMsg << GotTooltipMsg
+                }
+                uiOptions.hoveredTooltip
 
         canChangeLocationNow =
             canChangeLocation golem enemyMonster
     in
-    [  el [ centerX, width (fillMax 150) ] <|
+    [ el [ centerX, width (fillMax 150) ] <|
         -- Toggle Details
         controlButton []
             ToggleShowExpandedLogs
             "Details"
+            "Toggles combat details"
     , el [ centerX, width (fillMax 150), Element.paddingEach { top = 10, bottom = 0, left = 0, right = 0 } ] <|
         -- Change Location
         controlButton [ Element.transparent <| not canChangeLocationNow ]
             (conditionalMsg canChangeLocationNow ToggleShowLocationTypeMenu)
             "Change Location"
+            "Changes the location of the battle."
     , column [ width fill, spacing 1, padding 10 ]
         [ -- Heal
           controlButton
             [ Element.alpha <|
                 conditionalAlpha (not golemHealable) (not canAffordHealGolem)
             ]
-            (conditionalMsg (golemHealable && canAffordReviveGolem) HealGolem)
+            (conditionalMsg (golemHealable && canAffordHealGolem) HealGolem)
             "Heal"
+            "Heals your golem to full HP"
         , -- Revive
           controlButton
             [ Element.alpha <|
@@ -1217,6 +1236,7 @@ viewBattleControls { golem, player, enemyMonster, uiOptions } =
             ]
             (conditionalMsg (golemRevivable && canAffordReviveGolem) ReviveGolem)
             "Revive"
+            "Revives your golem from the dead with 1HP"
         , -- Level Up
           controlButton
             [ Element.alpha <|
@@ -1224,6 +1244,7 @@ viewBattleControls { golem, player, enemyMonster, uiOptions } =
             ]
             (conditionalMsg (golemLevelupable && canAffordGolemLevelUp) LevelUpGolem)
             "Strengthen"
+            "Levels up your golem"
         , -- Refill SP
           controlButton
             [ Element.alpha <|
@@ -1234,6 +1255,7 @@ viewBattleControls { golem, player, enemyMonster, uiOptions } =
                 RefillGolemSp
             )
             "Envigorate"
+            "Refills your golem's SP"
         ]
     , UI.outline_button
         [ centerX, width (fillMax 150) ]

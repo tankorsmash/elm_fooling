@@ -254,6 +254,8 @@ type SpecialEvent
     = EventVeryDesiredItemType (Maybe ItemType)
     | EventLeastDesiredItemType (Maybe ItemType)
 
+
+
 -- encodeSpecialEvent : SpecialEvent -> Encode.Value
 -- encodeSpecialEvent specialEvent =
 --     case specialEvent of
@@ -266,6 +268,7 @@ type SpecialAction
     | TogglePauseAi
     | UnlockItem
     | IncreaseIncome
+    | CommunityFund
 
 
 type UiOptionMsg
@@ -1096,12 +1099,24 @@ type PlayerActionLog
 encodePlayerActionLog : PlayerActionLog -> Encode.Value
 encodePlayerActionLog playerActionLog =
     case playerActionLog of
-        WelcomeMessageActionLog -> Encode.string "WelcomeMessageActionLog"
-        TookSpecialActionInviteTrader -> Encode.string "TookSpecialActionInviteTrader"
-        TookSpecialActionTriggerEvent specialEvent -> Encode.string "TookSpecialActionTriggerEvent"
-        TookSpecialActionTogglePauseAi -> Encode.string "TookSpecialActionTogglePauseAi"
-        TookSpecialActionUnlockItem itemId -> Encode.string <| "TookSpecialActionUnlockItem__" ++ UUID.toString itemId
-        MonsterDeliveredItemToShop itemId -> Encode.string <| "TookSpecialActionUnlockItem__" ++ UUID.toString itemId
+        WelcomeMessageActionLog ->
+            Encode.string "WelcomeMessageActionLog"
+
+        TookSpecialActionInviteTrader ->
+            Encode.string "TookSpecialActionInviteTrader"
+
+        TookSpecialActionTriggerEvent specialEvent ->
+            Encode.string "TookSpecialActionTriggerEvent"
+
+        TookSpecialActionTogglePauseAi ->
+            Encode.string "TookSpecialActionTogglePauseAi"
+
+        TookSpecialActionUnlockItem itemId ->
+            Encode.string <| "TookSpecialActionUnlockItem__" ++ UUID.toString itemId
+
+        MonsterDeliveredItemToShop itemId ->
+            Encode.string <| "TookSpecialActionUnlockItem__" ++ UUID.toString itemId
+
 
 type InventorySortType
     = SortByName
@@ -1163,6 +1178,7 @@ type alias Model =
     , battleModel : Battle.Model
     , browserNavKey : Maybe Nav.Key
     , uiOptions : UiOptions
+    , communityFund : Int
     }
 
 
@@ -1848,6 +1864,7 @@ init hash key =
             , battleModel = battleModel
             , browserNavKey = key
             , uiOptions = initUiOptions
+            , communityFund = 0
             }
     in
     ( initModel
@@ -3088,6 +3105,35 @@ subGold character price =
     { character | held_gold = character.held_gold - getPrice price }
 
 
+communityFundCost : Price
+communityFundCost =
+    setPrice 25
+
+
+{-| adds money to the pool to allow AIs to get new items
+-}
+special_action_community_fund : Model -> Model
+special_action_community_fund model =
+    let
+        price =
+            communityFundCost
+    in
+    getPlayer model.characters
+        |> (\(Player player) ->
+                if hasEnoughGold player price then
+                    model
+                        |> replaceCharacter (subGold player price)
+                        |> (\m ->
+                                { m
+                                    | communityFund = model.communityFund + getPrice price
+                                }
+                           )
+
+                else
+                    model
+           )
+
+
 update_special_action : SpecialAction -> Price -> Model -> ( Model, Cmd Msg )
 update_special_action special_action price model =
     case getPlayer model.characters of
@@ -3121,6 +3167,9 @@ update_special_action special_action price model =
 
                                 IncreaseIncome ->
                                     ( special_action_increase_income model, Cmd.none )
+
+                                CommunityFund ->
+                                    ( special_action_community_fund model, Cmd.none )
                        )
 
             else
@@ -4715,6 +4764,10 @@ render_inventory_grid model header character shop_trends hovered_item context co
 
                           else
                             Element.none
+                        , row [ width fill ]
+                            [ text <| "Community Fund: "
+                            , UI.renderGp model.colorTheme model.communityFund
+                            ]
                         ]
                     ]
 
@@ -5658,6 +5711,16 @@ special_actions_display colorTheme player_upgrades hoveredTooltip player ai_upda
                 "Spend cash to hire a mercenary to seek out items.\n\nAllows for invited traders to have new items."
                 (setPrice 25)
 
+        button_community_fund =
+            build_special_action_button
+                colorTheme
+                hoveredTooltip
+                player
+                CommunityFund
+                "Contribute"
+                "You've always been a public member of the community. Add to the Community fund.\n\nAllows for invited traders to be able to afford finding new items."
+                communityFundCost
+
         button_increase_income =
             let
                 income_level =
@@ -5693,6 +5756,7 @@ special_actions_display colorTheme player_upgrades hoveredTooltip player ai_upda
                 [ button_increase_income
                 , button_search
                 , button_unlock_item
+                , button_community_fund
                 , button_high_desire
                 , button_low_desire
                 ]

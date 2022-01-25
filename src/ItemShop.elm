@@ -426,6 +426,21 @@ type alias ShopTrends =
     }
 
 
+encodeShopTrends : ShopTrends -> Decode.Value
+encodeShopTrends { item_type_sentiment, item_trade_logs } =
+    Encode.object
+        [ ( "item_type_sentiment", encodeItemSentiments item_type_sentiment )
+        , ( "item_trade_logs", Encode.list encodeItemTradeLog item_trade_logs )
+        ]
+
+
+decodeShopTrends : Decoder ShopTrends
+decodeShopTrends =
+    Decode.map2 ShopTrends
+        (field "item_type_sentiment" <| decodeItemSentiments "invalid shop trends sentiment")
+        (field "item_trade_logs" <| Decode.list decodeItemTradeLog)
+
+
 type WantedAction
     = WantedToBuy
     | WantedToSell
@@ -5672,7 +5687,16 @@ suite =
     -- todo "Implement our first test. See https://package.elm-lang.org/packages/elm-explorations/test/latest for how to do this!"
     describe "root test suite"
         [ describe "encoders"
-            [ describe "basic character encoding/decoding" <|
+            [ test "ShopTrends encoding" <|
+                \_ ->
+                    let
+                        encodedShopTrends : String
+                        encodedShopTrends =
+                            Encode.encode 0 (encodeShopTrends initial_shop_trends)
+                    in
+                    Expect.ok
+                        (Decode.decodeString decodeShopTrends encodedShopTrends)
+            , describe "basic character encoding/decoding" <|
                 let
                     inputChar : Character
                     inputChar =

@@ -1120,6 +1120,17 @@ type alias SecondsWaitedSince =
     }
 
 
+encodeSecondsWaitedSince : SecondsWaitedSince -> Encode.Value
+encodeSecondsWaitedSince { lastSpRefill } =
+    Encode.object [ ( "lastSpRefill", Encode.int lastSpRefill ) ]
+
+
+decodeSecondsWaitedSince : Decoder SecondsWaitedSince
+decodeSecondsWaitedSince =
+    Decode.map SecondsWaitedSince
+        (field "lastSpRefill" Decode.int)
+
+
 type alias Model =
     { colorTheme : UI.ColorTheme
     , player_upgrades : List PlayerUpgrade
@@ -5696,6 +5707,15 @@ suite =
                     in
                     Expect.ok
                         (Decode.decodeString decodeShopTrends encodedShopTrends)
+            , test "SecondsWaitedSince encoding" <|
+                \_ ->
+                    let
+                        encodedSecondsWaitedSince : String
+                        encodedSecondsWaitedSince =
+                            Encode.encode 0 (encodeSecondsWaitedSince { lastSpRefill = 123 })
+                    in
+                    Expect.ok
+                        (Decode.decodeString decodeSecondsWaitedSince encodedSecondsWaitedSince)
             , describe "basic character encoding/decoding" <|
                 let
                     inputChar : Character

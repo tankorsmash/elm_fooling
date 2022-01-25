@@ -254,6 +254,11 @@ type SpecialEvent
     = EventVeryDesiredItemType (Maybe ItemType)
     | EventLeastDesiredItemType (Maybe ItemType)
 
+-- encodeSpecialEvent : SpecialEvent -> Encode.Value
+-- encodeSpecialEvent specialEvent =
+--     case specialEvent of
+--         EventVeryDesiredItemType maybeItemType -> Encode.list Encode.string
+
 
 type SpecialAction
     = InviteTrader
@@ -1087,6 +1092,16 @@ type PlayerActionLog
     | TookSpecialActionUnlockItem ItemId
     | MonsterDeliveredItemToShop ItemId
 
+
+encodePlayerActionLog : PlayerActionLog -> Encode.Value
+encodePlayerActionLog playerActionLog =
+    case playerActionLog of
+        WelcomeMessageActionLog -> Encode.string "WelcomeMessageActionLog"
+        TookSpecialActionInviteTrader -> Encode.string "TookSpecialActionInviteTrader"
+        TookSpecialActionTriggerEvent specialEvent -> Encode.string "TookSpecialActionTriggerEvent"
+        TookSpecialActionTogglePauseAi -> Encode.string "TookSpecialActionTogglePauseAi"
+        TookSpecialActionUnlockItem itemId -> Encode.string <| "TookSpecialActionUnlockItem__" ++ UUID.toString itemId
+        MonsterDeliveredItemToShop itemId -> Encode.string <| "TookSpecialActionUnlockItem__" ++ UUID.toString itemId
 
 type InventorySortType
     = SortByName

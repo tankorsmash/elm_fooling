@@ -3684,7 +3684,7 @@ ai_fetch_item ai_tick_time item_db ({ shop_trends, character, shop, communityFun
     in
     case mbNewItem of
         Just newItem ->
-            if newItem.raw_gold_cost >= communityFund then
+            if newItem.raw_gold_cost <= communityFund then
                 { shop_trends = shop_trends
                 , character =
                     character
@@ -4372,7 +4372,7 @@ action_log_to_str colorTheme item_db action_log =
             "Fetched an item: " ++ (lookup_item_id_default item_db itemId).name
 
         FetchedItemButFundNotBigEnough itemId ->
-            "Tried to fetch an item, but the Community Fund didn't contain enough gold. Needed" ++ (UI.renderGpString (lookup_item_id_default item_db itemId).raw_gold_cost)
+            "Tried to fetch an item, but the Community Fund didn't contain enough gold. Needed" ++ UI.renderGpString (lookup_item_id_default item_db itemId).raw_gold_cost
 
         DidNothing ->
             "Did nothing"
@@ -4398,10 +4398,10 @@ render_inventory_grid model header character shop_trends hovered_item context co
         is_player_context =
             context == InventoryItems
 
-        { historical_shop_trends, item_db,colorTheme } =
+        { historical_shop_trends, item_db, colorTheme } =
             model
 
-        { show_charts_in_hovered_item} =
+        { show_charts_in_hovered_item } =
             model.uiOptions
 
         buildCompare : (a -> comparable) -> (a -> a -> Order)
@@ -6030,7 +6030,49 @@ suite =
                 ( test_item2, test_item_qty2, test_avg_price2 ) =
                     ( lookup_item_id_str_default test_item_db "c3c38323-1743-5a47-a8e3-bf6ec28137f9", Quantity 12, setPrice 9999 )
             in
-            [ test "clipText test clips" <|
+            [ fuzz (Fuzz.map Time.millisToPosix int) "fetching only works if there's enough community funds" <|
+                \ai_tick_time ->
+                    let
+                        preUpdateRecord =
+                            { shop_trends = initial_shop_trends
+                            , character = test_character
+                            , shop = Shop test_character --doesnt matter here
+                            , communityFund = 0
+                            }
+
+                        postUpdateRecord =
+                            ai_fetch_item ai_tick_time test_item_db preUpdateRecord
+                    in
+                    Expect.all
+                        [ \pur -> Expect.equal preUpdateRecord.communityFund pur.communityFund
+                        , \pur -> Expect.equal preUpdateRecord.character.held_items pur.character.held_items
+                        ]
+                        postUpdateRecord
+            , fuzz (Fuzz.map Time.millisToPosix int) "fetching items adds an item and reduces the community fund" <|
+                \ai_tick_time ->
+                    let
+                        preUpdateRecord =
+                            { shop_trends = initial_shop_trends
+                            , character = test_character
+                            , shop = Shop test_character --doesnt matter here
+                            , communityFund = 100000
+                            }
+
+                        postUpdateRecord =
+                            ai_fetch_item ai_tick_time test_item_db preUpdateRecord
+                    in
+                    Expect.all
+                        [ \pur ->
+                            Expect.lessThan
+                                preUpdateRecord.communityFund
+                                pur.communityFund
+                        , \pur ->
+                            Expect.greaterThan
+                                (List.length preUpdateRecord.character.held_items)
+                                (List.length pur.character.held_items)
+                        ]
+                        postUpdateRecord
+            , test "clipText test clips" <|
                 \_ ->
                     Expect.equal "abc..." <| UI.clipText "abcdef" 3
             , test "clipText test doesnt clip" <|

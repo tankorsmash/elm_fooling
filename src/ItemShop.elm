@@ -1197,6 +1197,7 @@ type alias AiUpdateData =
     , characters : Characters
     , ai_tick_seed : Random.Seed
     , item_db : ItemDb
+    , communityFund : Int
     }
 
 
@@ -1204,6 +1205,7 @@ type alias AiPreUpdateRecord =
     { shop_trends : ShopTrends
     , character : Character
     , shop : Shop
+    , communityFund : Int
     }
 
 
@@ -1214,6 +1216,7 @@ type alias AiUpdateRecord =
     , character : Character
     , shop : Shop
     , traded_items : InventoryRecords
+    , communityFund : Int
     }
 
 
@@ -3364,7 +3367,7 @@ get_wanted_items character shop shop_trends =
 
 
 ai_buy_item_from_shop : Time.Posix -> ItemDb -> AiPreUpdateRecord -> AiUpdateRecord
-ai_buy_item_from_shop ai_tick_time item_db { shop_trends, character, shop } =
+ai_buy_item_from_shop ai_tick_time item_db { shop_trends, character, shop, communityFund} =
     --TODO decide on an item type to buy, and buy 1.
     -- Maybe, it would be based on the lowest trending one, or one the
     -- character strongly desired or something
@@ -3479,6 +3482,7 @@ ai_buy_item_from_shop ai_tick_time item_db { shop_trends, character, shop } =
             , character = trade_context_.to_party
             , shop = Shop trade_context_.from_party
             , traded_items = []
+            , communityFund = communityFund
             }
 
         CompletedTradeRecord trade_context_ log ->
@@ -3496,6 +3500,7 @@ ai_buy_item_from_shop ai_tick_time item_db { shop_trends, character, shop } =
                     Nothing ->
                         -- []
                         Debug.todo ""
+            , communityFund = communityFund
             }
 
 
@@ -3504,7 +3509,7 @@ ai_buy_item_from_shop ai_tick_time item_db { shop_trends, character, shop } =
 
 
 ai_sell_item_to_shop : Time.Posix -> ItemDb -> AiPreUpdateRecord -> AiUpdateRecord
-ai_sell_item_to_shop ai_tick_time item_db { shop_trends, character, shop } =
+ai_sell_item_to_shop ai_tick_time item_db { shop_trends, character, shop, communityFund } =
     let
         sellable_items : InventoryRecords
         sellable_items =
@@ -3573,6 +3578,7 @@ ai_sell_item_to_shop ai_tick_time item_db { shop_trends, character, shop } =
             , character = trade_context_.from_party
             , shop = Shop trade_context_.to_party
             , traded_items = []
+            , communityFund = communityFund
             }
 
         CompletedTradeRecord trade_context_ log ->
@@ -3589,6 +3595,7 @@ ai_sell_item_to_shop ai_tick_time item_db { shop_trends, character, shop } =
 
                     Nothing ->
                         Debug.todo "" []
+            , communityFund = communityFund
             }
 
 
@@ -3655,7 +3662,7 @@ addHeldItem item ({ held_items } as character) =
 
 
 ai_fetch_item : Time.Posix -> ItemDb -> AiPreUpdateRecord -> AiUpdateRecord
-ai_fetch_item ai_tick_time item_db { shop_trends, character, shop } =
+ai_fetch_item ai_tick_time item_db { shop_trends, character, shop, communityFund } =
     let
         --note we don't use the newSeed here. we should use global_seed, so that all AIs dont do the same thing
         ( mbNewItem, _ ) =
@@ -3681,6 +3688,7 @@ ai_fetch_item ai_tick_time item_db { shop_trends, character, shop } =
             |> Maybe.withDefault character
     , shop = shop
     , traded_items = []
+    , communityFund = communityFund
     }
 
 
@@ -3698,7 +3706,7 @@ pickAiActionChoice ai_tick_seed =
 
 
 update_ai : Time.Posix -> CharacterId -> CharacterId -> AiUpdateData -> AiUpdateData
-update_ai ai_tick_time shop_char_id char_id ({ shop_trends, historical_shop_trends, characters, ai_tick_seed, item_db } as original_ai_update_data) =
+update_ai ai_tick_time shop_char_id char_id ({ shop_trends, historical_shop_trends, characters, ai_tick_seed, item_db, communityFund } as original_ai_update_data) =
     let
         --TODO: make sure character isn't shop
         maybe_character =
@@ -3719,6 +3727,7 @@ update_ai ai_tick_time shop_char_id char_id ({ shop_trends, historical_shop_tren
                     { shop_trends = shop_trends
                     , character = character
                     , shop = shop
+                    , communityFund = communityFund
                     }
 
                 ai_update_record : AiUpdateRecord
@@ -3743,12 +3752,13 @@ update_ai ai_tick_time shop_char_id char_id ({ shop_trends, historical_shop_tren
                                 preUpdateRecord
 
                         NoActionChoice ->
-                            { shop_trends = shop_trends
+                            { shop_trends = preUpdateRecord.shop_trends
                             , character =
-                                append_to_character_action_log character
+                                append_to_character_action_log preUpdateRecord.character
                                     { log_type = DidNothing, time = ai_tick_time }
-                            , shop = shop
+                            , shop = preUpdateRecord.shop
                             , traded_items = []
+                            , communityFund = preUpdateRecord.communityFund
                             }
 
                 new_characters : Characters
@@ -3786,6 +3796,7 @@ update_ai ai_tick_time shop_char_id char_id ({ shop_trends, historical_shop_tren
             , characters = new_characters
             , ai_tick_seed = new_seed
             , item_db = new_item_db
+            , communityFund = ai_update_record.communityFund
             }
 
         _ ->
@@ -3808,7 +3819,7 @@ update_ai_chars model =
         ai_tick_seed =
             Random.initialSeed <| Time.posixToMillis model.ai_tick_time
 
-        { ai_tick_time, item_db, shop_id } =
+        { ai_tick_time, item_db, shop_id, communityFund } =
             model
 
         first_ai_update_data =
@@ -3817,6 +3828,7 @@ update_ai_chars model =
             , characters = old_characters
             , ai_tick_seed = ai_tick_seed
             , item_db = item_db
+            , communityFund = communityFund
             }
 
         new_ai_data : AiUpdateData

@@ -1,4 +1,4 @@
-module Interface exposing (ButtonConfig, ButtonCustomParams, ButtonParams(..), ButtonTextParams, ButtonType(..), ColorTheme(..), HoveredTooltip(..), StandardButton, TooltipBody(..), TooltipConfig, TooltipData, TooltipId, TooltipMsg(..), blankChar, buildTooltipElementConfig, buildTooltipTextConfig, button, buttonWithTooltip, clipText, colorFromInt, color_black, color_danger, color_danger_bright, color_grey, color_light_grey, color_off_black, color_pastel_green_1, color_pastel_green_2, color_pastel_green_3, color_pastel_green_4, color_pastel_green_5, color_pastel_green_6, color_pastel_green_7, color_pastel_red_1, color_pastel_red_2, color_pastel_red_3, color_pastel_red_4, color_pastel_red_5, color_pastel_red_6, color_pastel_red_7, color_primary, color_secondary, color_secondary_bright, color_ultra_light_grey, color_very_light_grey, color_very_very_light_grey, color_white, common_button_attrs, convertColor, cssRule, dangerButtonConfig, defaultBackgroundColor, defaultFontColor, defaultSolidColor, defaultTextColor, defineHtmlId, font_blood, font_grey, font_scaled, getButtonConfig, getTooltipOffset, hex_to_color, hoveredTooltipMatchesId, monospace, nbsp, noUserSelect, outlineButtonConfig, outline_button, outline_button_custom, pointerEventsAll, pointerEventsNone, primaryButtonConfig, primary_button_tooltip, primary_color_bright, renderBlood, renderBlood_sized, renderBlood_string, renderGp, renderGpSized, renderGpString, scaled, scrollbarYEl, secondaryButtonConfig, tooltipElem, wrapButtonWithTooltip)
+module Interface exposing (ButtonConfig, ButtonCustomParams, ButtonParams(..), ButtonTextParams, ButtonType(..), ColorTheme(..), HoveredTooltip(..), StandardButton, TooltipBody(..), TooltipConfig, TooltipData, TooltipId, TooltipMsg(..), addButtonAttrs, blankChar, buildTooltipElementConfig, buildTooltipTextConfig, button, buttonWithTooltip, clipText, colorFromInt, color_black, color_danger, color_danger_bright, color_grey, color_light_grey, color_off_black, color_pastel_green_1, color_pastel_green_2, color_pastel_green_3, color_pastel_green_4, color_pastel_green_5, color_pastel_green_6, color_pastel_green_7, color_pastel_red_1, color_pastel_red_2, color_pastel_red_3, color_pastel_red_4, color_pastel_red_5, color_pastel_red_6, color_pastel_red_7, color_primary, color_secondary, color_secondary_bright, color_ultra_light_grey, color_very_light_grey, color_very_very_light_grey, color_white, common_button_attrs, convertColor, cssRule, dangerButtonConfig, decodeColorTheme, defaultBackgroundColor, defaultFontColor, defaultSolidColor, defaultTextColor, defineHtmlId, encodeColorTheme, font_blood, font_grey, font_scaled, getButtonConfig, getTooltipOffset, hex_to_color, hoveredTooltipMatchesId, monospace, nbsp, noUserSelect, outlineButtonConfig, outlineCustomAttrs, outline_button, outline_button_custom, pointerEventsAll, pointerEventsNone, primaryButtonConfig, primary_button, primary_button_custom, primary_button_tooltip, primary_color_bright, renderBlood, renderBlood_sized, renderBlood_string, renderGp, renderGpSized, renderGpString, scaled, scrollbarYEl, secondaryButtonConfig, tooltipElem, wrapButtonWithTooltip)
 
 import Array
 import Browser.Dom
@@ -67,6 +67,33 @@ import UUID exposing (UUID)
 type ColorTheme
     = BrightTheme
     | DarkTheme
+
+
+encodeColorTheme : ColorTheme -> Decode.Value
+encodeColorTheme colorTheme =
+    case colorTheme of
+        BrightTheme ->
+            Encode.string "BrightTheme"
+
+        DarkTheme ->
+            Encode.string "DarkTheme"
+
+
+decodeColorTheme : Decoder ColorTheme
+decodeColorTheme =
+    Decode.string
+        |> Decode.andThen
+            (\colorStr ->
+                case colorStr of
+                    "BrightTheme" ->
+                        Decode.succeed BrightTheme
+
+                    "DarkTheme" ->
+                        Decode.succeed DarkTheme
+
+                    _ ->
+                        Decode.fail "color theme is not recognized"
+            )
 
 
 type alias TooltipData =
@@ -576,7 +603,7 @@ renderGp colorTheme count =
     renderGpSized colorTheme count 12
 
 
-renderGpString :  Int -> String
+renderGpString : Int -> String
 renderGpString count =
     String.fromInt count ++ "gp"
 

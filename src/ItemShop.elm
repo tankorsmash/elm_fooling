@@ -1186,6 +1186,30 @@ type alias Model =
     }
 
 
+encodeModel : Model -> Decode.Value
+encodeModel model =
+    Encode.object
+        [ ( "colorTheme", UI.encodeColorTheme model.colorTheme )
+
+        -- , player_upgrades : List PlayerUpgrade
+        -- , secondsWaitedSince : SecondsWaitedSince
+        -- , shop_id : CharacterId
+        -- , characters : Characters
+        -- , shop_trends : ShopTrends
+        -- , historical_shop_trends : List ShopTrends
+        -- , historical_player_actions : List PlayerActionLog
+        -- , item_db : ItemDb
+        -- , ai_tick_time : Time.Posix --used to seed the ai randomness
+        -- , global_seed : Random.Seed --used to seed anything; will be constantly changed throughout the app
+        -- , ai_updates_paused : Bool
+        -- , tab_type : TabType
+        -- , battleModel : Battle.Model
+        -- , browserNavKey : Maybe Nav.Key
+        -- , uiOptions : UiOptions
+        -- , communityFund : Int
+        ]
+
+
 type AiActionChoice
     = NoActionChoice
     | WantsToSell

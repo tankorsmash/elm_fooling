@@ -485,6 +485,7 @@ type ActionLogType
     = Traded ItemTradeLog
     | WantedButCouldntTrade WantedAction
     | FetchedItem ItemId
+    | FetchedItemButFundNotBigEnough ItemId
     | DidNothing
 
 
@@ -499,6 +500,9 @@ encodeActionLogType action_log_type =
 
         FetchedItem item_id ->
             Encode.list identity [ Encode.string "FetchedItem", encodeItemId item_id ]
+
+        FetchedItemButFundNotBigEnough item_id ->
+            Encode.list identity [ Encode.string "FetchedItemButFundNotBigEnough", encodeItemId item_id ]
 
         DidNothing ->
             Encode.list identity [ Encode.string "DidNothing" ]
@@ -3674,26 +3678,40 @@ convertPreUpdateRecordToPostUpdate { shop_trends, character, shop, communityFund
 ai_fetch_item : Time.Posix -> ItemDb -> AiPreUpdateRecord -> AiUpdateRecord
 ai_fetch_item ai_tick_time item_db ({ shop_trends, character, shop, communityFund } as preUpdateRecord) =
     let
-        --note we don't use the newSeed here. we should use global_seed, so that all AIs dont do the same thing
+        --note we don't use the new seed here. we should use global_seed, so that all AIs dont do the same thing
         ( mbNewItem, _ ) =
             pick_random_unlocked_item_from_db item_db (seed_from_time ai_tick_time)
     in
     case mbNewItem of
         Just newItem ->
-            { shop_trends = shop_trends
-            , character =
-                character
-                    |> addHeldItem newItem
-                    |> (\c ->
-                            append_to_character_action_log c
-                                { log_type = FetchedItem newItem.id
-                                , time = ai_tick_time
-                                }
+            if newItem.raw_gold_cost >= communityFund then
+                { shop_trends = shop_trends
+                , character =
+                    character
+                        |> addHeldItem newItem
+                        |> (\c ->
+                                append_to_character_action_log c
+                                    { log_type = FetchedItem newItem.id
+                                    , time = ai_tick_time
+                                    }
+                           )
+                , shop = shop
+                , traded_items = []
+                , communityFund = communityFund - newItem.raw_gold_cost
+                }
+
+            else
+                preUpdateRecord
+                    |> convertPreUpdateRecordToPostUpdate
+                    |> (\ai_update_record ->
+                            { ai_update_record
+                                | character =
+                                    append_to_character_action_log character
+                                        { log_type = FetchedItemButFundNotBigEnough newItem.id
+                                        , time = ai_tick_time
+                                        }
+                            }
                        )
-            , shop = shop
-            , traded_items = []
-            , communityFund = communityFund
-            }
 
         Nothing ->
             convertPreUpdateRecordToPostUpdate preUpdateRecord
@@ -4352,6 +4370,9 @@ action_log_to_str item_db action_log =
 
         FetchedItem itemId ->
             "Fetched an item"
+
+        FetchedItemButFundNotBigEnough itemId ->
+            "Tried to fetch an item, but the Community Fund didn't contain enough gold."
 
         DidNothing ->
             "Did nothing"

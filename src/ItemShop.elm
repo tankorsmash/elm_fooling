@@ -3633,35 +3633,42 @@ increment_item_trade_count record_updater inventory_record item_db =
         )
 
 
+{-| adds a single item for its raw gold cost
+-}
+addHeldItem : Item -> Character -> Character
+addHeldItem item ({ held_items } as character) =
+    { character
+        | held_items =
+            add_item_to_inventory_records
+                held_items
+                item
+                (setQuantity 1)
+                item.raw_gold_cost
+    }
+
+
 ai_fetch_item : Time.Posix -> ItemDb -> ShopTrends -> Character -> Character -> AiUpdateRecord
 ai_fetch_item ai_tick_time item_db shop_trends ({ held_items } as character) shop =
     let
         --note we don't use the newSeed here. we should use global_seed, so that all AIs dont do the same thing
-        ( mbNewItem, newSeed ) =
+        ( mbNewItem, _ ) =
             pick_random_unlocked_item_from_db item_db (seed_from_time ai_tick_time)
     in
     { shop_trends = shop_trends
     , character =
-        case mbNewItem of
-            Just newItem ->
-                character
-                    |> (\c ->
-                            { c
-                                | held_items =
-                                    add_item_to_inventory_records
-                                        held_items
-                                        newItem
-                                        (setQuantity 1)
-                                        newItem.raw_gold_cost
-                            }
-                       )
-                    |> (\c ->
-                            append_to_character_action_log c
-                                { log_type = FetchedItem newItem.id, time = ai_tick_time }
-                       )
-
-            Nothing ->
-                character
+        mbNewItem
+            |> Maybe.map
+                (\newItem ->
+                    character
+                        |> addHeldItem newItem
+                        |> (\c ->
+                                append_to_character_action_log c
+                                    { log_type = FetchedItem newItem.id
+                                    , time = ai_tick_time
+                                    }
+                           )
+                )
+            |> Maybe.withDefault character
     , shop = shop
     , traded_items = []
     }

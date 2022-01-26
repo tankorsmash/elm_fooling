@@ -58,6 +58,7 @@ import Json.Decode as Decode exposing (Decoder, field)
 import Json.Decode.Extra as DecodeExtra
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as Encode exposing (Value)
+import Json.Encode.Extra as EncodeExtra exposing (maybe)
 import List.Extra
 import Random
 import Random.List
@@ -255,11 +256,20 @@ type SpecialEvent
     | EventLeastDesiredItemType (Maybe ItemType)
 
 
+encodeSpecialEvent : SpecialEvent -> Encode.Value
+encodeSpecialEvent specialEvent =
+    case specialEvent of
+        EventVeryDesiredItemType maybeItemType ->
+            Encode.object
+                [ ( "type", Encode.string "EventVeryDesiredItemType" )
+                , ( "maybeItemType", maybe encodeItemType maybeItemType )
+                ]
 
--- encodeSpecialEvent : SpecialEvent -> Encode.Value
--- encodeSpecialEvent specialEvent =
---     case specialEvent of
---         EventVeryDesiredItemType maybeItemType -> Encode.list Encode.string
+        EventLeastDesiredItemType maybeItemType ->
+            Encode.object
+                [ ( "type", Encode.string "EventLeastDesiredItemType" )
+                , ( "maybeItemType", maybe encodeItemType maybeItemType )
+                ]
 
 
 type SpecialAction
@@ -1110,7 +1120,10 @@ encodePlayerActionLog playerActionLog =
             Encode.string "TookSpecialActionInviteTrader"
 
         TookSpecialActionTriggerEvent specialEvent ->
-            Encode.string "TookSpecialActionTriggerEvent"
+            Encode.object
+                [ ( "type", Encode.string "TookSpecialActionTriggerEvent" )
+                , ( "data", encodeSpecialEvent specialEvent )
+                ]
 
         TookSpecialActionTogglePauseAi ->
             Encode.string "TookSpecialActionTogglePauseAi"
@@ -1195,9 +1208,10 @@ encodeModel model =
         -- , secondsWaitedSince : SecondsWaitedSince
         -- , shop_id : CharacterId
         -- , characters : Characters
-        -- , shop_trends : ShopTrends
-        -- , historical_shop_trends : List ShopTrends
-        -- , historical_player_actions : List PlayerActionLog
+        , ( "shop_trends", encodeShopTrends model.shop_trends )
+        , ( "historical_shop_trends", Encode.list encodeShopTrends model.historical_shop_trends )
+        , ( "historical_player_actions", Encode.list encodePlayerActionLog model.historical_player_actions )
+
         -- , item_db : ItemDb
         -- , ai_tick_time : Time.Posix --used to seed the ai randomness
         -- , global_seed : Random.Seed --used to seed anything; will be constantly changed throughout the app
@@ -3754,8 +3768,8 @@ pickAiActionChoice ai_tick_seed =
             (Tuple.first >> Maybe.withDefault NoActionChoice)
 
 
-update_ai : Time.Posix -> CharacterId -> CharacterId -> AiUpdateData -> AiUpdateData
-update_ai ai_tick_time shop_char_id char_id ({ shop_trends, historical_shop_trends, characters, ai_tick_seed, item_db, communityFund } as original_ai_update_data) =
+update_ai : Time.Posix -> CharacterId -> AiUpdateData -> AiUpdateData
+update_ai ai_tick_time char_id ({ shop_trends, historical_shop_trends, characters, ai_tick_seed, item_db, communityFund } as original_ai_update_data) =
     let
         --TODO: make sure character isn't shop
         maybe_character =
@@ -3886,7 +3900,7 @@ update_ai_chars model =
                 |> getOthers
                 |> List.map .char_id
                 |> List.foldl
-                    (update_ai ai_tick_time shop_id)
+                    (update_ai ai_tick_time)
                     first_ai_update_data
     in
     { model

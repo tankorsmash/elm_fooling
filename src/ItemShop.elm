@@ -1205,7 +1205,7 @@ type alias AiUpdateData =
 type alias AiUpdateRecord =
     { shop_trends : ShopTrends
     , character : Character
-    , shop : Character
+    , shop : Shop
     , traded_items : InventoryRecords
     }
 
@@ -3345,7 +3345,7 @@ signedFromInt int =
 
 {-| items the character can afford and desires at least a little
 -}
-get_wanted_items : Character -> Character -> ShopTrends -> InventoryRecords
+get_wanted_items : Character -> Shop -> ShopTrends -> InventoryRecords
 get_wanted_items character shop shop_trends =
     List.filter
         (\inventory_record ->
@@ -3353,10 +3353,10 @@ get_wanted_items character shop shop_trends =
                 && check_can_afford_one character shop_trends inventory_record.item
                 && check_nonzero_desire character inventory_record.item
         )
-        shop.held_items
+        (getShopCharacter shop).held_items
 
 
-ai_buy_item_from_shop : Time.Posix -> ItemDb -> ShopTrends -> Character -> Character -> AiUpdateRecord
+ai_buy_item_from_shop : Time.Posix -> ItemDb -> ShopTrends -> Character -> Shop -> AiUpdateRecord
 ai_buy_item_from_shop ai_tick_time item_db shop_trends character shop =
     --TODO decide on an item type to buy, and buy 1.
     -- Maybe, it would be based on the lowest trending one, or one the
@@ -3449,7 +3449,7 @@ ai_buy_item_from_shop ai_tick_time item_db shop_trends character shop =
                 Nothing ->
                     IncompleteTradeRecord
                         { shop_trends = shop_trends
-                        , from_party = shop
+                        , from_party = getShopCharacter shop
                         , to_party =
                             append_to_character_action_log
                                 character
@@ -3461,7 +3461,7 @@ ai_buy_item_from_shop ai_tick_time item_db shop_trends character shop =
                 Just item ->
                     sell_items_from_party_to_other
                         { shop_trends = shop_trends
-                        , from_party = shop
+                        , from_party = getShopCharacter shop
                         , to_party = character
                         }
                         { item = item, qty = qty_to_buy }
@@ -3470,7 +3470,7 @@ ai_buy_item_from_shop ai_tick_time item_db shop_trends character shop =
         IncompleteTradeRecord trade_context_ ->
             { shop_trends = trade_context_.shop_trends
             , character = trade_context_.to_party
-            , shop = trade_context_.from_party
+            , shop = Shop trade_context_.from_party
             , traded_items = []
             }
 
@@ -3480,7 +3480,7 @@ ai_buy_item_from_shop ai_tick_time item_db shop_trends character shop =
                 append_to_character_action_log
                     trade_context_.to_party
                     { log_type = Traded log, time = ai_tick_time }
-            , shop = trade_context_.from_party
+            , shop = Shop trade_context_.from_party
             , traded_items =
                 case lookup_item_id item_db log.item_id of
                     Just item_trade_log ->
@@ -3496,7 +3496,7 @@ ai_buy_item_from_shop ai_tick_time item_db shop_trends character shop =
 -- tradeRecordToAiUpdate
 
 
-ai_sell_item_to_shop : Time.Posix -> ItemDb -> ShopTrends -> Character -> Character -> AiUpdateRecord
+ai_sell_item_to_shop : Time.Posix -> ItemDb -> ShopTrends -> Character -> Shop -> AiUpdateRecord
 ai_sell_item_to_shop ai_tick_time item_db shop_trends character shop =
     let
         sellable_items : InventoryRecords
@@ -3549,14 +3549,14 @@ ai_sell_item_to_shop ai_tick_time item_db shop_trends character shop =
                             append_to_character_action_log
                                 character
                                 wanted_to_sell_but_couldnt
-                        , to_party = shop
+                        , to_party = getShopCharacter shop
                         }
 
                 Just { item } ->
                     sell_items_from_party_to_other
                         { shop_trends = shop_trends
                         , from_party = character
-                        , to_party = shop
+                        , to_party = getShopCharacter shop
                         }
                         { item = item, qty = qty_to_sell }
     in
@@ -3564,7 +3564,7 @@ ai_sell_item_to_shop ai_tick_time item_db shop_trends character shop =
         IncompleteTradeRecord trade_context_ ->
             { shop_trends = trade_context_.shop_trends
             , character = trade_context_.from_party
-            , shop = trade_context_.to_party
+            , shop = Shop trade_context_.to_party
             , traded_items = []
             }
 
@@ -3574,7 +3574,7 @@ ai_sell_item_to_shop ai_tick_time item_db shop_trends character shop =
                 append_to_character_action_log
                     trade_context_.from_party
                     { log_type = Traded log, time = ai_tick_time }
-            , shop = trade_context_.to_party
+            , shop = Shop trade_context_.to_party
             , traded_items =
                 case lookup_item_id item_db log.item_id of
                     Just item_trade_log ->
@@ -3647,7 +3647,7 @@ addHeldItem item ({ held_items } as character) =
     }
 
 
-ai_fetch_item : Time.Posix -> ItemDb -> ShopTrends -> Character -> Character -> AiUpdateRecord
+ai_fetch_item : Time.Posix -> ItemDb -> ShopTrends -> Character -> Shop -> AiUpdateRecord
 ai_fetch_item ai_tick_time item_db shop_trends ({ held_items } as character) shop =
     let
         --note we don't use the newSeed here. we should use global_seed, so that all AIs dont do the same thing
@@ -3694,11 +3694,11 @@ update_ai ai_tick_time shop_char_id char_id ({ shop_trends, historical_shop_tren
         maybe_character =
             getCharacter characters char_id
 
-        maybe_shop =
-            getCharacter characters shop_char_id
+        shop =
+            getShop characters
     in
-    case ( maybe_character, maybe_shop ) of
-        ( Just character, Just shop ) ->
+    case maybe_character of
+        Just character ->
             let
                 -- chosen_action, new_seed : (AiActionChoice, Random.Seed)
                 ( chosen_action, new_seed ) =
@@ -3742,18 +3742,16 @@ update_ai ai_tick_time shop_char_id char_id ({ shop_trends, historical_shop_tren
 
                 new_characters : Characters
                 new_characters =
-                    mapCharacters
-                        (\c ->
-                            if c.char_id == character.char_id then
-                                ai_update_record.character
+                    characters
+                        |> mapCharacters
+                            (\c ->
+                                if c.char_id == character.char_id then
+                                    ai_update_record.character
 
-                            else if c.char_id == shop.char_id then
-                                ai_update_record.shop
-
-                            else
-                                c
-                        )
-                        characters
+                                else
+                                    c
+                            )
+                        |> setShop ai_update_record.shop
 
                 new_historical_shop_trends =
                     List.append
@@ -4826,6 +4824,16 @@ getPlayer (Characters { player, shop, others }) =
 getShop : Characters -> Shop
 getShop (Characters { player, shop, others }) =
     shop
+
+
+getShopCharacter : Shop -> Character
+getShopCharacter (Shop shop) =
+    shop
+
+
+setShop : Shop -> Characters -> Characters
+setShop shop (Characters { player, others }) =
+    Characters { player = player, shop = shop, others = others }
 
 
 getOthers : Characters -> List Character

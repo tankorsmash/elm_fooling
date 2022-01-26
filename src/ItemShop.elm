@@ -1200,6 +1200,13 @@ type alias AiUpdateData =
     }
 
 
+type alias AiPreUpdateRecord =
+    { shop_trends : ShopTrends
+    , character : Character
+    , shop : Shop
+    }
+
+
 {-| the result of what happens during a ai\_sell/ai\_buy update.
 -}
 type alias AiUpdateRecord =
@@ -3356,8 +3363,8 @@ get_wanted_items character shop shop_trends =
         (getShopCharacter shop).held_items
 
 
-ai_buy_item_from_shop : Time.Posix -> ItemDb -> ShopTrends -> Character -> Shop -> AiUpdateRecord
-ai_buy_item_from_shop ai_tick_time item_db shop_trends character shop =
+ai_buy_item_from_shop : Time.Posix -> ItemDb -> AiPreUpdateRecord -> AiUpdateRecord
+ai_buy_item_from_shop ai_tick_time item_db { shop_trends, character, shop } =
     --TODO decide on an item type to buy, and buy 1.
     -- Maybe, it would be based on the lowest trending one, or one the
     -- character strongly desired or something
@@ -3496,8 +3503,8 @@ ai_buy_item_from_shop ai_tick_time item_db shop_trends character shop =
 -- tradeRecordToAiUpdate
 
 
-ai_sell_item_to_shop : Time.Posix -> ItemDb -> ShopTrends -> Character -> Shop -> AiUpdateRecord
-ai_sell_item_to_shop ai_tick_time item_db shop_trends character shop =
+ai_sell_item_to_shop : Time.Posix -> ItemDb -> AiPreUpdateRecord -> AiUpdateRecord
+ai_sell_item_to_shop ai_tick_time item_db { shop_trends, character, shop } =
     let
         sellable_items : InventoryRecords
         sellable_items =
@@ -3647,12 +3654,15 @@ addHeldItem item ({ held_items } as character) =
     }
 
 
-ai_fetch_item : Time.Posix -> ItemDb -> ShopTrends -> Character -> Shop -> AiUpdateRecord
-ai_fetch_item ai_tick_time item_db shop_trends ({ held_items } as character) shop =
+ai_fetch_item : Time.Posix -> ItemDb -> AiPreUpdateRecord -> AiUpdateRecord
+ai_fetch_item ai_tick_time item_db { shop_trends, character, shop } =
     let
         --note we don't use the newSeed here. we should use global_seed, so that all AIs dont do the same thing
         ( mbNewItem, _ ) =
             pick_random_unlocked_item_from_db item_db (seed_from_time ai_tick_time)
+
+        { held_items } =
+            character
     in
     { shop_trends = shop_trends
     , character =
@@ -3704,6 +3714,13 @@ update_ai ai_tick_time shop_char_id char_id ({ shop_trends, historical_shop_tren
                 ( chosen_action, new_seed ) =
                     pickAiActionChoice ai_tick_seed
 
+                preUpdateRecord : AiPreUpdateRecord
+                preUpdateRecord =
+                    { shop_trends = shop_trends
+                    , character = character
+                    , shop = shop
+                    }
+
                 ai_update_record : AiUpdateRecord
                 ai_update_record =
                     case chosen_action of
@@ -3711,25 +3728,19 @@ update_ai ai_tick_time shop_char_id char_id ({ shop_trends, historical_shop_tren
                             ai_sell_item_to_shop
                                 ai_tick_time
                                 item_db
-                                shop_trends
-                                character
-                                shop
+                                preUpdateRecord
 
                         WantsToBuy ->
                             ai_buy_item_from_shop
                                 ai_tick_time
                                 item_db
-                                shop_trends
-                                character
-                                shop
+                                preUpdateRecord
 
                         WantsToFetchItem ->
                             ai_fetch_item
                                 ai_tick_time
                                 item_db
-                                shop_trends
-                                character
-                                shop
+                                preUpdateRecord
 
                         NoActionChoice ->
                             { shop_trends = shop_trends

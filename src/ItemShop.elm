@@ -3367,7 +3367,7 @@ get_wanted_items character shop shop_trends =
 
 
 ai_buy_item_from_shop : Time.Posix -> ItemDb -> AiPreUpdateRecord -> AiUpdateRecord
-ai_buy_item_from_shop ai_tick_time item_db { shop_trends, character, shop, communityFund} =
+ai_buy_item_from_shop ai_tick_time item_db { shop_trends, character, shop, communityFund } =
     --TODO decide on an item type to buy, and buy 1.
     -- Maybe, it would be based on the lowest trending one, or one the
     -- character strongly desired or something
@@ -3661,35 +3661,42 @@ addHeldItem item ({ held_items } as character) =
     }
 
 
+convertPreUpdateRecordToPostUpdate : AiPreUpdateRecord -> AiUpdateRecord
+convertPreUpdateRecordToPostUpdate { shop_trends, character, shop, communityFund } =
+    { shop_trends = shop_trends
+    , character = character
+    , shop = shop
+    , communityFund = communityFund
+    , traded_items = []
+    }
+
+
 ai_fetch_item : Time.Posix -> ItemDb -> AiPreUpdateRecord -> AiUpdateRecord
-ai_fetch_item ai_tick_time item_db { shop_trends, character, shop, communityFund } =
+ai_fetch_item ai_tick_time item_db ({ shop_trends, character, shop, communityFund } as preUpdateRecord) =
     let
         --note we don't use the newSeed here. we should use global_seed, so that all AIs dont do the same thing
         ( mbNewItem, _ ) =
             pick_random_unlocked_item_from_db item_db (seed_from_time ai_tick_time)
-
-        { held_items } =
-            character
     in
-    { shop_trends = shop_trends
-    , character =
-        mbNewItem
-            |> Maybe.map
-                (\newItem ->
-                    character
-                        |> addHeldItem newItem
-                        |> (\c ->
-                                append_to_character_action_log c
-                                    { log_type = FetchedItem newItem.id
-                                    , time = ai_tick_time
-                                    }
-                           )
-                )
-            |> Maybe.withDefault character
-    , shop = shop
-    , traded_items = []
-    , communityFund = communityFund
-    }
+    case mbNewItem of
+        Just newItem ->
+            { shop_trends = shop_trends
+            , character =
+                character
+                    |> addHeldItem newItem
+                    |> (\c ->
+                            append_to_character_action_log c
+                                { log_type = FetchedItem newItem.id
+                                , time = ai_tick_time
+                                }
+                       )
+            , shop = shop
+            , traded_items = []
+            , communityFund = communityFund
+            }
+
+        Nothing ->
+            convertPreUpdateRecordToPostUpdate preUpdateRecord
 
 
 pickAiActionChoice : Random.Seed -> ( AiActionChoice, Random.Seed )

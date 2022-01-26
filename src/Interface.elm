@@ -576,8 +576,8 @@ renderGp colorTheme count =
     renderGpSized colorTheme count 12
 
 
-renderGpString : ColorTheme -> Int -> String
-renderGpString colorTheme count =
+renderGpString :  Int -> String
+renderGpString count =
     String.fromInt count ++ "gp"
 
 

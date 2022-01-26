@@ -4339,8 +4339,8 @@ lookup_item_id_default item_db item_id =
     lookup_item_id_str_default item_db (UUID.toString item_id)
 
 
-action_log_to_str : ItemDb -> ActionLog -> String
-action_log_to_str item_db action_log =
+action_log_to_str : UI.ColorTheme -> ItemDb -> ActionLog -> String
+action_log_to_str colorTheme item_db action_log =
     case action_log.log_type of
         Traded item_trade_log ->
             let
@@ -4369,10 +4369,10 @@ action_log_to_str item_db action_log =
                     "Wanted to buy, but couldn't"
 
         FetchedItem itemId ->
-            "Fetched an item"
+            "Fetched an item: " ++ (lookup_item_id_default item_db itemId).name
 
         FetchedItemButFundNotBigEnough itemId ->
-            "Tried to fetch an item, but the Community Fund didn't contain enough gold."
+            "Tried to fetch an item, but the Community Fund didn't contain enough gold. Needed" ++ (UI.renderGpString (lookup_item_id_default item_db itemId).raw_gold_cost)
 
         DidNothing ->
             "Did nothing"
@@ -4398,10 +4398,10 @@ render_inventory_grid model header character shop_trends hovered_item context co
         is_player_context =
             context == InventoryItems
 
-        { historical_shop_trends, item_db } =
+        { historical_shop_trends, item_db,colorTheme } =
             model
 
-        { show_charts_in_hovered_item } =
+        { show_charts_in_hovered_item} =
             model.uiOptions
 
         buildCompare : (a -> comparable) -> (a -> a -> Order)
@@ -4488,7 +4488,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
 
         render_single_action_log : ActionLog -> Element Msg
         render_single_action_log log =
-            el [] (text <| action_log_to_str item_db log)
+            el [] (text <| action_log_to_str colorTheme item_db log)
 
         rendered_action_log_items : List (Element Msg)
         rendered_action_log_items =

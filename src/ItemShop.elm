@@ -4515,6 +4515,16 @@ action_log_to_str colorTheme item_db action_log =
             "Did nothing"
 
 
+hasProgressUnlock : ProgressUnlock -> Model -> Bool
+hasProgressUnlock progressUnlock model =
+    containsProgressUnlock progressUnlock model.progressUnlocks
+
+
+containsProgressUnlock : ProgressUnlock -> ProgressUnlocks -> Bool
+containsProgressUnlock progressUnlock progressUnlocks =
+    List.member progressUnlock progressUnlocks
+
+
 render_inventory_grid :
     Model
     -> String
@@ -5461,16 +5471,6 @@ playerInventoryControls colorTheme ( shiftIsPressed, shop_trends ) { item, quant
                 , textLabel = "Sacrifice"
                 , colorTheme = colorTheme
                 }
-
-
-hasProgressUnlock : ProgressUnlock -> Model -> Bool
-hasProgressUnlock progressUnlock model =
-    containsProgressUnlock progressUnlock model.progressUnlocks
-
-
-containsProgressUnlock : ProgressUnlock -> ProgressUnlocks -> Bool
-containsProgressUnlock progressUnlock progressUnlocks =
-    List.member progressUnlock progressUnlocks
 
 
 view_shop_tab_type : Model -> Element Msg

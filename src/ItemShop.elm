@@ -1182,7 +1182,6 @@ type alias Model =
     { colorTheme : UI.ColorTheme
     , player_upgrades : List PlayerUpgrade
     , secondsWaitedSince : SecondsWaitedSince
-    , shop_id : CharacterId
     , characters : Characters
     , shop_trends : ShopTrends
     , historical_shop_trends : List ShopTrends
@@ -1206,7 +1205,6 @@ encodeModel model =
 
         -- , player_upgrades : List PlayerUpgrade
         -- , secondsWaitedSince : SecondsWaitedSince
-        -- , shop_id : CharacterId
         -- , characters : Characters
         , ( "shop_trends", encodeShopTrends model.shop_trends )
         , ( "historical_shop_trends", Encode.list encodeShopTrends model.historical_shop_trends )
@@ -1899,7 +1897,6 @@ init hash key =
             { colorTheme = BrightTheme
             , player_upgrades = playerUpgrades
             , secondsWaitedSince = { lastSpRefill = 0 }
-            , shop_id = .char_id (getInnerShop shop)
             , characters = characters
             , shop_trends = initial_shop_trends
             , item_db = item_db
@@ -3883,7 +3880,7 @@ update_ai_chars model =
         ai_tick_seed =
             Random.initialSeed <| Time.posixToMillis model.ai_tick_time
 
-        { ai_tick_time, item_db, shop_id, communityFund } =
+        { ai_tick_time, item_db, communityFund } =
             model
 
         first_ai_update_data =

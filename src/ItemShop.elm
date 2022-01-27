@@ -1204,6 +1204,8 @@ type ProgressUnlock
     | UnlockedBattles
     | UnlockedDarkMode
     | UnlockedUpgrades
+    | UnlockedShopTrends
+    | UnlockedSpecialActions
 
 
 type alias ProgressUnlocks =
@@ -1228,6 +1230,12 @@ encodeProgressUnlock progressUnlock =
         UnlockedUpgrades ->
             Encode.string "UnlockedUpgrades"
 
+        UnlockedShopTrends ->
+            Encode.string "UnlockedShopTrends"
+
+        UnlockedSpecialActions ->
+            Encode.string "UnlockedSpecialActions"
+
 
 decodeProgressUnlock : Decoder ProgressUnlock
 decodeProgressUnlock =
@@ -1249,6 +1257,12 @@ decodeProgressUnlock =
 
                     "UnlockedUpgrades" ->
                         Decode.succeed UnlockedUpgrades
+
+                    "UnlockedShopTrends" ->
+                        Decode.succeed UnlockedShopTrends
+
+                    "UnlockedSpecialActions" ->
+                        Decode.succeed UnlockedSpecialActions
 
                     _ ->
                         Decode.fail ("unregnized ProgressUnlock: " ++ str)
@@ -5570,13 +5584,17 @@ view_shop_tab_type model =
             , case getPlayer model.characters of
                 Player player ->
                     special_actions_display model.colorTheme model.progressUnlocks model.player_upgrades model.uiOptions.hoveredTooltip player model.ai_updates_paused
-            , trends_display
-                model.colorTheme
-                model.uiOptions.shiftIsPressed
-                model.item_db
-                model.shop_trends
-                model.characters
-                model.uiOptions.shop_trends_hovered
+            , if hasProgressUnlock UnlockedShopTrends model then
+                trends_display
+                    model.colorTheme
+                    model.uiOptions.shiftIsPressed
+                    model.item_db
+                    model.shop_trends
+                    model.characters
+                    model.uiOptions.shop_trends_hovered
+
+              else
+                Element.none
             , Element.el [ paddingXY 0 0, width fill ] <|
                 render_inventory_grid
                     model
@@ -5963,14 +5981,18 @@ special_actions_display colorTheme progressUnlocks player_upgrades hoveredToolti
                 [ button_toggle_ai_pause
                 , button_battle
                 ]
-            , Element.wrappedRow [ width <| fillPortion 3, spacingXY 10 10, alignTop ]
-                [ button_increase_income
-                , button_search
-                , button_unlock_item
-                , button_community_fund
-                , button_high_desire
-                , button_low_desire
-                ]
+            , if containsProgressUnlock UnlockedSpecialActions progressUnlocks then
+                Element.wrappedRow [ width <| fillPortion 3, spacingXY 10 10, alignTop ]
+                    [ button_increase_income
+                    , button_search
+                    , button_unlock_item
+                    , button_community_fund
+                    , button_high_desire
+                    , button_low_desire
+                    ]
+
+              else
+                Element.none
             ]
         ]
 

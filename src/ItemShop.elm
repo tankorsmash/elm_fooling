@@ -1224,7 +1224,7 @@ encodeModel model =
         [ ( "colorTheme", UI.encodeColorTheme model.colorTheme )
 
         -- , player_upgrades : List PlayerUpgrade
-        -- , secondsWaitedSince : SecondsWaitedSince
+        , ( "secondsWaitedSince", encodeSecondsWaitedSince model.secondsWaitedSince )
         , ( "characters", encodeCharacters model.characters )
         , ( "shop_trends", encodeShopTrends model.shop_trends )
         , ( "historical_shop_trends", Encode.list encodeShopTrends model.historical_shop_trends )
@@ -1235,10 +1235,10 @@ encodeModel model =
         -- , global_seed : Random.Seed --used to seed anything; will be constantly changed throughout the app
         , ( "ai_updates_paused", Encode.bool model.ai_updates_paused )
 
-        -- , tab_type : TabType
+        -- , tab_type : TabType //NOSERIALIZE
         -- , battleModel : Battle.Model
-        -- , browserNavKey : Maybe Nav.Key
-        -- , uiOptions : UiOptions
+        -- , browserNavKey : Maybe Nav.Key //NOSERIALIZE
+        -- , uiOptions : UiOptions //NOSERIALIZE
         , ( "communityFund", Encode.int model.communityFund )
         ]
 

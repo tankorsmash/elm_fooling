@@ -1211,9 +1211,9 @@ encodeModel model =
         , ( "shop_trends", encodeShopTrends model.shop_trends )
         , ( "historical_shop_trends", Encode.list encodeShopTrends model.historical_shop_trends )
         , ( "historical_player_actions", Encode.list encodePlayerActionLog model.historical_player_actions )
+        , ( "item_db", encodeItemDb model.item_db )
 
-        -- , item_db : ItemDb
-        -- , ai_tick_time : Time.Posix --used to seed the ai randomness
+        -- , ("ai_tick_time", Encode.int <| Time.posixToMillis model.ai_tick_time)
         -- , global_seed : Random.Seed --used to seed anything; will be constantly changed throughout the app
         -- , ai_updates_paused : Bool
         -- , tab_type : TabType

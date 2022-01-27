@@ -1215,12 +1215,13 @@ encodeModel model =
 
         -- , ("ai_tick_time", Encode.int <| Time.posixToMillis model.ai_tick_time)
         -- , global_seed : Random.Seed --used to seed anything; will be constantly changed throughout the app
-        -- , ai_updates_paused : Bool
+        , ( "ai_updates_paused", Encode.bool model.ai_updates_paused )
+
         -- , tab_type : TabType
         -- , battleModel : Battle.Model
         -- , browserNavKey : Maybe Nav.Key
         -- , uiOptions : UiOptions
-        -- , communityFund : Int
+        , ( "communityFund", Encode.int model.communityFund )
         ]
 
 

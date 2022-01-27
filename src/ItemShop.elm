@@ -4050,8 +4050,8 @@ get_trend_color trend =
         rgb 0 0 0
 
 
-render_item_type : ShopTrends -> ItemType -> Element.Element Msg
-render_item_type shop_trends item_type =
+renderItemTypeWithTrend : ShopTrends -> ItemType -> Element.Element Msg
+renderItemTypeWithTrend shop_trends item_type =
     let
         trend =
             get_item_type_trend shop_trends.item_type_sentiment item_type
@@ -4074,6 +4074,14 @@ render_item_type shop_trends item_type =
             item_type_to_pretty_string item_type
         , text " - "
         , el ([ Font.color trend_color ] ++ trend_shadow) <| text pretty_trend
+        ]
+
+
+renderItemTypeWithoutTrend : ItemType -> Element.Element Msg
+renderItemTypeWithoutTrend item_type =
+    Element.paragraph [ Font.alignLeft, width fill ] <|
+        [ text <|
+            item_type_to_pretty_string item_type
         ]
 
 
@@ -4896,11 +4904,15 @@ render_inventory_grid model header character shop_trends hovered_item context co
                     small_header "Item Type" SortByItemType
               , width = fillPortion 2
               , view =
-                    \{ item } ->
-                        Element.el
-                            [ centerY ]
-                        <|
-                            render_item_type shop_trends item.item_type
+                    if hasProgressUnlock UnlockedShopTrends model then
+                        \{ item } ->
+                            Element.el [ centerY ] <|
+                                renderItemTypeWithTrend shop_trends item.item_type
+
+                    else
+                        \{ item } ->
+                            Element.el [ centerY ] <|
+                                renderItemTypeWithoutTrend item.item_type
               }
             , { header =
                     small_header "Item Desc." SortByItemDesc

@@ -1198,6 +1198,63 @@ decodeSecondsWaitedSince =
         (field "lastSpRefill" Decode.int)
 
 
+type ProgressUnlock
+    = UnlockedCharts
+    | UnlockedCodex
+    | UnlockedBattles
+    | UnlockedDarkMode
+    | UnlockedUpgrades
+
+
+type alias ProgressUnlocks =
+    List ProgressUnlock
+
+
+encodeProgressUnlock : ProgressUnlock -> Decode.Value
+encodeProgressUnlock progressUnlock =
+    case progressUnlock of
+        UnlockedCharts ->
+            Encode.string "UnlockedCharts"
+
+        UnlockedCodex ->
+            Encode.string "UnlockedCodex"
+
+        UnlockedBattles ->
+            Encode.string "UnlockedBattles"
+
+        UnlockedDarkMode ->
+            Encode.string "UnlockedDarkMode"
+
+        UnlockedUpgrades ->
+            Encode.string "UnlockedUpgrades"
+
+
+decodeProgressUnlock : Decoder ProgressUnlock
+decodeProgressUnlock =
+    Decode.string
+        |> Decode.andThen
+            (\str ->
+                case str of
+                    "UnlockedCharts" ->
+                        Decode.succeed UnlockedCharts
+
+                    "UnlockedCodex" ->
+                        Decode.succeed UnlockedCodex
+
+                    "UnlockedBattles" ->
+                        Decode.succeed UnlockedBattles
+
+                    "UnlockedDarkMode" ->
+                        Decode.succeed UnlockedDarkMode
+
+                    "UnlockedUpgrades" ->
+                        Decode.succeed UnlockedUpgrades
+
+                    _ ->
+                        Decode.fail ("unregnized ProgressUnlock: " ++ str)
+            )
+
+
 type alias Model =
     { colorTheme : UI.ColorTheme
     , player_upgrades : List PlayerUpgrade
@@ -1215,6 +1272,7 @@ type alias Model =
     , browserNavKey : Maybe Nav.Key
     , uiOptions : UiOptions
     , communityFund : Int
+    , progressUnlocks : ProgressUnlocks
     }
 
 
@@ -1935,6 +1993,7 @@ init hash key =
             , browserNavKey = key
             , uiOptions = initUiOptions
             , communityFund = 0
+            , progressUnlocks = []
             }
     in
     ( initModel
@@ -4687,7 +4746,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                                         []
                                    )
                         , if show_charts_in_hovered_item then
-                            el [ paddingXY 20 20 ] <| small_charts_display historical_shop_trends item.item_type
+                            el [ paddingXY 20 20 ] <| viewSingleItemTypeCharts historical_shop_trends item.item_type
 
                           else
                             Element.none
@@ -4953,11 +5012,11 @@ float_to_percent flt =
     flt * 100 |> floor |> String.fromInt |> (\str -> str ++ "%")
 
 
-small_charts_display :
+viewSingleItemTypeCharts :
     List ShopTrends
     -> ItemType
     -> Element Msg
-small_charts_display historical_shop_trends item_type =
+viewSingleItemTypeCharts historical_shop_trends item_type =
     let
         chart_width =
             600
@@ -5069,11 +5128,11 @@ small_charts_display historical_shop_trends item_type =
                 chart_elements
 
 
-charts_display :
+viewShopTrendsChart :
     List ShopTrends
     -> List (CI.One TrendChartDatum CI.Dot)
     -> Element Msg
-charts_display historical_shop_trends hovered_trend_chart =
+viewShopTrendsChart historical_shop_trends hovered_trend_chart =
     let
         chart_width =
             700
@@ -5287,12 +5346,16 @@ render_single_player_upgrade colorTheme player_upgrade =
                 ]
 
 
-player_upgrades_display : UI.ColorTheme -> List PlayerUpgrade -> Element Msg
-player_upgrades_display colorTheme player_upgrades =
-    column [ height fill ]
-        ([ el [ UI.font_scaled 2, border_bottom 2, alignTop ] <| text "Upgrades" ]
-            ++ [ column [ paddingXY 0 10, spacing 5 ] <| List.map (render_single_player_upgrade colorTheme) player_upgrades ]
-        )
+player_upgrades_display : UI.ColorTheme -> List PlayerUpgrade -> ProgressUnlocks -> Element Msg
+player_upgrades_display colorTheme player_upgrades progressUnlocks =
+    if containsProgressUnlock UnlockedUpgrades progressUnlocks then
+        column [ height fill ]
+            ([ el [ UI.font_scaled 2, border_bottom 2, alignTop ] <| text "Upgrades" ]
+                ++ [ column [ paddingXY 0 10, spacing 5 ] <| List.map (render_single_player_upgrade colorTheme) player_upgrades ]
+            )
+
+    else
+        Element.none
 
 
 player_action_log_display : ItemDb -> List PlayerActionLog -> Element Msg
@@ -5374,6 +5437,16 @@ playerInventoryControls colorTheme ( shiftIsPressed, shop_trends ) { item, quant
                 }
 
 
+hasProgressUnlock : ProgressUnlock -> Model -> Bool
+hasProgressUnlock progressUnlock model =
+    containsProgressUnlock progressUnlock model.progressUnlocks
+
+
+containsProgressUnlock : ProgressUnlock -> ProgressUnlocks -> Bool
+containsProgressUnlock progressUnlock progressUnlocks =
+    List.member progressUnlock progressUnlocks
+
+
 view_shop_tab_type : Model -> Element Msg
 view_shop_tab_type model =
     let
@@ -5446,45 +5519,57 @@ view_shop_tab_type model =
         <|
             [ welcome_header
             , row [ spacing 5, width fill ]
-                [ Element.link []
-                    { url = "#items"
-                    , label =
-                        UI.button <|
-                            UI.TextParams
-                                { buttonType = UI.Secondary
-                                , colorTheme = model.colorTheme
-                                , customAttrs = []
-                                , onPressMsg = ChangeTabType ItemsUnlockedTabType
-                                , textLabel = "View Codex"
-                                }
-                    }
-                , UI.outline_button [] (GotUiOptionsMsg ToggleShowMainChart) <|
-                    if model.uiOptions.show_main_chart then
-                        "Hide Charts"
+                [ if hasProgressUnlock UnlockedCodex model then
+                    Element.link []
+                        { url = "#items"
+                        , label =
+                            UI.button <|
+                                UI.TextParams
+                                    { buttonType = UI.Secondary
+                                    , colorTheme = model.colorTheme
+                                    , customAttrs = []
+                                    , onPressMsg = ChangeTabType ItemsUnlockedTabType
+                                    , textLabel = "View Codex"
+                                    }
+                        }
 
-                    else
-                        "Charts"
-                , UI.outline_button [ alignRight ] ToggleColorTheme <|
-                    case model.colorTheme of
-                        BrightTheme ->
-                            "Darken"
+                  else
+                    Element.none
+                , if hasProgressUnlock UnlockedCharts model then
+                    UI.outline_button [] (GotUiOptionsMsg ToggleShowMainChart) <|
+                        if model.uiOptions.show_main_chart then
+                            "Hide Charts"
 
-                        DarkTheme ->
-                            "Brighten"
+                        else
+                            "Charts"
+
+                  else
+                    Element.none
+                , if hasProgressUnlock UnlockedDarkMode model then
+                    UI.outline_button [ alignRight ] ToggleColorTheme <|
+                        case model.colorTheme of
+                            BrightTheme ->
+                                "Darken"
+
+                            DarkTheme ->
+                                "Brighten"
+
+                  else
+                    Element.none
                 ]
-            , if model.uiOptions.show_main_chart then
-                Element.el [ paddingXY 0 10, width fill ] <| charts_display model.historical_shop_trends model.uiOptions.hovered_trend_chart
+            , if model.uiOptions.show_main_chart && hasProgressUnlock UnlockedCharts model then
+                Element.el [ paddingXY 0 10, width fill ] <| viewShopTrendsChart model.historical_shop_trends model.uiOptions.hovered_trend_chart
 
               else
                 Element.none
             , row [ width fill, height <| Element.px 10 ] []
             , row [ width fill, spacingXY 10 0 ]
                 [ el [ width <| fillPortion 3, alignTop ] <| Lazy.lazy2 player_action_log_display model.item_db model.historical_player_actions
-                , el [ width <| fillPortion 7, alignTop ] <| Lazy.lazy2 player_upgrades_display model.colorTheme model.player_upgrades
+                , el [ width <| fillPortion 7, alignTop ] <| Lazy.lazy3 player_upgrades_display model.colorTheme model.player_upgrades model.progressUnlocks
                 ]
             , case getPlayer model.characters of
                 Player player ->
-                    special_actions_display model.colorTheme model.player_upgrades model.uiOptions.hoveredTooltip player model.ai_updates_paused
+                    special_actions_display model.colorTheme model.progressUnlocks model.player_upgrades model.uiOptions.hoveredTooltip player model.ai_updates_paused
             , trends_display
                 model.colorTheme
                 model.uiOptions.shiftIsPressed
@@ -5765,8 +5850,8 @@ scale_increase_income_cost current_level =
     (20 + (5 * current_level * current_level) * 2) |> setPrice
 
 
-special_actions_display : UI.ColorTheme -> List PlayerUpgrade -> UI.HoveredTooltip -> Character -> Bool -> Element Msg
-special_actions_display colorTheme player_upgrades hoveredTooltip player ai_updates_paused =
+special_actions_display : UI.ColorTheme -> ProgressUnlocks -> List PlayerUpgrade -> UI.HoveredTooltip -> Character -> Bool -> Element Msg
+special_actions_display colorTheme progressUnlocks player_upgrades hoveredTooltip player ai_updates_paused =
     let
         button_toggle_ai_pause =
             build_special_action_button
@@ -5784,14 +5869,18 @@ special_actions_display colorTheme player_upgrades hoveredTooltip player ai_upda
                 Free
 
         button_battle =
-            UI.button <|
-                UI.TextParams
-                    { buttonType = UI.Primary
-                    , colorTheme = colorTheme
-                    , customAttrs = []
-                    , onPressMsg = ChangeTabType BattleTabType
-                    , textLabel = "To Battle!"
-                    }
+            if containsProgressUnlock UnlockedBattles progressUnlocks then
+                UI.button <|
+                    UI.TextParams
+                        { buttonType = UI.Primary
+                        , colorTheme = colorTheme
+                        , customAttrs = []
+                        , onPressMsg = ChangeTabType BattleTabType
+                        , textLabel = "To Battle!"
+                        }
+
+            else
+                Element.none
 
         button_search =
             build_special_action_button

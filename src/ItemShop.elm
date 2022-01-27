@@ -645,6 +645,26 @@ type Characters
     = Characters { player : Player, shop : Shop, others : List Character }
 
 
+encodeCharacters : Characters -> Encode.Value
+encodeCharacters (Characters { player, shop, others }) =
+    Encode.object
+        [ ( "player", encodeCharacter <| getInnerPlayer player )
+        , ( "shop", encodeCharacter <| getInnerShop shop )
+        , ( "others", Encode.list encodeCharacter others )
+        ]
+
+
+decodeCharacters : ItemDb -> Decoder Characters
+decodeCharacters itemDb =
+    Decode.map3
+        (\p s o ->
+            Characters { player = Player p, shop = Shop s, others = o }
+        )
+        (field "player" <| decodeCharacter itemDb)
+        (field "shop" <| decodeCharacter itemDb)
+        (field "others" <| Decode.list (decodeCharacter itemDb))
+
+
 charactersToList : Characters -> List Character
 charactersToList (Characters { player, shop, others }) =
     getInnerPlayer player :: getInnerShop shop :: others
@@ -1205,7 +1225,7 @@ encodeModel model =
 
         -- , player_upgrades : List PlayerUpgrade
         -- , secondsWaitedSince : SecondsWaitedSince
-        -- , characters : Characters
+        , ( "characters", encodeCharacters model.characters )
         , ( "shop_trends", encodeShopTrends model.shop_trends )
         , ( "historical_shop_trends", Encode.list encodeShopTrends model.historical_shop_trends )
         , ( "historical_player_actions", Encode.list encodePlayerActionLog model.historical_player_actions )

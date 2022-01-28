@@ -6328,7 +6328,31 @@ suite =
                 ( test_item2, test_item_qty2, test_avg_price2 ) =
                     ( lookup_item_id_str_default test_item_db "c3c38323-1743-5a47-a8e3-bf6ec28137f9", Quantity 12, setPrice 9999 )
             in
-            [ fuzz (Fuzz.map Time.millisToPosix int) "fetching only works if there's enough community funds" <|
+            [ fuzz (Fuzz.map setQuantity <| Fuzz.intRange 0 ((Random.maxInt // 2) - 1)) "playerSoldItem marks the quest complete when you sell enough, and it doesn't go over" <|
+                \targetQty ->
+                    let
+                        quests =
+                            [ IncompleteQuest <| SellAnyItem { current = setQuantity 0, target = targetQty } ]
+
+                        updatedQuests =
+                            playerSoldItem (addQuantityInt targetQty 100000) quests
+                    in
+                    Expect.equalLists
+                        [ CompleteQuest (SellAnyItem { current = targetQty, target = targetQty }) ]
+                        updatedQuests
+            , fuzz (Fuzz.map setQuantity <| Fuzz.intRange 1 Random.maxInt) "playerSoldItem does not mark the quest complete when you dont sell enough " <|
+                \targetQty ->
+                    let
+                        quests =
+                            [ IncompleteQuest <| SellAnyItem { current = setQuantity 0, target = targetQty } ]
+
+                        updatedQuests =
+                            playerSoldItem (setQuantity 0) quests
+                    in
+                    Expect.equalLists
+                        [ IncompleteQuest (SellAnyItem { current = setQuantity 0, target = targetQty }) ]
+                        updatedQuests
+            , fuzz (Fuzz.map Time.millisToPosix int) "fetching only works if there's enough community funds" <|
                 \ai_tick_time ->
                     let
                         preUpdateRecord =

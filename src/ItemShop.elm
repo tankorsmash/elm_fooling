@@ -354,6 +354,20 @@ subQuantity qty other_qty =
             Quantity (orig_val - getQuantity other_qty)
 
 
+minQuantity : Quantity -> Quantity -> Quantity
+minQuantity qty other_qty =
+    case qty of
+        Quantity orig_val ->
+            Quantity <| min orig_val (getQuantity other_qty)
+
+
+maxQuantity : Quantity -> Quantity -> Quantity
+maxQuantity qty other_qty =
+    case qty of
+        Quantity orig_val ->
+            Quantity <| max orig_val (getQuantity other_qty)
+
+
 setQuantity : Int -> Quantity
 setQuantity qty =
     Quantity qty
@@ -1276,8 +1290,21 @@ decodeProgressUnlock =
             )
 
 
+type alias QuestTracker =
+    { current : Quantity, target : Quantity }
+
+
+{-| a type of quest, ie selling items or making a certain amount of money
+-}
+type QuestType
+    = SellAnyItem QuestTracker
+
+
+{-| whether a quest goal has been completed or not
+-}
 type Quest
-    = Quest
+    = IncompleteQuest QuestType
+    | CompleteQuest QuestType
 
 
 type alias Quests =
@@ -1379,6 +1406,16 @@ type alias TradeContext =
 type TradeRecord
     = IncompleteTradeRecord TradeContext
     | CompletedTradeRecord TradeContext ItemTradeLog
+
+
+wasTradeCompleted : TradeRecord -> Bool
+wasTradeCompleted tradeRecord =
+    case tradeRecord of
+        IncompleteTradeRecord _ ->
+            False
+
+        CompletedTradeRecord _ _ ->
+            True
 
 
 is_item_trade_log_to_shop : ItemTradeLog -> Bool
@@ -2819,26 +2856,30 @@ update msg model =
                             , to_party = shop
                             }
 
+                        trade_record : TradeRecord
                         trade_record =
                             sell_items_from_party_to_other
                                 orig_trade_context
                                 trade_order
 
-                        new_trade_context =
-                            getTradeContext trade_record
-
                         new_item_db =
                             updateItemDbFromTradeRecord model.item_db updateTimesYouSold trade_record
                     in
-                    ( { model
-                        | shop_trends = new_trade_context.shop_trends
-                        , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
-                        , item_db = new_item_db
-                      }
-                        |> replaceCharacter new_trade_context.from_party
-                        |> replaceCharacter new_trade_context.to_party
-                    , Cmd.none
-                    )
+                    case trade_record of
+                        CompletedTradeRecord new_trade_context item_trade_log ->
+                            ( { model
+                                | shop_trends = new_trade_context.shop_trends
+                                , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
+                                , item_db = new_item_db
+                                , quests = playerSoldItem item_trade_log.quantity model.quests
+                              }
+                                |> replaceCharacter new_trade_context.from_party
+                                |> replaceCharacter new_trade_context.to_party
+                            , Cmd.none
+                            )
+
+                        IncompleteTradeRecord _ ->
+                            ( model, Cmd.none )
 
         TickSecond time ->
             if not model.ai_updates_paused then
@@ -2958,6 +2999,47 @@ update msg model =
 
         GotUiOptionsMsg uiOptMsg ->
             updateUiOptions uiOptMsg model
+
+
+mapIncompleteQuestType : (QuestType -> Quest) -> Quest -> Quest
+mapIncompleteQuestType mapper quest =
+    case quest of
+        IncompleteQuest questGoal ->
+            mapper questGoal
+
+        _ ->
+            quest
+
+
+isQuestTrackerComplete : QuestTracker -> Bool
+isQuestTrackerComplete questTracker =
+    questTracker.current == questTracker.target
+
+
+playerSoldItem : Quantity -> Quests -> Quests
+playerSoldItem soldQty quests =
+    List.map
+        (mapIncompleteQuestType
+            (\q ->
+                case q of
+                    SellAnyItem { current, target } ->
+                        let
+                            newTracker =
+                                { current = minQuantity (addQuantity current soldQty) target
+                                , target = target
+                                }
+
+                            newQuestType =
+                                SellAnyItem newTracker
+                        in
+                        if isQuestTrackerComplete newTracker then
+                            CompleteQuest newQuestType
+
+                        else
+                            IncompleteQuest newQuestType
+            )
+        )
+        quests
 
 
 

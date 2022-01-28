@@ -1206,6 +1206,7 @@ type ProgressUnlock
     | UnlockedUpgrades
     | UnlockedShopTrends
     | UnlockedSpecialActions
+    | UnlockedQuests
 
 
 type alias ProgressUnlocks =
@@ -1236,6 +1237,9 @@ encodeProgressUnlock progressUnlock =
         UnlockedSpecialActions ->
             Encode.string "UnlockedSpecialActions"
 
+        UnlockedQuests ->
+            Encode.string "UnlockedQuests"
+
 
 decodeProgressUnlock : Decoder ProgressUnlock
 decodeProgressUnlock =
@@ -1264,9 +1268,20 @@ decodeProgressUnlock =
                     "UnlockedSpecialActions" ->
                         Decode.succeed UnlockedSpecialActions
 
+                    "UnlockedQuests" ->
+                        Decode.succeed UnlockedQuests
+
                     _ ->
                         Decode.fail ("unregnized ProgressUnlock: " ++ str)
             )
+
+
+type Quest
+    = Quest
+
+
+type alias Quests =
+    List Quest
 
 
 type alias Model =
@@ -1287,6 +1302,7 @@ type alias Model =
     , uiOptions : UiOptions
     , communityFund : Int
     , progressUnlocks : ProgressUnlocks
+    , quests : Quests
     }
 
 
@@ -2008,6 +2024,7 @@ init hash key =
             , uiOptions = initUiOptions
             , communityFund = 0
             , progressUnlocks = []
+            , quests = []
             }
     in
     ( initModel
@@ -4522,8 +4539,11 @@ hasProgressUnlock progressUnlock model =
 
 containsProgressUnlock : ProgressUnlock -> ProgressUnlocks -> Bool
 containsProgressUnlock progressUnlock progressUnlocks =
-    True 
-    -- List.member progressUnlock progressUnlocks
+    True
+
+
+
+-- List.member progressUnlock progressUnlocks
 
 
 render_inventory_grid :
@@ -5474,6 +5494,16 @@ playerInventoryControls colorTheme ( shiftIsPressed, shop_trends ) { item, quant
                 }
 
 
+quests_display : UI.ColorTheme -> List Quest -> Element Msg
+quests_display colorTheme quests =
+    column [ height fill ]
+        ([ el [ UI.font_scaled 2, border_bottom 2, alignTop ] <| text "Quests" ]
+            ++ [ column [ paddingXY 0 10, spacing 5 ] <|
+                    [ text "You've got a quest:\nSell an Item!\n0/1" ]
+               ]
+        )
+
+
 view_shop_tab_type : Model -> Element Msg
 view_shop_tab_type model =
     let
@@ -5592,7 +5622,13 @@ view_shop_tab_type model =
             , row [ width fill, height <| Element.px 10 ] []
             , row [ width fill, spacingXY 10 0 ]
                 [ el [ width <| fillPortion 3, alignTop ] <| Lazy.lazy2 player_action_log_display model.item_db model.historical_player_actions
-                , el [ width <| fillPortion 7, alignTop ] <| Lazy.lazy3 player_upgrades_display model.colorTheme model.player_upgrades model.progressUnlocks
+                , el [ width <| fillPortion 6, alignTop ] <| Lazy.lazy3 player_upgrades_display model.colorTheme model.player_upgrades model.progressUnlocks
+                , el [ width <| fillPortion 3, alignTop ] <|
+                    if containsProgressUnlock UnlockedQuests model.progressUnlocks then
+                        Lazy.lazy2 quests_display model.colorTheme model.quests
+
+                    else
+                        Element.none
                 ]
             , case getPlayer model.characters of
                 Player player ->

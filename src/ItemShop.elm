@@ -3001,6 +3001,10 @@ update msg model =
             updateUiOptions uiOptMsg model
 
 
+
+--- END OF UPDATE
+
+
 mapIncompleteQuestType : (QuestType -> Quest) -> Quest -> Quest
 mapIncompleteQuestType mapper quest =
     case quest of
@@ -3040,10 +3044,6 @@ playerSoldItem soldQty quests =
             )
         )
         quests
-
-
-
---- END OF UPDATE
 
 
 generate_uuid : String -> UUID.UUID

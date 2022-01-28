@@ -4522,7 +4522,8 @@ hasProgressUnlock progressUnlock model =
 
 containsProgressUnlock : ProgressUnlock -> ProgressUnlocks -> Bool
 containsProgressUnlock progressUnlock progressUnlocks =
-    List.member progressUnlock progressUnlocks
+    True 
+    -- List.member progressUnlock progressUnlocks
 
 
 render_inventory_grid :

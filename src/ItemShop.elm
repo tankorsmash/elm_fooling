@@ -1151,6 +1151,23 @@ encodePlayerUpgrade playerUpgrade =
                 ]
 
 
+decodePlayerUpgrade : Decoder PlayerUpgrade
+decodePlayerUpgrade =
+    field "type" Decode.string
+        |> Decode.andThen
+            (\playerUpgradeStr ->
+                case playerUpgradeStr of
+                    "AutomaticGPM" ->
+                        Decode.map AutomaticGPM (field "level" Decode.int)
+
+                    "AutomaticBPtoSP" ->
+                        Decode.map AutomaticBPtoSP (field "level" Decode.int)
+
+                    unknownStr ->
+                        Decode.fail <| "Unknown PlayerUpgrade type: " ++ unknownStr
+            )
+
+
 type PlayerActionLog
     = WelcomeMessageActionLog
     | TookSpecialActionInviteTrader
@@ -1354,8 +1371,7 @@ encodeModel : Model -> Decode.Value
 encodeModel model =
     Encode.object
         [ ( "colorTheme", UI.encodeColorTheme model.colorTheme )
-
-        , ("playerUpgrades", Encode.list encodePlayerUpgrade model.playerUpgrades)
+        , ( "playerUpgrades", Encode.list encodePlayerUpgrade model.playerUpgrades )
         , ( "secondsWaitedSince", encodeSecondsWaitedSince model.secondsWaitedSince )
         , ( "characters", encodeCharacters model.characters )
         , ( "shop_trends", encodeShopTrends model.shop_trends )
@@ -6283,6 +6299,20 @@ suite =
                     in
                     Expect.ok
                         (Decode.decodeString decodeShopTrends encodedShopTrends)
+            , fuzz (Fuzz.intRange 1 Random.maxInt) "PlayerUpgrade encoding" <|
+                \level ->
+                    let
+                        toEncode =
+                            [ AutomaticGPM level, AutomaticBPtoSP level ]
+
+                        decodedResult =
+                            toEncode
+                                |> Encode.list encodePlayerUpgrade
+                                |> Encode.encode 0
+                                |> Decode.decodeString
+                                    (Decode.list decodePlayerUpgrade)
+                    in
+                    Expect.ok decodedResult
             , test "SecondsWaitedSince encoding" <|
                 \_ ->
                     let

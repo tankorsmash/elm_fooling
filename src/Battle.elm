@@ -1300,139 +1300,149 @@ replaceMeColorTheme =
     UI.BrightTheme
 
 
+viewLocationTypeMenu : Model -> Element Msg
+viewLocationTypeMenu model =
+    column [ width fill, Font.size 16 ]
+        [ el
+            [ Font.size 24
+            , Element.paddingEach { bottom = 20, top = 0, left = 0, right = 0 }
+            ]
+          <|
+            text "Choose LocationType"
+        , paragraph [ padding 10 ] [ text "You may choose a new LocationType to visit." ]
+        , paragraph [ padding 10 ] [ text "A new LocationType contains new monsters to fight, which may bring new rewards!" ]
+        , column [ width fill, spacing 10, padding 10 ]
+            (model.locations
+                |> getLocationsList
+                |> List.map
+                    (\location ->
+                        UI.button <|
+                            UI.CustomParams
+                                { buttonType = UI.Secondary
+                                , colorTheme = replaceMeColorTheme
+                                , customAttrs = [ width fill ]
+                                , onPressMsg = ChangeLocation location.locationId
+                                , customLabel =
+                                    column [ centerX, spacing 5 ]
+                                        [ el [ centerX ] <| text location.name
+                                        , el [ centerX, Font.size 12 ] <|
+                                            column [ width fill ]
+                                                [ el [ Font.underline, centerX, width fill ] <| text "Monsters Remain"
+                                                , el [ centerX ] <| text <| String.fromInt location.monstersLeft
+                                                ]
+                                        ]
+                                }
+                    )
+            )
+        ]
+
+
+viewBattleMode : Model -> Element Msg
+viewBattleMode model =
+    column [ width fill, Font.size 16 ]
+        [ el [ Font.size 24, Element.paddingEach { bottom = 20, top = 0, left = 0, right = 0 } ] <| text "Battle!"
+        , row [ width fill ]
+            [ column [ alignLeft, width (Element.px 200) ]
+                [ Element.el [ alignLeft ] <| viewMonsterInBattle model.golem True ]
+            , column [ centerX, spacing 10 ]
+                [ let
+                    ( buttonType, onPressMsg, textLabel ) =
+                        case ( model.golem, model.enemyMonster ) of
+                            ( LivingMonster _, Just (LivingMonster _) ) ->
+                                ( UI.Primary, Fight, "Fight" )
+
+                            ( LivingMonster _, Just (DeadMonster _) ) ->
+                                if (getCurrentLocation model).monstersLeft > 0 then
+                                    ( UI.Secondary, FindNewEnemy, "Find New Enemy" )
+
+                                else
+                                    ( UI.Secondary, Noop, "No enemies remain" )
+
+                            ( LivingMonster _, Nothing ) ->
+                                if (getCurrentLocation model).monstersLeft > 0 then
+                                    ( UI.Secondary, FindNewEnemy, "Find New Enemy" )
+
+                                else
+                                    ( UI.Secondary, Noop, "No enemies remain" )
+
+                            ( DeadMonster _, _ ) ->
+                                ( UI.Danger, Noop, "You're dead" )
+                  in
+                  UI.button
+                    (UI.TextParams <|
+                        { buttonType = buttonType
+                        , customAttrs =
+                            [ width (fillMin 125)
+                            , if onPressMsg == Noop then
+                                Element.mouseOver []
+
+                              else
+                                attrNone
+                            ]
+                        , onPressMsg = onPressMsg
+                        , textLabel = textLabel
+                        , colorTheme = replaceMeColorTheme
+                        }
+                    )
+                , let
+                    currentLocation =
+                        getCurrentLocation model
+                  in
+                  column [ centerX, spacing 2 ]
+                    [ el [ Font.underline, Font.size 10, centerX ] <|
+                        text "Current Location"
+                    , el [ centerX ] <| text <| currentLocation.name
+                    , el [ Font.underline, Font.size 10, centerX ] <|
+                        text "Enemies Remaining"
+                    , el [ centerX ] <|
+                        text <|
+                            String.fromInt currentLocation.monstersLeft
+                    ]
+                ]
+            , column
+                [ alignRight, width (Element.px 200), height fill ]
+                [ Element.el [ alignRight, height fill ] <|
+                    case model.enemyMonster of
+                        Just enemyMonster ->
+                            viewMonsterInBattle enemyMonster False
+
+                        Nothing ->
+                            paragraph [ centerY ]
+                                [ text "Find an enemy to fight"
+                                ]
+                ]
+            ]
+        , dividingLine
+        , row [ width fill ]
+            [ el [ width <| fillPortion 4, alignTop ] <| viewFightLog model.showExpandedLogs model.fightLogs
+            , column [ width <| fillPortion 2, alignTop ]
+                (viewBattleControls model)
+            ]
+        , if debugMode then
+            column [ width fill ]
+                [ dividingLine
+                , column [ width fill, paddingXY 0 20 ]
+                    [ el [ Font.underline ] <|
+                        text "Debug"
+                    , text <|
+                        "Time Until Location Monster Refill: "
+                            ++ String.fromInt (secondsRequiredForLocationMonsterRefill - model.secondsWaitedSince.lastLocationMonsterRefill)
+                    ]
+                , dividingLine
+                ]
+
+          else
+            Element.none
+        ]
+
+
 view : Model -> Element Msg
 view model =
     if not model.shouldShowLocationTypeMenu then
-        column [ width fill, Font.size 16 ]
-            [ el [ Font.size 24, Element.paddingEach { bottom = 20, top = 0, left = 0, right = 0 } ] <| text "Battle!"
-            , row [ width fill ]
-                [ column [ alignLeft, width (Element.px 200) ]
-                    [ Element.el [ alignLeft ] <| viewMonsterInBattle model.golem True ]
-                , column [ centerX, spacing 10 ]
-                    [ let
-                        ( buttonType, onPressMsg, textLabel ) =
-                            case ( model.golem, model.enemyMonster ) of
-                                ( LivingMonster _, Just (LivingMonster _) ) ->
-                                    ( UI.Primary, Fight, "Fight" )
-
-                                ( LivingMonster _, Just (DeadMonster _) ) ->
-                                    if (getCurrentLocation model).monstersLeft > 0 then
-                                        ( UI.Secondary, FindNewEnemy, "Find New Enemy" )
-
-                                    else
-                                        ( UI.Secondary, Noop, "No enemies remain" )
-
-                                ( LivingMonster _, Nothing ) ->
-                                    if (getCurrentLocation model).monstersLeft > 0 then
-                                        ( UI.Secondary, FindNewEnemy, "Find New Enemy" )
-
-                                    else
-                                        ( UI.Secondary, Noop, "No enemies remain" )
-
-                                ( DeadMonster _, _ ) ->
-                                    ( UI.Danger, Noop, "You're dead" )
-                      in
-                      UI.button
-                        (UI.TextParams <|
-                            { buttonType = buttonType
-                            , customAttrs =
-                                [ width (fillMin 125)
-                                , if onPressMsg == Noop then
-                                    Element.mouseOver []
-
-                                  else
-                                    attrNone
-                                ]
-                            , onPressMsg = onPressMsg
-                            , textLabel = textLabel
-                            , colorTheme = replaceMeColorTheme
-                            }
-                        )
-                    , let
-                        currentLocation =
-                            getCurrentLocation model
-                      in
-                      column [ centerX, spacing 2 ]
-                        [ el [ Font.underline, Font.size 10, centerX ] <|
-                            text "Current Location"
-                        , el [ centerX ] <| text <| currentLocation.name
-                        , el [ Font.underline, Font.size 10, centerX ] <|
-                            text "Enemies Remaining"
-                        , el [ centerX ] <|
-                            text <|
-                                String.fromInt currentLocation.monstersLeft
-                        ]
-                    ]
-                , column
-                    [ alignRight, width (Element.px 200), height fill ]
-                    [ Element.el [ alignRight, height fill ] <|
-                        case model.enemyMonster of
-                            Just enemyMonster ->
-                                viewMonsterInBattle enemyMonster False
-
-                            Nothing ->
-                                paragraph [ centerY ]
-                                    [ text "Find an enemy to fight"
-                                    ]
-                    ]
-                ]
-            , dividingLine
-            , row [ width fill ]
-                [ el [ width <| fillPortion 4, alignTop ] <| viewFightLog model.showExpandedLogs model.fightLogs
-                , column [ width <| fillPortion 2, alignTop ]
-                    (viewBattleControls model)
-                ]
-            , if debugMode then
-                column [ width fill ]
-                    [ dividingLine
-                    , column [ width fill, paddingXY 0 20 ]
-                        [ el [ Font.underline ] <|
-                            text "Debug"
-                        , text <|
-                            "Time Until Location Monster Refill: "
-                                ++ String.fromInt (secondsRequiredForLocationMonsterRefill - model.secondsWaitedSince.lastLocationMonsterRefill)
-                        ]
-                    , dividingLine
-                    ]
-
-              else
-                Element.none
-            ]
+        viewBattleMode model
 
     else
-        column [ width fill, Font.size 16 ]
-            [ el
-                [ Font.size 24
-                , Element.paddingEach { bottom = 20, top = 0, left = 0, right = 0 }
-                ]
-              <|
-                text "Choose LocationType"
-            , paragraph [ padding 10 ] [ text "You may choose a new LocationType to visit." ]
-            , paragraph [ padding 10 ] [ text "A new LocationType contains new monsters to fight, which may bring new rewards!" ]
-            , column [ width fill, spacing 10, padding 10 ]
-                (model.locations
-                    |> getLocationsList
-                    |> List.map
-                        (\location ->
-                            UI.button <|
-                                UI.CustomParams
-                                    { buttonType = UI.Secondary
-                                    , colorTheme = replaceMeColorTheme
-                                    , customAttrs = [ width fill ]
-                                    , onPressMsg = ChangeLocation location.locationId
-                                    , customLabel =
-                                        column [ centerX, spacing 5 ]
-                                            [ el [ centerX ] <| text location.name
-                                            , el [ centerX, Font.size 12 ] <|
-                                                column [ width fill ]
-                                                    [ el [ Font.underline, centerX, width fill ] <| text "Monsters Remain"
-                                                    , el [ centerX ] <| text <| String.fromInt location.monstersLeft
-                                                    ]
-                                            ]
-                                    }
-                        )
-                )
-            ]
+        viewLocationTypeMenu model
 
 
 monsterTakeDamage : Int -> Monster -> DamagedMonster

@@ -1071,30 +1071,40 @@ viewSingleFightLog expandedLog fightLog =
                 paragraph [] [ text <| attacker.name ++ " attacked " ++ defender.name ++ " for " ++ String.fromInt damageTaken ++ " total damage." ]
 
         FoundNewMonster newMonster ->
-            paragraph [] [ text <| "Found new monster: " ++ newMonster.name ]
+            paragraph []
+                [ text <| "Found new monster: "
+                , Element.el [ Font.bold ] <| text newMonster.name
+                ]
 
         GolemKilledMonster attacker deadMonster xp_gained ->
             paragraph []
-                [ text <|
-                    attacker.name
-                        ++ " killed "
-                        ++ deadMonster.name
-                        ++ ", gaining "
+                [ Element.el [ Font.underline ] <|
+                    text <|
+                        attacker.name
+                            ++ " killed "
+                            ++ deadMonster.name
+                , text <|
+                    ", gaining "
                         ++ String.fromInt xp_gained
-                        ++ " XP"
-                        ++ (if deadMonster.onDefeat == DeliverItemToShop then
-                                ", and an item was put up for sale."
+                        ++ " XP!"
+                , Element.el [ Font.color <| UI.color_primary ] <|
+                    text
+                        (if deadMonster.onDefeat == DeliverItemToShop then
+                            ", and an item was put up for sale!"
 
-                            else
-                                ""
-                           )
+                         else
+                            ""
+                        )
                 ]
 
         MonsterKilledGolem golem monster ->
             paragraph [] [ text <| monster.name ++ " killed " ++ golem.name ++ ". You must now Revive your Golem." ]
 
         PlayerHealedGolem amount ->
-            paragraph [] [ text <| "You healed your creature by " ++ String.fromInt amount ++ " HP." ]
+            paragraph []
+                [ text <| "You healed your creature by "
+                , Element.el [ Font.color UI.color_pastel_green_7 ] <| text <| (String.fromInt amount ++ " HP.")
+                ]
 
         PlayerRevivedGolem ->
             paragraph [] [ text <| "You revived your creature." ]

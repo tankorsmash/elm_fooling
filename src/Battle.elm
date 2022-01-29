@@ -1107,7 +1107,10 @@ viewSingleFightLog expandedLog fightLog =
                 ]
 
         MonsterKilledGolem golem monster ->
-            paragraph [] [ text <| monster.name ++ " killed " ++ golem.name ++ ". You must now Revive your Golem." ]
+            paragraph []
+                [ text <| "The enemy " ++ monster.name ++ " killed your " ++ golem.name ++ ". "
+                , Element.el [ Font.color UI.color_pastel_red_7 ] <| text "You must now Revive your Golem!"
+                ]
 
         PlayerHealedGolem amount ->
             paragraph []

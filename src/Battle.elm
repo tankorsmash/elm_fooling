@@ -1305,7 +1305,7 @@ view model =
                         ( buttonType, onPressMsg, textLabel ) =
                             case ( model.golem, model.enemyMonster ) of
                                 ( LivingMonster _, Just (LivingMonster _) ) ->
-                                    ( UI.Primary, Fight, "Continue Fight" )
+                                    ( UI.Primary, Fight, "Fight" )
 
                                 ( LivingMonster _, Just (DeadMonster _) ) ->
                                     ( UI.Secondary, FindNewEnemy, "Find New Enemy" )

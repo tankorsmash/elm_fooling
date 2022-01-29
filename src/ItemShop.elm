@@ -2061,7 +2061,13 @@ init hash key =
             , uiOptions = initUiOptions
             , communityFund = 0
             , progressUnlocks = []
-            , quests = []
+            , quests =
+                [ IncompleteQuest <|
+                    SellAnyItem
+                        { current = setQuantity 2
+                        , target = setQuantity 3
+                        }
+                ]
             }
     in
     ( initModel
@@ -5576,12 +5582,50 @@ playerInventoryControls colorTheme ( shiftIsPressed, shop_trends ) { item, quant
                 }
 
 
+quantityToStr : Quantity -> String
+quantityToStr =
+    getQuantity >> String.fromInt
+
+
+questTitle : QuestType -> String
+questTitle questType =
+    case questType of
+        SellAnyItem _ ->
+            "Sell any Item!"
+
+
+viewSingleQuest : Quest -> Element Msg
+viewSingleQuest quest =
+    case quest of
+        IncompleteQuest questType ->
+            let
+                questTitle_ =
+                    questTitle questType
+            in
+            case questType of
+                SellAnyItem { current, target } ->
+                    text <|
+                        "You've got a quest:\n"
+                            ++ questTitle_
+                            ++ "\n"
+                            ++ quantityToStr current
+                            ++ "/"
+                            ++ quantityToStr target
+
+        CompleteQuest questType ->
+            let
+                questTitle_ =
+                    questTitle questType
+            in
+            text <| "Completed quest!\n" ++ questTitle_
+
+
 quests_display : UI.ColorTheme -> List Quest -> Element Msg
 quests_display colorTheme quests =
     column [ height fill ]
         ([ el [ UI.font_scaled 2, border_bottom 2, alignTop ] <| text "Quests" ]
             ++ [ column [ paddingXY 0 10, spacing 5 ] <|
-                    [ text "You've got a quest:\nSell an Item!\n0/1" ]
+                    List.map viewSingleQuest quests
                ]
         )
 

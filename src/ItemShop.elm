@@ -1298,6 +1298,7 @@ type alias QuestTracker =
 -}
 type QuestType
     = SellAnyItem QuestTracker
+    | EarnGold QuestTracker
 
 
 {-| whether a quest goal has been completed or not
@@ -2066,6 +2067,11 @@ init hash key =
                     SellAnyItem
                         { current = setQuantity 2
                         , target = setQuantity 3
+                        }
+                , IncompleteQuest <|
+                    EarnGold
+                        { current = setQuantity 23
+                        , target = setQuantity 30
                         }
                 ]
             }
@@ -2877,7 +2883,16 @@ update msg model =
                                 | shop_trends = new_trade_context.shop_trends
                                 , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
                                 , item_db = new_item_db
-                                , quests = playerSoldItem item_trade_log.quantity model.quests
+                                , quests =
+                                    model.quests
+                                        |> playerSoldItem
+                                            item_trade_log.quantity
+                                        |> playerEarnedGold
+                                            (setQuantity
+                                                (item_trade_log.gold_cost
+                                                    * getQuantity item_trade_log.quantity
+                                                )
+                                            )
                               }
                                 |> replaceCharacter new_trade_context.from_party
                                 |> replaceCharacter new_trade_context.to_party
@@ -3030,8 +3045,8 @@ playerSoldItem : Quantity -> Quests -> Quests
 playerSoldItem soldQty quests =
     List.map
         (mapIncompleteQuestType
-            (\q ->
-                case q of
+            (\questType ->
+                case questType of
                     SellAnyItem { current, target } ->
                         let
                             newTracker =
@@ -3047,6 +3062,52 @@ playerSoldItem soldQty quests =
 
                         else
                             IncompleteQuest newQuestType
+
+                    EarnGold { current, target } ->
+                        let
+                            newTracker =
+                                { current = minQuantity (addQuantity current soldQty) target
+                                , target = target
+                                }
+
+                            newQuestType =
+                                EarnGold newTracker
+                        in
+                        if isQuestTrackerComplete newTracker then
+                            CompleteQuest newQuestType
+
+                        else
+                            IncompleteQuest newQuestType
+            )
+        )
+        quests
+
+
+playerEarnedGold : Quantity -> Quests -> Quests
+playerEarnedGold earnedGold quests =
+    List.map
+        (mapIncompleteQuestType
+            (\questType ->
+                case questType of
+                    EarnGold { current, target } ->
+                        let
+                            newTracker =
+                                { current = minQuantity (addQuantity current earnedGold) target
+                                , target = target
+                                }
+
+                            newQuestType =
+                                EarnGold newTracker
+                        in
+                        if isQuestTrackerComplete newTracker then
+                            CompleteQuest newQuestType
+
+                        else
+                            IncompleteQuest newQuestType
+
+                    _ ->
+                        -- we know we can return an IncompleteQuest because this is a function that only deals with IncompleteQuests
+                        IncompleteQuest questType
             )
         )
         quests
@@ -5593,6 +5654,9 @@ questTitle questType =
         SellAnyItem _ ->
             "Sell any Item!"
 
+        EarnGold _ ->
+            "Earn gold!"
+
 
 viewSingleQuest : Quest -> Element Msg
 viewSingleQuest quest =
@@ -5604,6 +5668,15 @@ viewSingleQuest quest =
             in
             case questType of
                 SellAnyItem { current, target } ->
+                    text <|
+                        "You've got a quest:\n"
+                            ++ questTitle_
+                            ++ "\n"
+                            ++ quantityToStr current
+                            ++ "/"
+                            ++ quantityToStr target
+
+                EarnGold { current, target } ->
                     text <|
                         "You've got a quest:\n"
                             ++ questTitle_

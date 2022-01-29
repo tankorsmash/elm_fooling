@@ -1135,6 +1135,22 @@ type PlayerUpgrade
     | AutomaticBPtoSP Int
 
 
+encodePlayerUpgrade : PlayerUpgrade -> Decode.Value
+encodePlayerUpgrade playerUpgrade =
+    case playerUpgrade of
+        AutomaticGPM level ->
+            Encode.object
+                [ ( "type", Encode.string "AutomaticGPM" )
+                , ( "level", Encode.int level )
+                ]
+
+        AutomaticBPtoSP level ->
+            Encode.object
+                [ ( "type", Encode.string "AutomaticBPtoSP" )
+                , ( "level", Encode.int level )
+                ]
+
+
 type PlayerActionLog
     = WelcomeMessageActionLog
     | TookSpecialActionInviteTrader
@@ -1314,7 +1330,7 @@ type alias Quests =
 
 type alias Model =
     { colorTheme : UI.ColorTheme
-    , player_upgrades : List PlayerUpgrade
+    , playerUpgrades : List PlayerUpgrade
     , secondsWaitedSince : SecondsWaitedSince
     , characters : Characters
     , shop_trends : ShopTrends
@@ -1339,7 +1355,7 @@ encodeModel model =
     Encode.object
         [ ( "colorTheme", UI.encodeColorTheme model.colorTheme )
 
-        -- , player_upgrades : List PlayerUpgrade
+        , ("playerUpgrades", Encode.list encodePlayerUpgrade model.playerUpgrades)
         , ( "secondsWaitedSince", encodeSecondsWaitedSince model.secondsWaitedSince )
         , ( "characters", encodeCharacters model.characters )
         , ( "shop_trends", encodeShopTrends model.shop_trends )
@@ -2041,7 +2057,7 @@ init hash key =
         initModel : Model
         initModel =
             { colorTheme = BrightTheme
-            , player_upgrades = playerUpgrades
+            , playerUpgrades = playerUpgrades
             , secondsWaitedSince = { lastSpRefill = 0 }
             , characters = characters
             , shop_trends = initial_shop_trends
@@ -2528,7 +2544,7 @@ transferToBattleModel model =
                                     acc
                         )
                         0
-                        model.player_upgrades
+                        model.playerUpgrades
             in
             { battleModel | player = newPlayer, spRefillAmount = spRefillAmount }
 
@@ -3329,7 +3345,7 @@ special_action_increase_income model =
         Player player ->
             let
                 automaticGpmLevel =
-                    model.player_upgrades
+                    model.playerUpgrades
                         |> List.filterMap
                             (\upgrade ->
                                 case upgrade of
@@ -3352,7 +3368,7 @@ special_action_increase_income model =
                         (subGold player upgradeCost)
                     |> (\m ->
                             { m
-                                | player_upgrades =
+                                | playerUpgrades =
                                     List.map
                                         (\upgrade ->
                                             case upgrade of
@@ -3362,7 +3378,7 @@ special_action_increase_income model =
                                                 _ ->
                                                     upgrade
                                         )
-                                        m.player_upgrades
+                                        m.playerUpgrades
                             }
                        )
 
@@ -3564,7 +3580,7 @@ applyUpgrades : Character -> Model -> Model
 applyUpgrades player model =
     let
         ( new_player, new_model ) =
-            List.foldl applyUpgrade ( player, model ) model.player_upgrades
+            List.foldl applyUpgrade ( player, model ) model.playerUpgrades
     in
     new_model
 
@@ -5552,12 +5568,12 @@ render_single_player_upgrade colorTheme player_upgrade =
                 ]
 
 
-player_upgrades_display : UI.ColorTheme -> List PlayerUpgrade -> ProgressUnlocks -> Element Msg
-player_upgrades_display colorTheme player_upgrades progressUnlocks =
+playerUpgrades_display : UI.ColorTheme -> List PlayerUpgrade -> ProgressUnlocks -> Element Msg
+playerUpgrades_display colorTheme playerUpgrades progressUnlocks =
     if containsProgressUnlock UnlockedUpgrades progressUnlocks then
         column [ height fill ]
             ([ el [ UI.font_scaled 2, border_bottom 2, alignTop ] <| text "Upgrades" ]
-                ++ [ column [ paddingXY 0 10, spacing 5 ] <| List.map (render_single_player_upgrade colorTheme) player_upgrades ]
+                ++ [ column [ paddingXY 0 10, spacing 5 ] <| List.map (render_single_player_upgrade colorTheme) playerUpgrades ]
             )
 
     else
@@ -5821,7 +5837,7 @@ view_shop_tab_type model =
             , row [ width fill, height <| Element.px 10 ] []
             , row [ width fill, spacingXY 10 0 ]
                 [ el [ width <| fillPortion 3, alignTop ] <| Lazy.lazy2 player_action_log_display model.item_db model.historical_player_actions
-                , el [ width <| fillPortion 6, alignTop ] <| Lazy.lazy3 player_upgrades_display model.colorTheme model.player_upgrades model.progressUnlocks
+                , el [ width <| fillPortion 6, alignTop ] <| Lazy.lazy3 playerUpgrades_display model.colorTheme model.playerUpgrades model.progressUnlocks
                 , el [ width <| fillPortion 3, alignTop ] <|
                     if containsProgressUnlock UnlockedQuests model.progressUnlocks then
                         Lazy.lazy2 quests_display model.colorTheme model.quests
@@ -5831,7 +5847,7 @@ view_shop_tab_type model =
                 ]
             , case getPlayer model.characters of
                 Player player ->
-                    special_actions_display model.colorTheme model.progressUnlocks model.player_upgrades model.uiOptions.hoveredTooltip player model.ai_updates_paused
+                    special_actions_display model.colorTheme model.progressUnlocks model.playerUpgrades model.uiOptions.hoveredTooltip player model.ai_updates_paused
             , if hasProgressUnlock UnlockedShopTrends model then
                 trends_display
                     model.colorTheme
@@ -6117,7 +6133,7 @@ scale_increase_income_cost current_level =
 
 
 special_actions_display : UI.ColorTheme -> ProgressUnlocks -> List PlayerUpgrade -> UI.HoveredTooltip -> Character -> Bool -> Element Msg
-special_actions_display colorTheme progressUnlocks player_upgrades hoveredTooltip player ai_updates_paused =
+special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip player ai_updates_paused =
     let
         button_toggle_ai_pause =
             build_special_action_button
@@ -6211,7 +6227,7 @@ special_actions_display colorTheme progressUnlocks player_upgrades hoveredToolti
                                     acc
                         )
                         1
-                        player_upgrades
+                        playerUpgrades
             in
             build_special_action_button
                 colorTheme
@@ -6766,7 +6782,7 @@ suite =
                 \_ ->
                     case getPlayer test_model.characters of
                         Player player ->
-                            update_player { test_model | player_upgrades = [ AutomaticGPM 10 ] }
+                            update_player { test_model | playerUpgrades = [ AutomaticGPM 10 ] }
                                 |> (\m ->
                                         case getPlayer m.characters of
                                             Player updated_player ->
@@ -6776,7 +6792,7 @@ suite =
                 \to_add ->
                     case getPlayer test_model.characters of
                         Player player ->
-                            update_player { test_model | player_upgrades = [ AutomaticGPM to_add ] }
+                            update_player { test_model | playerUpgrades = [ AutomaticGPM to_add ] }
                                 |> (\m ->
                                         case getPlayer m.characters of
                                             Player updated_player ->

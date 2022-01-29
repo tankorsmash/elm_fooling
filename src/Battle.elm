@@ -292,6 +292,7 @@ type FightLog
     | MonsterKilledGolem Monster Monster
     | PlayerHealedGolem Int
     | PlayerRevivedGolem
+    | LocationNoEnemiesRemain LocationId
 
 
 {-| we're going to have to import Character at some point, for now though this is good enough
@@ -490,12 +491,20 @@ golemKillsEnemy model golem deadEnemy fightLogs =
         decrementMonstersLeft =
             \curLocation ->
                 { curLocation | monstersLeft = curLocation.monstersLeft - 1 }
+
+        newLocations =
+            mapCurrentLocation model decrementMonstersLeft
+
+        newLogs =
+            [ GolemKilledMonster golem deadEnemy gainedXp
+            , LocationNoEnemiesRemain (getCurrentLocation model).locationId
+            ]
     in
     ( { model
         | golem = LivingMonster victorGolem
         , enemyMonster = Just <| DeadMonster deadEnemy
-        , fightLogs = model.fightLogs ++ fightLogs ++ [ GolemKilledMonster golem deadEnemy gainedXp ]
-        , locations = mapCurrentLocation model decrementMonstersLeft
+        , fightLogs = model.fightLogs ++ fightLogs ++ newLogs
+        , locations = newLocations
       }
     , OnMonsterDefeat deadEnemy.onDefeat
     )
@@ -1108,6 +1117,12 @@ viewSingleFightLog expandedLog fightLog =
 
         PlayerRevivedGolem ->
             paragraph [] [ text <| "You revived your creature." ]
+
+        LocationNoEnemiesRemain locationId ->
+            paragraph []
+                [ Element.el [ Font.italic ] <| text <| "No more enemies remain in this Location! "
+                , text <| "Change Locations to find new monsters, or wait long enough and they should repopulate shortly."
+                ]
 
 
 viewFightLog : Bool -> List FightLog -> Element Msg

@@ -1333,6 +1333,19 @@ viewLocationTypeMenu model =
                                         ]
                                 }
                     )
+                |> List.append
+                    [ UI.button <|
+                        UI.CustomParams
+                            { buttonType = UI.Outline
+                            , colorTheme = replaceMeColorTheme
+                            , customAttrs = [ width fill ]
+                            , onPressMsg = ToggleShowLocationTypeMenu
+                            , customLabel =
+                                column [ centerX, spacing 5 ]
+                                    [ el [ centerX ] <| text "Back"
+                                    ]
+                            }
+                    ]
             )
         ]
 

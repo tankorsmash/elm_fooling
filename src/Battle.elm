@@ -322,7 +322,7 @@ type alias Location =
 
 maxMonstersPerLocation : Int
 maxMonstersPerLocation =
-    10
+    2
 
 
 createLocation : LocationType -> LocationId -> String -> Location
@@ -697,17 +697,25 @@ update model battleMsg =
 
         FindNewEnemy ->
             let
-                ( newMonster, newSeed ) =
-                    pickMonsterToSpawn model.battleSeed (getCurrentLocation model)
+                currentLocation =
+                    getCurrentLocation model
             in
-            ( { model
-                | enemyMonster = Just <| LivingMonster <| newMonster
-                , battleSeed = newSeed
-                , fightLogs = model.fightLogs ++ [ FoundNewMonster newMonster ]
-              }
-            , Cmd.none
-            , NoOutMsg
-            )
+            if currentLocation.monstersLeft > 0 then
+                let
+                    ( newMonster, newSeed ) =
+                        pickMonsterToSpawn model.battleSeed currentLocation
+                in
+                ( { model
+                    | enemyMonster = Just <| LivingMonster newMonster
+                    , battleSeed = newSeed
+                    , fightLogs = model.fightLogs ++ [ FoundNewMonster newMonster ]
+                  }
+                , Cmd.none
+                , NoOutMsg
+                )
+
+            else
+                ( model, Cmd.none, NoOutMsg )
 
         ToggleShowExpandedLogs ->
             ( { model | showExpandedLogs = not model.showExpandedLogs }, Cmd.none, NoOutMsg )
@@ -1342,7 +1350,9 @@ view model =
                         , el [ centerX ] <| text <| currentLocation.name
                         , el [ Font.underline, Font.size 10, centerX ] <|
                             text "Enemies Remaining"
-                        , el [ centerX ] <| text <| String.fromInt currentLocation.monstersLeft
+                        , el [ centerX ] <|
+                            text <|
+                                String.fromInt currentLocation.monstersLeft
                         ]
                     ]
                 , column

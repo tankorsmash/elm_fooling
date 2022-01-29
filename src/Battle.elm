@@ -103,6 +103,12 @@ type alias IntStat =
     }
 
 
+type PriceType
+    = Gold Int
+    | Blood Int
+    | Free
+
+
 initStat : Int -> IntStat
 initStat maxVal =
     { curVal = maxVal
@@ -1224,8 +1230,36 @@ viewBattleControls { golem, player, enemyMonster, uiOptions } =
         golemSpRefillable =
             monsterMap (\g -> g.statStamina.curVal < g.statStamina.maxVal)
 
-        controlButton : List (Element.Attribute Msg) -> Msg -> String -> String -> Element Msg
-        controlButton attrs msg txt tooltipText =
+        controlButton : List (Element.Attribute Msg) -> Msg -> String -> String -> PriceType -> Element Msg
+        controlButton attrs msg txt tooltipText priceType =
+            let
+                tooltipBody =
+                    case priceType of
+                        Free ->
+                            UI.TooltipText tooltipText
+
+                        Gold price ->
+                            UI.TooltipElement <|
+                                column []
+                                    [ text tooltipText
+                                    , el [ centerX, padding 1, Font.color UI.color_grey ] <| text "___"
+                                    , paragraph [ padding 10, centerX, Font.size 14 ]
+                                        [ text "Costs: "
+                                        , UI.renderGp replaceMeColorTheme price
+                                        ]
+                                    ]
+
+                        Blood price ->
+                            UI.TooltipElement <|
+                                column []
+                                    [ text tooltipText
+                                    , el [ centerX, padding 1, Font.color UI.color_grey ] <| text "___"
+                                    , paragraph [ padding 10, centerX, Font.size 14 ]
+                                        [ text "Costs: "
+                                        , UI.renderBlood replaceMeColorTheme price
+                                        ]
+                                    ]
+            in
             UI.buttonWithTooltip
                 (UI.TextParams
                     { colorTheme = UI.BrightTheme
@@ -1236,7 +1270,7 @@ viewBattleControls { golem, player, enemyMonster, uiOptions } =
                     }
                 )
                 { tooltip_id = "control_button__" ++ txt
-                , tooltip_body = UI.TooltipText tooltipText
+                , tooltip_body = tooltipBody
                 , onTooltipMsg = GotUiOptionsMsg << GotTooltipMsg
                 }
                 uiOptions.hoveredTooltip
@@ -1250,12 +1284,14 @@ viewBattleControls { golem, player, enemyMonster, uiOptions } =
             ToggleShowExpandedLogs
             "Details"
             "Toggles combat details"
+            Free
     , el [ centerX, width (fillMax 150), Element.paddingEach { top = 10, bottom = 0, left = 0, right = 0 } ] <|
         -- Change Location
         controlButton [ Element.transparent <| not canChangeLocationNow ]
             (conditionalMsg canChangeLocationNow ToggleShowLocationTypeMenu)
             "Change Location"
             "Changes the location of the battle."
+            Free
     , column [ width fill, spacing 1, padding 10 ]
         [ -- Heal
           controlButton
@@ -1265,6 +1301,7 @@ viewBattleControls { golem, player, enemyMonster, uiOptions } =
             (conditionalMsg (golemHealable && canAffordHealGolem) HealGolem)
             "Heal"
             "Heals your golem to full HP"
+            (Blood healGolemBloodCost)
         , -- Revive
           controlButton
             [ Element.alpha <|
@@ -1273,6 +1310,7 @@ viewBattleControls { golem, player, enemyMonster, uiOptions } =
             (conditionalMsg (golemRevivable && canAffordReviveGolem) ReviveGolem)
             "Revive"
             "Revives your golem from the dead with 1HP"
+            (Blood reviveGolemBloodCost)
         , -- Level Up
           controlButton
             [ Element.alpha <|
@@ -1281,6 +1319,7 @@ viewBattleControls { golem, player, enemyMonster, uiOptions } =
             (conditionalMsg (golemLevelupable && canAffordGolemLevelUp) LevelUpGolem)
             "Strengthen"
             "Levels up your golem"
+            Free
         , -- Refill SP
           controlButton
             [ Element.alpha <|
@@ -1292,6 +1331,7 @@ viewBattleControls { golem, player, enemyMonster, uiOptions } =
             )
             "Envigorate"
             "Refills your golem's SP"
+            (Blood refillGolemSpCost)
         ]
     , UI.outline_button
         [ centerX, width (fillMax 150) ]

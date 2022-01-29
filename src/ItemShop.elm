@@ -1803,10 +1803,10 @@ initial_characters : ItemDb -> List Character
 initial_characters item_db =
     let
         base_character_1 =
-            createCharacter (generate_uuid "character 1") "Billy"
+            createCharacter (generateUuid "character 1") "Billy"
 
         base_character_2 =
-            createCharacter (generate_uuid "character 2") "Mitchell"
+            createCharacter (generateUuid "character 2") "Mitchell"
     in
     [ { base_character_1
         | held_items =
@@ -3113,8 +3113,8 @@ playerEarnedGold earnedGold quests =
         quests
 
 
-generate_uuid : String -> UUID.UUID
-generate_uuid str =
+generateUuid : String -> UUID.UUID
+generateUuid str =
     UUID.forName str UUID.dnsNamespace
 
 
@@ -3182,7 +3182,7 @@ handle_invite_trader model =
             "Character " ++ (String.fromInt <| charactersLength model.characters + 1)
 
         invited_character =
-            createCharacter (generate_uuid name) name
+            createCharacter (generateUuid name) name
 
         ( num_items, _ ) =
             Random.step (Random.int 1 5) global_seed
@@ -6280,7 +6280,7 @@ suite =
                 let
                     inputChar : Character
                     inputChar =
-                        createCharacter (generate_uuid "josh") "josh"
+                        createCharacter (generateUuid "josh") "josh"
                             |> (\c -> { c | name = "mike" })
                             |> (\c ->
                                     { c
@@ -6429,11 +6429,11 @@ suite =
 
                 test_character : Character
                 test_character =
-                    createCharacter (generate_uuid "Test Character !!") "Testy McTested"
+                    createCharacter (generateUuid "Test Character !!") "Testy McTested"
 
                 test_character2 : Character
                 test_character2 =
-                    createCharacter (generate_uuid "Second test character") "Testa Mysticles"
+                    createCharacter (generateUuid "Second test character") "Testa Mysticles"
 
                 test_model : Model
                 test_model =

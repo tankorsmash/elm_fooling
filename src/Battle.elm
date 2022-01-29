@@ -1316,10 +1316,18 @@ view model =
                                     ( UI.Primary, Fight, "Fight" )
 
                                 ( LivingMonster _, Just (DeadMonster _) ) ->
-                                    ( UI.Secondary, FindNewEnemy, "Find New Enemy" )
+                                    if (getCurrentLocation model).monstersLeft > 0 then
+                                        ( UI.Secondary, FindNewEnemy, "Find New Enemy" )
+
+                                    else
+                                        ( UI.Secondary, Noop, "No enemies remain" )
 
                                 ( LivingMonster _, Nothing ) ->
-                                    ( UI.Secondary, FindNewEnemy, "Find New Enemy" )
+                                    if (getCurrentLocation model).monstersLeft > 0 then
+                                        ( UI.Secondary, FindNewEnemy, "Find New Enemy" )
+
+                                    else
+                                        ( UI.Secondary, Noop, "No enemies remain" )
 
                                 ( DeadMonster _, _ ) ->
                                     ( UI.Danger, Noop, "You're dead" )

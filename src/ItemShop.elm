@@ -5369,13 +5369,20 @@ viewSingleItemTypeCharts historical_shop_trends item_type =
 
 
 viewShopTrendsChart :
-    List ShopTrends
+    UI.Device
+    -> List ShopTrends
     -> List (CI.One TrendChartDatum CI.Dot)
     -> Element Msg
-viewShopTrendsChart historical_shop_trends hovered_trend_chart =
+viewShopTrendsChart device historical_shop_trends hovered_trend_chart =
     let
         chart_width =
-            700
+            case device.class of
+                UI.Desktop ->
+                    -- -400 because the 200 padding on each side
+                    (toFloat device.size.width - 400) * 0.9
+
+                _ ->
+                    toFloat device.size.width * 0.8
 
         chart_height =
             150
@@ -5499,7 +5506,7 @@ viewShopTrendsChart historical_shop_trends hovered_trend_chart =
                    ]
     in
     Element.el
-        [ width <| Element.px chart_width
+        [ width <| Element.px <| round chart_width
         , height <| Element.px (chart_height + 20)
         , paddingXY 20 0
         , centerX
@@ -5849,7 +5856,7 @@ view_shop_tab_type model =
                     Element.none
                 ]
             , if model.uiOptions.show_main_chart && hasProgressUnlock UnlockedCharts model then
-                Element.el [ paddingXY 0 10, width fill ] <| viewShopTrendsChart model.historical_shop_trends model.uiOptions.hovered_trend_chart
+                Element.el [ paddingXY 0 10, width fill ] <| viewShopTrendsChart model.uiOptions.device model.historical_shop_trends model.uiOptions.hovered_trend_chart
 
               else
                 Element.none

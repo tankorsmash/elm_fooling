@@ -197,6 +197,7 @@ type alias TooltipId =
 type alias Device =
     { class : DeviceClass
     , orientation : Orientation
+    , size : { width : Int, height : Int }
     }
 
 
@@ -241,11 +242,12 @@ orientationToString orientation =
 
 
 {-| -}
-classifyDevice : { window | height : Int, width : Int } -> Device
+classifyDevice : { height : Int, width : Int } -> Device
 classifyDevice window =
     -- Tested in this ellie:
     -- https://ellie-app.com/68QM7wLW8b9a1
-    { class =
+    { size = window
+    , class =
         let
             longSide =
                 max window.width window.height

@@ -6969,72 +6969,73 @@ suite =
                             -- means the next apply upgrade will trigger the timer
                             , secondsWaitedSince = { secondsWaitedSince | lastSpRefill = Battle.secondsRequiredForSpRefill }
                         }
+
+                    (Player player) =
+                        getPlayer newTestModel.characters
                 in
-                case getPlayer newTestModel.characters of
-                    Player player ->
-                        [ fuzz (Fuzz.intRange 1 10) "SP goes up" <|
-                            \upgradeLevel ->
-                                let
-                                    upgrader p =
-                                        applyUpgrade (AutomaticBPtoSP upgradeLevel) ( p, newTestModel )
-                                in
-                                let
-                                    expectedNewPlayer =
-                                        { player
-                                            | held_blood = player.held_blood - (bloodCostForRefillSp * upgradeLevel)
-                                        }
+                [ fuzz (Fuzz.intRange 1 10) "SP goes up" <|
+                    \upgradeLevel ->
+                        let
+                            upgrader p =
+                                applyUpgrade (AutomaticBPtoSP upgradeLevel) ( p, newTestModel )
+                        in
+                        let
+                            expectedNewPlayer =
+                                { player
+                                    | held_blood = player.held_blood - (bloodCostForRefillSp * upgradeLevel)
+                                }
 
-                                    intendedBattleModel =
-                                        Battle.increaseGolemStamina newBattleModel upgradeLevel
+                            intendedBattleModel =
+                                Battle.increaseGolemStamina newBattleModel upgradeLevel
 
-                                    expectedPlayerAndModel : ( Character, Model )
-                                    expectedPlayerAndModel =
-                                        ( expectedNewPlayer
-                                        , replaceCharacter expectedNewPlayer { newTestModel | battleModel = intendedBattleModel }
-                                        )
+                            expectedPlayerAndModel : ( Character, Model )
+                            expectedPlayerAndModel =
+                                ( expectedNewPlayer
+                                , replaceCharacter expectedNewPlayer { newTestModel | battleModel = intendedBattleModel }
+                                )
 
-                                    ( resultPlayer, resultModel ) =
-                                        upgrader player
-                                in
-                                Expect.equal
-                                    (Battle.monsterMap
-                                        (.statStamina >> .curVal)
-                                        (expectedPlayerAndModel
-                                            |> Tuple.second
-                                            |> .battleModel
-                                            |> .golem
-                                        )
-                                    )
-                                    (Battle.monsterMap
-                                        (.statStamina >> .curVal)
-                                        resultModel.battleModel.golem
-                                    )
-                        , fuzz (Fuzz.intRange 1 10) "BP goes down" <|
-                            \upgradeLevel ->
-                                let
-                                    expectedNewPlayer =
-                                        { player
-                                            | held_blood = player.held_blood - (bloodCostForRefillSp * upgradeLevel)
-                                        }
+                            ( resultPlayer, resultModel ) =
+                                upgrader player
+                        in
+                        Expect.equal
+                            (Battle.monsterMap
+                                (.statStamina >> .curVal)
+                                (expectedPlayerAndModel
+                                    |> Tuple.second
+                                    |> .battleModel
+                                    |> .golem
+                                )
+                            )
+                            (Battle.monsterMap
+                                (.statStamina >> .curVal)
+                                resultModel.battleModel.golem
+                            )
+                , fuzz (Fuzz.intRange 1 10) "BP goes down" <|
+                    \upgradeLevel ->
+                        let
+                            expectedNewPlayer =
+                                { player
+                                    | held_blood = player.held_blood - (bloodCostForRefillSp * upgradeLevel)
+                                }
 
-                                    intendedBattleModel =
-                                        Battle.increaseGolemStamina newBattleModel upgradeLevel
+                            intendedBattleModel =
+                                Battle.increaseGolemStamina newBattleModel upgradeLevel
 
-                                    expectedPlayerAndModel : ( Character, Model )
-                                    expectedPlayerAndModel =
-                                        ( expectedNewPlayer
-                                        , replaceCharacter expectedNewPlayer { newTestModel | battleModel = intendedBattleModel }
-                                        )
+                            expectedPlayerAndModel : ( Character, Model )
+                            expectedPlayerAndModel =
+                                ( expectedNewPlayer
+                                , replaceCharacter expectedNewPlayer { newTestModel | battleModel = intendedBattleModel }
+                                )
 
-                                    ( resultPlayer, resultModel ) =
-                                        applyUpgrade (AutomaticBPtoSP upgradeLevel) ( player, newTestModel )
-                                in
-                                Expect.equal
-                                    (expectedPlayerAndModel
-                                        |> Tuple.first
-                                        |> .held_blood
-                                    )
-                                    resultPlayer.held_blood
-                        ]
+                            ( resultPlayer, resultModel ) =
+                                applyUpgrade (AutomaticBPtoSP upgradeLevel) ( player, newTestModel )
+                        in
+                        Expect.equal
+                            (expectedPlayerAndModel
+                                |> Tuple.first
+                                |> .held_blood
+                            )
+                            resultPlayer.held_blood
+                ]
             ]
         ]

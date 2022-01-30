@@ -1,4 +1,4 @@
-module Battle exposing (DefeatAction(..), Model, Msg(..), OutMsg(..), doesGolemNeedStamina, increaseGolemStamina, init, monsterMap, secondsRequiredForSpRefill, subscriptions, suite, update, view)
+module Battle exposing (DefeatAction(..), Model, Msg(..), OutMsg(..), doesGolemNeedStamina, increaseGolemStamina, init, monsterMap, secondsRequiredForSpRefill, setDevice, subscriptions, suite, update, view)
 
 import Array
 import Browser.Dom
@@ -415,7 +415,7 @@ type alias SecondsWaitedSince =
 
 
 type alias UiOptions =
-    { device : Element.Device
+    { device : UI.Device
     , hoveredTooltip : UI.HoveredTooltip
     , cachedTooltipOffsets : Dict.Dict String UI.TooltipData
     }
@@ -459,7 +459,7 @@ debugMode =
     True
 
 
-init : Element.Device -> { a | held_blood : Int, held_gold : Int } -> Int -> Model
+init : UI.Device -> { a | held_blood : Int, held_gold : Int } -> Int -> Model
 init device { held_blood, held_gold } spRefillAmount =
     let
         locations : Locations
@@ -1651,6 +1651,11 @@ attrNone =
     Element.htmlAttribute <| Html.Attributes.class ""
 
 
+setDevice : Model -> UI.Device -> Model
+setDevice ({ uiOptions } as model) device =
+    { model | uiOptions = { uiOptions | device = device } }
+
+
 {-| this is exposed to ItemShop, so im keeping it as broad as possible, so that
 ItemShop doesn't need to know much about it. we'll see if its a good idea
 -}
@@ -1689,7 +1694,7 @@ suite : Test
 suite =
     let
         testDevice =
-            Element.classifyDevice { width = 1920, height = 1080 }
+            UI.classifyDevice { width = 1920, height = 1080 }
     in
     describe "root test suite"
         [ describe "golem stuff"
@@ -1706,7 +1711,7 @@ suite =
 
                             model : Model
                             model =
-                                init (testDevice) { held_blood = 100, held_gold = 0 } staminaToGain
+                                init testDevice { held_blood = 100, held_gold = 0 } staminaToGain
                                     |> (setGolem <| LivingMonster testGolem)
                         in
                         Expect.equal (testGolem.statStamina.curVal + staminaToGain) <|

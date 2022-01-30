@@ -1,4 +1,4 @@
-module ItemShop exposing (Model, Msg, add_to_average, init, sub_from_average, subscriptions, suite, update, view)
+module ItemShop exposing (Model, Msg, add_to_average, init, setDevice, sub_from_average, subscriptions, suite, update, view)
 
 import Array
 import Battle
@@ -1212,7 +1212,7 @@ type InventorySortType
 
 
 type alias UiOptions =
-    { device : Element.Device
+    { device : UI.Device
     , shiftIsPressed : Bool
     , hovered_trend_chart : List (CI.One TrendChartDatum CI.Dot)
     , show_main_chart : Bool
@@ -2000,7 +2000,7 @@ stringToTabType hash =
             ShopTabType
 
 
-init : Element.Device -> String -> Maybe Nav.Key -> ( Model, Cmd Msg )
+init : UI.Device -> String -> Maybe Nav.Key -> ( Model, Cmd Msg )
 init device hash key =
     let
         player_base_char =
@@ -6026,12 +6026,21 @@ viewOverlay model =
                         ]
 
 
+setDevice : Model -> UI.Device -> Model
+setDevice ({ uiOptions } as model) device =
+    { model | uiOptions = { uiOptions | device = device } }
+
+
 
 -- convertColor Color.grey
 
 
 view : Model -> Html.Html Msg
 view model =
+    let
+        deviceClass =
+            model.uiOptions.device.class
+    in
     Element.layoutWith
         { options =
             [ Element.noStaticStyleSheet
@@ -6047,7 +6056,11 @@ view model =
         , Element.htmlAttribute <| Html.Events.on "wheel" (Decode.succeed (GotUiOptionsMsg ScrollViewport))
         , Element.htmlAttribute <| Html.Events.on "scroll" (Decode.succeed (GotUiOptionsMsg ScrollViewport))
         , width fill
-        , padding 20
+        , if deviceClass == UI.Desktop then
+            padding 200
+
+          else
+            padding 20
         , UI.defaultBackgroundColor model.colorTheme
         , UI.defaultFontColor model.colorTheme
         ]
@@ -6291,7 +6304,7 @@ suite : Test
 suite =
     let
         testDevice =
-            Element.classifyDevice { width = 1920, height = 1080 }
+            UI.classifyDevice { width = 1920, height = 1080 }
     in
     -- todo "Implement our first test. See https://package.elm-lang.org/packages/elm-explorations/test/latest for how to do this!"
     describe "root test suite"

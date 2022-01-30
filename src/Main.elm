@@ -1,5 +1,7 @@
 port module Main exposing (..)
 
+import Interface as UI
+import Battle
 import Browser
 import Browser.Events
 import Browser.Navigation as Nav
@@ -131,7 +133,7 @@ type alias Model =
     , current_tab : TabType
     , item_shop_model : ItemShop.Model
     , sfxrModel : Sfxr.Model
-    , device : Element.Device
+    , device : UI.Device
     }
 
 
@@ -188,7 +190,7 @@ init flags url navKey =
                     ItemShopTab
 
         device =
-            Element.classifyDevice flags.window
+            UI.classifyDevice flags.window
 
         page_info =
             UrlPageInfo navKey url parsedRoute UnsetPage
@@ -357,10 +359,19 @@ update msg model =
         OnWindowResize width height ->
             let
                 newDevice =
-                    Element.classifyDevice
+                    UI.classifyDevice
                         { width = width, height = height }
+
+                newBattleModel : Battle.Model
+                newBattleModel =
+                    Battle.setDevice model.item_shop_model.battleModel newDevice
+
+                newItemShopModel : ItemShop.Model
+                newItemShopModel =
+                    ItemShop.setDevice model.item_shop_model newDevice
+                        |> (\is -> { is | battleModel = newBattleModel })
             in
-            ( { model | device = newDevice }, Cmd.none )
+            ( { model | device = newDevice, item_shop_model = newItemShopModel }, Cmd.none )
 
 
 

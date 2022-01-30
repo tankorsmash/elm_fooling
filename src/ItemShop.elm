@@ -2047,7 +2047,7 @@ init device hash key =
         spRefillUpgrade =
             AutomaticBPtoSP spRefillUpgradeLvl
 
-        playerUpgrades =
+        initialPlayerUpgrades =
             -- [ AutomaticGPM 1, spRefillUpgrade ]
             []
 
@@ -2077,7 +2077,7 @@ init device hash key =
         initModel : Model
         initModel =
             { colorTheme = BrightTheme
-            , playerUpgrades = playerUpgrades
+            , playerUpgrades = initialPlayerUpgrades
             , secondsWaitedSince = { lastSpRefill = 0 }
             , characters = characters
             , shop_trends = initial_shop_trends

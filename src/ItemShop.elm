@@ -5502,6 +5502,7 @@ viewShopTrendsChart historical_shop_trends hovered_trend_chart =
         [ width <| Element.px chart_width
         , height <| Element.px (chart_height + 20)
         , paddingXY 20 0
+        , centerX
         ]
     <|
         Element.html <|
@@ -5896,10 +5897,15 @@ view_shop_tab_type model =
                     InventoryItems
                     (playerInventoryControls model.colorTheme ( model.uiOptions.shiftIsPressed, model.shop_trends ))
             ]
-                ++ [ column [ width fill ] <|
+                ++ [ column [ width fill, spacingXY 0 20 ] <|
                         showHideDebugInventoriesButton model.colorTheme [] model.uiOptions.show_debug_inventories
                             :: (if model.uiOptions.show_debug_inventories then
-                                    debug_inventories
+                                    [ text <|
+                                        UI.deviceClassToString model.uiOptions.device.class
+                                            ++ " - "
+                                            ++ UI.orientationToString model.uiOptions.device.orientation
+                                    ]
+                                        ++ debug_inventories
 
                                 else
                                     []

@@ -1,4 +1,4 @@
-module Battle exposing (DefeatAction(..), Model, Msg(..), OutMsg(..), doesGolemNeedStamina, increaseGolemStamina, init, monsterMap, secondsRequiredForSpRefill, setDevice, subscriptions, suite, update, view)
+module Battle exposing (BattleCharacter, DamagedMonster(..), DefeatAction(..), FightLog(..), IntStat, Location, LocationId, LocationType(..), Locations, Model, Monster, MonsterAttackedData, Msg(..), OutMsg(..), PriceType(..), SecondsWaitedSince, UiOptionMsg(..), UiOptions, addMonsterLevel, addMonsterXp, addMonsterXpByMonster, addToStatCurVal, addToStatMaxVal, attrNone, calculateXpValue, canAffordRefillSp, canChangeLocation, conditionalAlpha, conditionalMsg, createLocation, createMonster, debugMode, dividingLine, doesGolemNeedStamina, enemyKillsGolem, explain, fillMax, fillMin, getCurrentLocation, getLocationsList, getStatMissingVal, golemKillsEnemy, healGolemBloodCost, increaseGolemStamina, init, initStat, isStatEmpty, isStatMaxVal, isStatNotEmpty, isStatNotMax, levelUpXpCost, locationToPretty, mapCurrentLocation, maxMonstersPerLocation, monsterCounterAttacks, monsterDeadMap, monsterFightsMonster, monsterHasXpToLevelUp, monsterIdentityMap, monsterLivingMap, monsterMap, monsterStatMap, monsterStatMapHP, monsterStatMapPower, monsterStatMapProtection, monsterStatMapStamina, monsterTakeDamage, natural, padLeft, padRight, padStatBar, padStatStrBar, pickMonsterToSpawn, positive, refillGolemSpCost, replaceMeColorTheme, reviveGolemBloodCost, secondsRequiredForLocationMonsterRefill, secondsRequiredForSpRefill, setDevice, setGolem, setHpTo, setOnDefeat, setStatCurVal, setStatHP, setStatInitialVal, setStatMaxVal, setStatPower, setStatProtection, setStatStamina, setStatToMax, subscriptions, suite, update, updateFight, updateFightWithLivingGolemAndEnemy, updateTick, updateUiOption, view, viewBattleControls, viewBattleMode, viewFightLog, viewLocationTypeMenu, viewMonsterInBattle, viewSingleFightLog)
 
 import Array
 import Browser.Dom
@@ -165,6 +165,11 @@ isStatEmpty stat =
 isStatNotEmpty : IntStat -> Bool
 isStatNotEmpty stat =
     stat.curVal /= 0
+
+
+getStatMissingVal : IntStat -> Int
+getStatMissingVal { curVal, maxVal } =
+    maxVal - curVal
 
 
 type alias Monster =

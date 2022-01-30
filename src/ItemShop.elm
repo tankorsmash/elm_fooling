@@ -3595,13 +3595,24 @@ bloodCostForRefillSp =
 
 addGolemSpFromBlood : Character -> Int -> Battle.Model -> ( Character, Battle.Model )
 addGolemSpFromBlood ({ held_blood } as player) level battleModel =
+    let
+        missingStamina =
+            Battle.monsterMap (\m -> Battle.getStatMissingVal m.statStamina) battleModel.golem
+
+        spToRefill : Int
+        spToRefill =
+            min (level * 1) missingStamina
+
+        newHeldBlood =
+            held_blood - (bloodCostForRefillSp * spToRefill)
+    in
     -- if player has enough gold, subtract it, and add 1*level SP to golem
     if
-        (held_blood >= (bloodCostForRefillSp * level))
+        (held_blood >= (bloodCostForRefillSp * spToRefill))
             && Battle.doesGolemNeedStamina battleModel
     then
-        ( { player | held_blood = held_blood - (bloodCostForRefillSp * level) }
-        , Battle.increaseGolemStamina battleModel level
+        ( { player | held_blood = newHeldBlood }
+        , Battle.increaseGolemStamina battleModel spToRefill
         )
 
     else
@@ -7024,11 +7035,48 @@ suite =
                             expectedPlayerAndModel : ( Character, Model )
                             expectedPlayerAndModel =
                                 ( expectedNewPlayer
-                                , replaceCharacter expectedNewPlayer { newTestModel | battleModel = intendedBattleModel }
+                                , replaceCharacter expectedNewPlayer
+                                    { newTestModel | battleModel = intendedBattleModel }
                                 )
 
                             ( resultPlayer, resultModel ) =
                                 applyUpgrade (AutomaticBPtoSP upgradeLevel) ( player, newTestModel )
+                        in
+                        Expect.equal
+                            (expectedPlayerAndModel
+                                |> Tuple.first
+                                |> .held_blood
+                            )
+                            resultPlayer.held_blood
+                , fuzz (Fuzz.intRange 1 10) "BP goes down, but only as needed" <|
+                    \upgradeLevel ->
+                        let
+                            expectedNewPlayer =
+                                { player
+                                    | held_blood = player.held_blood - (bloodCostForRefillSp * 1)
+                                }
+
+                            --decrease the golem's stamina by just one tick to make sure it is missing a small amount
+                            -- NOTE this is the initial test_model, not newTestModel
+                            newerBattleModel =
+                                Battle.increaseGolemStamina test_model.battleModel -1
+
+                            newerTestModel =
+                                { newTestModel | battleModel = newerBattleModel }
+
+                            expectedPlayerAndModel : ( Character, Model )
+                            expectedPlayerAndModel =
+                                let
+                                    intendedBattleModel =
+                                        Battle.increaseGolemStamina newerBattleModel upgradeLevel
+                                in
+                                ( expectedNewPlayer
+                                , replaceCharacter expectedNewPlayer
+                                    { newTestModel | battleModel = intendedBattleModel }
+                                )
+
+                            ( resultPlayer, resultModel ) =
+                                applyUpgrade (AutomaticBPtoSP upgradeLevel) ( player, newerTestModel )
                         in
                         Expect.equal
                             (expectedPlayerAndModel

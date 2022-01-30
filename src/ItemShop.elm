@@ -3382,7 +3382,7 @@ special_action_increase_bp_to_sp model =
 
         upgradeCost : Price
         upgradeCost =
-            scale_increase_income_cost automaticBPtoSPLevel
+            scale_increase_bp_to_sp_cost automaticBPtoSPLevel
 
         doUpgrade =
             \upgrade ->
@@ -6248,6 +6248,10 @@ scale_increase_income_cost : Int -> Price
 scale_increase_income_cost current_level =
     (20 + (5 * current_level * current_level) * 2) |> setPrice
 
+scale_increase_bp_to_sp_cost : Int -> Price
+scale_increase_bp_to_sp_cost current_level =
+    (60 + (5 * current_level * current_level) * 2) |> setPrice
+
 
 special_actions_display : UI.ColorTheme -> ProgressUnlocks -> List PlayerUpgrade -> UI.HoveredTooltip -> Character -> Bool -> Element Msg
 special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip player ai_updates_paused =
@@ -6355,6 +6359,30 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
                 "Invest in another business, earning more income.\n\nIncreases the gold you get per second."
                 (scale_increase_income_cost income_level)
 
+        button_increase_bp_to_sp =
+            let
+                bp_to_sp_level =
+                    List.foldl
+                        (\u acc ->
+                            case u of
+                                AutomaticBPtoSP lvl ->
+                                    lvl
+
+                                _ ->
+                                    acc
+                        )
+                        1
+                        playerUpgrades
+            in
+            build_special_action_button
+                colorTheme
+                hoveredTooltip
+                player
+                IncreaseBPtoSP
+                "Cut"
+                "Cut deeper, using more of the blood to help yourself.\n\nIncreases the stamina your golem will regain per second, and the amount of blood you'll spend."
+                (scale_increase_bp_to_sp_cost bp_to_sp_level)
+
         hasUnlockedSpecialActions =
             containsProgressUnlock UnlockedSpecialActions progressUnlocks
     in
@@ -6368,6 +6396,7 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
             , if hasUnlockedSpecialActions then
                 Element.wrappedRow [ width <| fillPortion 1, spacingXY 10 10, alignTop ]
                     [ button_increase_income
+                    , button_increase_bp_to_sp
                     ]
 
               else

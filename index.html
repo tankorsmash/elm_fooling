@@ -11,7 +11,8 @@
         <script>
             function init_elm() {
                 window.app = Elm.Main.init({
-                    node: document.getElementById('myapp')
+                    node: document.getElementById('myapp'),
+					flags: {'window': {width: window.innerWidth, height: window.innerHeight}}
                 });
 
 

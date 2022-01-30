@@ -1,6 +1,7 @@
 port module Main exposing (..)
 
 import Browser
+import Browser.Events
 import Browser.Navigation as Nav
 import Debug
 import Element
@@ -33,8 +34,8 @@ import Html.Events exposing (onClick, onInput, onSubmit)
 import Html.Lazy
 import Http
 import ItemShop
-import Json.Decode exposing (Decoder, at, field, list, string)
-import Json.Encode exposing (string)
+import Json.Decode as Decode exposing (Decoder, at, field, list, string)
+import Json.Encode as Encode exposing (Value, string)
 import List
 import Sfxr
 import String
@@ -59,6 +60,7 @@ type Msg
       -- | SubmitFormData
     | GotItemShopMsg ItemShop.Msg
     | GotSfxrMsg Sfxr.Msg
+    | OnWindowResize Int Int
 
 
 
@@ -75,7 +77,7 @@ root_data_json_server_url =
 
 
 add_class cls =
-    property "className" (Json.Encode.string cls)
+    property "className" (Encode.string cls)
 
 
 main =
@@ -100,6 +102,7 @@ subscriptions model =
           test_port_receiving RecvFromPort
         , Sub.map GotItemShopMsg <| ItemShop.subscriptions model.item_shop_model
         , Sub.map GotSfxrMsg <| Sfxr.subscriptions model.sfxrModel
+        , Browser.Events.onResize OnWindowResize
         ]
 
 
@@ -128,6 +131,7 @@ type alias Model =
     , current_tab : TabType
     , item_shop_model : ItemShop.Model
     , sfxrModel : Sfxr.Model
+    , device : Element.Device
     }
 
 
@@ -167,8 +171,8 @@ matchRoute =
         ]
 
 
-init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
-init _ url navKey =
+init : { window : { width : Int, height : Int } } -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
+init flags url navKey =
     let
         parsedRoute : Route
         parsedRoute =
@@ -182,6 +186,9 @@ init _ url navKey =
 
                 _ ->
                     ItemShopTab
+
+        device =
+            Element.classifyDevice flags.window
 
         page_info =
             UrlPageInfo navKey url parsedRoute UnsetPage
@@ -208,6 +215,7 @@ init _ url navKey =
             , current_tab = initial_tab
             , item_shop_model = item_shop_model
             , sfxrModel = Sfxr.init
+            , device = device
             }
 
         existingCmds : Cmd Msg
@@ -346,6 +354,14 @@ update msg model =
             , Cmd.map GotSfxrMsg sub_cmd
             )
 
+        OnWindowResize width height ->
+            let
+                newDevice =
+                    Element.classifyDevice
+                        { width = width, height = height }
+            in
+            ( { model | device = newDevice }, Cmd.none )
+
 
 
 -- end of update
@@ -462,7 +478,7 @@ port test_port_sending : String -> Cmd msg
 -- port recv_reddit_listing : (Reddit.ListingWrapper -> msg) -> Sub msg
 
 
-port recv_reddit_listing : (Json.Decode.Value -> msg) -> Sub msg
+port recv_reddit_listing : (Decode.Value -> msg) -> Sub msg
 
 
 port exec_jsonp : String -> Cmd msg
@@ -486,7 +502,7 @@ view model =
     { title = tab_type_to_str model.current_tab ++ " | Elm Fooling"
     , body =
         [ --viewSfxr model
-         case model.page_info.page of
+          case model.page_info.page of
             NotFoundPage ->
                 div [] [ text "Not found page" ]
 

@@ -6292,6 +6292,9 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
                 "Invest"
                 "Invest in another business, earning more income.\n\nIncreases the gold you get per second."
                 (scale_increase_income_cost income_level)
+
+        hasUnlockedSpecialActions =
+            containsProgressUnlock UnlockedSpecialActions progressUnlocks
     in
     column [ width fill, spacing 10, paddingXY 0 10 ]
         [ el [ UI.font_scaled 2, border_bottom 2 ] <| text "Special Actions"
@@ -6300,10 +6303,16 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
                 [ button_toggle_ai_pause
                 , button_battle
                 ]
-            , if containsProgressUnlock UnlockedSpecialActions progressUnlocks then
-                Element.wrappedRow [ width <| fillPortion 3, spacingXY 10 10, alignTop ]
+            , if hasUnlockedSpecialActions then
+                Element.wrappedRow [ width <| fillPortion 1, spacingXY 10 10, alignTop ]
                     [ button_increase_income
-                    , button_search
+                    ]
+
+              else
+                Element.none
+            , if hasUnlockedSpecialActions then
+                Element.wrappedRow [ width <| fillPortion 4, spacingXY 10 10, alignTop ]
+                    [ button_search
                     , button_unlock_item
                     , button_community_fund
                     , button_high_desire

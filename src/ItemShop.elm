@@ -6057,7 +6057,7 @@ view model =
         , Element.htmlAttribute <| Html.Events.on "scroll" (Decode.succeed (GotUiOptionsMsg ScrollViewport))
         , width fill
         , if deviceClass == UI.Desktop then
-            padding 200
+            paddingXY 200 20
 
           else
             padding 20

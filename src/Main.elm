@@ -203,7 +203,7 @@ init flags url navKey =
                     ""
 
         ( item_shop_model, item_shop_cmds ) =
-            ItemShop.init hash (Just navKey)
+            ItemShop.init device hash (Just navKey)
 
         initial_model : Model
         initial_model =

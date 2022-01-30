@@ -415,7 +415,8 @@ type alias SecondsWaitedSince =
 
 
 type alias UiOptions =
-    { hoveredTooltip : UI.HoveredTooltip
+    { device : Element.Device
+    , hoveredTooltip : UI.HoveredTooltip
     , cachedTooltipOffsets : Dict.Dict String UI.TooltipData
     }
 
@@ -458,8 +459,8 @@ debugMode =
     True
 
 
-init : { a | held_blood : Int, held_gold : Int } -> Int -> Model
-init { held_blood, held_gold } spRefillAmount =
+init : Element.Device -> { a | held_blood : Int, held_gold : Int } -> Int -> Model
+init device { held_blood, held_gold } spRefillAmount =
     let
         locations : Locations
         locations =
@@ -484,7 +485,7 @@ init { held_blood, held_gold } spRefillAmount =
     , shouldShowLocationTypeMenu = False
     , currentLocationId = locations.forest.locationId
     , locations = locations
-    , uiOptions = { hoveredTooltip = UI.NoHoveredTooltip, cachedTooltipOffsets = Dict.empty }
+    , uiOptions = { device = device, hoveredTooltip = UI.NoHoveredTooltip, cachedTooltipOffsets = Dict.empty }
     }
 
 
@@ -1686,6 +1687,10 @@ positive =
 
 suite : Test
 suite =
+    let
+        testDevice =
+            Element.classifyDevice { width = 1920, height = 1080 }
+    in
     describe "root test suite"
         [ describe "golem stuff"
             [ describe "golem's blood link sp gain "
@@ -1701,7 +1706,7 @@ suite =
 
                             model : Model
                             model =
-                                init { held_blood = 100, held_gold = 0 } staminaToGain
+                                init (testDevice) { held_blood = 100, held_gold = 0 } staminaToGain
                                     |> (setGolem <| LivingMonster testGolem)
                         in
                         Expect.equal (testGolem.statStamina.curVal + staminaToGain) <|
@@ -1722,7 +1727,7 @@ suite =
 
                             model : Model
                             model =
-                                init { held_blood = 100, held_gold = 0 } staminaToGain
+                                init testDevice { held_blood = 100, held_gold = 0 } staminaToGain
                                     |> (setGolem <| DeadMonster testGolem)
                         in
                         Expect.equal (testGolem.statStamina.curVal + 0) <|

@@ -1212,7 +1212,8 @@ type InventorySortType
 
 
 type alias UiOptions =
-    { shiftIsPressed : Bool
+    { device : Element.Device
+    , shiftIsPressed : Bool
     , hovered_trend_chart : List (CI.One TrendChartDatum CI.Dot)
     , show_main_chart : Bool
     , hoveredTooltip : UI.HoveredTooltip
@@ -1999,8 +2000,8 @@ stringToTabType hash =
             ShopTabType
 
 
-init : String -> Maybe Nav.Key -> ( Model, Cmd Msg )
-init hash key =
+init : Element.Device -> String -> Maybe Nav.Key -> ( Model, Cmd Msg )
+init device hash key =
     let
         player_base_char =
             createCharacter (UUID.forName "player character" UUID.dnsNamespace) "Player"
@@ -2050,11 +2051,12 @@ init hash key =
 
         battleModel : Battle.Model
         battleModel =
-            Battle.init (getInnerPlayer player) spRefillUpgradeLvl
+            Battle.init device (getInnerPlayer player) spRefillUpgradeLvl
 
         initUiOptions : UiOptions
         initUiOptions =
-            { shiftIsPressed = False
+            { device = device
+            , shiftIsPressed = False
             , hovered_trend_chart = []
             , show_main_chart = True
             , hoveredTooltip = UI.NoHoveredTooltip
@@ -6287,6 +6289,10 @@ positive =
 
 suite : Test
 suite =
+    let
+        testDevice =
+            Element.classifyDevice { width = 1920, height = 1080 }
+    in
     -- todo "Implement our first test. See https://package.elm-lang.org/packages/elm-explorations/test/latest for how to do this!"
     describe "root test suite"
         [ describe "encoders"
@@ -6483,7 +6489,7 @@ suite =
 
                 test_model : Model
                 test_model =
-                    init "" Nothing |> Tuple.first
+                    init testDevice "" Nothing |> Tuple.first
 
                 ( test_item, test_item_qty, test_avg_price ) =
                     ( lookup_item_id_str_default test_item_db "a41ae9d3-61f0-54f9-800e-56f53ed3ac98", Quantity 12, setPrice 9999 )

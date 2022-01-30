@@ -3383,25 +3383,21 @@ special_action_increase_bp_to_sp model =
         upgradeCost : Price
         upgradeCost =
             scale_increase_income_cost automaticBPtoSPLevel
+
+        doUpgrade =
+            \upgrade ->
+                case upgrade of
+                    AutomaticBPtoSP level ->
+                        AutomaticBPtoSP (level + 1)
+
+                    _ ->
+                        upgrade
     in
     if hasEnoughGold player upgradeCost then
         model
-            |> replaceCharacter
-                (subGold player upgradeCost)
+            |> replaceCharacter (subGold player upgradeCost)
             |> (\m ->
-                    { m
-                        | playerUpgrades =
-                            List.map
-                                (\upgrade ->
-                                    case upgrade of
-                                        AutomaticBPtoSP level ->
-                                            AutomaticBPtoSP (level + 1)
-
-                                        _ ->
-                                            upgrade
-                                )
-                                m.playerUpgrades
-                    }
+                    { m | playerUpgrades = List.map doUpgrade m.playerUpgrades }
                )
 
     else

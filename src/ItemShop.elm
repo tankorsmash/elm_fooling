@@ -4852,11 +4852,12 @@ render_inventory_grid model header character shop_trends hovered_item context co
             else
                 [ text "No actions taken" ]
 
+        rendered_action_log : List (Element Msg)
         rendered_action_log =
             [ column
                 [ width fill
-                , height fill
-                , scrollbars
+                , Element.clip
+                , paddingXY 0 10
                 , if not is_shop_context && List.length character.action_log > 0 then
                     height (fill |> Element.maximum 600 |> Element.minimum 50)
 

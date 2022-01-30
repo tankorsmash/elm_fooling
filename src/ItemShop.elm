@@ -2047,8 +2047,8 @@ init device hash key =
             AutomaticBPtoSP spRefillUpgradeLvl
 
         playerUpgrades =
-            []
             -- [ AutomaticGPM 1, spRefillUpgrade ]
+            []
 
         battleModel : Battle.Model
         battleModel =
@@ -5599,10 +5599,19 @@ render_single_player_upgrade colorTheme player_upgrade =
 playerUpgrades_display : UI.ColorTheme -> List PlayerUpgrade -> ProgressUnlocks -> Element Msg
 playerUpgrades_display colorTheme playerUpgrades progressUnlocks =
     if containsProgressUnlock UnlockedUpgrades progressUnlocks && not (List.isEmpty playerUpgrades) then
-        column [ height fill ]
-            ([ el [ UI.font_scaled 2, border_bottom 2, alignTop ] <| text "Upgrades" ]
-                ++ [ column [ paddingXY 0 10, spacing 5 ] <| List.map (render_single_player_upgrade colorTheme) playerUpgrades ]
-            )
+        let
+            header =
+                el
+                    [ UI.font_scaled 2, border_bottom 2, alignTop ]
+                    (text "Upgrades")
+
+            renderedUpgrades =
+                column [ paddingXY 0 10, spacing 5 ] <|
+                    List.map
+                        (render_single_player_upgrade colorTheme)
+                        playerUpgrades
+        in
+        column [ height fill ] [ header, renderedUpgrades ]
 
     else
         Element.none

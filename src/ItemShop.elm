@@ -278,6 +278,7 @@ type SpecialAction
     | TogglePauseAi
     | UnlockItem
     | IncreaseIncome
+    | IncreaseBPtoSP
     | CommunityFund
 
 
@@ -3358,51 +3359,102 @@ update_shop_trends model update_st_func =
     }
 
 
+special_action_increase_bp_to_sp : Model -> Model
+special_action_increase_bp_to_sp model =
+    let
+        (Player player) =
+            getPlayer model.characters
+    in
+    let
+        automaticBPtoSPLevel =
+            model.playerUpgrades
+                |> List.filterMap
+                    (\upgrade ->
+                        case upgrade of
+                            AutomaticBPtoSP level ->
+                                Just level
+
+                            _ ->
+                                Nothing
+                    )
+                |> List.head
+                |> Maybe.withDefault 1
+
+        upgradeCost : Price
+        upgradeCost =
+            scale_increase_income_cost automaticBPtoSPLevel
+    in
+    if hasEnoughGold player upgradeCost then
+        model
+            |> replaceCharacter
+                (subGold player upgradeCost)
+            |> (\m ->
+                    { m
+                        | playerUpgrades =
+                            List.map
+                                (\upgrade ->
+                                    case upgrade of
+                                        AutomaticBPtoSP level ->
+                                            AutomaticBPtoSP (level + 1)
+
+                                        _ ->
+                                            upgrade
+                                )
+                                m.playerUpgrades
+                    }
+               )
+
+    else
+        model
+
+
 special_action_increase_income : Model -> Model
 special_action_increase_income model =
-    case getPlayer model.characters of
-        Player player ->
-            let
-                automaticGpmLevel =
-                    model.playerUpgrades
-                        |> List.filterMap
-                            (\upgrade ->
-                                case upgrade of
-                                    AutomaticGPM level ->
-                                        Just level
+    let
+        (Player player) =
+            getPlayer model.characters
+    in
+    let
+        automaticGpmLevel =
+            model.playerUpgrades
+                |> List.filterMap
+                    (\upgrade ->
+                        case upgrade of
+                            AutomaticGPM level ->
+                                Just level
 
-                                    _ ->
-                                        Nothing
-                            )
-                        |> List.head
-                        |> Maybe.withDefault 1
+                            _ ->
+                                Nothing
+                    )
+                |> List.head
+                |> Maybe.withDefault 1
 
-                upgradeCost : Price
-                upgradeCost =
-                    scale_increase_income_cost automaticGpmLevel
-            in
-            if hasEnoughGold player upgradeCost then
-                model
-                    |> replaceCharacter
-                        (subGold player upgradeCost)
-                    |> (\m ->
-                            { m
-                                | playerUpgrades =
-                                    List.map
-                                        (\upgrade ->
-                                            case upgrade of
-                                                AutomaticGPM level ->
-                                                    AutomaticGPM (level + 1)
+        upgradeCost : Price
+        upgradeCost =
+            scale_increase_income_cost automaticGpmLevel
+    in
+    if hasEnoughGold player upgradeCost then
+        model
+            |> replaceCharacter
+                (subGold player upgradeCost)
+            |> (\m ->
+                    { m
+                        | playerUpgrades =
+                            List.map
+                                (\upgrade ->
+                                    case upgrade of
+                                        AutomaticGPM level ->
+                                            AutomaticGPM (level + 1)
 
-                                                _ ->
-                                                    upgrade
-                                        )
-                                        m.playerUpgrades
-                            }
-                       )
+                                        _ ->
+                                            upgrade
+                                )
+                                m.playerUpgrades
+                    }
+               )
 
-            else
-                model
+    else
+        model
 
 
 special_action_unlock_item : Model -> Model
@@ -3511,6 +3563,9 @@ update_special_action special_action price model =
 
                                 IncreaseIncome ->
                                     ( special_action_increase_income model, Cmd.none )
+
+                                IncreaseBPtoSP ->
+                                    ( special_action_increase_bp_to_sp model, Cmd.none )
 
                                 CommunityFund ->
                                     ( special_action_community_fund model, Cmd.none )

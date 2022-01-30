@@ -6848,14 +6848,23 @@ suite =
                         |> Expect.true "contains an unlocked itemdbrecord, since we just asked to unlock it"
             , test "AutomaticGPM works with 1 level" <|
                 \_ ->
-                    case getPlayer test_model.characters of
-                        Player player ->
-                            update_player test_model
-                                |> (\m ->
-                                        case getPlayer m.characters of
-                                            Player updated_player ->
-                                                Expect.equal (player.held_gold + 1) updated_player.held_gold
-                                   )
+                    let
+                        (Player player) =
+                            getPlayer test_model.characters
+
+                        new_test_model =
+                            { test_model | playerUpgrades = [ AutomaticGPM 1 ] }
+                    in
+                    update_player new_test_model
+                        |> (\m ->
+                                let
+                                    (Player updated_player) =
+                                        getPlayer m.characters
+                                in
+                                Expect.equal
+                                    (player.held_gold + 1)
+                                    updated_player.held_gold
+                           )
             , fuzz (tuple ( int, Fuzz.intRange 1 Random.maxInt )) "removing all quantities leaves avg cost of 0" <|
                 \( qtyToAdd, totalCost ) ->
                     let

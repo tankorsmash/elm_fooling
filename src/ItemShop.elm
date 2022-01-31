@@ -3086,6 +3086,16 @@ mapIncompleteQuestType mapper quest =
             quest
 
 
+onNewDayStart : Model -> Model
+onNewDayStart ({ timeOfDay } as model) =
+    { model
+        | timeOfDay =
+            { timeOfDay
+                | msSinceStartOfDay = 0
+            }
+    }
+
+
 updateTimeOfDay : Time.Posix -> Model -> Model
 updateTimeOfDay newTime model =
     let
@@ -3097,19 +3107,17 @@ updateTimeOfDay newTime model =
 
         newMsSinceStartOfDay =
             timeOfDay.msSinceStartOfDay + msDiff
-
-        newTimeOfDay =
-            if newMsSinceStartOfDay < timeOfDay.dayLengthInMs then
+    in
+    if newMsSinceStartOfDay < timeOfDay.dayLengthInMs then
+        { model
+            | timeOfDay =
                 { timeOfDay
                     | msSinceStartOfDay = newMsSinceStartOfDay
                 }
+        }
 
-            else
-                { timeOfDay
-                    | msSinceStartOfDay = 0
-                }
-    in
-    { model | timeOfDay = newTimeOfDay }
+    else
+        onNewDayStart model
 
 
 isQuestTrackerComplete : QuestTracker -> Bool

@@ -6072,17 +6072,22 @@ viewShopPrepPhase : Model -> Element Msg
 viewShopPrepPhase model =
     column [ width fill ]
         [ Element.el [ UI.font_scaled 3, padding_bottom 10 ] <| text "Prep Phase"
-        , text "You are about to begin a new day, running your shop the best you can."
-        , text "Are you ready?"
+        , column [ Font.size 16, spacingXY 0 20 ]
+            [ el [ Font.italic ] <| text "You are about to begin a new day, running your shop the best you can."
+            , text "Each day, the shop's wares change, opposing trades come and go, and who knows what else might happen."
+            ]
         , el [ centerX, paddingXY 0 100 ] <|
-            UI.button <|
-                UI.TextParams
-                    { buttonType = UI.Secondary
-                    , colorTheme = model.colorTheme
-                    , customAttrs = [ width (fill |> Element.minimum 200) ]
-                    , onPressMsg = ChangeCurrentPhase PreActivePhase
-                    , textLabel = "Begin Day"
-                    }
+            column []
+                [ el [ Font.size 16, centerX, padding 10 ] <| text "Are you ready?"
+                , UI.button <|
+                    UI.TextParams
+                        { buttonType = UI.Secondary
+                        , colorTheme = model.colorTheme
+                        , customAttrs = [ width (fill |> Element.minimum 200) ]
+                        , onPressMsg = ChangeCurrentPhase PreActivePhase
+                        , textLabel = "Begin Day"
+                        }
+                ]
         ]
 
 

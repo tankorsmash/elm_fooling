@@ -1352,14 +1352,14 @@ type TimePhase
     = --viewing which items are in play, maybe picking an item
       PrepPhase
     | -- ai and player upgrades tick up
-      ActivePhase
+      ActivePhase { msSinceStartOfDay : Int }
     | -- viewing day's results, shop restocks etc
       PostPhase
 
 
 type alias TimeOfDay =
-    { msSinceStartOfDay : Int
-    , dayLengthInMs : Int
+    { -- msSinceStartOfDay : Int
+      dayLengthInMs : Int
     , currentPhase : TimePhase
     }
 
@@ -2129,9 +2129,8 @@ init device hash key =
                         }
                 ]
             , timeOfDay =
-                { msSinceStartOfDay = 0
-                , dayLengthInMs = 60000
-                , currentPhase = ActivePhase
+                { dayLengthInMs = 60000
+                , currentPhase = ActivePhase { msSinceStartOfDay = 0 }
                 }
             }
     in
@@ -2886,10 +2885,10 @@ onTickSecond model time =
     in
     if not model.ai_updates_paused then
         case model.timeOfDay.currentPhase of
-            ActivePhase ->
+            ActivePhase _ ->
                 ( model
-                    |> --updateTimeOfDay uses model.ai_tick_time to compare the new time, so order is important
-                       updateTimeOfDay time
+                    |> --updateActiveTimeOfDay uses model.ai_tick_time to compare the new time, so order is important
+                       updateActiveTimeOfDay time
                     |> (\m -> { m | ai_tick_time = time })
                     |> update_player
                     |> update_ai_chars
@@ -3132,7 +3131,7 @@ onNewDayStart ({ timeOfDay, item_db, global_seed } as model) =
     let
         newTimeOfDay =
             { timeOfDay
-                | msSinceStartOfDay = 0
+                | currentPhase = PrepPhase
             }
 
         (Shop shop) =
@@ -3168,28 +3167,44 @@ onNewDayStart ({ timeOfDay, item_db, global_seed } as model) =
     }
 
 
-updateTimeOfDay : Time.Posix -> Model -> Model
-updateTimeOfDay newTime model =
-    let
-        { ai_tick_time, timeOfDay } =
+updateActiveTimeOfDay : Time.Posix -> Model -> Model
+updateActiveTimeOfDay newTime ({ ai_tick_time, timeOfDay } as model) =
+    case timeOfDay.currentPhase of
+        ActivePhase { msSinceStartOfDay } ->
+            let
+                msDiff =
+                    Time.posixToMillis newTime - Time.posixToMillis ai_tick_time
+
+                newMsSinceStartOfDay =
+                    msSinceStartOfDay + msDiff
+
+                isWithinCurrentDay =
+                    newMsSinceStartOfDay < timeOfDay.dayLengthInMs
+
+                newPhase =
+                    if isWithinCurrentDay then
+                        ActivePhase { msSinceStartOfDay = newMsSinceStartOfDay }
+
+                    else
+                        PostPhase
+            in
+            { model
+                | timeOfDay =
+                    { timeOfDay
+                        | currentPhase =
+                            newPhase
+                    }
+            }
+
+        _ ->
+            --NOOP
             model
 
-        msDiff =
-            Time.posixToMillis newTime - Time.posixToMillis ai_tick_time
 
-        newMsSinceStartOfDay =
-            timeOfDay.msSinceStartOfDay + msDiff
-    in
-    if newMsSinceStartOfDay < timeOfDay.dayLengthInMs then
-        { model
-            | timeOfDay =
-                { timeOfDay
-                    | msSinceStartOfDay = newMsSinceStartOfDay
-                }
-        }
 
-    else
-        onNewDayStart model
+-- {
+--     model | timeOfDay = {timeOfDay
+-- onNewDayStart model
 
 
 isQuestTrackerComplete : QuestTracker -> Bool
@@ -5943,7 +5958,7 @@ defaultRounded =
 
 
 viewDayTimer : Model -> Element Msg
-viewDayTimer model =
+viewDayTimer { colorTheme, timeOfDay } =
     let
         sharedAttrs =
             [ height fill
@@ -5969,16 +5984,6 @@ viewDayTimer model =
                 }
             ]
                 ++ sharedAttrs
-
-        dayElapsed =
-            let
-                sinceStart =
-                    toFloat model.timeOfDay.msSinceStartOfDay
-
-                dayLength =
-                    toFloat model.timeOfDay.dayLengthInMs
-            in
-            (sinceStart / dayLength) * 100
     in
     column [ centerX, width fill ]
         [ el [ centerX, Font.underline, padding 10 ] <| text "Day Timer"
@@ -5986,9 +5991,26 @@ viewDayTimer model =
             [ width fill
             , height (Element.px 20)
             ]
-            [ row ([ width <| fillPortion (round <| dayElapsed) ] ++ fillingAttrs) []
-            , row ([ width <| fillPortion (round <| 100 - dayElapsed) ] ++ emptyAttrs) []
-            ]
+          <|
+            case timeOfDay.currentPhase of
+                ActivePhase { msSinceStartOfDay } ->
+                    let
+                        dayElapsed =
+                            let
+                                sinceStart =
+                                    toFloat msSinceStartOfDay
+
+                                dayLength =
+                                    toFloat timeOfDay.dayLengthInMs
+                            in
+                            (sinceStart / dayLength) * 100
+                    in
+                    [ row ([ width <| fillPortion (round <| dayElapsed) ] ++ fillingAttrs) []
+                    , row ([ width <| fillPortion (round <| 100 - dayElapsed) ] ++ emptyAttrs) []
+                    ]
+
+                _ ->
+                    []
         , el [ width fill, paddingXY 0 10 ] <|
             row [ width fill, Element.spaceEvenly ]
                 [ UI.button <|
@@ -5997,25 +6019,27 @@ viewDayTimer model =
                         , customAttrs = []
                         , onPressMsg = ChangeCurrentPhase PrepPhase
                         , textLabel =
-                            if model.timeOfDay.currentPhase /= PrepPhase then
-                                "Change to PrepPhase"
+                            case timeOfDay.currentPhase of
+                                PrepPhase ->
+                                    "Currently PrepPhase"
 
-                            else
-                                "Currently PrepPhase"
-                        , colorTheme = model.colorTheme
+                                _ ->
+                                    "Change to PrepPhase"
+                        , colorTheme = colorTheme
                         }
                 , UI.button <|
                     UI.TextParams
                         { buttonType = UI.Primary
                         , customAttrs = []
-                        , onPressMsg = ChangeCurrentPhase ActivePhase
+                        , onPressMsg = ChangeCurrentPhase (ActivePhase { msSinceStartOfDay = 0 })
                         , textLabel =
-                            if model.timeOfDay.currentPhase /= ActivePhase then
-                                "Change to ActivePhase"
+                            case timeOfDay.currentPhase of
+                                ActivePhase _ ->
+                                    "Currently ActivePhase"
 
-                            else
-                                "Currently ActivePhase"
-                        , colorTheme = model.colorTheme
+                                _ ->
+                                    "Change to ActivePhase"
+                        , colorTheme = colorTheme
                         }
                 , UI.button <|
                     UI.TextParams
@@ -6023,12 +6047,13 @@ viewDayTimer model =
                         , customAttrs = []
                         , onPressMsg = ChangeCurrentPhase PostPhase
                         , textLabel =
-                            if model.timeOfDay.currentPhase /= PostPhase then
-                                "Change to PostPhase"
+                            case timeOfDay.currentPhase of
+                                PostPhase ->
+                                    "Currently PostPhase"
 
-                            else
-                                "Currently PostPhase"
-                        , colorTheme = model.colorTheme
+                                _ ->
+                                    "Change to PostPhase"
+                        , colorTheme = colorTheme
                         }
                 ]
         ]
@@ -6864,7 +6889,7 @@ suite =
                     Expect.equalLists
                         [ CompleteQuest (SellAnyItem { current = targetQty, target = targetQty }) ]
                         updatedQuests
-            , fuzz (Fuzz.map Random.initialSeed <| Fuzz.intRange 1 Random.maxInt) "updateTimeOfDay replaces items in shop, and gets a non zero amount" <|
+            , fuzz (Fuzz.map Random.initialSeed <| Fuzz.intRange 1 Random.maxInt) "updateActiveTimeOfDay replaces items in shop, and gets a non zero amount" <|
                 \newGlobalSeed ->
                     let
                         (Shop shop) =

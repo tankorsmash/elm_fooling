@@ -315,6 +315,7 @@ type Msg
     | ToggleColorTheme
     | GotBattleMsg Battle.Msg
     | GotUiOptionsMsg UiOptionMsg
+    | ChangeCurrentPhase TimePhase
 
 
 type alias TradeOrder =
@@ -1347,9 +1348,19 @@ type alias Quests =
     List Quest
 
 
+type TimePhase
+    = --viewing which items are in play, maybe picking an item
+      PrepPhase
+    | -- ai and player upgrades tick up
+      ActivePhase
+    | -- viewing day's results, shop restocks etc
+      PostPhase
+
+
 type alias TimeOfDay =
     { msSinceStartOfDay : Int
     , dayLengthInMs : Int
+    , currentPhase : TimePhase
     }
 
 
@@ -2120,6 +2131,7 @@ init device hash key =
             , timeOfDay =
                 { msSinceStartOfDay = 0
                 , dayLengthInMs = 60000
+                , currentPhase = ActivePhase
                 }
             }
     in
@@ -2866,20 +2878,29 @@ updateUiOptions uiOptMsg model =
             )
 
 
-onTickSecond : Model -> Time.Posix -> (Model, Cmd Msg)
+onTickSecond : Model -> Time.Posix -> ( Model, Cmd Msg )
 onTickSecond model time =
+    let
+        noop =
+            ( model, Cmd.none )
+    in
     if not model.ai_updates_paused then
-        ( model
-            |> --updateTimeOfDay uses model.ai_tick_time to compare the new time, so order is important
-               updateTimeOfDay time
-            |> (\m -> { m | ai_tick_time = time })
-            |> update_player
-            |> update_ai_chars
-        , Cmd.none
-        )
+        case model.timeOfDay.currentPhase of
+            ActivePhase ->
+                ( model
+                    |> --updateTimeOfDay uses model.ai_tick_time to compare the new time, so order is important
+                       updateTimeOfDay time
+                    |> (\m -> { m | ai_tick_time = time })
+                    |> update_player
+                    |> update_ai_chars
+                , Cmd.none
+                )
+
+            _ ->
+                noop
 
     else
-        ( model, Cmd.none )
+        noop
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -3076,9 +3097,24 @@ update msg model =
         GotUiOptionsMsg uiOptMsg ->
             updateUiOptions uiOptMsg model
 
+        ChangeCurrentPhase newPhase ->
+            let
+                { timeOfDay } =
+                    model
+
+                newTimeOfDay =
+                    { timeOfDay | currentPhase = newPhase }
+            in
+            ( setTimeOfDay model newTimeOfDay, Cmd.none )
+
 
 
 --- END OF UPDATE
+
+
+setTimeOfDay : Model -> TimeOfDay -> Model
+setTimeOfDay model newTimeOfDay =
+    { model | timeOfDay = newTimeOfDay }
 
 
 mapIncompleteQuestType : (QuestType -> Quest) -> Quest -> Quest
@@ -5953,6 +5989,48 @@ viewDayTimer model =
             [ row ([ width <| fillPortion (round <| dayElapsed) ] ++ fillingAttrs) []
             , row ([ width <| fillPortion (round <| 100 - dayElapsed) ] ++ emptyAttrs) []
             ]
+        , el [ width fill, paddingXY 0 10 ] <|
+            row [ width fill, Element.spaceEvenly ]
+                [ UI.button <|
+                    UI.TextParams
+                        { buttonType = UI.Primary
+                        , customAttrs = []
+                        , onPressMsg = ChangeCurrentPhase PrepPhase
+                        , textLabel =
+                            if model.timeOfDay.currentPhase /= PrepPhase then
+                                "Change to PrepPhase"
+
+                            else
+                                "Currently PrepPhase"
+                        , colorTheme = model.colorTheme
+                        }
+                , UI.button <|
+                    UI.TextParams
+                        { buttonType = UI.Primary
+                        , customAttrs = []
+                        , onPressMsg = ChangeCurrentPhase ActivePhase
+                        , textLabel =
+                            if model.timeOfDay.currentPhase /= ActivePhase then
+                                "Change to ActivePhase"
+
+                            else
+                                "Currently ActivePhase"
+                        , colorTheme = model.colorTheme
+                        }
+                , UI.button <|
+                    UI.TextParams
+                        { buttonType = UI.Primary
+                        , customAttrs = []
+                        , onPressMsg = ChangeCurrentPhase PostPhase
+                        , textLabel =
+                            if model.timeOfDay.currentPhase /= PostPhase then
+                                "Change to PostPhase"
+
+                            else
+                                "Currently PostPhase"
+                        , colorTheme = model.colorTheme
+                        }
+                ]
         ]
 
 

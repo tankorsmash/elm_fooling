@@ -5818,6 +5818,51 @@ quests_display colorTheme quests =
         )
 
 
+defaultRounded =
+    UI.defaultRounded
+
+
+viewDayTimer : Model -> Element Msg
+viewDayTimer model =
+    let
+        sharedAttrs =
+            [ height fill
+            , Border.shadow { offset = ( 2, 2 ), size = 0, blur = 1.0, color = UI.color_light_grey }
+            ]
+
+        fillingAttrs =
+            [ Background.color UI.color_primary
+            , Border.roundEach
+                { defaultRounded
+                    | topLeft = 5
+                    , bottomLeft = 5
+                }
+            ]
+                ++ sharedAttrs
+
+        emptyAttrs =
+            [ Background.color UI.color_white
+            , Border.roundEach
+                { defaultRounded
+                    | topRight = 5
+                    , bottomRight = 5
+                }
+            ]
+                ++ sharedAttrs
+
+    in
+    column [ centerX, width fill ]
+        [ el [ centerX, Font.underline, padding 10 ] <| text "Day Timer"
+        , row
+            [ width fill
+            , height (Element.px 20)
+            ]
+            [ row ([ width <| fillPortion 2 ] ++ fillingAttrs) []
+            , row ([ width <| fillPortion 2 ] ++ emptyAttrs) []
+            ]
+        ]
+
+
 view_shop_tab_type : Model -> Element Msg
 view_shop_tab_type model =
     let
@@ -5933,6 +5978,7 @@ view_shop_tab_type model =
 
               else
                 Element.none
+            , row [ width fill ] [ viewDayTimer model ]
             , row [ width fill, height <| Element.px 10 ] []
             , row [ width fill, spacingXY 10 0 ]
                 [ el [ width <| fillPortion 3, alignTop ] <| Lazy.lazy2 player_action_log_display model.item_db model.historical_player_actions
@@ -6247,6 +6293,7 @@ build_special_action_button colorTheme hoveredTooltip character special_action t
 scale_increase_income_cost : Int -> Price
 scale_increase_income_cost current_level =
     (20 + (5 * current_level * current_level) * 2) |> setPrice
+
 
 scale_increase_bp_to_sp_cost : Int -> Price
 scale_increase_bp_to_sp_cost current_level =

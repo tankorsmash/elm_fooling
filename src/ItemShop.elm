@@ -1773,12 +1773,9 @@ initial_item_db =
         |> Dict.fromList
 
 
-initial_items_for_sale : ItemDb -> InventoryRecords
-initial_items_for_sale item_db =
+initial_items_for_sale : ItemDb -> Random.Seed -> InventoryRecords
+initial_items_for_sale item_db seed =
     let
-        seed =
-            Random.initialSeed 12345
-
         item_configs : List ( String, Quantity )
         item_configs =
             [ ( "a41ae9d3-61f0-54f9-800e-56f53ed3ac98", Quantity 3 ) --boots
@@ -2011,6 +2008,9 @@ stringToTabType hash =
 init : UI.Device -> String -> Maybe Nav.Key -> ( Model, Cmd Msg )
 init device hash key =
     let
+        globalSeed =
+            Random.initialSeed 4
+
         player_base_char =
             createCharacter (UUID.forName "player character" UUID.dnsNamespace) "Player"
 
@@ -2035,7 +2035,7 @@ init device hash key =
         shop =
             Shop
                 { shop_base_char
-                    | held_items = initial_items_for_sale item_db
+                    | held_items = initial_items_for_sale item_db globalSeed
                     , held_gold = 999999999
                     , party = ShopParty
                 }
@@ -2092,7 +2092,7 @@ init device hash key =
             , historical_shop_trends = []
             , historical_player_actions = [ WelcomeMessageActionLog ]
             , ai_tick_time = Time.millisToPosix -1
-            , global_seed = Random.initialSeed 4
+            , global_seed = globalSeed
             , ai_updates_paused =
                 if initial_tab_type == ShopTabType || initial_tab_type == BattleTabType then
                     False
@@ -3087,12 +3087,43 @@ mapIncompleteQuestType mapper quest =
 
 
 onNewDayStart : Model -> Model
-onNewDayStart ({ timeOfDay } as model) =
-    { model
-        | timeOfDay =
+onNewDayStart ({ timeOfDay, item_db, global_seed } as model) =
+    let
+        newTimeOfDay =
             { timeOfDay
                 | msSinceStartOfDay = 0
             }
+
+        (Shop shop) =
+            getShop model.characters
+
+        newShop =
+            List.foldl (\item shop_ -> addHeldItem item shop_) shop newShopItems
+
+        ( newGlobalSeed, newShopItems ) =
+            List.foldl
+                (\_ ( seed, items ) ->
+                    let
+                        ( mbItem, newSeed ) =
+                            pick_random_unlocked_item_from_db item_db seed
+
+                        newItems =
+                            case mbItem of
+                                Just newItem ->
+                                    newItem :: items
+
+                                Nothing ->
+                                    items
+                    in
+                    ( newSeed, items )
+                )
+                ( global_seed, [] )
+                [ 0, 1, 2, 3, 4 ]
+    in
+    { model
+        | timeOfDay = newTimeOfDay
+        , characters = setShop (Shop newShop) model.characters
+        , global_seed = newGlobalSeed
     }
 
 

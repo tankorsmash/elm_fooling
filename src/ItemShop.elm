@@ -2866,6 +2866,22 @@ updateUiOptions uiOptMsg model =
             )
 
 
+onTickSecond : Model -> Time.Posix -> (Model, Cmd Msg)
+onTickSecond model time =
+    if not model.ai_updates_paused then
+        ( model
+            |> --updateTimeOfDay uses model.ai_tick_time to compare the new time, so order is important
+               updateTimeOfDay time
+            |> (\m -> { m | ai_tick_time = time })
+            |> update_player
+            |> update_ai_chars
+        , Cmd.none
+        )
+
+    else
+        ( model, Cmd.none )
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -2950,18 +2966,7 @@ update msg model =
                             ( model, Cmd.none )
 
         TickSecond time ->
-            if not model.ai_updates_paused then
-                ( model
-                    |> --updateTimeOfDay uses model.ai_tick_time to compare the new time, so order is important
-                       updateTimeOfDay time
-                    |> (\m -> { m | ai_tick_time = time })
-                    |> update_player
-                    |> update_ai_chars
-                , Cmd.none
-                )
-
-            else
-                ( model, Cmd.none )
+            onTickSecond model time
 
         KeyPressedMsg key_event_msg ->
             case key_event_msg of

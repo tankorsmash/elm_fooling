@@ -1,6 +1,5 @@
 port module Main exposing (..)
 
-import Interface as UI
 import Battle
 import Browser
 import Browser.Events
@@ -35,6 +34,7 @@ import Html.Attributes exposing (attribute, classList, href, property, src, styl
 import Html.Events exposing (onClick, onInput, onSubmit)
 import Html.Lazy
 import Http
+import Interface as UI
 import ItemShop
 import Json.Decode as Decode exposing (Decoder, at, field, list, string)
 import Json.Encode as Encode exposing (Value, string)
@@ -173,7 +173,7 @@ matchRoute =
         ]
 
 
-init : { window : { width : Int, height : Int }, time: {now: Int} } -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
+init : { window : { width : Int, height : Int }, time : { now : Int } } -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url navKey =
     let
         parsedRoute : Route

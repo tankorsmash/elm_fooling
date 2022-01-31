@@ -1349,8 +1349,10 @@ type alias Quests =
 
 
 type TimePhase
-    = --viewing which items are in play, maybe picking an item
+    = --viewing what the day'll be (which location, how many enemy traders, any active events), maybe picking an item
       PrepPhase
+    | -- setting up the items in the shop. automatically advanced to ActivePhase on finish
+      PreActivePhase
     | -- ai and player upgrades tick up
       ActivePhase { msSinceStartOfDay : Int }
     | -- viewing day's results, shop restocks etc
@@ -2130,7 +2132,9 @@ init timeNow device hash key =
                 ]
             , timeOfDay =
                 { dayLengthInMs = 60000
-                , currentPhase = ActivePhase { msSinceStartOfDay = 0 }
+
+                -- , currentPhase = ActivePhase { msSinceStartOfDay = 0 }
+                , currentPhase = PrepPhase
                 }
             }
     in
@@ -3097,14 +3101,19 @@ update msg model =
             updateUiOptions uiOptMsg model
 
         ChangeCurrentPhase newPhase ->
-            let
-                { timeOfDay } =
-                    model
+            case newPhase of
+                PreActivePhase ->
+                    ( onNewDayStart model, Cmd.none )
 
-                newTimeOfDay =
-                    { timeOfDay | currentPhase = newPhase }
-            in
-            ( setTimeOfDay model newTimeOfDay, Cmd.none )
+                _ ->
+                    let
+                        { timeOfDay } =
+                            model
+
+                        newTimeOfDay =
+                            { timeOfDay | currentPhase = newPhase }
+                    in
+                    ( setTimeOfDay model newTimeOfDay, Cmd.none )
 
 
 
@@ -3131,7 +3140,7 @@ onNewDayStart ({ timeOfDay, item_db, global_seed } as model) =
     let
         newTimeOfDay =
             { timeOfDay
-                | currentPhase = PrepPhase
+                | currentPhase = ActivePhase { msSinceStartOfDay = 0 }
             }
 
         (Shop shop) =
@@ -6059,6 +6068,29 @@ viewDayTimer { colorTheme, timeOfDay } =
         ]
 
 
+viewShopPrepPhase : Model -> Element Msg
+viewShopPrepPhase model =
+    column [ width fill ]
+        [ Element.el [ UI.font_scaled 3, padding_bottom 10 ] <| text "Prep Phase"
+        , text "You are about to begin a new day, running your shop the best you can."
+        , text "Are you ready?"
+        , el [ centerX, paddingXY 0 100 ] <|
+            UI.button <|
+                UI.TextParams
+                    { buttonType = UI.Secondary
+                    , colorTheme = model.colorTheme
+                    , customAttrs = [ width (fill |> Element.minimum 200) ]
+                    , onPressMsg = ChangeCurrentPhase PreActivePhase
+                    , textLabel = "Begin Day"
+                    }
+        ]
+
+
+viewShopPostPhase : Model -> Element Msg
+viewShopPostPhase model =
+    text "Post Phase"
+
+
 view_shop_tab_type : Model -> Element Msg
 view_shop_tab_type model =
     let
@@ -6395,7 +6427,19 @@ view model =
     <|
         case model.tab_type of
             ShopTabType ->
-                Lazy.lazy view_shop_tab_type model
+                case model.timeOfDay.currentPhase of
+                    ActivePhase _ ->
+                        Lazy.lazy view_shop_tab_type model
+
+                    PrepPhase ->
+                        Lazy.lazy viewShopPrepPhase model
+
+                    PreActivePhase ->
+                        --just stay on the prephase for a frame or two, since it shouldnt take long to preload the day
+                        Lazy.lazy viewShopPrepPhase model
+
+                    PostPhase ->
+                        Lazy.lazy viewShopPostPhase model
 
             ItemsUnlockedTabType ->
                 Lazy.lazy2 view_items_unlocked_tab_type model.colorTheme model.item_db
@@ -6673,7 +6717,8 @@ suite =
         testDevice =
             UI.classifyDevice { width = 1920, height = 1080 }
 
-        testTimeNowFlag = Time.millisToPosix 0
+        testTimeNowFlag =
+            Time.millisToPosix 0
     in
     -- todo "Implement our first test. See https://package.elm-lang.org/packages/elm-explorations/test/latest for how to do this!"
     describe "root test suite"

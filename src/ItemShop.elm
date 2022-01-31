@@ -6781,6 +6781,26 @@ suite =
                     Expect.equalLists
                         [ CompleteQuest (SellAnyItem { current = targetQty, target = targetQty }) ]
                         updatedQuests
+            , fuzz (Fuzz.map Random.initialSeed <| Fuzz.intRange 1 Random.maxInt) "updateTimeOfDay replaces items in shop, and gets a non zero amount" <|
+                \newGlobalSeed ->
+                    let
+                        (Shop shop) =
+                            getShop test_model.characters
+
+                        (Shop result_shop) =
+                            getShop
+                                (onNewDayStart
+                                    { test_model
+                                        | global_seed = newGlobalSeed
+                                    }
+                                ).characters
+                    in
+                    Expect.all
+                        [ Expect.notEqual shop.held_items
+                        , \held_items ->
+                            Expect.greaterThan 0 <| List.length held_items
+                        ]
+                        result_shop.held_items
             , fuzz (Fuzz.map setQuantity <| Fuzz.intRange 1 Random.maxInt) "playerSoldItem does not mark the quest complete when you dont sell enough " <|
                 \targetQty ->
                     let

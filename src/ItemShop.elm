@@ -1347,6 +1347,12 @@ type alias Quests =
     List Quest
 
 
+type alias TimeOfDay =
+    { msSinceStartOfDay : Int
+    , dayLengthInMs : Int
+    }
+
+
 type alias Model =
     { colorTheme : UI.ColorTheme
     , playerUpgrades : List PlayerUpgrade
@@ -1366,6 +1372,7 @@ type alias Model =
     , communityFund : Int
     , progressUnlocks : ProgressUnlocks
     , quests : Quests
+    , timeOfDay : TimeOfDay
     }
 
 
@@ -2110,6 +2117,10 @@ init device hash key =
                         , target = setQuantity 30
                         }
                 ]
+            , timeOfDay =
+                { msSinceStartOfDay = 0
+                , dayLengthInMs = 60000
+                }
             }
     in
     ( initModel
@@ -2940,7 +2951,10 @@ update msg model =
 
         TickSecond time ->
             if not model.ai_updates_paused then
-                ( { model | ai_tick_time = time }
+                ( model
+                    |> --updateTimeOfDay uses model.ai_tick_time to compare the new time, so order is important
+                       updateTimeOfDay time
+                    |> (\m -> { m | ai_tick_time = time })
                     |> update_player
                     |> update_ai_chars
                 , Cmd.none
@@ -3070,6 +3084,32 @@ mapIncompleteQuestType mapper quest =
 
         _ ->
             quest
+
+
+updateTimeOfDay : Time.Posix -> Model -> Model
+updateTimeOfDay newTime model =
+    let
+        { ai_tick_time, timeOfDay } =
+            model
+
+        msDiff =
+            Time.posixToMillis newTime - Time.posixToMillis ai_tick_time
+
+        newMsSinceStartOfDay =
+            timeOfDay.msSinceStartOfDay + msDiff
+
+        newTimeOfDay =
+            if newMsSinceStartOfDay < timeOfDay.dayLengthInMs then
+                { timeOfDay
+                    | msSinceStartOfDay = newMsSinceStartOfDay
+                }
+
+            else
+                { timeOfDay
+                    | msSinceStartOfDay = 0
+                }
+    in
+    { model | timeOfDay = newTimeOfDay }
 
 
 isQuestTrackerComplete : QuestTracker -> Bool
@@ -5850,6 +5890,15 @@ viewDayTimer model =
             ]
                 ++ sharedAttrs
 
+        dayElapsed =
+            let
+                sinceStart =
+                    toFloat model.timeOfDay.msSinceStartOfDay
+
+                dayLength =
+                    toFloat model.timeOfDay.dayLengthInMs
+            in
+            (sinceStart / dayLength) * 100
     in
     column [ centerX, width fill ]
         [ el [ centerX, Font.underline, padding 10 ] <| text "Day Timer"
@@ -5857,8 +5906,8 @@ viewDayTimer model =
             [ width fill
             , height (Element.px 20)
             ]
-            [ row ([ width <| fillPortion 2 ] ++ fillingAttrs) []
-            , row ([ width <| fillPortion 2 ] ++ emptyAttrs) []
+            [ row ([ width <| fillPortion (round <| dayElapsed) ] ++ fillingAttrs) []
+            , row ([ width <| fillPortion (round <| 100 - dayElapsed) ] ++ emptyAttrs) []
             ]
         ]
 

@@ -173,7 +173,7 @@ matchRoute =
         ]
 
 
-init : { window : { width : Int, height : Int } } -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
+init : { window : { width : Int, height : Int }, time: {now: Int} } -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
 init flags url navKey =
     let
         parsedRoute : Route
@@ -205,7 +205,7 @@ init flags url navKey =
                     ""
 
         ( item_shop_model, item_shop_cmds ) =
-            ItemShop.init device hash (Just navKey)
+            ItemShop.init (Time.millisToPosix flags.time.now) device hash (Just navKey)
 
         initial_model : Model
         initial_model =

@@ -2016,8 +2016,8 @@ stringToTabType hash =
             ShopTabType
 
 
-init : UI.Device -> String -> Maybe Nav.Key -> ( Model, Cmd Msg )
-init device hash key =
+init : Time.Posix -> UI.Device -> String -> Maybe Nav.Key -> ( Model, Cmd Msg )
+init timeNow device hash key =
     let
         globalSeed =
             Random.initialSeed 4
@@ -2102,7 +2102,7 @@ init device hash key =
             , item_db = item_db
             , historical_shop_trends = []
             , historical_player_actions = [ WelcomeMessageActionLog ]
-            , ai_tick_time = Time.millisToPosix -1
+            , ai_tick_time = timeNow
             , global_seed = globalSeed
             , ai_updates_paused =
                 if initial_tab_type == ShopTabType || initial_tab_type == BattleTabType then
@@ -6672,6 +6672,8 @@ suite =
     let
         testDevice =
             UI.classifyDevice { width = 1920, height = 1080 }
+
+        testTimeNowFlag = Time.millisToPosix 0
     in
     -- todo "Implement our first test. See https://package.elm-lang.org/packages/elm-explorations/test/latest for how to do this!"
     describe "root test suite"
@@ -6869,7 +6871,7 @@ suite =
 
                 test_model : Model
                 test_model =
-                    init testDevice "" Nothing |> Tuple.first
+                    init testTimeNowFlag testDevice "" Nothing |> Tuple.first
 
                 ( test_item, test_item_qty, test_avg_price ) =
                     ( lookup_item_id_str_default test_item_db "a41ae9d3-61f0-54f9-800e-56f53ed3ac98", Quantity 12, setPrice 9999 )

@@ -3098,7 +3098,7 @@ onNewDayStart ({ timeOfDay, item_db, global_seed } as model) =
             getShop model.characters
 
         newShop =
-            List.foldl (\item shop_ -> addHeldItem item shop_) shop newShopItems
+            List.foldl (\item shop_ -> addHeldItem item shop_) { shop | held_items = [] } newShopItems
 
         ( newGlobalSeed, newShopItems ) =
             List.foldl
@@ -3115,7 +3115,7 @@ onNewDayStart ({ timeOfDay, item_db, global_seed } as model) =
                                 Nothing ->
                                     items
                     in
-                    ( newSeed, items )
+                    ( newSeed, newItems )
                 )
                 ( global_seed, [] )
                 [ 0, 1, 2, 3, 4 ]

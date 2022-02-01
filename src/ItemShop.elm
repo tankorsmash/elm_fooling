@@ -1353,10 +1353,10 @@ type TimePhase
       PrepPhase
     | -- setting up the items in the shop. automatically advanced to ActivePhase on finish
       PreActivePhase
-    | -- ai and player upgrades tick up
-      ActivePhase { msSinceStartOfDay : Int }
+    | -- ai and player upgrades tick up. itemDbAtStart is for comparing model.item_db after-hours, to show interesting facts like 'you sold X boots' or 'ais bought a lot of swords'
+      ActivePhase { msSinceStartOfDay : Int, itemDbAtStart : ItemDb }
     | -- viewing day's results, shop restocks etc
-      PostPhase
+      PostPhase { itemDbAtStart : ItemDb, itemDbAtEnd : ItemDb }
 
 
 type alias TimeOfDay =
@@ -3140,7 +3140,7 @@ onNewDayStart ({ timeOfDay, item_db, global_seed } as model) =
     let
         newTimeOfDay =
             { timeOfDay
-                | currentPhase = ActivePhase { msSinceStartOfDay = 0 }
+                | currentPhase = ActivePhase { msSinceStartOfDay = 0, itemDbAtStart = item_db }
             }
 
         (Shop shop) =
@@ -3179,7 +3179,7 @@ onNewDayStart ({ timeOfDay, item_db, global_seed } as model) =
 updateActiveTimeOfDay : Time.Posix -> Model -> Model
 updateActiveTimeOfDay newTime ({ ai_tick_time, timeOfDay } as model) =
     case timeOfDay.currentPhase of
-        ActivePhase { msSinceStartOfDay } ->
+        ActivePhase { msSinceStartOfDay, itemDbAtStart } ->
             let
                 msDiff =
                     Time.posixToMillis newTime - Time.posixToMillis ai_tick_time
@@ -3192,10 +3192,10 @@ updateActiveTimeOfDay newTime ({ ai_tick_time, timeOfDay } as model) =
 
                 newPhase =
                     if isWithinCurrentDay then
-                        ActivePhase { msSinceStartOfDay = newMsSinceStartOfDay }
+                        ActivePhase { msSinceStartOfDay = newMsSinceStartOfDay, itemDbAtStart = itemDbAtStart }
 
                     else
-                        PostPhase
+                        PostPhase { itemDbAtStart = itemDbAtStart, itemDbAtEnd = model.item_db }
             in
             { model
                 | timeOfDay =
@@ -5967,7 +5967,7 @@ defaultRounded =
 
 
 viewDayTimer : Model -> Element Msg
-viewDayTimer { colorTheme, timeOfDay } =
+viewDayTimer { colorTheme, timeOfDay, item_db } =
     let
         sharedAttrs =
             [ height fill
@@ -6040,7 +6040,7 @@ viewDayTimer { colorTheme, timeOfDay } =
                     UI.TextParams
                         { buttonType = UI.Primary
                         , customAttrs = []
-                        , onPressMsg = ChangeCurrentPhase (ActivePhase { msSinceStartOfDay = 0 })
+                        , onPressMsg = ChangeCurrentPhase (ActivePhase { msSinceStartOfDay = 0, itemDbAtStart = item_db })
                         , textLabel =
                             case timeOfDay.currentPhase of
                                 ActivePhase _ ->
@@ -6054,10 +6054,20 @@ viewDayTimer { colorTheme, timeOfDay } =
                     UI.TextParams
                         { buttonType = UI.Primary
                         , customAttrs = []
-                        , onPressMsg = ChangeCurrentPhase PostPhase
+                        , onPressMsg =
+                            ChangeCurrentPhase
+                                (PostPhase
+                                    (case timeOfDay.currentPhase of
+                                        ActivePhase { itemDbAtStart } ->
+                                            { itemDbAtStart = itemDbAtStart, itemDbAtEnd = item_db }
+
+                                        _ ->
+                                            Debug.todo "cant really switch to PostPhase without being in ActivePhase first"
+                                    )
+                                )
                         , textLabel =
                             case timeOfDay.currentPhase of
-                                PostPhase ->
+                                PostPhase _ ->
                                     "Currently PostPhase"
 
                                 _ ->
@@ -6091,8 +6101,8 @@ viewShopPrepPhase model =
         ]
 
 
-viewShopPostPhase : Model -> Element Msg
-viewShopPostPhase model =
+viewShopPostPhase : Model -> { a | itemDbAtStart : ItemDb, itemDbAtEnd : ItemDb } -> Element Msg
+viewShopPostPhase model postPhaseData =
     column [ width fill ]
         [ Element.el [ UI.font_scaled 3, padding_bottom 10 ] <| text "End of Day"
         , column [ Font.size 16, spacingXY 0 20 ]
@@ -6112,7 +6122,6 @@ viewShopPostPhase model =
                         }
                 ]
         ]
-
 
 
 view_shop_tab_type : Model -> Element Msg
@@ -6462,8 +6471,8 @@ view model =
                         --just stay on the prephase for a frame or two, since it shouldnt take long to preload the day
                         Lazy.lazy viewShopPrepPhase model
 
-                    PostPhase ->
-                        Lazy.lazy viewShopPostPhase model
+                    PostPhase postPhaseData ->
+                        Lazy.lazy2 viewShopPostPhase model postPhaseData
 
             ItemsUnlockedTabType ->
                 Lazy.lazy2 view_items_unlocked_tab_type model.colorTheme model.item_db

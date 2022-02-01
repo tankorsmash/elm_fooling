@@ -6093,7 +6093,26 @@ viewShopPrepPhase model =
 
 viewShopPostPhase : Model -> Element Msg
 viewShopPostPhase model =
-    text "Post Phase"
+    column [ width fill ]
+        [ Element.el [ UI.font_scaled 3, padding_bottom 10 ] <| text "End of Day"
+        , column [ Font.size 16, spacingXY 0 20 ]
+            [ el [ Font.italic ] <| text "You've finished the work day, sent away your gold and resources, and put your inventory into cold-storage."
+            , text "Tomorrow you'll build up your inventory once again, solving a new goal."
+            ]
+        , el [ centerX, paddingXY 0 100 ] <|
+            column []
+                [ el [ Font.size 16, centerX, padding 10 ] <| text "End the day?"
+                , UI.button <|
+                    UI.TextParams
+                        { buttonType = UI.Secondary
+                        , colorTheme = model.colorTheme
+                        , customAttrs = [ width (fill |> Element.minimum 200) ]
+                        , onPressMsg = ChangeCurrentPhase PrepPhase
+                        , textLabel = "Go to sleep"
+                        }
+                ]
+        ]
+
 
 
 view_shop_tab_type : Model -> Element Msg

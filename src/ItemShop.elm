@@ -1354,9 +1354,18 @@ type TimePhase
     | -- setting up the items in the shop. automatically advanced to ActivePhase on finish
       PreActivePhase
     | -- ai and player upgrades tick up. itemDbAtStart is for comparing model.item_db after-hours, to show interesting facts like 'you sold X boots' or 'ais bought a lot of swords'
-      ActivePhase { msSinceStartOfDay : Int, itemDbAtStart : ItemDb }
+      ActivePhase
+        { msSinceStartOfDay : Int
+        , itemDbAtStart : ItemDb
+        , goldSinceStartOfDay : Int
+        }
     | -- viewing day's results, shop restocks etc
-      PostPhase { itemDbAtStart : ItemDb, itemDbAtEnd : ItemDb }
+      PostPhase
+        { goldSinceStartOfDay : Int
+        , goldAtEndOfDay : Int
+        , itemDbAtStart : ItemDb
+        , itemDbAtEnd : ItemDb
+        }
 
 
 type alias TimeOfDay =
@@ -3140,7 +3149,7 @@ onNewDayStart ({ timeOfDay, item_db, global_seed } as model) =
     let
         newTimeOfDay =
             { timeOfDay
-                | currentPhase = ActivePhase { msSinceStartOfDay = 0, itemDbAtStart = item_db }
+                | currentPhase = ActivePhase { goldSinceStartOfDay = 0, msSinceStartOfDay = 0, itemDbAtStart = item_db }
             }
 
         (Shop shop) =
@@ -3179,7 +3188,7 @@ onNewDayStart ({ timeOfDay, item_db, global_seed } as model) =
 updateActiveTimeOfDay : Time.Posix -> Model -> Model
 updateActiveTimeOfDay newTime ({ ai_tick_time, timeOfDay } as model) =
     case timeOfDay.currentPhase of
-        ActivePhase { msSinceStartOfDay, itemDbAtStart } ->
+        ActivePhase { msSinceStartOfDay, itemDbAtStart, goldSinceStartOfDay } ->
             let
                 msDiff =
                     Time.posixToMillis newTime - Time.posixToMillis ai_tick_time
@@ -3190,12 +3199,24 @@ updateActiveTimeOfDay newTime ({ ai_tick_time, timeOfDay } as model) =
                 isWithinCurrentDay =
                     newMsSinceStartOfDay < timeOfDay.dayLengthInMs
 
+                (Player player) =
+                    getPlayer model.characters
+
                 newPhase =
                     if isWithinCurrentDay then
-                        ActivePhase { msSinceStartOfDay = newMsSinceStartOfDay, itemDbAtStart = itemDbAtStart }
+                        ActivePhase
+                            { goldSinceStartOfDay = player.held_gold
+                            , msSinceStartOfDay = newMsSinceStartOfDay
+                            , itemDbAtStart = itemDbAtStart
+                            }
 
                     else
-                        PostPhase { itemDbAtStart = itemDbAtStart, itemDbAtEnd = model.item_db }
+                        PostPhase
+                            { goldSinceStartOfDay = goldSinceStartOfDay
+                            , goldAtEndOfDay = player.held_gold
+                            , itemDbAtStart = itemDbAtStart
+                            , itemDbAtEnd = model.item_db
+                            }
             in
             { model
                 | timeOfDay =
@@ -5967,7 +5988,7 @@ defaultRounded =
 
 
 viewDayTimer : Model -> Element Msg
-viewDayTimer { colorTheme, timeOfDay, item_db } =
+viewDayTimer { colorTheme, timeOfDay, item_db, characters } =
     let
         sharedAttrs =
             [ height fill
@@ -6040,7 +6061,7 @@ viewDayTimer { colorTheme, timeOfDay, item_db } =
                     UI.TextParams
                         { buttonType = UI.Primary
                         , customAttrs = []
-                        , onPressMsg = ChangeCurrentPhase (ActivePhase { msSinceStartOfDay = 0, itemDbAtStart = item_db })
+                        , onPressMsg = ChangeCurrentPhase (ActivePhase { goldSinceStartOfDay = 0, msSinceStartOfDay = 0, itemDbAtStart = item_db })
                         , textLabel =
                             case timeOfDay.currentPhase of
                                 ActivePhase _ ->
@@ -6058,8 +6079,17 @@ viewDayTimer { colorTheme, timeOfDay, item_db } =
                             ChangeCurrentPhase
                                 (PostPhase
                                     (case timeOfDay.currentPhase of
-                                        ActivePhase { itemDbAtStart } ->
-                                            { itemDbAtStart = itemDbAtStart, itemDbAtEnd = item_db }
+                                        ActivePhase { itemDbAtStart, goldSinceStartOfDay } ->
+                                            { itemDbAtStart = itemDbAtStart
+                                            , itemDbAtEnd = item_db
+                                            , goldSinceStartOfDay = goldSinceStartOfDay
+                                            , goldAtEndOfDay =
+                                                let
+                                                    (Player player) =
+                                                        getPlayer characters
+                                                in
+                                                player.held_gold
+                                            }
 
                                         _ ->
                                             Debug.todo "cant really switch to PostPhase without being in ActivePhase first"

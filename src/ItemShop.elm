@@ -6147,7 +6147,7 @@ viewShopPostPhase colorTheme postPhaseData =
             ]
         , column []
             [ el [ UI.font_scaled 2, paddingXY 0 10, Font.underline ] <| text "Stats (todo)"
-            , text <| "Gold made:" ++ String.fromInt 123
+            , text <| (++) "Gold made: " <| String.fromInt <| max 0 <| postPhaseData.goldAtEndOfDay - postPhaseData.goldSinceStartOfDay
             , text <| "Number of all items sold: " ++ String.fromInt 123
             , text <| "Weapons sold: " ++ String.fromInt 123
             , text <| "Armors sold: " ++ String.fromInt 123

@@ -6103,15 +6103,29 @@ viewShopPrepPhase model =
 
 viewShopPostPhase : Model -> { a | itemDbAtStart : ItemDb, itemDbAtEnd : ItemDb } -> Element Msg
 viewShopPostPhase model postPhaseData =
-    column [ width fill ]
+    column [ width fill, Font.size 16 ]
         [ Element.el [ UI.font_scaled 3, padding_bottom 10 ] <| text "End of Day"
-        , column [ Font.size 16, spacingXY 0 20 ]
+        , column [ spacingXY 0 20 ]
             [ el [ Font.italic ] <| text "You've finished the work day, sent away your gold and resources, and put your inventory into cold-storage."
             , text "Tomorrow you'll build up your inventory once again, solving a new goal."
             ]
+        , column []
+            [ el [ UI.font_scaled 2, paddingXY 0 10, Font.underline ] <| text "Stats (todo)"
+            , text <| "Gold made:" ++ String.fromInt 123
+            , text <| "Number of all items sold: " ++ String.fromInt 123
+            , text <| "Weapons sold: " ++ String.fromInt 123
+            , text <| "Armors sold: " ++ String.fromInt 123
+            , text <| "Items sold: " ++ String.fromInt 123
+            , text <| "Furniture sold: " ++ String.fromInt 123
+            , text <| "Spellbook sold: " ++ String.fromInt 123
+            , text <| "Food sold: " ++ String.fromInt 123
+            , text <| "Item sold the most: " ++ "Boots"
+            , text <| "Most expensive item sold: " ++ "Boots"
+            , text <| "Most expensive item bought: " ++ "Boots"
+            ]
         , el [ centerX, paddingXY 0 100 ] <|
             column []
-                [ el [ Font.size 16, centerX, padding 10 ] <| text "End the day?"
+                [ el [ centerX, padding 10 ] <| text "End the day?"
                 , UI.button <|
                     UI.TextParams
                         { buttonType = UI.Secondary

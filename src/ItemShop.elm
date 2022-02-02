@@ -6101,8 +6101,8 @@ viewShopPrepPhase model =
         ]
 
 
-viewShopPostPhase : Model -> { a | itemDbAtStart : ItemDb, itemDbAtEnd : ItemDb } -> Element Msg
-viewShopPostPhase model postPhaseData =
+viewShopPostPhase : UI.ColorTheme -> { a | itemDbAtStart : ItemDb, itemDbAtEnd : ItemDb } -> Element Msg
+viewShopPostPhase colorTheme postPhaseData =
     column [ width fill, Font.size 16 ]
         [ Element.el [ UI.font_scaled 3, padding_bottom 10 ] <| text "End of Day"
         , column [ spacingXY 0 20 ]
@@ -6129,7 +6129,7 @@ viewShopPostPhase model postPhaseData =
                 , UI.button <|
                     UI.TextParams
                         { buttonType = UI.Secondary
-                        , colorTheme = model.colorTheme
+                        , colorTheme = colorTheme
                         , customAttrs = [ width (fill |> Element.minimum 200) ]
                         , onPressMsg = ChangeCurrentPhase PrepPhase
                         , textLabel = "Go to sleep"
@@ -6486,7 +6486,7 @@ view model =
                         Lazy.lazy viewShopPrepPhase model
 
                     PostPhase postPhaseData ->
-                        Lazy.lazy2 viewShopPostPhase model postPhaseData
+                        Lazy.lazy2 viewShopPostPhase model.colorTheme postPhaseData
 
             ItemsUnlockedTabType ->
                 Lazy.lazy2 view_items_unlocked_tab_type model.colorTheme model.item_db

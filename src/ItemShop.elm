@@ -1348,24 +1348,30 @@ type alias Quests =
     List Quest
 
 
+type alias ActivePhaseData =
+    { msSinceStartOfDay : Int
+    , itemDbAtStart : ItemDb
+    , goldSinceStartOfDay : Int
+    }
+
+
+type alias PostPhaseData =
+    { itemDbAtStart : ItemDb
+    , itemDbAtEnd : ItemDb
+    , goldSinceStartOfDay : Int
+    , goldAtEndOfDay : Int
+    }
+
+
 type TimePhase
     = --viewing what the day'll be (which location, how many enemy traders, any active events), maybe picking an item
       PrepPhase
     | -- setting up the items in the shop. automatically advanced to ActivePhase on finish
       PreActivePhase
     | -- ai and player upgrades tick up. itemDbAtStart is for comparing model.item_db after-hours, to show interesting facts like 'you sold X boots' or 'ais bought a lot of swords'
-      ActivePhase
-        { msSinceStartOfDay : Int
-        , itemDbAtStart : ItemDb
-        , goldSinceStartOfDay : Int
-        }
+      ActivePhase ActivePhaseData
     | -- viewing day's results, shop restocks etc
-      PostPhase
-        { goldSinceStartOfDay : Int
-        , goldAtEndOfDay : Int
-        , itemDbAtStart : ItemDb
-        , itemDbAtEnd : ItemDb
-        }
+      PostPhase PostPhaseData
 
 
 type alias TimeOfDay =
@@ -6131,7 +6137,7 @@ viewShopPrepPhase model =
         ]
 
 
-viewShopPostPhase : UI.ColorTheme -> { a | itemDbAtStart : ItemDb, itemDbAtEnd : ItemDb } -> Element Msg
+viewShopPostPhase : UI.ColorTheme -> PostPhaseData -> Element Msg
 viewShopPostPhase colorTheme postPhaseData =
     column [ width fill, Font.size 16 ]
         [ Element.el [ UI.font_scaled 3, padding_bottom 10 ] <| text "End of Day"

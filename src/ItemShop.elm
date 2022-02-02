@@ -1351,14 +1351,14 @@ type alias Quests =
 type alias ActivePhaseData =
     { msSinceStartOfDay : Int
     , itemDbAtStart : ItemDb
-    , goldSinceStartOfDay : Int
+    , goldAtStartOfDay : Int
     }
 
 
 type alias PostPhaseData =
     { itemDbAtStart : ItemDb
     , itemDbAtEnd : ItemDb
-    , goldSinceStartOfDay : Int
+    , goldAtStartOfDay : Int
     , goldAtEndOfDay : Int
     }
 
@@ -3151,11 +3151,21 @@ mapIncompleteQuestType mapper quest =
 
 
 onNewDayStart : Model -> Model
-onNewDayStart ({ timeOfDay, item_db, global_seed } as model) =
+onNewDayStart ({ timeOfDay, item_db, global_seed, characters } as model) =
     let
         newTimeOfDay =
             { timeOfDay
-                | currentPhase = ActivePhase { goldSinceStartOfDay = 0, msSinceStartOfDay = 0, itemDbAtStart = item_db }
+                | currentPhase =
+                    ActivePhase
+                        { goldAtStartOfDay =
+                            let
+                                (Player player) =
+                                    getPlayer characters
+                            in
+                            player.held_gold
+                        , msSinceStartOfDay = 0
+                        , itemDbAtStart = item_db
+                        }
             }
 
         (Shop shop) =
@@ -3194,7 +3204,7 @@ onNewDayStart ({ timeOfDay, item_db, global_seed } as model) =
 updateActiveTimeOfDay : Time.Posix -> Model -> Model
 updateActiveTimeOfDay newTime ({ ai_tick_time, timeOfDay } as model) =
     case timeOfDay.currentPhase of
-        ActivePhase { msSinceStartOfDay, itemDbAtStart, goldSinceStartOfDay } ->
+        ActivePhase { msSinceStartOfDay, itemDbAtStart, goldAtStartOfDay } ->
             let
                 msDiff =
                     Time.posixToMillis newTime - Time.posixToMillis ai_tick_time
@@ -3211,14 +3221,14 @@ updateActiveTimeOfDay newTime ({ ai_tick_time, timeOfDay } as model) =
                 newPhase =
                     if isWithinCurrentDay then
                         ActivePhase
-                            { goldSinceStartOfDay = player.held_gold
+                            { goldAtStartOfDay = goldAtStartOfDay
                             , msSinceStartOfDay = newMsSinceStartOfDay
                             , itemDbAtStart = itemDbAtStart
                             }
 
                     else
                         PostPhase
-                            { goldSinceStartOfDay = goldSinceStartOfDay
+                            { goldAtStartOfDay = goldAtStartOfDay
                             , goldAtEndOfDay = player.held_gold
                             , itemDbAtStart = itemDbAtStart
                             , itemDbAtEnd = model.item_db
@@ -6067,7 +6077,19 @@ viewDayTimer { colorTheme, timeOfDay, item_db, characters } =
                     UI.TextParams
                         { buttonType = UI.Primary
                         , customAttrs = []
-                        , onPressMsg = ChangeCurrentPhase (ActivePhase { goldSinceStartOfDay = 0, msSinceStartOfDay = 0, itemDbAtStart = item_db })
+                        , onPressMsg =
+                            ChangeCurrentPhase
+                                (ActivePhase
+                                    { goldAtStartOfDay =
+                                        let
+                                            (Player player) =
+                                                getPlayer characters
+                                        in
+                                        player.held_gold
+                                    , msSinceStartOfDay = 0
+                                    , itemDbAtStart = item_db
+                                    }
+                                )
                         , textLabel =
                             case timeOfDay.currentPhase of
                                 ActivePhase _ ->
@@ -6085,10 +6107,10 @@ viewDayTimer { colorTheme, timeOfDay, item_db, characters } =
                             ChangeCurrentPhase
                                 (PostPhase
                                     (case timeOfDay.currentPhase of
-                                        ActivePhase { itemDbAtStart, goldSinceStartOfDay } ->
+                                        ActivePhase { itemDbAtStart, goldAtStartOfDay } ->
                                             { itemDbAtStart = itemDbAtStart
                                             , itemDbAtEnd = item_db
-                                            , goldSinceStartOfDay = goldSinceStartOfDay
+                                            , goldAtStartOfDay = Debug.log "gold set to this: " goldAtStartOfDay
                                             , goldAtEndOfDay =
                                                 let
                                                     (Player player) =
@@ -6147,7 +6169,9 @@ viewShopPostPhase colorTheme postPhaseData =
             ]
         , column []
             [ el [ UI.font_scaled 2, paddingXY 0 10, Font.underline ] <| text "Stats (todo)"
-            , text <| (++) "Gold made: " <| String.fromInt <| max 0 <| postPhaseData.goldAtEndOfDay - postPhaseData.goldSinceStartOfDay
+            , text <| (++) "start gold: " <| String.fromInt <| postPhaseData.goldAtStartOfDay
+            , text <| (++) "end gold: " <| String.fromInt <| postPhaseData.goldAtEndOfDay
+            , text <| (++) "Gold made: " <| String.fromInt <| max 0 <| postPhaseData.goldAtEndOfDay - postPhaseData.goldAtStartOfDay
             , text <| "Number of all items sold: " ++ String.fromInt 123
             , text <| "Weapons sold: " ++ String.fromInt 123
             , text <| "Armors sold: " ++ String.fromInt 123

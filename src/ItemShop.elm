@@ -6143,6 +6143,15 @@ viewShopPrepPhase model =
         , column [ Font.size 16, spacingXY 0 20 ]
             [ el [ Font.italic ] <| text "You are about to begin a new day, running your shop the best you can."
             , text "Each day, the shop's wares change, opposing trades come and go, and who knows what else might happen."
+            , text <|
+                ("You may see one of "
+                    ++ (model.item_db
+                            |> Dict.filter (\_ idbr -> idbr.is_unlocked)
+                            |> Dict.size
+                            |> String.fromInt
+                       )
+                    ++ " unlocked items today. Maybe you can find more?"
+                )
             ]
         , el [ centerX, paddingXY 0 100 ] <|
             column []

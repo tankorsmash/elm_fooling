@@ -6110,7 +6110,7 @@ viewDayTimer { colorTheme, timeOfDay, item_db, characters } =
                                         ActivePhase { itemDbAtStart, goldAtStartOfDay } ->
                                             { itemDbAtStart = itemDbAtStart
                                             , itemDbAtEnd = item_db
-                                            , goldAtStartOfDay = Debug.log "gold set to this: " goldAtStartOfDay
+                                            , goldAtStartOfDay = goldAtStartOfDay
                                             , goldAtEndOfDay =
                                                 let
                                                     (Player player) =

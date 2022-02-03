@@ -53,7 +53,7 @@ import Fuzz exposing (Fuzzer, int, list, string, tuple)
 import Html
 import Html.Attributes exposing (attribute, classList, href, property, src, style, value)
 import Html.Events
-import Interface as UI exposing (ColorTheme(..))
+import Interface as UI exposing (ColorTheme(..), defaultRounded)
 import Json.Decode as Decode exposing (Decoder, field)
 import Json.Decode.Extra as DecodeExtra
 import Json.Decode.Pipeline exposing (hardcoded, optional, required)
@@ -5997,10 +5997,6 @@ quests_display colorTheme quests =
                     List.map viewSingleQuest quests
                ]
         )
-
-
-defaultRounded =
-    UI.defaultRounded
 
 
 viewDayTimer : Model -> Element Msg

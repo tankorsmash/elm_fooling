@@ -6193,10 +6193,8 @@ viewShopPostPhase colorTheme postPhaseData =
         , column [] <|
             []
                 ++ [ el [ UI.font_scaled 2, paddingXY 0 10, Font.underline ] <| text "Stats (todo)"
-                   , text <| (++) "start gold: " <| String.fromInt <| postPhaseData.goldAtStartOfDay
-                   , text <| (++) "end gold: " <| String.fromInt <| postPhaseData.goldAtEndOfDay
                    , text <| (++) "Gold made: " <| String.fromInt <| max 0 <| postPhaseData.goldAtEndOfDay - postPhaseData.goldAtStartOfDay
-                   , text <| "Number of all items sold:" ++ String.fromInt 99999
+                   , text <| "Number of all items sold:" ++ "???"
                    ]
                 ++ List.map
                     (\itemType ->
@@ -6209,9 +6207,9 @@ viewShopPostPhase colorTheme postPhaseData =
                             |> text
                     )
                     allItemTypes
-                ++ [ text <| "Item sold the most: " ++ "Boots"
-                   , text <| "Most expensive item sold: " ++ "Boots"
-                   , text <| "Most expensive item bought: " ++ "Boots"
+                ++ [ text <| "Item sold the most: " ++ "???"
+                   , text <| "Most expensive item sold: " ++ "???"
+                   , text <| "Most expensive item bought: " ++ "???"
                    ]
         , el [ centerX, paddingXY 0 100 ] <|
             column []

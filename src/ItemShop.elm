@@ -6152,6 +6152,11 @@ viewShopPrepPhase model =
                        )
                     ++ " unlocked items today. Maybe you can find more?"
                 )
+            , text <|
+                ("There has been word that "
+                    ++ (getOthers model.characters |> List.length |> String.fromInt)
+                    ++ " other traders have come to trade."
+                )
             ]
         , el [ centerX, paddingXY 0 100 ] <|
             column []

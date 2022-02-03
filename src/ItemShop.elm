@@ -1392,7 +1392,7 @@ type alias Model =
     , historical_player_actions : List PlayerActionLog
     , item_db : ItemDb
     , ai_tick_time : Time.Posix --used to seed the ai randomness
-    , global_seed : Random.Seed --used to seed anything; will be constantly changed throughout the app
+    , globalSeed : Random.Seed --used to seed anything; will be constantly changed throughout the app
     , ai_updates_paused : Bool
     , tab_type : TabType
     , battleModel : Battle.Model
@@ -1418,7 +1418,7 @@ encodeModel model =
         , ( "item_db", encodeItemDb model.item_db )
 
         -- , ("ai_tick_time", Encode.int <| Time.posixToMillis model.ai_tick_time)
-        -- , global_seed : Random.Seed --used to seed anything; will be constantly changed throughout the app
+        -- , globalSeed : Random.Seed --used to seed anything; will be constantly changed throughout the app
         , ( "ai_updates_paused", Encode.bool model.ai_updates_paused )
 
         -- , tab_type : TabType //NOSERIALIZE
@@ -1442,7 +1442,7 @@ type alias AiUpdateData =
     { shop_trends : ShopTrends
     , historical_shop_trends : List ShopTrends
     , characters : Characters
-    , ai_tick_seed : Random.Seed
+    , globalSeed : Random.Seed
     , item_db : ItemDb
     , communityFund : Int
     }
@@ -2123,7 +2123,7 @@ init timeNow device hash key =
             , historical_shop_trends = []
             , historical_player_actions = [ WelcomeMessageActionLog ]
             , ai_tick_time = timeNow
-            , global_seed = globalSeed
+            , globalSeed = globalSeed
             , ai_updates_paused =
                 if initial_tab_type == ShopTabType || initial_tab_type == BattleTabType then
                     False
@@ -2532,7 +2532,7 @@ updateBattleOutMsg battleOutMsg model =
                 Battle.DeliverItemToShop ->
                     let
                         ( mbNewItem, newSeed ) =
-                            pick_random_unlocked_item_from_db model.item_db model.global_seed
+                            pick_random_unlocked_item_from_db model.item_db model.globalSeed
 
                         withNewItem (Shop shop) newItem =
                             replaceCharacter
@@ -2543,7 +2543,7 @@ updateBattleOutMsg battleOutMsg model =
                                     }
                                     shop
                                 )
-                                { model | global_seed = newSeed }
+                                { model | globalSeed = newSeed }
                                 |> append_player_action_log (MonsterDeliveredItemToShop newItem.id)
                     in
                     Maybe.map
@@ -3156,7 +3156,7 @@ mapIncompleteQuestType mapper quest =
 
 
 onNewDayStart : Model -> Model
-onNewDayStart ({ timeOfDay, item_db, global_seed, characters } as model) =
+onNewDayStart ({ timeOfDay, item_db, globalSeed, characters } as model) =
     let
         newTimeOfDay =
             { timeOfDay
@@ -3196,13 +3196,13 @@ onNewDayStart ({ timeOfDay, item_db, global_seed, characters } as model) =
                     in
                     ( newSeed, newItems )
                 )
-                ( global_seed, [] )
+                ( globalSeed, [] )
                 [ 0, 1, 2, 3, 4 ]
     in
     { model
         | timeOfDay = newTimeOfDay
         , characters = setShop (Shop newShop) model.characters
-        , global_seed = newGlobalSeed
+        , globalSeed = newGlobalSeed
     }
 
 
@@ -3397,7 +3397,7 @@ pick_item item_db _ ( prev_seed, folded_items ) =
 handle_invite_trader : Model -> Model
 handle_invite_trader model =
     let
-        { characters, item_db, global_seed } =
+        { characters, item_db, globalSeed } =
             model
 
         name =
@@ -3407,12 +3407,12 @@ handle_invite_trader model =
             createCharacter (generateUuid name) name
 
         ( num_items, _ ) =
-            Random.step (Random.int 1 5) global_seed
+            Random.step (Random.int 1 5) globalSeed
 
-        ( new_global_seed, held_maybe_item_frames ) =
+        ( new_globalSeed, held_maybe_item_frames ) =
             List.foldl
                 (pick_item item_db)
-                ( global_seed, [] )
+                ( globalSeed, [] )
                 (List.repeat num_items ())
 
         incr_if_matches : Item -> InventoryRecord -> InventoryRecord
@@ -3448,7 +3448,7 @@ handle_invite_trader model =
                     | held_gold = 50
                     , held_items = held_items
                 }
-        , global_seed = new_global_seed
+        , globalSeed = new_globalSeed
     }
         |> append_player_action_log TookSpecialActionInviteTrader
 
@@ -3487,7 +3487,7 @@ handle_special_event model spec_event =
         EventVeryDesiredItemType item_type ->
             let
                 ( ( maybe_chosen_item_type, _ ), new_seed ) =
-                    choose_item_type model.global_seed
+                    choose_item_type model.globalSeed
             in
             update_shop_trends model
                 (\st ->
@@ -3505,7 +3505,7 @@ handle_special_event model spec_event =
         EventLeastDesiredItemType _ ->
             let
                 ( ( maybe_chosen_item_type, _ ), new_seed ) =
-                    choose_item_type model.global_seed
+                    choose_item_type model.globalSeed
             in
             update_shop_trends model
                 (\st ->
@@ -3523,7 +3523,7 @@ handle_special_event model spec_event =
 
 setGlobalSeed : Random.Seed -> Model -> Model
 setGlobalSeed new_seed model =
-    { model | global_seed = new_seed }
+    { model | globalSeed = new_seed }
 
 
 {-| Takes Model and sets its shop\_trends and appends the new one to the historical trends
@@ -3642,11 +3642,11 @@ special_action_increase_income model =
 special_action_unlock_item : Model -> Model
 special_action_unlock_item model =
     let
-        { item_db, global_seed } =
+        { item_db, globalSeed } =
             model
 
         ( mb_item_to_unlock, new_seed ) =
-            pick_random_locked_item_from_db item_db <| global_seed
+            pick_random_locked_item_from_db item_db <| globalSeed
     in
     { model
         | item_db =
@@ -3658,7 +3658,7 @@ special_action_unlock_item model =
 
                 Nothing ->
                     item_db
-        , global_seed = new_seed
+        , globalSeed = new_seed
     }
         |> (case mb_item_to_unlock of
                 Just item_to_unlock ->
@@ -4315,8 +4315,8 @@ pickAiActionChoice seed =
             (Tuple.first >> Maybe.withDefault NoActionChoice)
 
 
-update_ai : Time.Posix -> Random.Seed -> CharacterId -> AiUpdateData -> AiUpdateData
-update_ai ai_tick_time globalSeed char_id ({ shop_trends, historical_shop_trends, characters, ai_tick_seed, item_db, communityFund } as original_ai_update_data) =
+update_ai : Time.Posix -> CharacterId -> AiUpdateData -> AiUpdateData
+update_ai ai_tick_time char_id ({ shop_trends, historical_shop_trends, characters, globalSeed, item_db, communityFund } as original_ai_update_data) =
     let
         --TODO: make sure character isn't shop
         maybe_character =
@@ -4406,7 +4406,7 @@ update_ai ai_tick_time globalSeed char_id ({ shop_trends, historical_shop_trends
             { shop_trends = ai_update_record.shop_trends
             , historical_shop_trends = new_historical_shop_trends
             , characters = new_characters
-            , ai_tick_seed = new_seed
+            , globalSeed = new_seed
             , item_db = new_item_db
             , communityFund = ai_update_record.communityFund
             }
@@ -4428,17 +4428,15 @@ update_ai_chars model =
         old_historical_shop_trends =
             model.historical_shop_trends
 
-        ai_tick_seed =
-            Random.initialSeed <| Time.posixToMillis model.ai_tick_time
-
-        { ai_tick_time, item_db, communityFund } =
+        { ai_tick_time, item_db, communityFund, globalSeed } =
             model
 
+        first_ai_update_data : AiUpdateData
         first_ai_update_data =
             { shop_trends = old_shop_trends
             , historical_shop_trends = old_historical_shop_trends
             , characters = old_characters
-            , ai_tick_seed = ai_tick_seed
+            , globalSeed = globalSeed
             , item_db = item_db
             , communityFund = communityFund
             }
@@ -4449,7 +4447,7 @@ update_ai_chars model =
                 |> getOthers
                 |> List.map .char_id
                 |> List.foldl
-                    (update_ai ai_tick_time model.global_seed)
+                    (update_ai ai_tick_time)
                     first_ai_update_data
     in
     { model
@@ -4457,6 +4455,7 @@ update_ai_chars model =
         , historical_shop_trends = new_ai_data.historical_shop_trends
         , characters = new_ai_data.characters
         , item_db = new_ai_data.item_db
+        , globalSeed = new_ai_data.globalSeed
     }
 
 
@@ -7116,7 +7115,7 @@ suite =
                             getShop
                                 (onNewDayStart
                                     { test_model
-                                        | global_seed = newGlobalSeed
+                                        | globalSeed = newGlobalSeed
                                     }
                                 ).characters
                     in
@@ -7146,7 +7145,7 @@ suite =
                             , character = test_character
                             , shop = Shop test_character --doesnt matter here
                             , communityFund = 0
-                            , globalSeed = test_model.global_seed
+                            , globalSeed = test_model.globalSeed
                             }
 
                         postUpdateRecord =
@@ -7165,7 +7164,7 @@ suite =
                             , character = test_character
                             , shop = Shop test_character --doesnt matter here
                             , communityFund = 100000
-                            , globalSeed = test_model.global_seed
+                            , globalSeed = test_model.globalSeed
                             }
 
                         postUpdateRecord =

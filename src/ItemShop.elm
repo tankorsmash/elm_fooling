@@ -1933,8 +1933,8 @@ inherit_color =
     Element.htmlAttribute <| Html.Attributes.style "color" "initial"
 
 
-item_type_to_pretty_string : ItemType -> String
-item_type_to_pretty_string item_type =
+itemTypeToString : ItemType -> String
+itemTypeToString item_type =
     case item_type of
         Weapon ->
             "Weapon"
@@ -1952,8 +1952,8 @@ item_type_to_pretty_string item_type =
             "Food"
 
 
-item_type_to_pretty_string_plural : ItemType -> String
-item_type_to_pretty_string_plural item_type =
+itemTypeToString_plural : ItemType -> String
+itemTypeToString_plural item_type =
     case item_type of
         Weapon ->
             "Weapons"
@@ -4515,7 +4515,7 @@ renderItemTypeWithTrend shop_trends item_type =
     in
     Element.paragraph [ Font.alignLeft, width fill ] <|
         [ text <|
-            item_type_to_pretty_string item_type
+            itemTypeToString item_type
         , text " - "
         , el ([ Font.color trend_color ] ++ trend_shadow) <| text pretty_trend
         ]
@@ -4525,7 +4525,7 @@ renderItemTypeWithoutTrend : ItemType -> Element.Element Msg
 renderItemTypeWithoutTrend item_type =
     Element.paragraph [ Font.alignLeft, width fill ] <|
         [ text <|
-            item_type_to_pretty_string item_type
+            itemTypeToString item_type
         ]
 
 
@@ -4751,7 +4751,7 @@ trends_display colorTheme shiftIsPressed item_db shop_trends ((Characters { play
                 pretty_type =
                     case id_to_item_type type_id of
                         Just prettied ->
-                            item_type_to_pretty_string_plural prettied
+                            itemTypeToString_plural prettied
 
                         Nothing ->
                             "Unknown Type (" ++ String.fromInt type_id ++ ")"
@@ -5020,7 +5020,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                     buildCompare (.quantity >> getQuantity)
 
                 SortByItemType ->
-                    buildCompare (.item >> .item_type >> item_type_to_pretty_string)
+                    buildCompare (.item >> .item_type >> itemTypeToString)
 
                 SortByItemDesc ->
                     buildCompare (.item >> .description)
@@ -5057,7 +5057,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                             "Desires: "
                                 ++ (case id_to_item_type it_id of
                                         Just item_type ->
-                                            item_type_to_pretty_string item_type
+                                            itemTypeToString item_type
 
                                         Nothing ->
                                             "Unknown"
@@ -5074,7 +5074,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                             "Dislikes: "
                                 ++ (case id_to_item_type it_id of
                                         Just item_type ->
-                                            item_type_to_pretty_string item_type
+                                            itemTypeToString item_type
 
                                         Nothing ->
                                             "Unknown"
@@ -5149,7 +5149,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                                             "All"
 
                                         Just itemType ->
-                                            item_type_to_pretty_string itemType
+                                            itemTypeToString itemType
                                    )
                         }
                 ]
@@ -5563,7 +5563,7 @@ viewSingleItemTypeCharts historical_shop_trends item_type =
                         (\( idx, it_val ) -> Tuple.second it_val)
                         [ CA.monotone ]
                         []
-                        |> C.named (item_type_to_pretty_string item_type)
+                        |> C.named (itemTypeToString item_type)
                     ]
                     build_filtered_dataset
 
@@ -5670,7 +5670,7 @@ viewShopTrendsChart device historical_shop_trends hovered_trend_chart =
                 []
                 []
                 [ Html.text <|
-                    item_type_to_pretty_string item_type_
+                    itemTypeToString item_type_
                         ++ ": "
                         ++ float_to_percent val
                 ]
@@ -5707,7 +5707,7 @@ viewShopTrendsChart device historical_shop_trends hovered_trend_chart =
                         (\( idx, it_val ) -> Tuple.second it_val)
                         [ CA.monotone ]
                         []
-                        |> C.named (item_type_to_pretty_string item_type)
+                        |> C.named (itemTypeToString item_type)
                     ]
                     (build_filtered_dataset item_type)
 
@@ -5800,13 +5800,13 @@ render_single_player_action_log item_db player_action_log =
                                 Debug.log "mb_item_type" mb_item_type
                         in
                         text <|
-                            ((Maybe.withDefault "Unknown" <| Maybe.map item_type_to_pretty_string mb_item_type)
+                            ((Maybe.withDefault "Unknown" <| Maybe.map itemTypeToString mb_item_type)
                                 ++ " -- These became quite valuable."
                             )
 
                     EventLeastDesiredItemType mb_item_type ->
                         text <|
-                            ((Maybe.withDefault "Unknown" <| Maybe.map item_type_to_pretty_string mb_item_type)
+                            ((Maybe.withDefault "Unknown" <| Maybe.map itemTypeToString mb_item_type)
                                 ++ " -- Nobody is interested in these anymore."
                             )
 
@@ -6161,28 +6161,58 @@ viewShopPrepPhase model =
 
 viewShopPostPhase : UI.ColorTheme -> PostPhaseData -> Element Msg
 viewShopPostPhase colorTheme postPhaseData =
+    let
+        getSoldNumFromItemDbRecord : ItemDbRecord -> Int
+        getSoldNumFromItemDbRecord { trade_stats } =
+            trade_stats.times_others_traded + trade_stats.times_you_sold
+
+        getNumItemTypeSold itemType =
+            List.foldl
+                (\newIdbr totalTypeSold ->
+                    if newIdbr.item.item_type == itemType then
+                        case lookup_item_id postPhaseData.itemDbAtStart newIdbr.item.id of
+                            Just origItemDbRecord ->
+                                totalTypeSold
+                                    + (getSoldNumFromItemDbRecord newIdbr - getSoldNumFromItemDbRecord origItemDbRecord)
+
+                            Nothing ->
+                                totalTypeSold
+
+                    else
+                        totalTypeSold
+                )
+                0
+                (Dict.values postPhaseData.itemDbAtEnd)
+    in
     column [ width fill, Font.size 16 ]
         [ Element.el [ UI.font_scaled 3, padding_bottom 10 ] <| text "End of Day"
         , column [ spacingXY 0 20 ]
             [ el [ Font.italic ] <| text "You've finished the work day, sent away your gold and resources, and put your inventory into cold-storage."
             , text "Tomorrow you'll build up your inventory once again, solving a new goal."
             ]
-        , column []
-            [ el [ UI.font_scaled 2, paddingXY 0 10, Font.underline ] <| text "Stats (todo)"
-            , text <| (++) "start gold: " <| String.fromInt <| postPhaseData.goldAtStartOfDay
-            , text <| (++) "end gold: " <| String.fromInt <| postPhaseData.goldAtEndOfDay
-            , text <| (++) "Gold made: " <| String.fromInt <| max 0 <| postPhaseData.goldAtEndOfDay - postPhaseData.goldAtStartOfDay
-            , text <| "Number of all items sold: " ++ String.fromInt 123
-            , text <| "Weapons sold: " ++ String.fromInt 123
-            , text <| "Armors sold: " ++ String.fromInt 123
-            , text <| "Items sold: " ++ String.fromInt 123
-            , text <| "Furniture sold: " ++ String.fromInt 123
-            , text <| "Spellbook sold: " ++ String.fromInt 123
-            , text <| "Food sold: " ++ String.fromInt 123
-            , text <| "Item sold the most: " ++ "Boots"
-            , text <| "Most expensive item sold: " ++ "Boots"
-            , text <| "Most expensive item bought: " ++ "Boots"
-            ]
+        , column [] <|
+            []
+                ++ [ el [ UI.font_scaled 2, paddingXY 0 10, Font.underline ] <| text "Stats (todo)"
+                   , text <| (++) "start gold: " <| String.fromInt <| postPhaseData.goldAtStartOfDay
+                   , text <| (++) "end gold: " <| String.fromInt <| postPhaseData.goldAtEndOfDay
+                   , text <| (++) "Gold made: " <| String.fromInt <| max 0 <| postPhaseData.goldAtEndOfDay - postPhaseData.goldAtStartOfDay
+                   , text <| "Number of all items sold:" ++ String.fromInt 99999
+                   ]
+                ++ List.map
+                    (\itemType ->
+                        "Number of "
+                            ++ itemTypeToString itemType
+                            ++ " sold: "
+                            ++ (String.fromInt <|
+                                    getNumItemTypeSold itemType
+                               )
+                            |> text
+                    )
+                    allItemTypes
+                ++ [ text <| "Item sold the most: " ++ "Boots"
+                   , text <| "Most expensive item sold: " ++ "Boots"
+                   , text <| "Most expensive item bought: " ++ "Boots"
+                   ]
         , el [ centerX, paddingXY 0 100 ] <|
             column []
                 [ el [ centerX, padding 10 ] <| text "End the day?"
@@ -6386,7 +6416,7 @@ render_item_db_item colorTheme { item, trade_stats, is_unlocked } =
                 el [ Font.color UI.color_primary ] <| text "LOCKED"
             ]
         , row [ width fill, Font.size 14, spacingXY 10 0 ]
-            [ item_type_to_pretty_string item.item_type
+            [ itemTypeToString item.item_type
                 |> text
             , item.raw_gold_cost
                 |> UI.renderGp colorTheme

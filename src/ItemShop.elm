@@ -307,6 +307,7 @@ type Msg
     | PlayerBuyItemFromShop Item Quantity
     | PlayerSellItemToShop Item Quantity
     | TickSecond Time.Posix
+    | ForceTickSecond
     | KeyPressedMsg KeyEventMsg
     | KeyReleasedMsg KeyEventMsg
     | OnSpecialAction SpecialAction Price
@@ -2160,7 +2161,6 @@ init timeNow device hash key =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    -- Sub.none
     Sub.batch
         [ if not model.ai_updates_paused then
             Time.every 1000 TickSecond
@@ -3006,6 +3006,9 @@ update msg model =
 
         TickSecond time ->
             onTickSecond model time
+
+        ForceTickSecond ->
+            ( model, Task.perform TickSecond Time.now )
 
         KeyPressedMsg key_event_msg ->
             case key_event_msg of
@@ -6292,6 +6295,16 @@ view_shop_tab_type model =
             , Border.width 10
             , Border.dashed
             ]
+
+        tickSecondButton =
+            UI.button <|
+                UI.TextParams
+                    { buttonType = UI.Secondary
+                    , colorTheme = model.colorTheme
+                    , customAttrs = []
+                    , onPressMsg = ForceTickSecond
+                    , textLabel = "Force Tick"
+                    }
     in
     Element.el
         ([ width fill, padding 10 ]
@@ -6399,7 +6412,8 @@ view_shop_tab_type model =
                 ++ [ column [ width fill, spacingXY 0 20 ] <|
                         showHideDebugInventoriesButton model.colorTheme [] model.uiOptions.show_debug_inventories
                             :: (if model.uiOptions.show_debug_inventories then
-                                    [ text <|
+                                    [ el [] <| tickSecondButton
+                                    , text <|
                                         UI.deviceClassToString model.uiOptions.device.class
                                             ++ " - "
                                             ++ UI.orientationToString model.uiOptions.device.orientation

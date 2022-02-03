@@ -1453,6 +1453,7 @@ type alias AiPreUpdateRecord =
     , character : Character
     , shop : Shop
     , communityFund : Int
+    , globalSeed : Random.Seed
     }
 
 
@@ -1464,6 +1465,7 @@ type alias AiUpdateRecord =
     , shop : Shop
     , traded_items : InventoryRecords
     , communityFund : Int
+    , globalSeed : Random.Seed
     }
 
 
@@ -3640,11 +3642,11 @@ special_action_increase_income model =
 special_action_unlock_item : Model -> Model
 special_action_unlock_item model =
     let
-        { item_db, ai_tick_time } =
+        { item_db, global_seed } =
             model
 
         ( mb_item_to_unlock, new_seed ) =
-            pick_random_locked_item_from_db item_db <| seed_from_time ai_tick_time
+            pick_random_locked_item_from_db item_db <| global_seed
     in
     { model
         | item_db =
@@ -3656,6 +3658,7 @@ special_action_unlock_item model =
 
                 Nothing ->
                     item_db
+        , global_seed = new_seed
     }
         |> (case mb_item_to_unlock of
                 Just item_to_unlock ->
@@ -3947,7 +3950,7 @@ get_wanted_items character shop shop_trends =
 
 
 ai_buy_item_from_shop : Time.Posix -> ItemDb -> AiPreUpdateRecord -> AiUpdateRecord
-ai_buy_item_from_shop ai_tick_time item_db { shop_trends, character, shop, communityFund } =
+ai_buy_item_from_shop ai_tick_time item_db { shop_trends, character, shop, communityFund, globalSeed } =
     --TODO decide on an item type to buy, and buy 1.
     -- Maybe, it would be based on the lowest trending one, or one the
     -- character strongly desired or something
@@ -4031,7 +4034,7 @@ ai_buy_item_from_shop ai_tick_time item_db { shop_trends, character, shop, commu
             List.foldl
                 is_item_wanted
                 Nothing
-                (group_shuffle_items (seed_from_time ai_tick_time) least_trendy_items)
+                (group_shuffle_items globalSeed least_trendy_items)
 
         trade_record : TradeRecord
         trade_record =
@@ -4063,6 +4066,7 @@ ai_buy_item_from_shop ai_tick_time item_db { shop_trends, character, shop, commu
             , shop = Shop trade_context_.from_party
             , traded_items = []
             , communityFund = communityFund
+            , globalSeed = globalSeed
             }
 
         CompletedTradeRecord trade_context_ log ->
@@ -4081,6 +4085,7 @@ ai_buy_item_from_shop ai_tick_time item_db { shop_trends, character, shop, commu
                         -- []
                         Debug.todo ""
             , communityFund = communityFund
+            , globalSeed = globalSeed
             }
 
 
@@ -4089,7 +4094,7 @@ ai_buy_item_from_shop ai_tick_time item_db { shop_trends, character, shop, commu
 
 
 ai_sell_item_to_shop : Time.Posix -> ItemDb -> AiPreUpdateRecord -> AiUpdateRecord
-ai_sell_item_to_shop ai_tick_time item_db { shop_trends, character, shop, communityFund } =
+ai_sell_item_to_shop ai_tick_time item_db { shop_trends, character, shop, communityFund, globalSeed } =
     let
         sellable_items : InventoryRecords
         sellable_items =
@@ -4159,6 +4164,7 @@ ai_sell_item_to_shop ai_tick_time item_db { shop_trends, character, shop, commun
             , shop = Shop trade_context_.to_party
             , traded_items = []
             , communityFund = communityFund
+            , globalSeed = globalSeed
             }
 
         CompletedTradeRecord trade_context_ log ->
@@ -4176,6 +4182,7 @@ ai_sell_item_to_shop ai_tick_time item_db { shop_trends, character, shop, commun
                     Nothing ->
                         Debug.todo "" []
             , communityFund = communityFund
+            , globalSeed = globalSeed
             }
 
 
@@ -4242,21 +4249,21 @@ addHeldItem item ({ held_items } as character) =
 
 
 convertPreUpdateRecordToPostUpdate : AiPreUpdateRecord -> AiUpdateRecord
-convertPreUpdateRecordToPostUpdate { shop_trends, character, shop, communityFund } =
+convertPreUpdateRecordToPostUpdate { shop_trends, character, shop, communityFund, globalSeed } =
     { shop_trends = shop_trends
     , character = character
     , shop = shop
     , communityFund = communityFund
     , traded_items = []
+    , globalSeed = globalSeed
     }
 
 
 ai_fetch_item : Time.Posix -> ItemDb -> AiPreUpdateRecord -> AiUpdateRecord
-ai_fetch_item ai_tick_time item_db ({ shop_trends, character, shop, communityFund } as preUpdateRecord) =
+ai_fetch_item ai_tick_time item_db ({ shop_trends, character, shop, communityFund, globalSeed } as preUpdateRecord) =
     let
-        --note we don't use the new seed here. we should use global_seed, so that all AIs dont do the same thing
-        ( mbNewItem, _ ) =
-            pick_random_unlocked_item_from_db item_db (seed_from_time ai_tick_time)
+        ( mbNewItem, newSeed ) =
+            pick_random_unlocked_item_from_db item_db globalSeed
     in
     case mbNewItem of
         Just newItem ->
@@ -4274,6 +4281,7 @@ ai_fetch_item ai_tick_time item_db ({ shop_trends, character, shop, communityFun
                 , shop = shop
                 , traded_items = []
                 , communityFund = communityFund - newItem.raw_gold_cost
+                , globalSeed = newSeed
                 }
 
             else
@@ -4286,6 +4294,7 @@ ai_fetch_item ai_tick_time item_db ({ shop_trends, character, shop, communityFun
                                         { log_type = FetchedItemButFundNotBigEnough newItem.id
                                         , time = ai_tick_time
                                         }
+                                , globalSeed = newSeed
                             }
                        )
 
@@ -4294,20 +4303,20 @@ ai_fetch_item ai_tick_time item_db ({ shop_trends, character, shop, communityFun
 
 
 pickAiActionChoice : Random.Seed -> ( AiActionChoice, Random.Seed )
-pickAiActionChoice ai_tick_seed =
+pickAiActionChoice seed =
     (List.repeat 10 WantsToSell
         ++ List.repeat 10 WantsToBuy
         ++ List.repeat 2 WantsToFetchItem
         ++ List.repeat 5 NoActionChoice
     )
         |> Random.List.choose
-        |> (\choices -> Random.step choices ai_tick_seed)
+        |> (\choices -> Random.step choices seed)
         |> Tuple.mapFirst
             (Tuple.first >> Maybe.withDefault NoActionChoice)
 
 
-update_ai : Time.Posix -> CharacterId -> AiUpdateData -> AiUpdateData
-update_ai ai_tick_time char_id ({ shop_trends, historical_shop_trends, characters, ai_tick_seed, item_db, communityFund } as original_ai_update_data) =
+update_ai : Time.Posix -> Random.Seed -> CharacterId -> AiUpdateData -> AiUpdateData
+update_ai ai_tick_time globalSeed char_id ({ shop_trends, historical_shop_trends, characters, ai_tick_seed, item_db, communityFund } as original_ai_update_data) =
     let
         --TODO: make sure character isn't shop
         maybe_character =
@@ -4321,7 +4330,7 @@ update_ai ai_tick_time char_id ({ shop_trends, historical_shop_trends, character
             let
                 -- chosen_action, new_seed : (AiActionChoice, Random.Seed)
                 ( chosen_action, new_seed ) =
-                    pickAiActionChoice ai_tick_seed
+                    pickAiActionChoice globalSeed
 
                 preUpdateRecord : AiPreUpdateRecord
                 preUpdateRecord =
@@ -4329,6 +4338,7 @@ update_ai ai_tick_time char_id ({ shop_trends, historical_shop_trends, character
                     , character = character
                     , shop = shop
                     , communityFund = communityFund
+                    , globalSeed = new_seed
                     }
 
                 ai_update_record : AiUpdateRecord
@@ -4360,6 +4370,7 @@ update_ai ai_tick_time char_id ({ shop_trends, historical_shop_trends, character
                             , shop = preUpdateRecord.shop
                             , traded_items = []
                             , communityFund = preUpdateRecord.communityFund
+                            , globalSeed = preUpdateRecord.globalSeed
                             }
 
                 new_characters : Characters
@@ -4438,7 +4449,7 @@ update_ai_chars model =
                 |> getOthers
                 |> List.map .char_id
                 |> List.foldl
-                    (update_ai ai_tick_time)
+                    (update_ai ai_tick_time model.global_seed)
                     first_ai_update_data
     in
     { model
@@ -7135,6 +7146,7 @@ suite =
                             , character = test_character
                             , shop = Shop test_character --doesnt matter here
                             , communityFund = 0
+                            , globalSeed = test_model.global_seed
                             }
 
                         postUpdateRecord =
@@ -7153,6 +7165,7 @@ suite =
                             , character = test_character
                             , shop = Shop test_character --doesnt matter here
                             , communityFund = 100000
+                            , globalSeed = test_model.global_seed
                             }
 
                         postUpdateRecord =

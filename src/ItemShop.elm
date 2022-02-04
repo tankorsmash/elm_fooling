@@ -1370,7 +1370,7 @@ type TimePhase
     | -- setting up the items in the shop. automatically advanced to ActivePhase on finish
       PreActivePhase
     | -- ai and player upgrades tick up. itemDbAtStart is for comparing model.item_db after-hours, to show interesting facts like 'you sold X boots' or 'ais bought a lot of swords'
-      ActivePhase ActivePhaseData
+      ActivePhase Time.Posix ActivePhaseData
     | -- viewing day's results, shop restocks etc
       PostPhase PostPhaseData
 
@@ -2908,7 +2908,7 @@ onTickSecond model time =
     in
     if not model.ai_updates_paused then
         case model.timeOfDay.currentPhase of
-            ActivePhase _ ->
+            ActivePhase _  _ ->
                 ( model
                     |> --updateActiveTimeOfDay uses model.ai_tick_time to compare the new time, so order is important
                        updateActiveTimeOfDay time
@@ -3158,12 +3158,13 @@ mapIncompleteQuestType mapper quest =
 
 
 onNewDayStart : Model -> Model
-onNewDayStart ({ timeOfDay, item_db, globalSeed, characters } as model) =
+onNewDayStart ({ timeOfDay, item_db, globalSeed, characters, ai_tick_time } as model) =
     let
         newTimeOfDay =
             { timeOfDay
                 | currentPhase =
                     ActivePhase
+                        ai_tick_time
                         { goldAtStartOfDay =
                             let
                                 (Player player) =
@@ -3212,10 +3213,10 @@ onNewDayStart ({ timeOfDay, item_db, globalSeed, characters } as model) =
 updateActiveTimeOfDay : Time.Posix -> Model -> Model
 updateActiveTimeOfDay newTime ({ ai_tick_time, timeOfDay } as model) =
     case timeOfDay.currentPhase of
-        ActivePhase { msSinceStartOfDay, itemDbAtStart, goldAtStartOfDay } ->
+        ActivePhase timeDayStarted { msSinceStartOfDay, itemDbAtStart, goldAtStartOfDay } ->
             let
                 msDiff =
-                    Time.posixToMillis newTime - Time.posixToMillis ai_tick_time
+                    Time.posixToMillis newTime - Time.posixToMillis timeDayStarted
 
                 newMsSinceStartOfDay =
                     msSinceStartOfDay + msDiff
@@ -3229,6 +3230,7 @@ updateActiveTimeOfDay newTime ({ ai_tick_time, timeOfDay } as model) =
                 newPhase =
                     if isWithinCurrentDay then
                         ActivePhase
+                            model.ai_tick_time
                             { goldAtStartOfDay = goldAtStartOfDay
                             , msSinceStartOfDay = newMsSinceStartOfDay
                             , itemDbAtStart = itemDbAtStart
@@ -6010,7 +6012,7 @@ quests_display colorTheme quests =
 
 
 viewDayTimer : Model -> Element Msg
-viewDayTimer { colorTheme, timeOfDay, item_db, characters } =
+viewDayTimer { colorTheme, timeOfDay, item_db, characters, ai_tick_time } =
     let
         sharedAttrs =
             [ height fill
@@ -6045,7 +6047,7 @@ viewDayTimer { colorTheme, timeOfDay, item_db, characters } =
             ]
           <|
             case timeOfDay.currentPhase of
-                ActivePhase { msSinceStartOfDay } ->
+                ActivePhase timeDayStarted { msSinceStartOfDay } ->
                     let
                         dayElapsed =
                             let
@@ -6086,6 +6088,7 @@ viewDayTimer { colorTheme, timeOfDay, item_db, characters } =
                         , onPressMsg =
                             ChangeCurrentPhase
                                 (ActivePhase
+                                    ai_tick_time
                                     { goldAtStartOfDay =
                                         let
                                             (Player player) =
@@ -6098,7 +6101,7 @@ viewDayTimer { colorTheme, timeOfDay, item_db, characters } =
                                 )
                         , textLabel =
                             case timeOfDay.currentPhase of
-                                ActivePhase _ ->
+                                ActivePhase _ _ ->
                                     "Currently ActivePhase"
 
                                 _ ->
@@ -6113,7 +6116,7 @@ viewDayTimer { colorTheme, timeOfDay, item_db, characters } =
                             ChangeCurrentPhase
                                 (PostPhase
                                     (case timeOfDay.currentPhase of
-                                        ActivePhase { itemDbAtStart, goldAtStartOfDay } ->
+                                        ActivePhase timeDayStarted { itemDbAtStart, goldAtStartOfDay } ->
                                             { itemDbAtStart = itemDbAtStart
                                             , itemDbAtEnd = item_db
                                             , goldAtStartOfDay = goldAtStartOfDay
@@ -6600,7 +6603,7 @@ view model =
         case model.tab_type of
             ShopTabType ->
                 case model.timeOfDay.currentPhase of
-                    ActivePhase _ ->
+                    ActivePhase _ _ ->
                         Lazy.lazy view_shop_tab_type model
 
                     PrepPhase ->

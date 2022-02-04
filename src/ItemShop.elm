@@ -2901,18 +2901,19 @@ updateUiOptions uiOptMsg model =
 
 
 onTickSecond : Model -> Time.Posix -> ( Model, Cmd Msg )
-onTickSecond model time =
+onTickSecond origModel time =
     let
+        model =
+            { origModel | ai_tick_time = time }
+
         noop =
             ( model, Cmd.none )
     in
     if not model.ai_updates_paused then
         case model.timeOfDay.currentPhase of
-            ActivePhase _  _ ->
+            ActivePhase _ _ ->
                 ( model
-                    |> --updateActiveTimeOfDay uses model.ai_tick_time to compare the new time, so order is important
-                       updateActiveTimeOfDay time
-                    |> (\m -> { m | ai_tick_time = time })
+                    |> updateActiveTimeOfDay time
                     |> update_player
                     |> update_ai_chars
                 , Cmd.none

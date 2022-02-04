@@ -1402,6 +1402,7 @@ type alias Model =
     , progressUnlocks : ProgressUnlocks
     , quests : Quests
     , timeOfDay : TimeOfDay
+    , numItemsToStartDayWith : Int
     }
 
 
@@ -2154,6 +2155,7 @@ init timeNow device hash key =
                 -- , currentPhase = ActivePhase { msSinceStartOfDay = 0 }
                 , currentPhase = PrepPhase
                 }
+            , numItemsToStartDayWith = 5
             }
     in
     ( initModel
@@ -3197,7 +3199,8 @@ onNewDayStart ({ timeOfDay, item_db, globalSeed, characters } as model) =
                     ( newSeed, newItems )
                 )
                 ( globalSeed, [] )
-                [ 0, 1, 2, 3, 4 ]
+                --List.range is inclusive (List.range 0 1 == [0, 1])
+                (List.range 0 (model.numItemsToStartDayWith - 1))
     in
     { model
         | timeOfDay = newTimeOfDay
@@ -6144,22 +6147,28 @@ viewShopPrepPhase model =
     column [ width fill ]
         [ Element.el [ UI.font_scaled 3, padding_bottom 10 ] <| text "Prep Phase"
         , column [ Font.size 16, spacingXY 0 20 ]
-            [ el [ Font.italic ] <| text "You are about to begin a new day, running your shop the best you can."
-            , text "Each day, the shop's wares change, opposing trades come and go, and who knows what else might happen."
-            , text <|
-                ("You may see one of "
-                    ++ (model.item_db
-                            |> Dict.filter (\_ idbr -> idbr.is_unlocked)
-                            |> Dict.size
-                            |> String.fromInt
-                       )
-                    ++ " unlocked items today. Maybe you can find more?"
-                )
-            , text <|
-                ("There has been word that "
-                    ++ (getOthers model.characters |> List.length |> String.fromInt)
-                    ++ " other traders have come to trade."
-                )
+            [ paragraph [] [ el [ Font.italic ] <| text "You are about to begin a new day, running your shop the best you can." ]
+            , paragraph [] [ text "Each day, the shop's wares change, opposing trades come and go, and who knows what else might happen." ]
+            , paragraph []
+                [ text <|
+                    ("You may see one of "
+                        ++ (model.item_db
+                                |> Dict.filter (\_ idbr -> idbr.is_unlocked)
+                                |> Dict.size
+                                |> String.fromInt
+                           )
+                        ++ " unlocked items, among the "
+                        ++ String.fromInt model.numItemsToStartDayWith
+                        ++ " the Shop will be starting with today. Maybe you can find more?"
+                    )
+                ]
+            , paragraph []
+                [ text <|
+                    ("There has been word that "
+                        ++ (getOthers model.characters |> List.length |> String.fromInt)
+                        ++ " other traders have come to trade."
+                    )
+                ]
             ]
         , el [ centerX, paddingXY 0 100 ] <|
             column []

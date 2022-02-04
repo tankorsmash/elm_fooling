@@ -6042,30 +6042,49 @@ viewDayTimer { colorTheme, timeOfDay, item_db, characters, ai_tick_time } =
     in
     column [ centerX, width fill ]
         [ el [ centerX, Font.underline, padding 10 ] <| text "Day Timer"
-        , row
-            [ width fill
-            , height (Element.px 20)
-            ]
-          <|
-            case timeOfDay.currentPhase of
-                ActivePhase timeDayStarted { msSinceStartOfDay } ->
-                    let
-                        dayElapsed =
-                            let
-                                sinceStart =
-                                    toFloat msSinceStartOfDay
+        , case timeOfDay.currentPhase of
+            ActivePhase timeDayStarted { msSinceStartOfDay } ->
+                let
+                    dayElapsedRaw =
+                        let
+                            sinceStart =
+                                toFloat msSinceStartOfDay
 
-                                dayLength =
-                                    toFloat timeOfDay.dayLengthInMs
-                            in
-                            (sinceStart / dayLength) * 100
-                    in
+                            dayLength =
+                                toFloat timeOfDay.dayLengthInMs
+                        in
+                        sinceStart / dayLength
+
+                    dayElapsed =
+                        dayElapsedRaw * 100
+                in
+                row
+                    [ width fill
+                    , height (Element.px 20)
+                    , Element.inFront <|
+                        el [ width fill ] <|
+                            el
+                                [ width (Element.shrink |> Element.minimum 50)
+                                , height fill
+                                , Font.center
+                                , centerY
+                                , centerX
+                                , Font.color UI.color_black
+                                , Font.glow UI.color_white 1
+                                , Background.color UI.color_light_grey
+                                , padding 2
+                                , Border.rounded 5
+                                ]
+                            <|
+                                text <|
+                                    float_to_percent dayElapsedRaw
+                    ]
                     [ row ([ width <| fillPortion (round <| dayElapsed) ] ++ fillingAttrs) []
                     , row ([ width <| fillPortion (round <| 100 - dayElapsed) ] ++ emptyAttrs) []
                     ]
 
-                _ ->
-                    []
+            _ ->
+                Element.none
         , el [ width fill, paddingXY 0 10 ] <|
             row [ width fill, Element.spaceEvenly ]
                 [ UI.button <|

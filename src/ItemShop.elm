@@ -3252,12 +3252,6 @@ updateActiveTimeOfDay newTime ({ ai_tick_time, timeOfDay } as model) =
             model
 
 
-
--- {
---     model | timeOfDay = {timeOfDay
--- onNewDayStart model
-
-
 isQuestTrackerComplete : QuestTracker -> Bool
 isQuestTrackerComplete questTracker =
     questTracker.current == questTracker.target

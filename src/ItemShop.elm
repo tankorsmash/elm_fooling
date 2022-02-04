@@ -317,6 +317,7 @@ type Msg
     | GotBattleMsg Battle.Msg
     | GotUiOptionsMsg UiOptionMsg
     | ChangeCurrentPhase TimePhase
+    | BeginDay
 
 
 type alias TradeOrder =
@@ -1365,10 +1366,10 @@ type alias PostPhaseData =
 
 
 type TimePhase
-    = --viewing what the day'll be (which location, how many enemy traders, any active events), maybe picking an item
+    = -- setting up the items in the shop. automatically advanced to ActivePhase on finish
+      PrePrepPhase
+    | --viewing what the day'll be (which location, how many enemy traders, any active events), maybe picking an item
       PrepPhase
-    | -- setting up the items in the shop. automatically advanced to ActivePhase on finish
-      PreActivePhase
     | -- ai and player upgrades tick up. itemDbAtStart is for comparing model.item_db after-hours, to show interesting facts like 'you sold X boots' or 'ais bought a lot of swords'
       ActivePhase Time.Posix ActivePhaseData
     | -- viewing day's results, shop restocks etc
@@ -3125,8 +3126,8 @@ update msg model =
 
         ChangeCurrentPhase newPhase ->
             case newPhase of
-                PreActivePhase ->
-                    ( onNewDayStart model, Cmd.none )
+                PrePrepPhase ->
+                    ( onPrepNewDay model, Cmd.none )
 
                 _ ->
                     let
@@ -3137,6 +3138,9 @@ update msg model =
                             { timeOfDay | currentPhase = newPhase }
                     in
                     ( setTimeOfDay model newTimeOfDay, Cmd.none )
+
+        BeginDay ->
+            ( onBeginCurrentDay model, Cmd.none )
 
 
 
@@ -3158,8 +3162,11 @@ mapIncompleteQuestType mapper quest =
             quest
 
 
-onNewDayStart : Model -> Model
-onNewDayStart ({ timeOfDay, item_db, globalSeed, characters, ai_tick_time } as model) =
+{-| triggered when you click 'Begin Day' from the prep screen. All this does
+is change the current phase to ActivePhase
+-}
+onBeginCurrentDay : Model -> Model
+onBeginCurrentDay ({ timeOfDay, item_db, globalSeed, characters, ai_tick_time } as model) =
     let
         newTimeOfDay =
             { timeOfDay
@@ -3176,7 +3183,19 @@ onNewDayStart ({ timeOfDay, item_db, globalSeed, characters, ai_tick_time } as m
                         , itemDbAtStart = item_db
                         }
             }
+    in
+    { model
+        | timeOfDay = newTimeOfDay
+    }
 
+
+{-| called at the very start of a new day, where it preps all the new items and
+everything so that it can be displayed. stuff like which items will be for
+sale, who you'll be fighting against, any active modifiers (todo) etc
+-}
+onPrepNewDay : Model -> Model
+onPrepNewDay ({ timeOfDay, item_db, globalSeed, characters, ai_tick_time } as model) =
+    let
         (Shop shop) =
             getShop model.characters
 
@@ -3205,8 +3224,7 @@ onNewDayStart ({ timeOfDay, item_db, globalSeed, characters, ai_tick_time } as m
                 (List.range 0 (model.numItemsToStartDayWith - 1))
     in
     { model
-        | timeOfDay = newTimeOfDay
-        , characters = setShop (Shop newShop) model.characters
+        | characters = setShop (Shop newShop) model.characters
         , globalSeed = newGlobalSeed
     }
 
@@ -6201,7 +6219,7 @@ viewShopPrepPhase model =
                         { buttonType = UI.Secondary
                         , colorTheme = model.colorTheme
                         , customAttrs = [ width (fill |> Element.minimum 200) ]
-                        , onPressMsg = ChangeCurrentPhase PreActivePhase
+                        , onPressMsg = BeginDay
                         , textLabel = "Begin Day"
                         }
                 ]
@@ -6629,7 +6647,7 @@ view model =
                     PrepPhase ->
                         Lazy.lazy viewShopPrepPhase model
 
-                    PreActivePhase ->
+                    PrePrepPhase ->
                         --just stay on the prephase for a frame or two, since it shouldnt take long to preload the day
                         Lazy.lazy viewShopPrepPhase model
 
@@ -7139,7 +7157,7 @@ suite =
 
                         (Shop result_shop) =
                             getShop
-                                (onNewDayStart
+                                (onPrepNewDay
                                     { test_model
                                         | globalSeed = newGlobalSeed
                                     }

@@ -6210,6 +6210,13 @@ viewShopPrepPhase model =
                         ++ " other traders have come to trade."
                     )
                 ]
+            , paragraph []
+                [ text <|
+                    ("The day tomorrow will last: "
+                        ++ (String.fromInt <| model.timeOfDay.dayLengthInMs // 1000)
+                        ++ " seconds."
+                    )
+                ]
             ]
         , el [ centerX, paddingXY 0 100 ] <|
             column []

@@ -3197,11 +3197,12 @@ everything so that it can be displayed. stuff like which items will be for
 sale, who you'll be fighting against, any active modifiers (todo) etc
 -}
 onPrepNewDay : Model -> Model
-onPrepNewDay ({ timeOfDay, item_db, globalSeed, characters, ai_tick_time } as model) =
+onPrepNewDay ({ timeOfDay, item_db, globalSeed, characters, ai_tick_time, quests } as model) =
     let
         (Shop shop) =
-            getShop model.characters
+            getShop characters
 
+        newShop : Character
         newShop =
             List.foldl
                 (\item shop_ -> addHeldItem item shop_)
@@ -3215,6 +3216,7 @@ onPrepNewDay ({ timeOfDay, item_db, globalSeed, characters, ai_tick_time } as mo
                         ( mbItem, newSeed ) =
                             pick_random_unlocked_item_from_db item_db seed
 
+                        newItems : List Item
                         newItems =
                             case mbItem of
                                 Just newItem ->
@@ -3228,6 +3230,18 @@ onPrepNewDay ({ timeOfDay, item_db, globalSeed, characters, ai_tick_time } as mo
                 ( globalSeed, [] )
                 --List.range is inclusive (List.range 0 1 == [0, 1])
                 (List.range 0 (model.numItemsToStartDayWith - 1))
+
+        newQuests : Quests
+        newQuests =
+            { quests
+                | dailyQuests =
+                    [ IncompleteQuest <|
+                        EarnGold
+                            { current = setQuantity 0
+                            , target = setQuantity 50
+                            }
+                    ]
+            }
     in
     { model
         | characters = setShop (Shop newShop) model.characters

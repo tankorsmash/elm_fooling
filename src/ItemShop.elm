@@ -6019,6 +6019,20 @@ questTitle questType =
             "Earn gold!"
 
 
+questProgress : QuestType -> String
+questProgress questType =
+    case questType of
+        EarnGold { current, target } ->
+            quantityToStr current
+                ++ "/"
+                ++ quantityToStr target
+
+        SellAnyItem { current, target } ->
+            quantityToStr current
+                ++ "/"
+                ++ quantityToStr target
+
+
 viewSingleQuest : Quest -> Element Msg
 viewSingleQuest quest =
     case quest of
@@ -6308,8 +6322,8 @@ viewShopPrepPhase model =
         ]
 
 
-viewShopPostPhase : UI.ColorTheme -> PostPhaseData -> Element Msg
-viewShopPostPhase colorTheme postPhaseData =
+viewShopPostPhase : UI.ColorTheme -> PostPhaseData -> Quests -> Element Msg
+viewShopPostPhase colorTheme postPhaseData quests =
     let
         getSoldNumFromItemDbRecord : ItemDbRecord -> Int
         getSoldNumFromItemDbRecord { trade_stats } =
@@ -6332,6 +6346,9 @@ viewShopPostPhase colorTheme postPhaseData =
                 )
                 0
                 (Dict.values postPhaseData.itemDbAtEnd)
+
+        header title =
+            el [ UI.font_scaled 2, paddingXY 0 10, Font.underline ] <| text title
     in
     column [ width fill, Font.size 16 ]
         [ Element.el [ UI.font_scaled 3, padding_bottom 10 ] <| text "End of Day"
@@ -6339,27 +6356,45 @@ viewShopPostPhase colorTheme postPhaseData =
             [ el [ Font.italic ] <| text "You've finished the work day, sent away your gold and resources, and put your inventory into cold-storage."
             , text "Tomorrow you'll build up your inventory once again, solving a new goal."
             ]
-        , column [] <|
-            []
-                ++ [ el [ UI.font_scaled 2, paddingXY 0 10, Font.underline ] <| text "Stats (todo)"
-                   , text <| (++) "Gold made: " <| String.fromInt <| max 0 <| postPhaseData.goldAtEndOfDay - postPhaseData.goldAtStartOfDay
-                   , text <| "Number of all items sold:" ++ "???"
-                   ]
-                ++ List.map
-                    (\itemType ->
-                        "Number of "
-                            ++ itemTypeToString itemType
-                            ++ " sold: "
-                            ++ (String.fromInt <|
-                                    getNumItemTypeSold itemType
-                               )
-                            |> text
-                    )
-                    allItemTypes
-                ++ [ text <| "Item sold the most: " ++ "???"
-                   , text <| "Most expensive item sold: " ++ "???"
-                   , text <| "Most expensive item bought: " ++ "???"
-                   ]
+        , row [ width fill, Element.spaceEvenly ]
+            [ column [ alignTop ] <|
+                let
+                    _ =
+                        123
+
+                    questRender quest =
+                        case quest of
+                            IncompleteQuest questType ->
+                                text <| "Failed: " ++ questTitle questType ++ " (" ++ questProgress questType ++ ")"
+
+                            CompleteQuest questType ->
+                                text <| "Completed!: " ++ questTitle questType
+                in
+                []
+                    ++ [ header "Daily Quests" ]
+                    ++ List.map questRender quests.dailyQuests
+            , column [] <|
+                []
+                    ++ [ header "Stats (todo)"
+                       , text <| (++) "Gold made: " <| String.fromInt <| max 0 <| postPhaseData.goldAtEndOfDay - postPhaseData.goldAtStartOfDay
+                       , text <| "Number of all items sold:" ++ "???"
+                       ]
+                    ++ List.map
+                        (\itemType ->
+                            "Number of "
+                                ++ itemTypeToString itemType
+                                ++ " sold: "
+                                ++ (String.fromInt <|
+                                        getNumItemTypeSold itemType
+                                   )
+                                |> text
+                        )
+                        allItemTypes
+                    ++ [ text <| "Item sold the most: " ++ "???"
+                       , text <| "Most expensive item sold: " ++ "???"
+                       , text <| "Most expensive item bought: " ++ "???"
+                       ]
+            ]
         , el [ centerX, paddingXY 0 100 ] <|
             column []
                 [ el [ centerX, padding 10 ] <| text "End the day?"
@@ -6734,7 +6769,7 @@ view model =
                         Lazy.lazy viewShopPrepPhase model
 
                     PostPhase postPhaseData ->
-                        Lazy.lazy2 viewShopPostPhase model.colorTheme postPhaseData
+                        Lazy.lazy3 viewShopPostPhase model.colorTheme postPhaseData model.quests
 
             ItemsUnlockedTabType ->
                 Lazy.lazy2 view_items_unlocked_tab_type model.colorTheme model.item_db

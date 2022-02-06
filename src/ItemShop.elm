@@ -6232,13 +6232,14 @@ viewShopPrepPhase model =
                             |> List.filterMap id_to_item_type
                 in
                 [ text <|
-                    case String.concat <| List.map itemTypeToString unpopularItemTypes of
+                    case String.join ", " <| List.map itemTypeToString unpopularItemTypes of
                         "" ->
                             ""
 
                         item_types ->
                             "The following types of things are less popular: "
                                 ++ item_types
+                                ++ "."
                 , text <|
                     case String.join ", " <| List.map itemTypeToString popularItemTypes of
                         "" ->
@@ -6247,6 +6248,7 @@ viewShopPrepPhase model =
                         item_types ->
                             "The following types of things are more popular: "
                                 ++ item_types
+                                ++ "."
                 ]
             ]
         , el [ centerX, paddingXY 0 100 ] <|

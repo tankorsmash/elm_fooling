@@ -6217,6 +6217,37 @@ viewShopPrepPhase model =
                         ++ " seconds."
                     )
                 ]
+            , paragraph [] <|
+                let
+                    unpopularItemTypes =
+                        model.shop_trends.item_type_sentiment
+                            |> Dict.filter (\itemTypeIdStr trend -> trend < 1.0)
+                            |> Dict.keys
+                            |> List.filterMap id_to_item_type
+
+                    popularItemTypes =
+                        model.shop_trends.item_type_sentiment
+                            |> Dict.filter (\itemTypeIdStr trend -> trend > 1.0)
+                            |> Dict.keys
+                            |> List.filterMap id_to_item_type
+                in
+                [ text <|
+                    case String.concat <| List.map itemTypeToString unpopularItemTypes of
+                        "" ->
+                            ""
+
+                        item_types ->
+                            "The following types of things are less popular: "
+                                ++ item_types
+                , text <|
+                    case String.join ", " <| List.map itemTypeToString popularItemTypes of
+                        "" ->
+                            ""
+
+                        item_types ->
+                            "The following types of things are more popular: "
+                                ++ item_types
+                ]
             ]
         , el [ centerX, paddingXY 0 100 ] <|
             column []

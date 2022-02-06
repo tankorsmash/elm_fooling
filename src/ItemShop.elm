@@ -1347,7 +1347,7 @@ type Quest
 
 
 type alias Quests =
-    List Quest
+    { dailyQuests : List Quest, persistentQuests : List Quest }
 
 
 type alias ActivePhaseData =
@@ -2139,17 +2139,20 @@ init timeNow device hash key =
             , communityFund = 0
             , progressUnlocks = []
             , quests =
-                [ IncompleteQuest <|
-                    SellAnyItem
-                        { current = setQuantity 2
-                        , target = setQuantity 3
-                        }
-                , IncompleteQuest <|
-                    EarnGold
-                        { current = setQuantity 23
-                        , target = setQuantity 30
-                        }
-                ]
+                { dailyQuests =
+                    [ IncompleteQuest <|
+                        SellAnyItem
+                            { current = setQuantity 2
+                            , target = setQuantity 3
+                            }
+                    , IncompleteQuest <|
+                        EarnGold
+                            { current = setQuantity 23
+                            , target = setQuantity 30
+                            }
+                    ]
+                , persistentQuests = []
+                }
             , timeOfDay =
                 { dayLengthInMs = 60000
 
@@ -3284,76 +3287,90 @@ isQuestTrackerComplete questTracker =
     questTracker.current == questTracker.target
 
 
+onSellAnyItem { current, target } soldQty =
+    let
+        newTracker =
+            { current = minQuantity (addQuantity current soldQty) target
+            , target = target
+            }
+
+        newQuestType =
+            SellAnyItem newTracker
+    in
+    if isQuestTrackerComplete newTracker then
+        CompleteQuest newQuestType
+
+    else
+        IncompleteQuest newQuestType
+
+
+onEarnGold { current, target } soldQty =
+    let
+        newTracker =
+            { current = minQuantity (addQuantity current soldQty) target
+            , target = target
+            }
+
+        newQuestType =
+            EarnGold newTracker
+    in
+    if isQuestTrackerComplete newTracker then
+        CompleteQuest newQuestType
+
+    else
+        IncompleteQuest newQuestType
+
+
 playerSoldItem : Quantity -> Quests -> Quests
-playerSoldItem soldQty quests =
-    List.map
-        (mapIncompleteQuestType
-            (\questType ->
-                case questType of
-                    SellAnyItem { current, target } ->
-                        let
-                            newTracker =
-                                { current = minQuantity (addQuantity current soldQty) target
-                                , target = target
-                                }
+playerSoldItem soldQty { dailyQuests, persistentQuests } =
+    let
+        questUpdater =
+            mapIncompleteQuestType
+                (\questType ->
+                    case questType of
+                        SellAnyItem questTracker ->
+                            onSellAnyItem questTracker soldQty
 
-                            newQuestType =
-                                SellAnyItem newTracker
-                        in
-                        if isQuestTrackerComplete newTracker then
-                            CompleteQuest newQuestType
-
-                        else
-                            IncompleteQuest newQuestType
-
-                    EarnGold { current, target } ->
-                        let
-                            newTracker =
-                                { current = minQuantity (addQuantity current soldQty) target
-                                , target = target
-                                }
-
-                            newQuestType =
-                                EarnGold newTracker
-                        in
-                        if isQuestTrackerComplete newTracker then
-                            CompleteQuest newQuestType
-
-                        else
-                            IncompleteQuest newQuestType
-            )
-        )
-        quests
+                        EarnGold questTracker ->
+                            onEarnGold questTracker soldQty
+                )
+    in
+    { dailyQuests = List.map questUpdater dailyQuests
+    , persistentQuests = List.map questUpdater persistentQuests
+    }
 
 
 playerEarnedGold : Quantity -> Quests -> Quests
-playerEarnedGold earnedGold quests =
-    List.map
-        (mapIncompleteQuestType
-            (\questType ->
-                case questType of
-                    EarnGold { current, target } ->
-                        let
-                            newTracker =
-                                { current = minQuantity (addQuantity current earnedGold) target
-                                , target = target
-                                }
+playerEarnedGold earnedGold { dailyQuests, persistentQuests } =
+    let
+        questUpdater =
+            mapIncompleteQuestType
+                (\questType ->
+                    case questType of
+                        EarnGold { current, target } ->
+                            let
+                                newTracker =
+                                    { current = minQuantity (addQuantity current earnedGold) target
+                                    , target = target
+                                    }
 
-                            newQuestType =
-                                EarnGold newTracker
-                        in
-                        if isQuestTrackerComplete newTracker then
-                            CompleteQuest newQuestType
+                                newQuestType =
+                                    EarnGold newTracker
+                            in
+                            if isQuestTrackerComplete newTracker then
+                                CompleteQuest newQuestType
 
-                        else
-                            IncompleteQuest newQuestType
+                            else
+                                IncompleteQuest newQuestType
 
-                    _ ->
-                        -- we know we can return an IncompleteQuest because this is a function that only deals with IncompleteQuests
-                        IncompleteQuest questType
-            )
-        )
-        quests
+                        _ ->
+                            -- we know we can return an IncompleteQuest because this is a function that only deals with IncompleteQuests
+                            IncompleteQuest questType
+                )
+    in
+    { dailyQuests = List.map questUpdater dailyQuests
+    , persistentQuests = List.map questUpdater persistentQuests
+    }
 
 
 generateUuid : String -> UUID.UUID
@@ -6023,14 +6040,22 @@ viewSingleQuest quest =
             text <| "Completed quest!\n" ++ questTitle_
 
 
-quests_display : UI.ColorTheme -> List Quest -> Element Msg
+quests_display : UI.ColorTheme -> Quests -> Element Msg
 quests_display colorTheme quests =
     column [ height fill ]
-        ([ el [ UI.font_scaled 2, border_bottom 2, alignTop ] <| text "Quests" ]
-            ++ [ column [ paddingXY 0 10, spacing 5 ] <|
-                    List.map viewSingleQuest quests
-               ]
-        )
+        [ column [ height fill ]
+            ([ el [ UI.font_scaled 2, border_bottom 2, alignTop ] <| text "Today's Quests" ]
+                ++ [ column [ paddingXY 0 10, spacing 5 ] <|
+                        List.map viewSingleQuest quests.dailyQuests
+                   ]
+            )
+        , column [ height fill ]
+            ([ el [ UI.font_scaled 2, border_bottom 2, alignTop ] <| text "Life Quests" ]
+                ++ [ column [ paddingXY 0 10, spacing 5 ] <|
+                        List.map viewSingleQuest quests.persistentQuests
+                   ]
+            )
+        ]
 
 
 viewDayTimer : Model -> Element Msg
@@ -7184,13 +7209,13 @@ suite =
                 \targetQty ->
                     let
                         quests =
-                            [ IncompleteQuest <| SellAnyItem { current = setQuantity 0, target = targetQty } ]
+                            { dailyQuests = [ IncompleteQuest <| SellAnyItem { current = setQuantity 0, target = targetQty } ], persistentQuests = [] }
 
                         updatedQuests =
                             playerSoldItem (addQuantityInt targetQty 100000) quests
                     in
-                    Expect.equalLists
-                        [ CompleteQuest (SellAnyItem { current = targetQty, target = targetQty }) ]
+                    Expect.equal
+                        { dailyQuests = [ CompleteQuest (SellAnyItem { current = targetQty, target = targetQty }) ], persistentQuests = [] }
                         updatedQuests
             , fuzz (Fuzz.map Random.initialSeed <| Fuzz.intRange 1 Random.maxInt) "updateActiveTimeOfDay replaces items in shop, and gets a non zero amount" <|
                 \newGlobalSeed ->
@@ -7216,13 +7241,13 @@ suite =
                 \targetQty ->
                     let
                         quests =
-                            [ IncompleteQuest <| SellAnyItem { current = setQuantity 0, target = targetQty } ]
+                            { dailyQuests = [ IncompleteQuest <| SellAnyItem { current = setQuantity 0, target = targetQty } ], persistentQuests = [] }
 
                         updatedQuests =
                             playerSoldItem (setQuantity 0) quests
                     in
-                    Expect.equalLists
-                        [ IncompleteQuest (SellAnyItem { current = setQuantity 0, target = targetQty }) ]
+                    Expect.equal
+                        { dailyQuests = [ IncompleteQuest (SellAnyItem { current = setQuantity 0, target = targetQty }) ], persistentQuests = [] }
                         updatedQuests
             , fuzz (Fuzz.map Time.millisToPosix int) "fetching only works if there's enough community funds" <|
                 \ai_tick_time ->

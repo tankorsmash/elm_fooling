@@ -6295,7 +6295,7 @@ viewShopPrepPhase model =
                         item_types ->
                             "The following types of things are less popular: "
                                 ++ item_types
-                                ++ "."
+                                ++ ". "
                 , text <|
                     case String.join ", " <| List.map itemTypeToString popularItemTypes of
                         "" ->

@@ -3200,7 +3200,10 @@ onPrepNewDay ({ timeOfDay, item_db, globalSeed, characters, ai_tick_time } as mo
             getShop model.characters
 
         newShop =
-            List.foldl (\item shop_ -> addHeldItem item shop_) { shop | held_items = [] } newShopItems
+            List.foldl
+                (\item shop_ -> addHeldItem item shop_)
+                { shop | held_items = [] }
+                newShopItems
 
         ( newGlobalSeed, newShopItems ) =
             List.foldl

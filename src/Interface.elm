@@ -1,4 +1,4 @@
-module Interface exposing (ButtonConfig, ButtonCustomParams, ButtonParams(..), ButtonTextParams, ButtonType(..), ColorTheme(..), Device, DeviceClass(..), HoveredTooltip(..), Orientation(..), StandardButton, TooltipBody(..), TooltipConfig, TooltipData, TooltipId, TooltipMsg(..), addButtonAttrs, blankChar, buildTooltipElementConfig, buildTooltipTextConfig, button, buttonWithTooltip, classifyDevice, clipText, colorFromInt, color_black, color_danger, color_danger_bright, color_grey, color_light_grey, color_off_black, color_pastel_green_1, color_pastel_green_2, color_pastel_green_3, color_pastel_green_4, color_pastel_green_5, color_pastel_green_6, color_pastel_green_7, color_pastel_red_1, color_pastel_red_2, color_pastel_red_3, color_pastel_red_4, color_pastel_red_5, color_pastel_red_6, color_pastel_red_7, color_primary, color_secondary, color_secondary_bright, color_ultra_light_grey, color_very_light_grey, color_very_very_light_grey, color_white, common_button_attrs, convertColor, cssRule, dangerButtonConfig, decodeColorTheme, defaultBackgroundColor, defaultFontColor, defaultRounded, defaultSolidColor, defaultTextColor, defineHtmlId, deviceClassToString, encodeColorTheme, font_blood, font_grey, font_scaled, getButtonConfig, getTooltipOffset, hex_to_color, hoveredTooltipMatchesId, monospace, nbsp, noUserSelect, orientationToString, outlineButtonConfig, outlineCustomAttrs, outline_button, outline_button_custom, pointerEventsAll, pointerEventsNone, primaryButtonConfig, primary_button, primary_button_custom, primary_button_tooltip, primary_color_bright, renderBlood, renderBlood_sized, renderBlood_string, renderGp, renderGpSized, renderGpString, scaled, scrollbarYEl, secondaryButtonConfig, tooltipElem, wrapButtonWithTooltip)
+module Interface exposing (ButtonConfig, ButtonCustomParams, ButtonParams(..), ButtonTextParams, ButtonType(..), ColorTheme(..), Device, DeviceClass(..), HoveredTooltip(..), Orientation(..), StandardButton, TooltipBody(..), TooltipConfig, TooltipData, TooltipId, TooltipMsg(..), addButtonAttrs, blankChar, buildTooltipElementConfig, buildTooltipTextConfig, button, buttonWithTooltip, classifyDevice, clipText, colorFromInt, color_black, color_danger, color_danger_bright, color_gem, color_grey, color_light_grey, color_off_black, color_pastel_green_1, color_pastel_green_2, color_pastel_green_3, color_pastel_green_4, color_pastel_green_5, color_pastel_green_6, color_pastel_green_7, color_pastel_red_1, color_pastel_red_2, color_pastel_red_3, color_pastel_red_4, color_pastel_red_5, color_pastel_red_6, color_pastel_red_7, color_primary, color_secondary, color_secondary_bright, color_ultra_light_grey, color_very_light_grey, color_very_very_light_grey, color_white, common_button_attrs, convertColor, cssRule, dangerButtonConfig, decodeColorTheme, defaultBackgroundColor, defaultFontColor, defaultRounded, defaultSolidColor, defaultTextColor, defineHtmlId, deviceClassToString, encodeColorTheme, font_blood, font_gem, font_grey, font_scaled, getButtonConfig, getTooltipOffset, hex_to_color, hoveredTooltipMatchesId, monospace, nbsp, noUserSelect, orientationToString, outlineButtonConfig, outlineCustomAttrs, outline_button, outline_button_custom, pointerEventsAll, pointerEventsNone, primaryButtonConfig, primary_button, primary_button_custom, primary_button_tooltip, primary_color_bright, renderBlood, renderBlood_sized, renderBlood_string, renderGem, renderGem_sized, renderGem_string, renderGp, renderGpSized, renderGpString, scaled, scrollbarYEl, secondaryButtonConfig, tooltipElem, wrapButtonWithTooltip)
 
 import Array
 import Browser.Dom
@@ -722,6 +722,34 @@ renderBlood_sized colorTheme count font_size =
     paragraph []
         [ text <| String.fromInt count
         , Element.el [ Font.size font_size, font_blood ] (text "blood")
+        ]
+
+
+color_gem : Color
+color_gem =
+    hex_to_color "#70d6ff"
+
+
+font_gem : Element.Attribute msg
+font_gem =
+    Font.color color_gem
+
+
+renderGem : ColorTheme -> Int -> Element msg
+renderGem colorTheme count =
+    renderGem_sized colorTheme count 12
+
+
+renderGem_string : Int -> String
+renderGem_string count =
+    String.fromInt count ++ "gp"
+
+
+renderGem_sized : ColorTheme -> Int -> Int -> Element msg
+renderGem_sized colorTheme count font_size =
+    paragraph []
+        [ text <| String.fromInt count
+        , Element.el [ Font.size font_size, font_gem ] (text "gems")
         ]
 
 

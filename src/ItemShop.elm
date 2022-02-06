@@ -638,6 +638,7 @@ type alias Character =
     , hide_zero_qty_inv_rows : Bool
     , displayedItemType : Maybe ItemType
     , held_blood : Int
+    , held_gems : Int
     }
 
 
@@ -987,6 +988,7 @@ type alias CharacterPartialB =
     , hide_zero_qty_inv_rows : Bool
     , displayedItemType : Maybe ItemType
     , held_blood : Int
+    , held_gems : Int
     }
 
 
@@ -1073,13 +1075,14 @@ decodeActionLog =
 
 decodeCharacterB : Decoder CharacterPartialB
 decodeCharacterB =
-    Decode.map6 CharacterPartialB
+    Decode.map7 CharacterPartialB
         (field "trend_tolerance" decodeTrendTolerance)
         (field "item_types_desired" (decodeItemSentiments "item types desired has an invalid item type id"))
         (field "action_log" (Decode.list decodeActionLog))
         (field "hide_zero_qty_inv_rows" Decode.bool)
         (field "displayedItemType" (Decode.maybe decodeItemType))
         (field "held_blood" Decode.int)
+        (field "held_gems" Decode.int)
 
 
 combineCharacterPartials : CharacterPartialA -> CharacterPartialB -> Character
@@ -1098,6 +1101,7 @@ combineCharacterPartials charPartA charPartB =
     , hide_zero_qty_inv_rows = charPartB.hide_zero_qty_inv_rows
     , displayedItemType = charPartB.displayedItemType
     , held_blood = charPartB.held_blood
+    , held_gems = charPartB.held_gems
     }
 
 
@@ -2005,7 +2009,9 @@ createCharacter char_id name =
     -- misc
     , hide_zero_qty_inv_rows = False
     , displayedItemType = Nothing
+
     , held_blood = 0
+    , held_gems = 0
     }
 
 
@@ -6241,6 +6247,10 @@ viewDayTimer { colorTheme, timeOfDay, item_db, characters, ai_tick_time } =
 
 viewShopPrepPhase : Model -> Element Msg
 viewShopPrepPhase model =
+    let
+        header title =
+            el [ UI.font_scaled 2, paddingXY 0 10, Font.underline ] <| text title
+    in
     column [ width fill ]
         [ Element.el [ UI.font_scaled 3, padding_bottom 10 ] <| text "Prep Phase"
         , column [ Font.size 16, spacingXY 0 20 ]
@@ -6306,6 +6316,24 @@ viewShopPrepPhase model =
                                 ++ item_types
                                 ++ "."
                 ]
+            , column [ width fill ] <|
+                [ header "Today's Quests" ]
+                    ++ (case model.quests.dailyQuests of
+                            [] ->
+                                [ text "No quests today" ]
+
+                            dailies ->
+                                let
+                                    questRender quest =
+                                        case quest of
+                                            IncompleteQuest questType ->
+                                                text <| questTitle questType ++ " (" ++ questProgress questType ++ ")"
+
+                                            CompleteQuest questType ->
+                                                text <| "Completed!: " ++ questTitle questType
+                                in
+                                List.map questRender dailies
+                       )
             ]
         , el [ centerX, paddingXY 0 100 ] <|
             column []
@@ -6713,6 +6741,8 @@ viewOverlay model =
                         , UI.renderGp model.colorTheme <| player.held_gold
                         , text " "
                         , UI.renderBlood model.colorTheme <| player.held_blood
+                        , text " "
+                        , UI.renderGem model.colorTheme <| player.held_gems
                         ]
 
 

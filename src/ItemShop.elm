@@ -1364,11 +1364,17 @@ type CashedInStatus
     | QuestNotCashedIn
 
 
+type alias QuestData =
+    { questType : QuestType
+    , questId : QuestId
+    }
+
+
 {-| whether a quest goal has been completed or not
 -}
 type Quest
-    = IncompleteQuest QuestType QuestId
-    | CompleteQuest QuestType QuestId CashedInStatus
+    = IncompleteQuest QuestData
+    | CompleteQuest QuestData CashedInStatus
 
 
 type alias Quests =
@@ -2167,19 +2173,22 @@ init timeNow device hash key =
             , quests =
                 { dailyQuests =
                     [ IncompleteQuest
-                        (SellAnyItem
-                            { current = setQuantity 2
-                            , target = setQuantity 3
-                            }
-                        )
-                        (generateUuid "default sell quest")
+                        { questType =
+                            SellAnyItem
+                                { current = setQuantity 2
+                                , target = setQuantity 3
+                                }
+                        , questId =
+                            generateUuid "default sell quest"
+                        }
                     , CompleteQuest
-                        (EarnGold
-                            { current = setQuantity 23
-                            , target = setQuantity 30
-                            }
-                        )
-                        (generateUuid "default earn quest")
+                        { questType =
+                            EarnGold
+                                { current = setQuantity 23
+                                , target = setQuantity 30
+                                }
+                        , questId = generateUuid "default earn quest"
+                        }
                         QuestNotCashedIn
                     ]
                 , persistentQuests = []
@@ -2961,6 +2970,15 @@ onTickSecond origModel time =
         noop
 
 
+onCashInQuest : Model -> QuestType -> QuestId -> Model
+onCashInQuest model questType questId =
+    let
+        (Player player) =
+            getPlayer model.characters
+    in
+    model
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -3178,7 +3196,7 @@ update msg model =
 
         CashInQuestType questType questId ->
             if isQuestTrackerComplete (getQuestTracker questType) then
-                ( model, Cmd.none )
+                ( onCashInQuest model questType questId, Cmd.none )
 
             else
                 ( model, Cmd.none )
@@ -3196,8 +3214,8 @@ setTimeOfDay model newTimeOfDay =
 mapIncompleteQuestType : (QuestType -> QuestId -> Quest) -> Quest -> Quest
 mapIncompleteQuestType mapper quest =
     case quest of
-        IncompleteQuest questGoal questId ->
-            mapper questGoal questId
+        IncompleteQuest { questType, questId } ->
+            mapper questType questId
 
         _ ->
             quest
@@ -3277,12 +3295,14 @@ onPrepNewDay ({ timeOfDay, item_db, globalSeed, characters, ai_tick_time, quests
             { quests
                 | dailyQuests =
                     [ IncompleteQuest
-                        (EarnGold
-                            { current = setQuantity 0
-                            , target = setQuantity 50
-                            }
-                        )
-                        questId
+                        { questType =
+                            EarnGold
+                                { current = setQuantity 0
+                                , target = setQuantity 50
+                                }
+                        , questId =
+                            questId
+                        }
                     ]
             }
     in
@@ -3354,14 +3374,15 @@ onSellAnyItem { current, target } questId soldQty =
             , target = target
             }
 
-        newQuestType =
-            SellAnyItem newTracker
+        newQuestData : QuestData
+        newQuestData =
+            { questType = SellAnyItem newTracker, questId = questId }
     in
     if isQuestTrackerComplete newTracker then
-        CompleteQuest newQuestType questId QuestNotCashedIn
+        CompleteQuest newQuestData QuestNotCashedIn
 
     else
-        IncompleteQuest newQuestType questId
+        IncompleteQuest newQuestData
 
 
 {-| assumes the quest is Incomplete so we can set a fresh QuestNotCashedIn
@@ -3374,14 +3395,17 @@ onEarnGold { current, target } questId soldQty =
             , target = target
             }
 
-        newQuestType =
-            EarnGold newTracker
+        newQuestData : QuestData
+        newQuestData =
+            { questType = EarnGold newTracker
+            , questId = questId
+            }
     in
     if isQuestTrackerComplete newTracker then
-        CompleteQuest newQuestType questId QuestNotCashedIn
+        CompleteQuest newQuestData QuestNotCashedIn
 
     else
-        IncompleteQuest newQuestType questId
+        IncompleteQuest newQuestData
 
 
 playerSoldItem : Quantity -> Quests -> Quests
@@ -3415,7 +3439,7 @@ playerEarnedGold earnedGold { dailyQuests, persistentQuests } =
 
                         _ ->
                             -- we know we can return an IncompleteQuest because this is a function that only deals with IncompleteQuests
-                            IncompleteQuest questType questId
+                            IncompleteQuest { questType = questType, questId = questId }
                 )
     in
     { dailyQuests = List.map questUpdater dailyQuests
@@ -6072,7 +6096,7 @@ questProgress questType =
 viewSingleQuest : Quest -> Element Msg
 viewSingleQuest quest =
     case quest of
-        IncompleteQuest questType questId ->
+        IncompleteQuest { questType, questId } ->
             let
                 questTitle_ =
                     questTitle questType
@@ -6096,7 +6120,7 @@ viewSingleQuest quest =
                             ++ "/"
                             ++ quantityToStr target
 
-        CompleteQuest questType questId cashedInStatus ->
+        CompleteQuest { questType, questId } cashedInStatus ->
             let
                 questTitle_ =
                     questTitle questType
@@ -6356,10 +6380,10 @@ viewShopPrepPhase model =
                                 let
                                     questRender quest =
                                         case quest of
-                                            IncompleteQuest questType questId ->
+                                            IncompleteQuest { questType, questId } ->
                                                 text <| questTitle questType ++ " (" ++ questProgress questType ++ ")"
 
-                                            CompleteQuest questType questId cashedInStatus ->
+                                            CompleteQuest { questType, questId } cashedInStatus ->
                                                 text <| "Completed!: " ++ questTitle questType
                                 in
                                 List.map questRender dailies
@@ -6419,10 +6443,10 @@ viewShopPostPhase colorTheme postPhaseData quests =
                 let
                     questRender quest =
                         case quest of
-                            IncompleteQuest questType questId ->
+                            IncompleteQuest { questType, questId } ->
                                 text <| "Failed: " ++ questTitle questType ++ " (" ++ questProgress questType ++ ")"
 
-                            CompleteQuest questType questId cashedInStatus ->
+                            CompleteQuest { questType, questId } cashedInStatus ->
                                 row [ spacingXY 10 0 ]
                                     [ text <| "Completed!: " ++ questTitle questType
                                     , UI.button <|
@@ -7330,8 +7354,9 @@ suite =
                         quests =
                             { dailyQuests =
                                 [ IncompleteQuest
-                                    (SellAnyItem { current = setQuantity 0, target = targetQty })
-                                    questId
+                                    { questType = SellAnyItem { current = setQuantity 0, target = targetQty }
+                                    , questId = questId
+                                    }
                                 ]
                             , persistentQuests = []
                             }
@@ -7342,8 +7367,9 @@ suite =
                     Expect.equal
                         { dailyQuests =
                             [ CompleteQuest
-                                (SellAnyItem { current = targetQty, target = targetQty })
-                                questId
+                                { questType = SellAnyItem { current = targetQty, target = targetQty }
+                                , questId = questId
+                                }
                                 QuestNotCashedIn
                             ]
                         , persistentQuests = []
@@ -7376,13 +7402,29 @@ suite =
                             generateUuid "testquest123"
 
                         quests =
-                            { dailyQuests = [ IncompleteQuest (SellAnyItem { current = setQuantity 0, target = targetQty }) questId ], persistentQuests = [] }
+                            { dailyQuests =
+                                [ IncompleteQuest
+                                    { questType =
+                                        SellAnyItem
+                                            { current = setQuantity 0, target = targetQty }
+                                    , questId = questId
+                                    }
+                                ]
+                            , persistentQuests = []
+                            }
 
                         updatedQuests =
                             playerSoldItem (setQuantity 0) quests
                     in
                     Expect.equal
-                        { dailyQuests = [ IncompleteQuest (SellAnyItem { current = setQuantity 0, target = targetQty }) questId ], persistentQuests = [] }
+                        { dailyQuests =
+                            [ IncompleteQuest
+                                { questType = SellAnyItem { current = setQuantity 0, target = targetQty }
+                                , questId = questId
+                                }
+                            ]
+                        , persistentQuests = []
+                        }
                         updatedQuests
             , fuzz (Fuzz.map Time.millisToPosix int) "fetching only works if there's enough community funds" <|
                 \ai_tick_time ->

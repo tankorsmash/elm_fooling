@@ -2194,7 +2194,7 @@ init timeNow device hash key =
                     , CompleteQuest
                         { questType =
                             EarnGold
-                                { current = setQuantity 23
+                                { current = setQuantity 30
                                 , target = setQuantity 30
                                 }
                         , questId = generateUuid "default earn quest"
@@ -6526,15 +6526,20 @@ viewShopPostPhase colorTheme postPhaseData quests =
 
                             CompleteQuest ({ questType, questId } as questData) cashedInStatus ->
                                 row [ spacingXY 10 0 ]
-                                    [ text <| "Completed!: " ++ questTitle questType
-                                    , UI.button <|
-                                        UI.TextParams
-                                            { buttonType = UI.Primary
-                                            , customAttrs = []
-                                            , onPressMsg = CashInQuestType questData
-                                            , textLabel = "Cash In"
-                                            , colorTheme = colorTheme
-                                            }
+                                    [ text <| "Completed!: " ++ questTitle questType ++ " (" ++ questProgress questType ++ ")"
+                                    , case cashedInStatus of
+                                        QuestNotCashedIn ->
+                                            UI.button <|
+                                                UI.TextParams
+                                                    { buttonType = UI.Primary
+                                                    , customAttrs = []
+                                                    , onPressMsg = CashInQuestType questData
+                                                    , textLabel = "Cash In"
+                                                    , colorTheme = colorTheme
+                                                    }
+
+                                        QuestCashedIn ->
+                                            text "+1 gem!"
                                     ]
                 in
                 []

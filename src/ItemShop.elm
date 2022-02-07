@@ -1341,7 +1341,7 @@ type alias QuestTracker =
 getQuestTracker : QuestType -> QuestTracker
 getQuestTracker questType =
     case questType of
-        EarnGold tracker  ->
+        EarnGold tracker ->
             tracker
 
         SellAnyItem tracker ->
@@ -1359,11 +1359,16 @@ type alias QuestId =
     UUID
 
 
+type CashedInStatus
+    = QuestCashedIn
+    | QuestNotCashedIn
+
+
 {-| whether a quest goal has been completed or not
 -}
 type Quest
     = IncompleteQuest QuestType QuestId
-    | CompleteQuest QuestType QuestId
+    | CompleteQuest QuestType QuestId CashedInStatus
 
 
 type alias Quests =
@@ -2175,6 +2180,7 @@ init timeNow device hash key =
                             }
                         )
                         (generateUuid "default earn quest")
+                        QuestNotCashedIn
                     ]
                 , persistentQuests = []
                 }
@@ -3338,7 +3344,10 @@ isQuestTrackerComplete questTracker =
     questTracker.current == questTracker.target
 
 
-onSellAnyItem { current, target } soldQty =
+{-| NOTE: assumes the quest isn't already complete
+-}
+onSellAnyItem : QuestTracker -> QuestId -> Quantity -> Quest
+onSellAnyItem { current, target } questId soldQty =
     let
         newTracker =
             { current = minQuantity (addQuantity current soldQty) target
@@ -3349,13 +3358,16 @@ onSellAnyItem { current, target } soldQty =
             SellAnyItem newTracker
     in
     if isQuestTrackerComplete newTracker then
-        CompleteQuest newQuestType
+        CompleteQuest newQuestType questId QuestNotCashedIn
 
     else
-        IncompleteQuest newQuestType
+        IncompleteQuest newQuestType questId
 
 
-onEarnGold { current, target } soldQty =
+{-| assumes the quest is Incomplete so we can set a fresh QuestNotCashedIn
+-}
+onEarnGold : QuestTracker -> QuestId -> Quantity -> Quest
+onEarnGold { current, target } questId soldQty =
     let
         newTracker =
             { current = minQuantity (addQuantity current soldQty) target
@@ -3366,10 +3378,10 @@ onEarnGold { current, target } soldQty =
             EarnGold newTracker
     in
     if isQuestTrackerComplete newTracker then
-        CompleteQuest newQuestType
+        CompleteQuest newQuestType questId QuestNotCashedIn
 
     else
-        IncompleteQuest newQuestType
+        IncompleteQuest newQuestType questId
 
 
 playerSoldItem : Quantity -> Quests -> Quests
@@ -3377,13 +3389,13 @@ playerSoldItem soldQty { dailyQuests, persistentQuests } =
     let
         questUpdater =
             mapIncompleteQuestType
-                (\questType ->
+                (\questType questId ->
                     case questType of
                         SellAnyItem questTracker ->
-                            onSellAnyItem questTracker soldQty
+                            onSellAnyItem questTracker questId soldQty
 
                         EarnGold questTracker ->
-                            onEarnGold questTracker soldQty
+                            onEarnGold questTracker questId soldQty
                 )
     in
     { dailyQuests = List.map questUpdater dailyQuests
@@ -3396,27 +3408,14 @@ playerEarnedGold earnedGold { dailyQuests, persistentQuests } =
     let
         questUpdater =
             mapIncompleteQuestType
-                (\questType ->
+                (\questType questId ->
                     case questType of
-                        EarnGold { current, target } ->
-                            let
-                                newTracker =
-                                    { current = minQuantity (addQuantity current earnedGold) target
-                                    , target = target
-                                    }
-
-                                newQuestType =
-                                    EarnGold newTracker
-                            in
-                            if isQuestTrackerComplete newTracker then
-                                CompleteQuest newQuestType
-
-                            else
-                                IncompleteQuest newQuestType
+                        EarnGold questTracker ->
+                            onEarnGold questTracker questId earnedGold
 
                         _ ->
                             -- we know we can return an IncompleteQuest because this is a function that only deals with IncompleteQuests
-                            IncompleteQuest questType
+                            IncompleteQuest questType questId
                 )
     in
     { dailyQuests = List.map questUpdater dailyQuests
@@ -6097,7 +6096,7 @@ viewSingleQuest quest =
                             ++ "/"
                             ++ quantityToStr target
 
-        CompleteQuest questType questId ->
+        CompleteQuest questType questId cashedInStatus ->
             let
                 questTitle_ =
                     questTitle questType
@@ -6360,7 +6359,7 @@ viewShopPrepPhase model =
                                             IncompleteQuest questType questId ->
                                                 text <| questTitle questType ++ " (" ++ questProgress questType ++ ")"
 
-                                            CompleteQuest questType questId ->
+                                            CompleteQuest questType questId cashedInStatus ->
                                                 text <| "Completed!: " ++ questTitle questType
                                 in
                                 List.map questRender dailies
@@ -6423,7 +6422,7 @@ viewShopPostPhase colorTheme postPhaseData quests =
                             IncompleteQuest questType questId ->
                                 text <| "Failed: " ++ questTitle questType ++ " (" ++ questProgress questType ++ ")"
 
-                            CompleteQuest questType questId ->
+                            CompleteQuest questType questId cashedInStatus ->
                                 row [ spacingXY 10 0 ]
                                     [ text <| "Completed!: " ++ questTitle questType
                                     , UI.button <|
@@ -7345,6 +7344,7 @@ suite =
                             [ CompleteQuest
                                 (SellAnyItem { current = targetQty, target = targetQty })
                                 questId
+                                QuestNotCashedIn
                             ]
                         , persistentQuests = []
                         }

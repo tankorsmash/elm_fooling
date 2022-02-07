@@ -318,7 +318,7 @@ type Msg
     | GotUiOptionsMsg UiOptionMsg
     | ChangeCurrentPhase TimePhase
     | BeginDay
-    | CashInQuestType QuestType QuestId
+    | CashInQuestType QuestData
 
 
 type alias TradeOrder =
@@ -2970,8 +2970,8 @@ onTickSecond origModel time =
         noop
 
 
-onCashInQuest : Model -> QuestType -> QuestId -> Model
-onCashInQuest model questType questId =
+onCashInQuest : Model -> QuestData -> Model
+onCashInQuest model {questType, questId} =
     let
         (Player player) =
             getPlayer model.characters
@@ -3194,9 +3194,9 @@ update msg model =
         BeginDay ->
             ( onBeginCurrentDay model, Cmd.none )
 
-        CashInQuestType questType questId ->
+        CashInQuestType ({questType, questId} as questData) ->
             if isQuestTrackerComplete (getQuestTracker questType) then
-                ( onCashInQuest model questType questId, Cmd.none )
+                ( onCashInQuest model questData, Cmd.none )
 
             else
                 ( model, Cmd.none )
@@ -6446,14 +6446,14 @@ viewShopPostPhase colorTheme postPhaseData quests =
                             IncompleteQuest { questType, questId } ->
                                 text <| "Failed: " ++ questTitle questType ++ " (" ++ questProgress questType ++ ")"
 
-                            CompleteQuest { questType, questId } cashedInStatus ->
+                            CompleteQuest ({ questType, questId } as questData) cashedInStatus ->
                                 row [ spacingXY 10 0 ]
                                     [ text <| "Completed!: " ++ questTitle questType
                                     , UI.button <|
                                         UI.TextParams
                                             { buttonType = UI.Primary
                                             , customAttrs = []
-                                            , onPressMsg = CashInQuestType questType questId
+                                            , onPressMsg = CashInQuestType questData
                                             , textLabel = "Cash In"
                                             , colorTheme = colorTheme
                                             }

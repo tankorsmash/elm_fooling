@@ -318,6 +318,7 @@ type Msg
     | GotUiOptionsMsg UiOptionMsg
     | ChangeCurrentPhase TimePhase
     | BeginDay
+    | CashInQuestType QuestType QuestId
 
 
 type alias TradeOrder =
@@ -1337,6 +1338,16 @@ type alias QuestTracker =
     { current : Quantity, target : Quantity }
 
 
+getQuestTracker : QuestType -> QuestTracker
+getQuestTracker questType =
+    case questType of
+        EarnGold tracker  ->
+            tracker
+
+        SellAnyItem tracker ->
+            tracker
+
+
 {-| a type of quest, ie selling items or making a certain amount of money
 -}
 type QuestType
@@ -1344,11 +1355,15 @@ type QuestType
     | EarnGold QuestTracker
 
 
+type alias QuestId =
+    UUID
+
+
 {-| whether a quest goal has been completed or not
 -}
 type Quest
-    = IncompleteQuest QuestType
-    | CompleteQuest QuestType
+    = IncompleteQuest QuestType QuestId
+    | CompleteQuest QuestType QuestId
 
 
 type alias Quests =
@@ -2010,7 +2025,6 @@ createCharacter char_id name =
     -- misc
     , hide_zero_qty_inv_rows = False
     , displayedItemType = Nothing
-
     , held_blood = 0
     , held_gems = 0
     }
@@ -2147,16 +2161,20 @@ init timeNow device hash key =
             , progressUnlocks = []
             , quests =
                 { dailyQuests =
-                    [ IncompleteQuest <|
-                        SellAnyItem
+                    [ IncompleteQuest
+                        (SellAnyItem
                             { current = setQuantity 2
                             , target = setQuantity 3
                             }
-                    , IncompleteQuest <|
-                        EarnGold
+                        )
+                        (generateUuid "default sell quest")
+                    , CompleteQuest
+                        (EarnGold
                             { current = setQuantity 23
                             , target = setQuantity 30
                             }
+                        )
+                        (generateUuid "default earn quest")
                     ]
                 , persistentQuests = []
                 }
@@ -3152,6 +3170,13 @@ update msg model =
         BeginDay ->
             ( onBeginCurrentDay model, Cmd.none )
 
+        CashInQuestType questType questId ->
+            if isQuestTrackerComplete (getQuestTracker questType) then
+                ( model, Cmd.none )
+
+            else
+                ( model, Cmd.none )
+
 
 
 --- END OF UPDATE
@@ -3162,11 +3187,11 @@ setTimeOfDay model newTimeOfDay =
     { model | timeOfDay = newTimeOfDay }
 
 
-mapIncompleteQuestType : (QuestType -> Quest) -> Quest -> Quest
+mapIncompleteQuestType : (QuestType -> QuestId -> Quest) -> Quest -> Quest
 mapIncompleteQuestType mapper quest =
     case quest of
-        IncompleteQuest questGoal ->
-            mapper questGoal
+        IncompleteQuest questGoal questId ->
+            mapper questGoal questId
 
         _ ->
             quest
@@ -3216,7 +3241,7 @@ onPrepNewDay ({ timeOfDay, item_db, globalSeed, characters, ai_tick_time, quests
                 { shop | held_items = [] }
                 newShopItems
 
-        ( newGlobalSeed, newShopItems ) =
+        ( globalSeedForUuid, newShopItems ) =
             List.foldl
                 (\_ ( seed, items ) ->
                     let
@@ -3238,15 +3263,20 @@ onPrepNewDay ({ timeOfDay, item_db, globalSeed, characters, ai_tick_time, quests
                 --List.range is inclusive (List.range 0 1 == [0, 1])
                 (List.range 0 (model.numItemsToStartDayWith - 1))
 
+        ( questId, newGlobalSeed ) =
+            Random.step UUID.generator globalSeedForUuid
+
         newQuests : Quests
         newQuests =
             { quests
                 | dailyQuests =
-                    [ IncompleteQuest <|
-                        EarnGold
+                    [ IncompleteQuest
+                        (EarnGold
                             { current = setQuantity 0
                             , target = setQuantity 50
                             }
+                        )
+                        questId
                     ]
             }
     in
@@ -6043,7 +6073,7 @@ questProgress questType =
 viewSingleQuest : Quest -> Element Msg
 viewSingleQuest quest =
     case quest of
-        IncompleteQuest questType ->
+        IncompleteQuest questType questId ->
             let
                 questTitle_ =
                     questTitle questType
@@ -6067,7 +6097,7 @@ viewSingleQuest quest =
                             ++ "/"
                             ++ quantityToStr target
 
-        CompleteQuest questType ->
+        CompleteQuest questType questId ->
             let
                 questTitle_ =
                     questTitle questType
@@ -6327,10 +6357,10 @@ viewShopPrepPhase model =
                                 let
                                     questRender quest =
                                         case quest of
-                                            IncompleteQuest questType ->
+                                            IncompleteQuest questType questId ->
                                                 text <| questTitle questType ++ " (" ++ questProgress questType ++ ")"
 
-                                            CompleteQuest questType ->
+                                            CompleteQuest questType questId ->
                                                 text <| "Completed!: " ++ questTitle questType
                                 in
                                 List.map questRender dailies
@@ -6388,16 +6418,23 @@ viewShopPostPhase colorTheme postPhaseData quests =
         , row [ width fill, Element.spaceEvenly ]
             [ column [ alignTop ] <|
                 let
-                    _ =
-                        123
-
                     questRender quest =
                         case quest of
-                            IncompleteQuest questType ->
+                            IncompleteQuest questType questId ->
                                 text <| "Failed: " ++ questTitle questType ++ " (" ++ questProgress questType ++ ")"
 
-                            CompleteQuest questType ->
-                                text <| "Completed!: " ++ questTitle questType
+                            CompleteQuest questType questId ->
+                                row [ spacingXY 10 0 ]
+                                    [ text <| "Completed!: " ++ questTitle questType
+                                    , UI.button <|
+                                        UI.TextParams
+                                            { buttonType = UI.Primary
+                                            , customAttrs = []
+                                            , onPressMsg = CashInQuestType questType questId
+                                            , textLabel = "Cash In"
+                                            , colorTheme = colorTheme
+                                            }
+                                    ]
                 in
                 []
                     ++ [ header "Daily Quests" ]
@@ -7288,14 +7325,29 @@ suite =
             [ fuzz (Fuzz.map setQuantity <| Fuzz.intRange 0 ((Random.maxInt // 2) - 1)) "playerSoldItem marks the quest complete when you sell enough, and it doesn't go over" <|
                 \targetQty ->
                     let
+                        questId =
+                            generateUuid "testquest123"
+
                         quests =
-                            { dailyQuests = [ IncompleteQuest <| SellAnyItem { current = setQuantity 0, target = targetQty } ], persistentQuests = [] }
+                            { dailyQuests =
+                                [ IncompleteQuest
+                                    (SellAnyItem { current = setQuantity 0, target = targetQty })
+                                    questId
+                                ]
+                            , persistentQuests = []
+                            }
 
                         updatedQuests =
                             playerSoldItem (addQuantityInt targetQty 100000) quests
                     in
                     Expect.equal
-                        { dailyQuests = [ CompleteQuest (SellAnyItem { current = targetQty, target = targetQty }) ], persistentQuests = [] }
+                        { dailyQuests =
+                            [ CompleteQuest
+                                (SellAnyItem { current = targetQty, target = targetQty })
+                                questId
+                            ]
+                        , persistentQuests = []
+                        }
                         updatedQuests
             , fuzz (Fuzz.map Random.initialSeed <| Fuzz.intRange 1 Random.maxInt) "updateActiveTimeOfDay replaces items in shop, and gets a non zero amount" <|
                 \newGlobalSeed ->
@@ -7320,14 +7372,17 @@ suite =
             , fuzz (Fuzz.map setQuantity <| Fuzz.intRange 1 Random.maxInt) "playerSoldItem does not mark the quest complete when you dont sell enough " <|
                 \targetQty ->
                     let
+                        questId =
+                            generateUuid "testquest123"
+
                         quests =
-                            { dailyQuests = [ IncompleteQuest <| SellAnyItem { current = setQuantity 0, target = targetQty } ], persistentQuests = [] }
+                            { dailyQuests = [ IncompleteQuest (SellAnyItem { current = setQuantity 0, target = targetQty }) questId ], persistentQuests = [] }
 
                         updatedQuests =
                             playerSoldItem (setQuantity 0) quests
                     in
                     Expect.equal
-                        { dailyQuests = [ IncompleteQuest (SellAnyItem { current = setQuantity 0, target = targetQty }) ], persistentQuests = [] }
+                        { dailyQuests = [ IncompleteQuest (SellAnyItem { current = setQuantity 0, target = targetQty }) questId ], persistentQuests = [] }
                         updatedQuests
             , fuzz (Fuzz.map Time.millisToPosix int) "fetching only works if there's enough community funds" <|
                 \ai_tick_time ->

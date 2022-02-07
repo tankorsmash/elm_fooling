@@ -7453,6 +7453,67 @@ suite =
                         , persistentQuests = []
                         }
                         updatedQuests
+            , describe "onCashInQuest cashes in as expect" <|
+                let
+                    questId =
+                        generateUuid "testquest123"
+
+                    questData =
+                        { questType = SellAnyItem { current = setQuantity 30, target = setQuantity 30 }
+                        , questId = questId
+                        }
+                in
+                [ test "cashing in a completely tracked and completed quest cashes" <|
+                    \_ ->
+                        let
+                            quests =
+                                { dailyQuests =
+                                    [ CompleteQuest questData QuestNotCashedIn ]
+                                , persistentQuests = []
+                                }
+
+                            resultModel : Model
+                            resultModel =
+                                onCashInQuest { test_model | quests = quests } questData
+                        in
+                        Expect.equal [] <|
+                            List.filter (not << questIsCashedIn) resultModel.quests.dailyQuests
+                , test "cashing in a completely tracked and but incomplete quest does not cash in" <|
+                    \_ ->
+                        let
+                            quests =
+                                { dailyQuests =
+                                    [ IncompleteQuest questData ]
+                                , persistentQuests = []
+                                }
+
+                            resultModel : Model
+                            resultModel =
+                                onCashInQuest { test_model | quests = quests } questData
+                        in
+                        Expect.equal [] <|
+                            List.filter questIsCashedIn resultModel.quests.dailyQuests
+                , test "cashing in a incompletely tracked and complete quest does not" <|
+                    \_ ->
+                        let
+                            questData_ =
+                                { questType = SellAnyItem { current = setQuantity 1, target = setQuantity 30 }
+                                , questId = questId
+                                }
+
+                            quests =
+                                { dailyQuests =
+                                    [ CompleteQuest questData_ QuestNotCashedIn ]
+                                , persistentQuests = []
+                                }
+
+                            resultModel : Model
+                            resultModel =
+                                onCashInQuest { test_model | quests = quests } questData
+                        in
+                        Expect.equal [] <|
+                            List.filter questIsCashedIn resultModel.quests.dailyQuests
+                ]
             , fuzz (Fuzz.map Random.initialSeed <| Fuzz.intRange 1 Random.maxInt) "updateActiveTimeOfDay replaces items in shop, and gets a non zero amount" <|
                 \newGlobalSeed ->
                     let

@@ -1348,6 +1348,16 @@ getQuestTracker questType =
             tracker
 
 
+getQuestData : Quest -> QuestData
+getQuestData quest =
+    case quest of
+        IncompleteQuest questData ->
+            questData
+
+        CompleteQuest questData _ ->
+            questData
+
+
 {-| a type of quest, ie selling items or making a certain amount of money
 -}
 type QuestType
@@ -2970,13 +2980,81 @@ onTickSecond origModel time =
         noop
 
 
+questIsCashedIn : Quest -> Bool
+questIsCashedIn quest =
+    case quest of
+        IncompleteQuest _ ->
+            False
+
+        CompleteQuest _ cashedInStatus ->
+            case cashedInStatus of
+                QuestCashedIn ->
+                    True
+
+                QuestNotCashedIn ->
+                    False
+
+
+markAsCashedIn : Quest -> Quest
+markAsCashedIn quest =
+    case quest of
+        IncompleteQuest _ ->
+            quest
+
+        CompleteQuest questData cashedInStatus ->
+            CompleteQuest questData QuestCashedIn
+
+
 onCashInQuest : Model -> QuestData -> Model
-onCashInQuest model {questType, questId} =
+onCashInQuest ({ quests, characters } as model) { questType, questId } =
     let
-        (Player player) =
-            getPlayer model.characters
+        { dailyQuests, persistentQuests } =
+            quests
+
+        questMatches quest =
+            let
+                questData =
+                    getQuestData quest
+
+                matchesId =
+                    questData.questId == questId
+
+                isComplete =
+                    isQuestTrackerComplete (getQuestTracker questData.questType)
+
+                questCashedIn =
+                    questIsCashedIn quest
+            in
+            matchesId && isComplete && not questCashedIn
+
+        matchingQuests =
+            List.filter questMatches
     in
-    model
+    case ( matchingQuests dailyQuests, matchingQuests persistentQuests ) of
+        -- neither matches
+        ( [], [] ) ->
+            model
+
+        --one or more matches
+        ( matchingDailyQuests, matchingPersistentQuests ) ->
+            let
+                (Player player) =
+                    getPlayer characters
+
+                gemsToGain =
+                    List.length matchingDailyQuests + List.length matchingPersistentQuests
+
+                newQuests =
+                    { dailyQuests = List.Extra.updateIf questMatches markAsCashedIn dailyQuests
+                    , persistentQuests = List.Extra.updateIf questMatches markAsCashedIn persistentQuests
+                    }
+
+                newPlayer =
+                    { player | held_gems = player.held_gems + gemsToGain }
+            in
+            model
+                |> (\m -> { m | quests = newQuests })
+                |> replaceCharacter newPlayer
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -3194,7 +3272,7 @@ update msg model =
         BeginDay ->
             ( onBeginCurrentDay model, Cmd.none )
 
-        CashInQuestType ({questType, questId} as questData) ->
+        CashInQuestType ({ questType, questId } as questData) ->
             if isQuestTrackerComplete (getQuestTracker questType) then
                 ( onCashInQuest model questData, Cmd.none )
 

@@ -1006,6 +1006,7 @@ encodeCharacter character =
         , ( "hide_zero_qty_inv_rows", Encode.bool character.hide_zero_qty_inv_rows )
         , ( "displayedItemType", encodeNullable encodeItemType character.displayedItemType )
         , ( "held_blood", Encode.int character.held_blood )
+        , ( "held_gems", Encode.int character.held_gems )
         ]
 
 

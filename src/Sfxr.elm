@@ -1004,7 +1004,12 @@ viewShape shape =
         shapeButton shapeType label =
             UI.button <|
                 UI.TextParams
-                    { buttonType = UI.Secondary
+                    { buttonType =
+                        if shapeType == shape then
+                            UI.Secondary
+
+                        else
+                            UI.Outline
                     , colorTheme = UI.BrightTheme
                     , customAttrs = []
                     , onPressMsg =

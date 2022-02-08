@@ -6155,8 +6155,8 @@ quantityToStr =
     getQuantity >> String.fromInt
 
 
-questTitle : QuestType -> String
-questTitle questType =
+getQuestTitle : QuestType -> String
+getQuestTitle questType =
     case questType of
         SellAnyItem _ ->
             "Sell any Item!"
@@ -6184,14 +6184,13 @@ viewSingleQuest quest =
     case quest of
         IncompleteQuest { questType, questId } ->
             let
-                questTitle_ =
-                    questTitle questType
+                questTitle =
+                    getQuestTitle questType
             in
             case questType of
                 SellAnyItem { current, target } ->
                     text <|
-                        "You've got a quest:\n"
-                            ++ questTitle_
+                        questTitle
                             ++ "\n"
                             ++ quantityToStr current
                             ++ "/"
@@ -6199,19 +6198,14 @@ viewSingleQuest quest =
 
                 EarnGold { current, target } ->
                     text <|
-                        "You've got a quest:\n"
-                            ++ questTitle_
+                        questTitle
                             ++ "\n"
                             ++ quantityToStr current
                             ++ "/"
                             ++ quantityToStr target
 
         CompleteQuest { questType, questId } cashedInStatus ->
-            let
-                questTitle_ =
-                    questTitle questType
-            in
-            text <| "Completed quest!\n" ++ questTitle_
+            text <| "Completed quest!\n" ++ (getQuestTitle questType)
 
 
 quests_display : UI.ColorTheme -> Quests -> Element Msg
@@ -6467,10 +6461,10 @@ viewShopPrepPhase model =
                                     questRender quest =
                                         case quest of
                                             IncompleteQuest { questType, questId } ->
-                                                text <| questTitle questType ++ " (" ++ questProgress questType ++ ")"
+                                                text <| getQuestTitle questType ++ " (" ++ questProgress questType ++ ")"
 
                                             CompleteQuest { questType, questId } cashedInStatus ->
-                                                text <| "Completed!: " ++ questTitle questType
+                                                text <| "Completed!: " ++ getQuestTitle questType
                                 in
                                 List.map questRender dailies
                        )
@@ -6530,11 +6524,11 @@ viewShopPostPhase colorTheme postPhaseData quests =
                     questRender quest =
                         case quest of
                             IncompleteQuest { questType, questId } ->
-                                text <| "Failed: " ++ questTitle questType ++ " (" ++ questProgress questType ++ ")"
+                                text <| "Failed: " ++ getQuestTitle questType ++ " (" ++ questProgress questType ++ ")"
 
                             CompleteQuest ({ questType, questId } as questData) cashedInStatus ->
                                 row [ spacingXY 10 0 ]
-                                    [ text <| "Completed!: " ++ questTitle questType ++ " (" ++ questProgress questType ++ ")"
+                                    [ text <| "Completed!: " ++ getQuestTitle questType ++ " (" ++ questProgress questType ++ ")"
                                     , case cashedInStatus of
                                         QuestNotCashedIn ->
                                             UI.button <|

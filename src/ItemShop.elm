@@ -6591,9 +6591,6 @@ viewShopSummary colorTheme postPhaseData quests =
             ]
         , el [ centerX, paddingXY 0 100, width fill ] <|
             let
-                _ =
-                    123
-
                 columnStyle =
                     [ centerX, width (fill |> Element.maximum 200), alignBottom ]
             in
@@ -6628,11 +6625,27 @@ viewShopSummary colorTheme postPhaseData quests =
 
 viewGemUpgradesInPostPhase : UI.ColorTheme -> PostPhaseData -> Quests -> Element Msg
 viewGemUpgradesInPostPhase colorTheme postPhaseData quests =
-    column [ width fill, Font.size 16 ]
+    let
+        columnStyle =
+            [ centerX, width (fill |> Element.maximum 200), alignBottom ]
+    in
+    column [ width fill, Font.size 16, height fill ]
         [ Element.el [ UI.font_scaled 3, padding_bottom 10 ] <| text "Upgrades"
         , column [ spacingXY 0 20 ]
             [ el [ Font.italic ] <| text "You've earned some gems. These will help the next day go a little smoother."
             , paragraph [] [ text "Each unlock is permanent. It might be cosmetic, it might be useless, it might be a whole new mechanic. Only one way to find out." ]
+            ]
+        , column columnStyle
+            [ el [ centerX, padding 10, alignBottom ] <|
+                paragraph [ Font.center ] [ text "" ]
+            , UI.button <|
+                UI.TextParams
+                    { buttonType = UI.Secondary
+                    , colorTheme = colorTheme
+                    , customAttrs = [ width (fill |> Element.minimum 200) ]
+                    , onPressMsg = ToggleViewGemUpgradesInPostPhase
+                    , textLabel = "Back"
+                    }
             ]
         ]
 

@@ -6517,7 +6517,7 @@ viewShopPostPhase colorTheme postPhaseData quests =
             , text "Tomorrow you'll build up your inventory once again, solving a new goal."
             ]
         , row [ width fill, Element.spaceEvenly ]
-            [ column [ alignTop ] <|
+            [ column [ alignTop, width (fillPortion 2) ] <|
                 let
                     questRender quest =
                         case quest of
@@ -6545,7 +6545,7 @@ viewShopPostPhase colorTheme postPhaseData quests =
                 []
                     ++ [ header "Daily Quests" ]
                     ++ List.map questRender quests.dailyQuests
-            , column [] <|
+            , column [ width (fillPortion 1) ] <|
                 []
                     ++ [ header "Stats (todo)"
                        , text <| (++) "Gold made: " <| String.fromInt <| max 0 <| postPhaseData.goldAtEndOfDay - postPhaseData.goldAtStartOfDay

@@ -129,7 +129,7 @@ type Msg
     | FromPort String
     | OnSliderChanged ConfigType
     | SetHitHurt
-    | SetPickup
+    | SetUpgrade
 
 
 type Shape
@@ -610,8 +610,8 @@ getRandomHitHurt seed_ =
            identity
 
 
-getRandomPickup : Random.Seed -> ( SoundConfig, Random.Seed )
-getRandomPickup seed_ =
+getRandomUpgrade : Random.Seed -> ( SoundConfig, Random.Seed )
+getRandomUpgrade seed_ =
     ( initSoundConfig, seed_ )
         --TODO: sawtooth duty
         |> (\( { duty } as sc, seed ) ->
@@ -967,10 +967,10 @@ update msg model =
             , sfxrOut <| encodeSoundConfig newSoundConfig
             )
 
-        SetPickup ->
+        SetUpgrade ->
             let
                 ( newSoundConfig, newSeed ) =
-                    getRandomPickup model.globalSeed
+                    getRandomUpgrade model.globalSeed
             in
             ( { model | globalSeed = newSeed, soundConfig = newSoundConfig }
             , sfxrOut <| encodeSoundConfig newSoundConfig
@@ -1283,7 +1283,7 @@ view model =
                  in
                  [ button PlaySound "Play"
                  , button SetHitHurt "RNG Hit/Hurt"
-                 , button SetPickup "RNG Pickup"
+                 , button SetUpgrade "RNG Upgrade"
                  ]
                 )
             , Lazy.lazy viewSliders model

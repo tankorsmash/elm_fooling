@@ -129,6 +129,7 @@ type Msg
     | FromPort String
     | OnSliderChanged ConfigType
     | SetHitHurt
+    | SetPickup
 
 
 type Shape
@@ -528,6 +529,11 @@ getFloat max =
     Random.float 0 max
 
 
+getFloatRange : Float -> Float -> Random.Generator Float
+getFloatRange min max =
+    Random.float min max
+
+
 flipCoin : Random.Generator Bool
 flipCoin =
     Random.map (\n -> n < 50) (Random.int 1 100)
@@ -602,6 +608,75 @@ getRandomHitHurt seed_ =
            )
         |> --TODO wavetypes
            identity
+
+
+getRandomPickup : Random.Seed -> ( SoundConfig, Random.Seed )
+getRandomPickup seed_ =
+    ( initSoundConfig, seed_ )
+        --TODO: sawtooth duty
+        |> (\( { duty } as sc, seed ) ->
+                let
+                    ( newDuty, newSeed ) =
+                        Random.step (getFloat 0.6) seed
+                in
+                ( { sc | duty = { duty | duty = newDuty } }, newSeed )
+           )
+        |> (\( { frequency } as sc, seed ) ->
+                let
+                    ( newFrequency, newSeed ) =
+                        Random.step
+                            (Random.map2
+                                (\base ramp ->
+                                    { frequency
+                                        | base = 0.2 + base
+                                        , ramp = 0.1 + ramp
+                                    }
+                                )
+                                (getFloat 0.3)
+                                (getFloat 0.4)
+                            )
+                            seed
+                in
+                ( { sc | frequency = newFrequency }
+                , newSeed
+                )
+           )
+        --TODO else case handling p_freq_ramp, p_vib_strength and, p_vib_speed
+        |> (\( { retrigger } as sc, seed ) ->
+                let
+                    ( newRetrigger, newSeed ) =
+                        Random.step
+                            (Random.map
+                                (\repeatSpeed ->
+                                    { retrigger | repeatSpeed = 0.4 + repeatSpeed }
+                                )
+                                (getFloat 0.4)
+                            )
+                            seed
+                in
+                ( { sc | retrigger = newRetrigger }, newSeed )
+           )
+        |> (\( { envelope } as sc, seed ) ->
+                let
+                    ( newEnvelope, newSeed ) =
+                        Random.step
+                            (Random.map2
+                                (\sustain decay ->
+                                    { envelope
+                                        | attack = 0
+                                        , sustain = sustain
+                                        , decay = 0.1 + decay
+                                    }
+                                )
+                                (getFloat 0.4)
+                                (getFloat 0.4)
+                            )
+                            seed
+                in
+                ( { sc | envelope = newEnvelope }
+                , newSeed
+                )
+           )
 
 
 withShape : SoundConfig -> Shape -> SoundConfig
@@ -892,6 +967,15 @@ update msg model =
             , sfxrOut <| encodeSoundConfig newSoundConfig
             )
 
+        SetPickup ->
+            let
+                ( newSoundConfig, newSeed ) =
+                    getRandomPickup model.globalSeed
+            in
+            ( { model | globalSeed = newSeed, soundConfig = newSoundConfig }
+            , sfxrOut <| encodeSoundConfig newSoundConfig
+            )
+
         PlaySound ->
             ( model, sfxrOut <| encodeSoundConfig model.soundConfig )
 
@@ -1168,9 +1252,22 @@ view model =
         column [ width fill ]
             [ text "TEMP SFXR"
             , row [ width fill, spacing 10, padding 10 ]
-                [ UI.button <| UI.TextParams { buttonType = UI.Primary, colorTheme = UI.BrightTheme, customAttrs = [], onPressMsg = PlaySound, textLabel = "Play" }
-                , UI.button <| UI.TextParams { buttonType = UI.Primary, colorTheme = UI.BrightTheme, customAttrs = [], onPressMsg = SetHitHurt, textLabel = "RNG Hit/Hurt" }
-                ]
+                (let
+                    button msg str =
+                        UI.button <|
+                            UI.TextParams
+                                { buttonType = UI.Primary
+                                , colorTheme = UI.BrightTheme
+                                , customAttrs = []
+                                , onPressMsg = msg
+                                , textLabel = str
+                                }
+                 in
+                 [ button PlaySound "Play"
+                 , button SetHitHurt "RNG Hit/Hurt"
+                 , button SetPickup "RNG Pickup"
+                 ]
+                )
             , Lazy.lazy viewSliders model
             ]
 

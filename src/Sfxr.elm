@@ -130,6 +130,7 @@ type Msg
     | OnSliderChanged ConfigType
     | SetHitHurt
     | SetUpgrade
+    | SetCoinPickup
 
 
 type Shape
@@ -610,6 +611,77 @@ getRandomHitHurt seed_ =
            identity
 
 
+getRandomCoinPickup : Random.Seed -> ( SoundConfig, Random.Seed )
+getRandomCoinPickup seed_ =
+    ( initSoundConfig, seed_ )
+        |> (\( { frequency } as sc, seed ) ->
+                let
+                    ( newFrequency, newSeed ) =
+                        Random.step
+                            (Random.map
+                                (\base ->
+                                    { frequency
+                                        | base = 0.4 + base
+                                    }
+                                )
+                                (getFloat 0.5)
+                            )
+                            seed
+                in
+                ( { sc | frequency = newFrequency }
+                , newSeed
+                )
+           )
+        |> (\( { envelope } as sc, seed ) ->
+                let
+                    ( newEnvelope, newSeed ) =
+                        Random.step
+                            (Random.map3
+                                (\sustain decay punch ->
+                                    { envelope
+                                        | attack = 0
+                                        , sustain = sustain
+                                        , decay = 0.1 + decay
+                                        , punch = 0.3 + punch
+                                    }
+                                )
+                                (getFloat 0.1)
+                                (getFloat 0.4)
+                                (getFloat 0.3)
+                            )
+                            seed
+                in
+                ( { sc | envelope = newEnvelope }
+                , newSeed
+                )
+           )
+        |> (\( { arpeggiation } as sc, seed ) ->
+                let
+                    ( newArpeggiation, newSeed ) =
+                        Random.step
+                            (Random.map3
+                                (\shouldTweakArp speed mod ->
+                                    if not shouldTweakArp then
+                                        arpeggiation
+
+                                    else
+                                        { arpeggiation
+                                            | speed = 0.5 + speed
+                                            , mod = 0.2 + mod
+                                        }
+                                )
+                                flipCoin
+                                (getFloat 0.2)
+                                (getFloat 0.4)
+                            )
+                            seed
+                in
+                ( { sc | arpeggiation = newArpeggiation }
+                , newSeed
+                )
+           )
+
+
 getRandomUpgrade : Random.Seed -> ( SoundConfig, Random.Seed )
 getRandomUpgrade seed_ =
     ( initSoundConfig, seed_ )
@@ -976,6 +1048,15 @@ update msg model =
             , sfxrOut <| encodeSoundConfig newSoundConfig
             )
 
+        SetCoinPickup ->
+            let
+                ( newSoundConfig, newSeed ) =
+                    getRandomCoinPickup model.globalSeed
+            in
+            ( { model | globalSeed = newSeed, soundConfig = newSoundConfig }
+            , sfxrOut <| encodeSoundConfig newSoundConfig
+            )
+
         PlaySound ->
             ( model, sfxrOut <| encodeSoundConfig model.soundConfig )
 
@@ -1284,6 +1365,7 @@ view model =
                  [ button PlaySound "Play"
                  , button SetHitHurt "RNG Hit/Hurt"
                  , button SetUpgrade "RNG Upgrade"
+                 , button SetCoinPickup "RNG Coin/Pickup"
                  ]
                 )
             , Lazy.lazy viewSliders model

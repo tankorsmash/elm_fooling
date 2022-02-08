@@ -322,6 +322,7 @@ type Msg
       -- EndDay triggers onPrepNewDay
     | EndDay
     | CashInQuestType QuestData
+    | ToggleViewGemUpgradesInPostPhase
 
 
 type alias TradeOrder =
@@ -1446,6 +1447,7 @@ type alias Model =
     , quests : Quests
     , timeOfDay : TimeOfDay
     , numItemsToStartDayWith : Int
+    , shouldViewGemUpgradesInPostPhase : Bool
     }
 
 
@@ -2211,6 +2213,7 @@ init timeNow device hash key =
                 , currentPhase = PrepPhase
                 }
             , numItemsToStartDayWith = 5
+            , shouldViewGemUpgradesInPostPhase = False
             }
     in
     ( initModel
@@ -3277,6 +3280,9 @@ update msg model =
 
             else
                 ( model, Cmd.none )
+
+        ToggleViewGemUpgradesInPostPhase ->
+            ( { model | shouldViewGemUpgradesInPostPhase = not model.shouldViewGemUpgradesInPostPhase }, Cmd.none )
 
 
 
@@ -6205,7 +6211,7 @@ viewSingleQuest quest =
                             ++ quantityToStr target
 
         CompleteQuest { questType, questId } cashedInStatus ->
-            text <| "Completed quest!\n" ++ (getQuestTitle questType)
+            text <| "Completed quest!\n" ++ getQuestTitle questType
 
 
 quests_display : UI.ColorTheme -> Quests -> Element Msg
@@ -6484,8 +6490,8 @@ viewShopPrepPhase model =
         ]
 
 
-viewShopPostPhase : UI.ColorTheme -> PostPhaseData -> Quests -> Element Msg
-viewShopPostPhase colorTheme postPhaseData quests =
+viewShopSummary : UI.ColorTheme -> PostPhaseData -> Quests -> Element Msg
+viewShopSummary colorTheme postPhaseData quests =
     let
         getSoldNumFromItemDbRecord : ItemDbRecord -> Int
         getSoldNumFromItemDbRecord { trade_stats } =
@@ -6569,19 +6575,61 @@ viewShopPostPhase colorTheme postPhaseData quests =
                        , text <| "Most expensive item bought: " ++ "???"
                        ]
             ]
-        , el [ centerX, paddingXY 0 100 ] <|
-            column []
-                [ el [ centerX, padding 10 ] <| text "End the day?"
-                , UI.button <|
-                    UI.TextParams
-                        { buttonType = UI.Secondary
-                        , colorTheme = colorTheme
-                        , customAttrs = [ width (fill |> Element.minimum 200) ]
-                        , onPressMsg = EndDay
-                        , textLabel = "Go to sleep"
-                        }
+        , el [ centerX, paddingXY 0 100, width fill ] <|
+            let
+                _ =
+                    123
+
+                columnStyle =
+                    [ centerX, width (fill |> Element.maximum 200), alignBottom ]
+            in
+            row [ spacing 50, width fill, centerX ]
+                [ column columnStyle
+                    [ el [ centerX, padding 10 ] <|
+                        paragraph [ Font.center ] [ text "Spend gems on permanent upgrades?" ]
+                    , UI.button <|
+                        UI.TextParams
+                            { buttonType = UI.Primary
+                            , colorTheme = colorTheme
+                            , customAttrs = [ width (fill |> Element.minimum 200) ]
+                            , onPressMsg = ToggleViewGemUpgradesInPostPhase
+                            , textLabel = "Upgrades"
+                            }
+                    ]
+                , column columnStyle
+                    [ el [ centerX, padding 10 ] <|
+                        text "End the day?"
+                    , UI.button <|
+                        UI.TextParams
+                            { buttonType = UI.Secondary
+                            , colorTheme = colorTheme
+                            , customAttrs = [ width (fill |> Element.minimum 200) ]
+                            , onPressMsg = EndDay
+                            , textLabel = "Go to sleep"
+                            }
+                    ]
                 ]
         ]
+
+
+viewGemUpgradesInPostPhase : UI.ColorTheme -> PostPhaseData -> Quests -> Element Msg
+viewGemUpgradesInPostPhase colorTheme postPhaseData quests =
+    column [ width fill, Font.size 16 ]
+        [ Element.el [ UI.font_scaled 3, padding_bottom 10 ] <| text "Upgrades"
+        , column [ spacingXY 0 20 ]
+            [ el [ Font.italic ] <| text "You've earned some gems. These will help the next day go a little smoother."
+            , paragraph [] [ text "Each unlock is permanent. It might be cosmetic, it might be useless, it might be a whole new mechanic. Only one way to find out." ]
+            ]
+        ]
+
+
+viewShopPostPhase : UI.ColorTheme -> Bool -> PostPhaseData -> Quests -> Element Msg
+viewShopPostPhase colorTheme shouldViewGemUpgradesInPostPhase postPhaseData quests =
+    if not shouldViewGemUpgradesInPostPhase then
+        viewShopSummary colorTheme postPhaseData quests
+
+    else
+        viewGemUpgradesInPostPhase colorTheme postPhaseData quests
 
 
 view_shop_tab_type : Model -> Element Msg
@@ -6941,7 +6989,7 @@ view model =
                         Lazy.lazy viewShopPrepPhase model
 
                     PostPhase postPhaseData ->
-                        Lazy.lazy3 viewShopPostPhase model.colorTheme postPhaseData model.quests
+                        Lazy.lazy4 viewShopPostPhase model.colorTheme model.shouldViewGemUpgradesInPostPhase postPhaseData model.quests
 
             ItemsUnlockedTabType ->
                 Lazy.lazy2 view_items_unlocked_tab_type model.colorTheme model.item_db

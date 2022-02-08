@@ -1268,7 +1268,7 @@ type ProgressUnlock
     | UnlockedUpgrades
     | UnlockedShopTrends
     | UnlockedSpecialActions
-    | UnlockedQuests
+    | UnlockedLifeQuests
 
 
 type alias ProgressUnlocks =
@@ -1299,8 +1299,8 @@ encodeProgressUnlock progressUnlock =
         UnlockedSpecialActions ->
             Encode.string "UnlockedSpecialActions"
 
-        UnlockedQuests ->
-            Encode.string "UnlockedQuests"
+        UnlockedLifeQuests ->
+            Encode.string "UnlockedLifeQuests"
 
 
 decodeProgressUnlock : Decoder ProgressUnlock
@@ -1330,8 +1330,8 @@ decodeProgressUnlock =
                     "UnlockedSpecialActions" ->
                         Decode.succeed UnlockedSpecialActions
 
-                    "UnlockedQuests" ->
-                        Decode.succeed UnlockedQuests
+                    "UnlockedLifeQuests" ->
+                        Decode.succeed UnlockedLifeQuests
 
                     _ ->
                         Decode.fail ("unregnized ProgressUnlock: " ++ str)
@@ -6214,8 +6214,8 @@ viewSingleQuest quest =
             text <| "Completed quest!\n" ++ getQuestTitle questType
 
 
-quests_display : UI.ColorTheme -> Quests -> Element Msg
-quests_display colorTheme quests =
+quests_display : UI.ColorTheme -> Quests -> ProgressUnlocks -> Element Msg
+quests_display colorTheme quests progressUnlocks =
     column [ height fill ]
         [ column [ height fill ]
             ([ el [ UI.font_scaled 2, border_bottom 2, alignTop ] <| text "Today's Quests" ]
@@ -6223,12 +6223,26 @@ quests_display colorTheme quests =
                         List.map viewSingleQuest quests.dailyQuests
                    ]
             )
-        , column [ height fill ]
-            ([ el [ UI.font_scaled 2, border_bottom 2, alignTop ] <| text "Life Quests" ]
-                ++ [ column [ paddingXY 0 10, spacing 5 ] <|
-                        List.map viewSingleQuest quests.persistentQuests
-                   ]
-            )
+        , if containsProgressUnlock UnlockedLifeQuests progressUnlocks then
+            column [ height fill ]
+                ([]
+                    ++ [ el [ UI.font_scaled 2, border_bottom 2, alignTop ] <|
+                            text "Life Quests"
+                       ]
+                    ++ [ column [ paddingXY 0 10, spacing 5 ]
+                            [ case quests.persistentQuests of
+                                [] ->
+                                    text "Go find a Life Quest"
+
+                                persistentQuests ->
+                                    column [ paddingXY 0 10, spacing 5 ] <|
+                                        List.map viewSingleQuest persistentQuests
+                            ]
+                       ]
+                )
+
+          else
+            Element.none
         ]
 
 
@@ -6763,11 +6777,7 @@ view_shop_tab_type model =
                 [ el [ width <| fillPortion 3, alignTop ] <| Lazy.lazy2 player_action_log_display model.item_db model.historical_player_actions
                 , el [ width <| fillPortion 6, alignTop ] <| Lazy.lazy3 playerUpgrades_display model.colorTheme model.playerUpgrades model.progressUnlocks
                 , el [ width <| fillPortion 3, alignTop ] <|
-                    if containsProgressUnlock UnlockedQuests model.progressUnlocks then
-                        Lazy.lazy2 quests_display model.colorTheme model.quests
-
-                    else
-                        Element.none
+                    Lazy.lazy3 quests_display model.colorTheme model.quests model.progressUnlocks
                 ]
             , case getPlayer model.characters of
                 Player player ->

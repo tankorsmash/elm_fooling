@@ -317,7 +317,10 @@ type Msg
     | GotBattleMsg Battle.Msg
     | GotUiOptionsMsg UiOptionMsg
     | ChangeCurrentPhase TimePhase
+      -- BeginDay just sets up the ActivePhase with the current time etc
     | BeginDay
+      -- EndDay triggers onPrepNewDay
+    | EndDay
     | CashInQuestType QuestData
 
 
@@ -1407,9 +1410,7 @@ type alias PostPhaseData =
 
 
 type TimePhase
-    = -- setting up the items in the shop. automatically advanced to ActivePhase on finish
-      PrePrepPhase
-    | --viewing what the day'll be (which location, how many enemy traders, any active events), maybe picking an item
+    = --viewing what the day'll be (which location, how many enemy traders, any active events), maybe picking an item
       PrepPhase
     | -- ai and player upgrades tick up. itemDbAtStart is for comparing model.item_db after-hours, to show interesting facts like 'you sold X boots' or 'ais bought a lot of swords'
       ActivePhase Time.Posix ActivePhaseData
@@ -3255,22 +3256,20 @@ update msg model =
             updateUiOptions uiOptMsg model
 
         ChangeCurrentPhase newPhase ->
-            case newPhase of
-                PrePrepPhase ->
-                    ( onPrepNewDay model, Cmd.none )
+            let
+                { timeOfDay } =
+                    model
 
-                _ ->
-                    let
-                        { timeOfDay } =
-                            model
-
-                        newTimeOfDay =
-                            { timeOfDay | currentPhase = newPhase }
-                    in
-                    ( setTimeOfDay model newTimeOfDay, Cmd.none )
+                newTimeOfDay =
+                    { timeOfDay | currentPhase = newPhase }
+            in
+            ( setTimeOfDay model newTimeOfDay, Cmd.none )
 
         BeginDay ->
             ( onBeginCurrentDay model, Cmd.none )
+
+        EndDay ->
+            ( onEndCurrentDay model, Cmd.none )
 
         CashInQuestType ({ questType, questId } as questData) ->
             if isQuestTrackerComplete (getQuestTracker questType) then
@@ -3324,6 +3323,13 @@ onBeginCurrentDay ({ timeOfDay, item_db, globalSeed, characters, ai_tick_time } 
     { model
         | timeOfDay = newTimeOfDay
     }
+
+
+{-| triggered when you click 'Go to sleep' from the post screen.
+-}
+onEndCurrentDay : Model -> Model
+onEndCurrentDay ({ timeOfDay, item_db, globalSeed, characters, ai_tick_time } as model) =
+    onPrepNewDay model
 
 
 {-| called at the very start of a new day, where it preps all the new items and
@@ -3387,6 +3393,8 @@ onPrepNewDay ({ timeOfDay, item_db, globalSeed, characters, ai_tick_time, quests
     { model
         | characters = setShop (Shop newShop) model.characters
         , globalSeed = newGlobalSeed
+        , quests = newQuests
+        , timeOfDay = { timeOfDay | currentPhase = PrepPhase }
     }
 
 
@@ -6575,7 +6583,7 @@ viewShopPostPhase colorTheme postPhaseData quests =
                         { buttonType = UI.Secondary
                         , colorTheme = colorTheme
                         , customAttrs = [ width (fill |> Element.minimum 200) ]
-                        , onPressMsg = ChangeCurrentPhase PrepPhase
+                        , onPressMsg = EndDay
                         , textLabel = "Go to sleep"
                         }
                 ]
@@ -6936,10 +6944,6 @@ view model =
                         Lazy.lazy view_shop_tab_type model
 
                     PrepPhase ->
-                        Lazy.lazy viewShopPrepPhase model
-
-                    PrePrepPhase ->
-                        --just stay on the prephase for a frame or two, since it shouldnt take long to preload the day
                         Lazy.lazy viewShopPrepPhase model
 
                     PostPhase postPhaseData ->

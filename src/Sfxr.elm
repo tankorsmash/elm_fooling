@@ -1001,14 +1001,26 @@ subscriptions model =
 viewShape : Shape -> Element Msg
 viewShape shape =
     let
-        onChange =
-            OnSliderChanged << ShapeConfigType << ShapeUpdateType
+        shapeButton shapeType label =
+            UI.button <|
+                UI.TextParams
+                    { buttonType = UI.Secondary
+                    , colorTheme = UI.BrightTheme
+                    , customAttrs = []
+                    , onPressMsg =
+                        shapeType
+                            |> (ShapeUpdateType
+                                    >> ShapeConfigType
+                                    >> OnSliderChanged
+                               )
+                    , textLabel = label
+                    }
     in
-    row [ width fill ]
-        [ UI.button <| UI.TextParams { buttonType = UI.Secondary, colorTheme = UI.BrightTheme, customAttrs = [], onPressMsg = Square |> onChange, textLabel = "Square" }
-        , UI.button <| UI.TextParams { buttonType = UI.Secondary, colorTheme = UI.BrightTheme, customAttrs = [], onPressMsg = Sawtooth |> onChange, textLabel = "Sawtooth" }
-        , UI.button <| UI.TextParams { buttonType = UI.Secondary, colorTheme = UI.BrightTheme, customAttrs = [], onPressMsg = Sine |> onChange, textLabel = "Sine" }
-        , UI.button <| UI.TextParams { buttonType = UI.Secondary, colorTheme = UI.BrightTheme, customAttrs = [], onPressMsg = Noise |> onChange, textLabel = "Noise" }
+    row [ width fill, spacingXY 10 0 ]
+        [ shapeButton Square "Square"
+        , shapeButton Sawtooth "Sawtooth"
+        , shapeButton Sine "Sine"
+        , shapeButton Noise "Noise"
         ]
 
 

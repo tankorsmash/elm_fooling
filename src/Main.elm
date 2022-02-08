@@ -468,7 +468,10 @@ homeView model =
     in
     div []
         [ elm_ui_hack_layout
-        , tab_content
+        , div []
+            [ viewSfxr model
+            , tab_content
+            ]
         ]
 
 
@@ -512,8 +515,7 @@ view : Model -> Browser.Document Msg
 view model =
     { title = tab_type_to_str model.current_tab ++ " | Elm Fooling"
     , body =
-        [ viewSfxr model,
-          case model.page_info.page of
+        [ case model.page_info.page of
             NotFoundPage ->
                 div [] [ text "Not found page" ]
 

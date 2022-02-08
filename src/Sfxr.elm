@@ -1247,6 +1247,7 @@ view model =
             ]
         }
         [ padding 20
+        , Element.htmlAttribute <| Html.Attributes.id "sfxr"
         ]
     <|
         column [ width fill ]

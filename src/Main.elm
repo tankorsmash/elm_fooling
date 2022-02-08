@@ -439,8 +439,8 @@ title_case raw_str =
             raw_str
 
 
-homeView : Model -> Html Msg
-homeView model =
+viewContent : Model -> Html Msg
+viewContent model =
     let
         tab_content =
             case model.current_tab of
@@ -520,7 +520,7 @@ view model =
                 div [] [ text "Not found page" ]
 
             HomePage ->
-                homeView model
+                viewContent model
 
             UnsetPage ->
                 div [] [ text "UNSET PAGE" ]

@@ -394,6 +394,51 @@ decodeMisc =
         (Decode.field "sample_size" Decode.int)
 
 
+setFreqBase : Float -> Frequency -> Frequency
+setFreqBase newBase frequency =
+    { frequency | base = newBase }
+
+
+setFreqRamp : Float -> Frequency -> Frequency
+setFreqRamp newRamp frequency =
+    { frequency | ramp = newRamp }
+
+
+setShape : Shape -> SoundConfig -> SoundConfig
+setShape newShape sc =
+    { sc | shape = newShape }
+
+
+setRetriggerRepeatSpeed : Float -> Retrigger -> Retrigger
+setRetriggerRepeatSpeed repeatSpeed retrigger =
+    { retrigger | repeatSpeed = repeatSpeed }
+
+
+setEnvAttack : Float -> Envelope -> Envelope
+setEnvAttack attack envelope =
+    { envelope | attack = attack }
+
+
+setEnvSustain : Float -> Envelope -> Envelope
+setEnvSustain sustain envelope =
+    { envelope | sustain = sustain }
+
+
+setEnvDecay : Float -> Envelope -> Envelope
+setEnvDecay decay envelope =
+    { envelope | decay = decay }
+
+
+setEnvPunch : Float -> Envelope -> Envelope
+setEnvPunch punch envelope =
+    { envelope | punch = punch }
+
+
+setDutyDuty : Float -> Duty -> Duty
+setDutyDuty newDuty duty =
+    { duty | duty = newDuty }
+
+
 type alias SoundConfig =
     { shape : Shape
     , envelope : Envelope
@@ -600,10 +645,9 @@ getRandomHitHurt seed_ =
                         Random.step
                             (Random.map2
                                 (\base ramp ->
-                                    { frequency
-                                        | base = 0.2 + base
-                                        , ramp = -0.3 - ramp
-                                    }
+                                    sc.frequency
+                                        |> setFreqBase (0.2 + base)
+                                        |> setFreqRamp (-0.3 - ramp)
                                 )
                                 (getFloat 0.6)
                                 (getFloat 0.4)
@@ -614,17 +658,16 @@ getRandomHitHurt seed_ =
                 , newSeed
                 )
            )
-        |> (\( { envelope } as sc, seed ) ->
+        |> (\( sc, seed ) ->
                 let
                     ( newEnvelope, newSeed ) =
                         Random.step
                             (Random.map2
                                 (\sustain decay ->
-                                    { envelope
-                                        | attack = 0
-                                        , sustain = sustain
-                                        , decay = 0.1 + decay
-                                    }
+                                    sc.envelope
+                                        |> setEnvAttack 0
+                                        |> setEnvSustain sustain
+                                        |> setEnvDecay (0.1 + decay)
                                 )
                                 (getFloat 0.1)
                                 (getFloat 0.2)
@@ -665,15 +708,14 @@ getRandomHitHurt seed_ =
 getRandomCoinPickup : Random.Seed -> ( SoundConfig, Random.Seed )
 getRandomCoinPickup seed_ =
     ( initSoundConfig, seed_ )
-        |> (\( { frequency } as sc, seed ) ->
+        |> (\( sc, seed ) ->
                 let
                     ( newFrequency, newSeed ) =
                         Random.step
                             (Random.map
                                 (\base ->
-                                    { frequency
-                                        | base = 0.4 + base
-                                    }
+                                    sc.frequency
+                                        |> setFreqBase (0.4 + base)
                                 )
                                 (getFloat 0.5)
                             )
@@ -683,18 +725,17 @@ getRandomCoinPickup seed_ =
                 , newSeed
                 )
            )
-        |> (\( { envelope } as sc, seed ) ->
+        |> (\( sc, seed ) ->
                 let
                     ( newEnvelope, newSeed ) =
                         Random.step
                             (Random.map3
                                 (\sustain decay punch ->
-                                    { envelope
-                                        | attack = 0
-                                        , sustain = sustain
-                                        , decay = 0.1 + decay
-                                        , punch = 0.3 + punch
-                                    }
+                                    sc.envelope
+                                        |> setEnvAttack 0
+                                        |> setEnvSustain sustain
+                                        |> setEnvDecay (0.1 + decay)
+                                        |> setEnvPunch (0.3 + punch)
                                 )
                                 (getFloat 0.1)
                                 (getFloat 0.4)
@@ -744,10 +785,10 @@ getRandomUpgrade seed_ =
                             (Random.map2
                                 (\shouldSawtooth dutyVal ->
                                     if shouldSawtooth then
-                                        ( Sawtooth, { duty | duty = 1 } )
+                                        ( Sawtooth, setDutyDuty 1 sc.duty )
 
                                     else
-                                        ( shape, { duty | duty = dutyVal } )
+                                        ( shape, sc.duty |> setDutyDuty dutyVal )
                                 )
                                 flipCoin
                                 (getFloat 0.6)
@@ -756,16 +797,15 @@ getRandomUpgrade seed_ =
                 in
                 ( { sc | duty = newDuty, shape = newShape }, newSeed )
            )
-        |> (\( { frequency } as sc, seed ) ->
+        |> (\( sc, seed ) ->
                 let
                     ( newFrequency, newSeed ) =
                         Random.step
                             (Random.map2
                                 (\base ramp ->
-                                    { frequency
-                                        | base = 0.2 + base
-                                        , ramp = 0.1 + ramp
-                                    }
+                                    sc.frequency
+                                        |> setFreqBase (0.2 + base)
+                                        |> setFreqRamp (0.1 + ramp)
                                 )
                                 (getFloat 0.3)
                                 (getFloat 0.4)
@@ -777,13 +817,14 @@ getRandomUpgrade seed_ =
                 )
            )
         --TODO else case handling p_freq_ramp, p_vib_strength and, p_vib_speed
-        |> (\( { retrigger } as sc, seed ) ->
+        |> (\( sc, seed ) ->
                 let
                     ( newRetrigger, newSeed ) =
                         Random.step
                             (Random.map
                                 (\repeatSpeed ->
-                                    { retrigger | repeatSpeed = 0.4 + repeatSpeed }
+                                    sc.retrigger
+                                        |> setRetriggerRepeatSpeed (0.4 + repeatSpeed)
                                 )
                                 (getFloat 0.4)
                             )
@@ -791,17 +832,16 @@ getRandomUpgrade seed_ =
                 in
                 ( { sc | retrigger = newRetrigger }, newSeed )
            )
-        |> (\( { envelope } as sc, seed ) ->
+        |> (\( sc, seed ) ->
                 let
                     ( newEnvelope, newSeed ) =
                         Random.step
                             (Random.map2
                                 (\sustain decay ->
-                                    { envelope
-                                        | attack = 0
-                                        , sustain = sustain
-                                        , decay = 0.1 + decay
-                                    }
+                                    sc.envelope
+                                        |> setEnvAttack 0
+                                        |> setEnvSustain sustain
+                                        |> setEnvDecay (0.1 + decay)
                                 )
                                 (getFloat 0.4)
                                 (getFloat 0.4)

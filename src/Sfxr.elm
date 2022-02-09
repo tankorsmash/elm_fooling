@@ -555,13 +555,14 @@ combinePartialsIntoSoundConfig partialA partialB =
 
 
 type alias Model =
-    { soundConfig : SoundConfig, globalSeed : Random.Seed }
+    { soundConfig : SoundConfig, globalSeed : Random.Seed, hideEmptySliders : Bool }
 
 
 init : Model
 init =
     { soundConfig = initSoundConfig
     , globalSeed = Random.initialSeed 12345
+    , hideEmptySliders = False
     }
 
 
@@ -1217,8 +1218,8 @@ explain =
     Element.explain Debug.todo
 
 
-paramSlider : List (Element.Attribute Msg) -> (Float -> Msg) -> Float -> Element Msg
-paramSlider attrs onChange value =
+paramSlider : List (Element.Attribute Msg) -> Bool -> (Float -> Msg) -> Float -> Element Msg
+paramSlider attrs hideEmptySliders onChange value =
     let
         leftSize =
             round <| value * 1000
@@ -1252,186 +1253,190 @@ paramSlider attrs onChange value =
                     Element.none
                 ]
     in
-    Input.slider
-        ([ width fill
-         , Element.behindContent background
-         , Element.mouseOver [ Element.scale 2.0, Background.color <| UI.color_primary ]
-         ]
-            ++ attrs
-        )
-        { onChange = onChange
-        , label =
-            Input.labelRight
-                [ Element.width (Element.px 100) ]
-            <|
-                (text <| String.fromFloat value)
-        , min = 0.0
-        , max = 1.0
-        , value = value
-        , thumb =
-            -- Input.defaultThumb
-            Input.thumb
-                [ Element.mouseOver [ Element.scale 2.0, Background.color <| UI.color_primary ]
-                , height <| Element.px 20
-                , width <| Element.px 20
-                , Background.color UI.color_grey
-                , Border.rounded 10
-                , Border.width 2
-                , Border.color UI.color_off_black
-                ]
-        , step = Just 0.00001
-        }
+    if hideEmptySliders && value == 0 then
+        Element.none
+
+    else
+        Input.slider
+            ([ width fill
+             , Element.behindContent background
+             , Element.mouseOver [ Element.scale 2.0, Background.color <| UI.color_primary ]
+             ]
+                ++ attrs
+            )
+            { onChange = onChange
+            , label =
+                Input.labelRight
+                    [ Element.width (Element.px 100) ]
+                <|
+                    (text <| String.fromFloat value)
+            , min = 0.0
+            , max = 1.0
+            , value = value
+            , thumb =
+                -- Input.defaultThumb
+                Input.thumb
+                    [ Element.mouseOver [ Element.scale 2.0, Background.color <| UI.color_primary ]
+                    , height <| Element.px 20
+                    , width <| Element.px 20
+                    , Background.color UI.color_grey
+                    , Border.rounded 10
+                    , Border.width 2
+                    , Border.color UI.color_off_black
+                    ]
+            , step = Just 0.00001
+            }
 
 
-viewEnvelope : Envelope -> Element Msg
-viewEnvelope envelope =
+viewEnvelope : Bool -> Envelope -> Element Msg
+viewEnvelope hideEmptySliders envelope =
     let
         onChange =
             OnSliderChanged << EnvelopeConfigType
     in
     column [ width fill ]
         [ text "Envelope"
-        , paramSlider [] (EnvAttack >> onChange) envelope.attack
-        , paramSlider [] (EnvSustain >> onChange) envelope.sustain
-        , paramSlider [] (EnvPunch >> onChange) envelope.punch
-        , paramSlider [] (EnvDecay >> onChange) envelope.decay
+        , paramSlider [] hideEmptySliders (EnvAttack >> onChange) envelope.attack
+        , paramSlider [] hideEmptySliders (EnvSustain >> onChange) envelope.sustain
+        , paramSlider [] hideEmptySliders (EnvPunch >> onChange) envelope.punch
+        , paramSlider [] hideEmptySliders (EnvDecay >> onChange) envelope.decay
         ]
 
 
-viewFrequency : Frequency -> Element Msg
-viewFrequency frequency =
+viewFrequency : Bool -> Frequency -> Element Msg
+viewFrequency hideEmptySliders frequency =
     let
         onChange =
             OnSliderChanged << FrequencyConfigType
     in
     column [ width fill ]
         [ text "Frequency"
-        , paramSlider [] (FrqBase >> onChange) frequency.base
-        , paramSlider [] (FrqLimit >> onChange) frequency.limit
-        , paramSlider [] (FrqRamp >> onChange) frequency.ramp
-        , paramSlider [] (FrqDramp >> onChange) frequency.dramp
+        , paramSlider [] hideEmptySliders (FrqBase >> onChange) frequency.base
+        , paramSlider [] hideEmptySliders (FrqLimit >> onChange) frequency.limit
+        , paramSlider [] hideEmptySliders (FrqRamp >> onChange) frequency.ramp
+        , paramSlider [] hideEmptySliders (FrqDramp >> onChange) frequency.dramp
         ]
 
 
-viewVibrato : Vibrato -> Element Msg
-viewVibrato vibrato =
+viewVibrato : Bool -> Vibrato -> Element Msg
+viewVibrato hideEmptySliders vibrato =
     let
         onChange =
             OnSliderChanged << VibratoConfigType
     in
     column [ width fill ]
         [ text "Vibrato"
-        , paramSlider [] (VibStrength >> onChange) vibrato.strength
-        , paramSlider [] (VibSpeed >> onChange) vibrato.speed
+        , paramSlider [] hideEmptySliders (VibStrength >> onChange) vibrato.strength
+        , paramSlider [] hideEmptySliders (VibSpeed >> onChange) vibrato.speed
         ]
 
 
-viewArpeggiation : Arpeggiation -> Element Msg
-viewArpeggiation arpeggiation =
+viewArpeggiation : Bool -> Arpeggiation -> Element Msg
+viewArpeggiation hideEmptySliders arpeggiation =
     let
         onChange =
             OnSliderChanged << ArpeggiationConfigType
     in
     column [ width fill ]
         [ text "Arpeggiation"
-        , paramSlider [] (ArpMod >> onChange) arpeggiation.mod
-        , paramSlider [] (ArpSpeed >> onChange) arpeggiation.speed
+        , paramSlider [] hideEmptySliders (ArpMod >> onChange) arpeggiation.mod
+        , paramSlider [] hideEmptySliders (ArpSpeed >> onChange) arpeggiation.speed
         ]
 
 
-viewDuty : Duty -> Element Msg
-viewDuty duty =
+viewDuty : Bool -> Duty -> Element Msg
+viewDuty hideEmptySliders duty =
     let
         onChange =
             OnSliderChanged << DutyConfigType
     in
     column [ width fill ]
         [ text "Duty"
-        , paramSlider [] (DtyDuty >> onChange) duty.duty
-        , paramSlider [] (DtyRamp >> onChange) duty.ramp
+        , paramSlider [] hideEmptySliders (DtyDuty >> onChange) duty.duty
+        , paramSlider [] hideEmptySliders (DtyRamp >> onChange) duty.ramp
         ]
 
 
-viewRetrigger : Retrigger -> Element Msg
-viewRetrigger retrigger =
+viewRetrigger : Bool -> Retrigger -> Element Msg
+viewRetrigger hideEmptySliders retrigger =
     let
         onChange =
             OnSliderChanged << RetriggerConfigType
     in
     column [ width fill ]
         [ text "Retrigger"
-        , paramSlider [] (RetRepeatSpeed >> onChange) retrigger.repeatSpeed
+        , paramSlider [] hideEmptySliders (RetRepeatSpeed >> onChange) retrigger.repeatSpeed
         ]
 
 
-viewFlanger : Flanger -> Element Msg
-viewFlanger flanger =
+viewFlanger : Bool -> Flanger -> Element Msg
+viewFlanger hideEmptySliders flanger =
     let
         onChange =
             OnSliderChanged << FlangerConfigType
     in
     column [ width fill ]
         [ text "Flanger"
-        , paramSlider [] (FlaOffset >> onChange) flanger.offset
-        , paramSlider [] (FlaRamp >> onChange) flanger.ramp
+        , paramSlider [] hideEmptySliders (FlaOffset >> onChange) flanger.offset
+        , paramSlider [] hideEmptySliders (FlaRamp >> onChange) flanger.ramp
         ]
 
 
-viewLowPassFilter : LowPassFilter -> Element Msg
-viewLowPassFilter lowPassFilter =
+viewLowPassFilter : Bool -> LowPassFilter -> Element Msg
+viewLowPassFilter hideEmptySliders lowPassFilter =
     let
         onChange =
             OnSliderChanged << LowPassFilterConfigType
     in
     column [ width fill ]
         [ text "LowPassFilter"
-        , paramSlider [] (LpfFrequency >> onChange) lowPassFilter.frequency
-        , paramSlider [] (LpfRamp >> onChange) lowPassFilter.ramp
-        , paramSlider [] (LpfResonance >> onChange) lowPassFilter.resonance
+        , paramSlider [] hideEmptySliders (LpfFrequency >> onChange) lowPassFilter.frequency
+        , paramSlider [] hideEmptySliders (LpfRamp >> onChange) lowPassFilter.ramp
+        , paramSlider [] hideEmptySliders (LpfResonance >> onChange) lowPassFilter.resonance
         ]
 
 
-viewHighPassFilter : HighPassFilter -> Element Msg
-viewHighPassFilter highPassFilter =
+viewHighPassFilter : Bool -> HighPassFilter -> Element Msg
+viewHighPassFilter hideEmptySliders highPassFilter =
     let
         onChange =
             OnSliderChanged << HighPassFilterConfigType
     in
     column [ width fill ]
         [ text "HighPassFilter"
-        , paramSlider [] (HpfFrequency >> onChange) highPassFilter.frequency
-        , paramSlider [] (HpfRamp >> onChange) highPassFilter.ramp
+        , paramSlider [] hideEmptySliders (HpfFrequency >> onChange) highPassFilter.frequency
+        , paramSlider [] hideEmptySliders (HpfRamp >> onChange) highPassFilter.ramp
         ]
 
 
-viewMisc : Misc -> Element Msg
-viewMisc misc =
+viewMisc : Bool -> Misc -> Element Msg
+viewMisc hideEmptySliders misc =
     let
         onChange =
             OnSliderChanged << MiscConfigType
     in
     column [ width fill ]
         [ text "Misc"
-        , paramSlider [] (MscVolume >> onChange) misc.volume
-        , paramSlider [] (round >> MscSampleRate >> onChange) <| toFloat misc.sampleRate
-        , paramSlider [] (round >> MscSampleSize >> onChange) <| toFloat misc.sampleSize
+        , paramSlider [] hideEmptySliders (MscVolume >> onChange) misc.volume
+        , paramSlider [] hideEmptySliders (round >> MscSampleRate >> onChange) <| toFloat misc.sampleRate
+        , paramSlider [] hideEmptySliders (round >> MscSampleSize >> onChange) <| toFloat misc.sampleSize
         ]
 
 
 viewSliders : Model -> Element Msg
-viewSliders ({ soundConfig } as model) =
+viewSliders ({ soundConfig, hideEmptySliders } as model) =
     column [ padding 10, width (fill |> Element.maximum 1000), spacing 10, centerX ]
         [ Lazy.lazy viewShape soundConfig.shape
-        , Lazy.lazy viewEnvelope soundConfig.envelope
-        , Lazy.lazy viewFrequency soundConfig.frequency
-        , Lazy.lazy viewVibrato soundConfig.vibrato
-        , Lazy.lazy viewArpeggiation soundConfig.arpeggiation
-        , Lazy.lazy viewDuty soundConfig.duty
-        , Lazy.lazy viewRetrigger soundConfig.retrigger
-        , Lazy.lazy viewFlanger soundConfig.flanger
-        , Lazy.lazy viewLowPassFilter soundConfig.lowPassFilter
-        , Lazy.lazy viewHighPassFilter soundConfig.highPassFilter
-        , Lazy.lazy viewMisc soundConfig.misc
+        , Lazy.lazy2 viewEnvelope hideEmptySliders soundConfig.envelope
+        , Lazy.lazy2 viewFrequency hideEmptySliders soundConfig.frequency
+        , Lazy.lazy2 viewVibrato hideEmptySliders soundConfig.vibrato
+        , Lazy.lazy2 viewArpeggiation hideEmptySliders soundConfig.arpeggiation
+        , Lazy.lazy2 viewDuty hideEmptySliders soundConfig.duty
+        , Lazy.lazy2 viewRetrigger hideEmptySliders soundConfig.retrigger
+        , Lazy.lazy2 viewFlanger hideEmptySliders soundConfig.flanger
+        , Lazy.lazy2 viewLowPassFilter hideEmptySliders soundConfig.lowPassFilter
+        , Lazy.lazy2 viewHighPassFilter hideEmptySliders soundConfig.highPassFilter
+        , Lazy.lazy2 viewMisc hideEmptySliders soundConfig.misc
         ]
 
 

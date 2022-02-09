@@ -132,6 +132,7 @@ type Msg
     | SetHitHurt
     | SetUpgrade
     | SetCoinPickup
+    | SetHideEmptySliders Bool
 
 
 type Shape
@@ -1174,6 +1175,9 @@ update msg model =
         OnSliderChanged configType ->
             updateOnSliderChanged model configType
 
+        SetHideEmptySliders newValue ->
+            ( { model | hideEmptySliders = newValue }, Cmd.none )
+
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -1440,6 +1444,18 @@ viewSliders ({ soundConfig, hideEmptySliders } as model) =
         ]
 
 
+viewControls : Model -> Element Msg
+viewControls model =
+    column [ padding 10, width (fill |> Element.maximum 1000), spacing 10, centerX ]
+        [ Input.checkbox []
+            { onChange = SetHideEmptySliders
+            , icon = Input.defaultCheckbox
+            , checked = model.hideEmptySliders
+            , label = Input.labelRight [] (text "Hide Zero Rows")
+            }
+        ]
+
+
 view : Model -> Html.Html Msg
 view model =
     Element.layoutWith
@@ -1476,6 +1492,7 @@ view model =
                  , button SetCoinPickup "RNG Coin/Pickup"
                  ]
                 )
+            , Lazy.lazy viewControls model
             , Lazy.lazy viewSliders model
             ]
 

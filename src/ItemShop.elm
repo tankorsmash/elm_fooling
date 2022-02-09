@@ -4856,17 +4856,6 @@ portion : Int -> Element.Attribute msg
 portion =
     width << fillPortion
 
-
-padding_bottom : Int -> Element.Attribute msg
-padding_bottom pad =
-    Element.paddingEach { bottom = pad, left = 0, right = 0, top = 0 }
-
-
-border_bottom : Int -> Element.Attribute msg
-border_bottom bord =
-    Border.widthEach { bottom = bord, left = 0, right = 0, top = 0 }
-
-
 render_single_trade_log_entry : UI.ColorTheme -> ItemDb -> Characters -> ItemTradeLog -> Element msg
 render_single_trade_log_entry colorTheme item_db ((Characters { player, shop, others }) as characters) trade_log =
     let
@@ -5088,7 +5077,7 @@ trends_display colorTheme shiftIsPressed item_db shop_trends ((Characters { play
                )
         )
     <|
-        [ el [ UI.font_scaled 2, border_bottom 2 ] <| text "Shop Trends"
+        [ el [ UI.font_scaled 2, UI.border_bottom 2 ] <| text "Shop Trends"
         , rendered_popularity
         ]
 
@@ -5098,7 +5087,7 @@ divider =
     [ Element.el [ width fill, paddingXY 50 5 ] <|
         Element.el
             [ width fill
-            , border_bottom 1
+            , UI.border_bottom 1
             , Border.color UI.color_very_light_grey
             ]
         <|
@@ -5621,7 +5610,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
     in
     Element.column [ width fill, spacingXY 0 5, height fill ] <|
         [ Element.row [ UI.font_scaled 2, width fill ]
-            [ Element.el [ border_bottom 2 ] <| text header
+            [ Element.el [ UI.border_bottom 2 ] <| text header
             , text "   "
             , if not is_shop_context then
                 row [ width fill, UI.font_scaled 1, centerX, spacingXY 10 0 ] <|
@@ -6062,7 +6051,7 @@ playerUpgrades_display colorTheme playerUpgrades progressUnlocks =
         let
             header =
                 el
-                    [ UI.font_scaled 2, border_bottom 2, alignTop ]
+                    [ UI.font_scaled 2, UI.border_bottom 2, alignTop ]
                     (text "Upgrades")
 
             renderedUpgrades =
@@ -6080,7 +6069,7 @@ playerUpgrades_display colorTheme playerUpgrades progressUnlocks =
 player_action_log_display : ItemDb -> List PlayerActionLog -> Element Msg
 player_action_log_display item_db player_action_logs =
     column [ height fill ]
-        ([ el [ UI.font_scaled 2, border_bottom 2, alignTop ] <| text "Action Log" ]
+        ([ el [ UI.font_scaled 2, UI.border_bottom 2, alignTop ] <| text "Action Log" ]
             ++ [ column [ paddingXY 0 10, Element.spacing 4 ]
                     (player_action_logs
                         |> List.reverse
@@ -6218,7 +6207,7 @@ quests_display : UI.ColorTheme -> Quests -> ProgressUnlocks -> Element Msg
 quests_display colorTheme quests progressUnlocks =
     column [ height fill ]
         [ column [ height fill ]
-            ([ el [ UI.font_scaled 2, border_bottom 2, alignTop ] <| text "Today's Quests" ]
+            ([ el [ UI.font_scaled 2, UI.border_bottom 2, alignTop ] <| text "Today's Quests" ]
                 ++ [ column [ paddingXY 0 10, spacing 5 ] <|
                         List.map viewSingleQuest quests.dailyQuests
                    ]
@@ -6226,7 +6215,7 @@ quests_display colorTheme quests progressUnlocks =
         , if containsProgressUnlock UnlockedLifeQuests progressUnlocks then
             column [ height fill ]
                 ([]
-                    ++ [ el [ UI.font_scaled 2, border_bottom 2, alignTop ] <|
+                    ++ [ el [ UI.font_scaled 2, UI.border_bottom 2, alignTop ] <|
                             text "Life Quests"
                        ]
                     ++ [ column [ paddingXY 0 10, spacing 5 ]
@@ -6406,7 +6395,7 @@ viewShopPrepPhase model =
             el [ UI.font_scaled 2, paddingXY 0 10, Font.underline ] <| text title
     in
     column [ width fill ]
-        [ Element.el [ UI.font_scaled 3, padding_bottom 10 ] <| text "Prep Phase"
+        [ Element.el [ UI.font_scaled 3, UI.padding_bottom 10 ] <| text "Prep Phase"
         , column [ Font.size 16, spacingXY 0 20 ]
             [ paragraph [] [ el [ Font.italic ] <| text "You are about to begin a new day, running your shop the best you can." ]
             , paragraph [] [ text "Each day, the shop's wares change, opposing trades come and go, and who knows what else might happen." ]
@@ -6533,7 +6522,7 @@ viewShopSummary colorTheme postPhaseData quests =
             el [ UI.font_scaled 2, paddingXY 0 10, Font.underline ] <| text title
     in
     column [ width fill, Font.size 16 ]
-        [ Element.el [ UI.font_scaled 3, padding_bottom 10 ] <| text "End of Day"
+        [ Element.el [ UI.font_scaled 3, UI.padding_bottom 10 ] <| text "End of Day"
         , column [ spacingXY 0 20 ]
             [ el [ Font.italic ] <| text "You've finished the work day, sent away your gold and resources, and put your inventory into cold-storage."
             , text "Tomorrow you'll build up your inventory once again, solving a new goal."
@@ -6630,7 +6619,7 @@ viewGemUpgradesInPostPhase colorTheme postPhaseData quests =
             [ centerX, width (fill |> Element.maximum 200), alignBottom ]
     in
     column [ width fill, Font.size 16, height fill ]
-        [ Element.el [ UI.font_scaled 3, padding_bottom 10 ] <| text "Upgrades"
+        [ Element.el [ UI.font_scaled 3, UI.padding_bottom 10 ] <| text "Upgrades"
         , column [ spacingXY 0 20 ]
             [ el [ Font.italic ] <| text "You've earned some gems. These will help the next day go a little smoother."
             , paragraph [] [ text "Each unlock is permanent. It might be cosmetic, it might be useless, it might be a whole new mechanic. Only one way to find out." ]
@@ -6663,7 +6652,7 @@ view_shop_tab_type : Model -> Element Msg
 view_shop_tab_type model =
     let
         welcome_header =
-            Element.el [ UI.font_scaled 3, padding_bottom 10 ] <| text "Welcome to the Item Shop!"
+            Element.el [ UI.font_scaled 3, UI.padding_bottom 10 ] <| text "Welcome to the Item Shop!"
 
         playerChar : Character
         playerChar =
@@ -7247,7 +7236,7 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
             containsProgressUnlock UnlockedSpecialActions progressUnlocks
     in
     column [ width fill, spacing 10, paddingXY 0 10 ]
-        [ el [ UI.font_scaled 2, border_bottom 2 ] <| text "Special Actions"
+        [ el [ UI.font_scaled 2, UI.border_bottom 2 ] <| text "Special Actions"
         , Element.wrappedRow [ width fill, spacingXY 20 0 ]
             [ Element.wrappedRow [ width <| fillPortion 1, spacingXY 10 10, alignTop ]
                 [ button_toggle_ai_pause

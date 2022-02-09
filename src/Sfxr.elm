@@ -563,12 +563,17 @@ combinePartialsIntoSoundConfig partialA partialB =
 
 
 type alias Model =
-    { soundConfig : SoundConfig, globalSeed : Random.Seed, hideEmptySliders : Bool }
+    { soundConfig : SoundConfig
+    , historicalSoundConfigs : List SoundConfig
+    , globalSeed : Random.Seed
+    , hideEmptySliders : Bool
+    }
 
 
 init : Model
 init =
     { soundConfig = initSoundConfig
+    , historicalSoundConfigs = [ initSoundConfig ]
     , globalSeed = Random.initialSeed 12345
     , hideEmptySliders = False
     }
@@ -1132,6 +1137,11 @@ updateOnSliderChanged model configType =
             updateMiscConfigType model updateType
 
 
+
+-- setNewSoundConfig : SoundConfig -> Model -> Model
+-- setNewSoundConfig soundConfig
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
@@ -1170,7 +1180,20 @@ update msg model =
             )
 
         PlaySound ->
-            ( model, sfxrOut <| encodeSoundConfig model.soundConfig )
+            let
+                newHistoricalSoundConfigs =
+                    case List.Extra.last model.historicalSoundConfigs of
+                        Just lastSoundConfig ->
+                            if lastSoundConfig == model.soundConfig then
+                                model.historicalSoundConfigs
+
+                            else
+                                model.historicalSoundConfigs ++ [ model.soundConfig ]
+
+                        Nothing ->
+                            model.historicalSoundConfigs
+            in
+            ( { model | historicalSoundConfigs = newHistoricalSoundConfigs }, sfxrOut <| encodeSoundConfig model.soundConfig )
 
         FromPort str ->
             let
@@ -1212,7 +1235,7 @@ update msg model =
                         Err _ ->
                             Debug.log "error" model.soundConfig
             in
-            ( { model | soundConfig = soundConfig }, Cmd.none )
+            ( { model | soundConfig = soundConfig, historicalSoundConfigs = model.historicalSoundConfigs ++ [ soundConfig ] }, Cmd.none )
 
 
 
@@ -1486,30 +1509,41 @@ viewSliders ({ soundConfig, hideEmptySliders } as model) =
 
 viewControls : Model -> Element Msg
 viewControls model =
-    row [ padding 10, width (fill |> Element.maximum 1000), spacing 10, centerX ]
-        [ Input.checkbox [ width Element.shrink ]
-            { onChange = SetHideEmptySliders
-            , icon = Input.defaultCheckbox
-            , checked = model.hideEmptySliders
-            , label = Input.labelRight [] (text "Hide Zero Rows")
-            }
-        , UI.button <|
-            UI.TextParams
-                { buttonType = UI.Primary
-                , colorTheme = UI.BrightTheme
-                , customAttrs = []
-                , onPressMsg = ExportSoundConfig
-                , textLabel = "Export"
+    column [ padding 10, width (fill |> Element.maximum 1000), spacing 10, centerX ]
+        [ row [ spacing 10 ]
+            [ Input.checkbox [ width Element.shrink ]
+                { onChange = SetHideEmptySliders
+                , icon = Input.defaultCheckbox
+                , checked = model.hideEmptySliders
+                , label = Input.labelRight [] (text "Hide Zero Rows")
                 }
-        , row []
-            [ UI.button <|
+            , UI.button <|
                 UI.TextParams
                     { buttonType = UI.Primary
                     , colorTheme = UI.BrightTheme
                     , customAttrs = []
-                    , onPressMsg = ImportSoundConfig
-                    , textLabel = "Import"
+                    , onPressMsg = ExportSoundConfig
+                    , textLabel = "Export"
                     }
+            , row []
+                [ UI.button <|
+                    UI.TextParams
+                        { buttonType = UI.Primary
+                        , colorTheme = UI.BrightTheme
+                        , customAttrs = []
+                        , onPressMsg = ImportSoundConfig
+                        , textLabel = "Import"
+                        }
+                ]
+            ]
+        , column []
+            [ row [ spacing 10 ]
+                [ el
+                    [ UI.font_scaled 2, alignTop ]
+                  <|
+                    text "History"
+                ]
+            , row [] <| List.map (\sc -> text "Entry") model.historicalSoundConfigs
             ]
         ]
 

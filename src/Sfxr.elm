@@ -1137,9 +1137,35 @@ updateOnSliderChanged model configType =
             updateMiscConfigType model updateType
 
 
+{-| returns a command to SFXR to play a soundconfig, sets that sound config on the
+model, and adds the sound config to history, if its not already there
+-}
+setAndPlaySound : SoundConfig -> Model -> ( Model, Cmd Msg )
+setAndPlaySound newSoundConfig model =
+    let
+        newHistoricalSoundConfigs =
+            case List.Extra.last model.historicalSoundConfigs of
+                Just lastSoundConfig ->
+                    if lastSoundConfig == newSoundConfig then
+                        model.historicalSoundConfigs
 
--- setNewSoundConfig : SoundConfig -> Model -> Model
--- setNewSoundConfig soundConfig
+                    else
+                        model.historicalSoundConfigs ++ [ newSoundConfig ]
+
+                Nothing ->
+                    model.historicalSoundConfigs
+    in
+    ( { model
+        | soundConfig = newSoundConfig
+        , historicalSoundConfigs = newHistoricalSoundConfigs
+      }
+    , sfxrOut <| encodeSoundConfig newSoundConfig
+    )
+
+
+setGlobalSeed : Random.Seed -> Model -> Model
+setGlobalSeed newSeed model =
+    { model | globalSeed = newSeed }
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -1157,43 +1183,30 @@ update msg model =
                 ( newSoundConfig, newSeed ) =
                     getRandomHitHurt model.globalSeed
             in
-            ( { model | globalSeed = newSeed, soundConfig = newSoundConfig }
-            , sfxrOut <| encodeSoundConfig newSoundConfig
-            )
+            model
+                |> setGlobalSeed newSeed
+                |> setAndPlaySound newSoundConfig
 
         SetUpgrade ->
             let
                 ( newSoundConfig, newSeed ) =
                     getRandomUpgrade model.globalSeed
             in
-            ( { model | globalSeed = newSeed, soundConfig = newSoundConfig }
-            , sfxrOut <| encodeSoundConfig newSoundConfig
-            )
+            model
+                |> setGlobalSeed newSeed
+                |> setAndPlaySound newSoundConfig
 
         SetCoinPickup ->
             let
                 ( newSoundConfig, newSeed ) =
                     getRandomCoinPickup model.globalSeed
             in
-            ( { model | globalSeed = newSeed, soundConfig = newSoundConfig }
-            , sfxrOut <| encodeSoundConfig newSoundConfig
-            )
+            model
+                |> setGlobalSeed newSeed
+                |> setAndPlaySound newSoundConfig
 
         PlaySound ->
-            let
-                newHistoricalSoundConfigs =
-                    case List.Extra.last model.historicalSoundConfigs of
-                        Just lastSoundConfig ->
-                            if lastSoundConfig == model.soundConfig then
-                                model.historicalSoundConfigs
-
-                            else
-                                model.historicalSoundConfigs ++ [ model.soundConfig ]
-
-                        Nothing ->
-                            model.historicalSoundConfigs
-            in
-            ( { model | historicalSoundConfigs = newHistoricalSoundConfigs }, sfxrOut <| encodeSoundConfig model.soundConfig )
+            setAndPlaySound model.soundConfig model
 
         FromPort str ->
             let

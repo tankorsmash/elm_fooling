@@ -737,12 +737,24 @@ getRandomUpgrade : Random.Seed -> ( SoundConfig, Random.Seed )
 getRandomUpgrade seed_ =
     ( initSoundConfig, seed_ )
         --TODO: sawtooth duty
-        |> (\( { duty } as sc, seed ) ->
+        |> (\( { shape, duty } as sc, seed ) ->
                 let
-                    ( newDuty, newSeed ) =
-                        Random.step (getFloat 0.6) seed
+                    ( ( newShape, newDuty ), newSeed ) =
+                        Random.step
+                            (Random.map2
+                                (\shouldSawtooth dutyVal ->
+                                    if shouldSawtooth then
+                                        ( Sawtooth, { duty | duty = 1 } )
+
+                                    else
+                                        ( shape, { duty | duty = dutyVal } )
+                                )
+                                flipCoin
+                                (getFloat 0.6)
+                            )
+                            seed
                 in
-                ( { sc | duty = { duty | duty = newDuty } }, newSeed )
+                ( { sc | duty = newDuty, shape = newShape }, newSeed )
            )
         |> (\( { frequency } as sc, seed ) ->
                 let

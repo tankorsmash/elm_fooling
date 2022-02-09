@@ -45,6 +45,7 @@ import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as Encode exposing (Value)
 import List.Extra
 import Random
+import Random.List
 import Task
 import Test exposing (..)
 import Time
@@ -540,9 +541,59 @@ flipCoin =
     Random.map (\n -> n < 50) (Random.int 1 100)
 
 
+chooseRandomShape : List Shape -> Random.Generator Shape
+chooseRandomShape choices =
+    Random.List.choose choices
+        |> Random.andThen
+            (Tuple.first
+                >> Maybe.withDefault Square
+                >> Random.constant
+            )
+
+
+getRandomShape : Random.Generator Shape
+getRandomShape =
+    Random.List.choose [ Square, Sawtooth, Sine, Noise ]
+        |> Random.andThen
+            (Tuple.first
+                >> Maybe.withDefault Square
+                >> Random.constant
+            )
+
+
 getRandomHitHurt : Random.Seed -> ( SoundConfig, Random.Seed )
 getRandomHitHurt seed_ =
     ( initSoundConfig, seed_ )
+        |> (\( { duty, shape } as sc, seed ) ->
+                let
+                    ( ( newShape, newDuty ), newSeed ) =
+                        Random.step
+                            (Random.map2
+                                (\shapeVal dutyVal ->
+                                    if shapeVal == Noise then
+                                        ( shapeVal, duty )
+
+                                    else if shapeVal == Square then
+                                        ( shapeVal, { duty | duty = dutyVal } )
+
+                                    else if shapeVal == Sawtooth then
+                                        ( shapeVal, { duty | duty = 1 } )
+
+                                    else
+                                        ( shapeVal, duty )
+                                )
+                                (chooseRandomShape [ Noise, Square, Sawtooth ])
+                                (getFloat 0.6)
+                            )
+                            seed
+                in
+                ( { sc
+                    | duty = newDuty
+                    , shape = newShape
+                  }
+                , newSeed
+                )
+           )
         |> (\( { frequency } as sc, seed ) ->
                 let
                     ( newFrequency, newSeed ) =

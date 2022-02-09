@@ -140,6 +140,7 @@ type Msg
     | ImportSoundConfig
     | GotImportSoundConfig File.File
     | ImportedSoundConfigConvertedToString String
+    | LoadSoundConfigFromHistory SoundConfig
 
 
 type Shape
@@ -1250,6 +1251,9 @@ update msg model =
             in
             ( { model | soundConfig = soundConfig, historicalSoundConfigs = model.historicalSoundConfigs ++ [ soundConfig ] }, Cmd.none )
 
+        LoadSoundConfigFromHistory soundConfig ->
+            setAndPlaySound soundConfig model
+
 
 
 --end of update
@@ -1552,11 +1556,25 @@ viewControls model =
         , column []
             [ row [ spacing 10 ]
                 [ el
-                    [ UI.font_scaled 2, alignTop ]
+                    [ UI.font_scaled 2, alignTop, paddingXY 0 10 ]
                   <|
-                    text "History"
+                    el [ UI.border_bottom 2 ] <|
+                        text "History"
                 ]
-            , row [] <| List.map (\sc -> text "Entry") model.historicalSoundConfigs
+            , row [ Element.scrollbars, height (fill |> Element.minimum 40), spacing 1 ] <|
+                List.map
+                    (\sc ->
+                        UI.button <|
+                            UI.TextParams
+                                { buttonType = UI.Outline
+                                , colorTheme = UI.BrightTheme
+                                , customAttrs = []
+                                , onPressMsg = LoadSoundConfigFromHistory sc
+                                , textLabel = "🔊"
+                                }
+                    )
+                <|
+                    List.reverse model.historicalSoundConfigs
             ]
         ]
 

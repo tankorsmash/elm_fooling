@@ -36,6 +36,7 @@ import Element.Input as Input
 import Element.Keyed
 import Element.Lazy as Lazy
 import Expect exposing (Expectation)
+import File.Download
 import Fuzz exposing (Fuzzer, int, list, string, tuple)
 import Html
 import Html.Attributes
@@ -133,6 +134,7 @@ type Msg
     | SetUpgrade
     | SetCoinPickup
     | SetHideEmptySliders Bool
+    | ExportSoundConfig
 
 
 type Shape
@@ -1178,6 +1180,13 @@ update msg model =
         SetHideEmptySliders newValue ->
             ( { model | hideEmptySliders = newValue }, Cmd.none )
 
+        ExportSoundConfig ->
+            ( model, File.Download.string "sound_config.json" "application/json" (Encode.encode 4 (encodeSoundConfig model.soundConfig)) )
+
+
+
+--end of update
+
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
@@ -1453,6 +1462,14 @@ viewControls model =
             , checked = model.hideEmptySliders
             , label = Input.labelRight [] (text "Hide Zero Rows")
             }
+        , UI.button <|
+            UI.TextParams
+                { buttonType = UI.Primary
+                , colorTheme = UI.BrightTheme
+                , customAttrs = []
+                , onPressMsg = ExportSoundConfig
+                , textLabel = "Export"
+                }
         ]
 
 

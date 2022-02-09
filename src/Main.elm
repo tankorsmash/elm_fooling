@@ -469,8 +469,8 @@ viewContent model =
     div []
         [ elm_ui_hack_layout
         , div []
-            [ viewSfxr model
-            , tab_content
+            [ --viewSfxr model
+              tab_content
             ]
         ]
 

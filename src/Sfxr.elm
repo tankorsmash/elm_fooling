@@ -36,7 +36,9 @@ import Element.Input as Input
 import Element.Keyed
 import Element.Lazy as Lazy
 import Expect exposing (Expectation)
+import File
 import File.Download
+import File.Select
 import Fuzz exposing (Fuzzer, int, list, string, tuple)
 import Html
 import Html.Attributes
@@ -135,6 +137,9 @@ type Msg
     | SetCoinPickup
     | SetHideEmptySliders Bool
     | ExportSoundConfig
+    | ImportSoundConfig
+    | GotImportSoundConfig File.File
+    | ImportedSoundConfigConvertedToString String
 
 
 type Shape
@@ -1183,6 +1188,23 @@ update msg model =
         ExportSoundConfig ->
             ( model, File.Download.string "sound_config.json" "application/json" (Encode.encode 4 (encodeSoundConfig model.soundConfig)) )
 
+        ImportSoundConfig ->
+            ( model, File.Select.file [ "application/json" ] GotImportSoundConfig )
+
+        GotImportSoundConfig uploadedFile ->
+            let
+                _ =
+                    Debug.log "uploadedFile" uploadedFile
+            in
+            ( model, Task.perform ImportedSoundConfigConvertedToString (File.toString uploadedFile) )
+
+        ImportedSoundConfigConvertedToString fileContent ->
+            let
+                _ =
+                    Debug.log "file content" fileContent
+            in
+            ( model, Cmd.none )
+
 
 
 --end of update
@@ -1455,8 +1477,8 @@ viewSliders ({ soundConfig, hideEmptySliders } as model) =
 
 viewControls : Model -> Element Msg
 viewControls model =
-    column [ padding 10, width (fill |> Element.maximum 1000), spacing 10, centerX ]
-        [ Input.checkbox []
+    row [ padding 10, width (fill |> Element.maximum 1000), spacing 10, centerX ]
+        [ Input.checkbox [ width Element.shrink ]
             { onChange = SetHideEmptySliders
             , icon = Input.defaultCheckbox
             , checked = model.hideEmptySliders
@@ -1470,6 +1492,16 @@ viewControls model =
                 , onPressMsg = ExportSoundConfig
                 , textLabel = "Export"
                 }
+        , row []
+            [ UI.button <|
+                UI.TextParams
+                    { buttonType = UI.Primary
+                    , colorTheme = UI.BrightTheme
+                    , customAttrs = []
+                    , onPressMsg = ImportSoundConfig
+                    , textLabel = "Import"
+                    }
+            ]
         ]
 
 

@@ -1210,9 +1210,9 @@ update msg model =
                             validSoundConfig
 
                         Err _ ->
-                            model.soundConfig
+                            Debug.log "error" model.soundConfig
             in
-            ( model, Cmd.none )
+            ( { model | soundConfig = soundConfig }, Cmd.none )
 
 
 

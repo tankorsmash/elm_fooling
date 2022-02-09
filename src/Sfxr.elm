@@ -1202,6 +1202,15 @@ update msg model =
             let
                 _ =
                     Debug.log "file content" fileContent
+
+                soundConfig : SoundConfig
+                soundConfig =
+                    case Decode.decodeString decodeSoundConfig fileContent of
+                        Ok validSoundConfig ->
+                            validSoundConfig
+
+                        Err _ ->
+                            model.soundConfig
             in
             ( model, Cmd.none )
 

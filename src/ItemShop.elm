@@ -6659,6 +6659,17 @@ viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData quests =
     let
         columnStyle =
             [ centerX, width (fill |> Element.maximum 200), alignBottom ]
+
+        progressUnlockButton : ProgressUnlock -> Element Msg
+        progressUnlockButton progressUnlock =
+            UI.button <|
+                UI.TextParams
+                    { buttonType = UI.Secondary
+                    , colorTheme = colorTheme
+                    , customAttrs = [ width (fill |> Element.minimum 200) ]
+                    , onPressMsg = ToggleViewGemUnlocksInPostPhase
+                    , textLabel = (progressUnlockToString progressUnlock) ++ " (Noop)"
+                    }
     in
     column [ width fill, Font.size 16, height fill ]
         [ Element.el [ UI.font_scaled 3, UI.padding_bottom 10 ] <| text "Unlocks"
@@ -6666,12 +6677,17 @@ viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData quests =
             [ el [ Font.italic ] <| text "You've earned some gems. These will help the next day go a little smoother."
             , paragraph [] [ text "Each unlock is permanent. It might be cosmetic, it might be useless, it might be a whole new mechanic. Only one way to find out." ]
             ]
-        , column [ paddingXY 0 10, spacing 5 ]
+        , column [ paddingXY 0 10, spacing 5, width fill ]
             [ text "These are the things you can unlock:"
-            , column [] <|
+            , column [ width fill, spacing 5 ] <|
                 (allProgressUnlocks
                     |> List.filter (\apu -> not <| List.member apu progressUnlocks)
-                    |> List.map (progressUnlockToString >> text)
+                    |> List.Extra.greedyGroupsOf 3
+                    |> List.map
+                        (\apus ->
+                            row [ spacing 5, centerX ] <|
+                                List.map progressUnlockButton apus
+                        )
                 )
             ]
         , column columnStyle

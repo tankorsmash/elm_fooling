@@ -6667,7 +6667,7 @@ viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData quests =
                     { buttonType = UI.Secondary
                     , colorTheme = colorTheme
                     , customAttrs = [ width (fill |> Element.minimum 200) ]
-                    , onPressMsg = ToggleViewGemUnlocksInPostPhase
+                    , onPressMsg = Noop
                     , textLabel = (progressUnlockToString progressUnlock) ++ " (Noop)"
                     }
     in

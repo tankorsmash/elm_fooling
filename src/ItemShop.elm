@@ -322,7 +322,7 @@ type Msg
       -- EndDay triggers onPrepNewDay
     | EndDay
     | CashInQuestType QuestData
-    | ToggleViewGemUpgradesInPostPhase
+    | ToggleViewGemUnlocksInPostPhase
 
 
 type alias TradeOrder =
@@ -1271,8 +1271,49 @@ type ProgressUnlock
     | UnlockedLifeQuests
 
 
+allProgressUnlocks : ProgressUnlocks
+allProgressUnlocks =
+    [ UnlockedCharts
+    , UnlockedCodex
+    , UnlockedBattles
+    , UnlockedDarkMode
+    , UnlockedUpgrades
+    , UnlockedShopTrends
+    , UnlockedSpecialActions
+    , UnlockedLifeQuests
+    ]
+
+
 type alias ProgressUnlocks =
     List ProgressUnlock
+
+
+progressUnlockToString : ProgressUnlock -> String
+progressUnlockToString progressUnlock =
+    case progressUnlock of
+        UnlockedCharts ->
+            "Charts"
+
+        UnlockedCodex ->
+            "Codex"
+
+        UnlockedBattles ->
+            "Battles"
+
+        UnlockedDarkMode ->
+            "Dark Mode"
+
+        UnlockedUpgrades ->
+            "Upgrades"
+
+        UnlockedShopTrends ->
+            "Shop Trends"
+
+        UnlockedSpecialActions ->
+            "Special Actions"
+
+        UnlockedLifeQuests ->
+            "Life Quests"
 
 
 encodeProgressUnlock : ProgressUnlock -> Decode.Value
@@ -3281,7 +3322,7 @@ update msg model =
             else
                 ( model, Cmd.none )
 
-        ToggleViewGemUpgradesInPostPhase ->
+        ToggleViewGemUnlocksInPostPhase ->
             ( { model | shouldViewGemUpgradesInPostPhase = not model.shouldViewGemUpgradesInPostPhase }, Cmd.none )
 
 
@@ -4855,6 +4896,7 @@ html_title string =
 portion : Int -> Element.Attribute msg
 portion =
     width << fillPortion
+
 
 render_single_trade_log_entry : UI.ColorTheme -> ItemDb -> Characters -> ItemTradeLog -> Element msg
 render_single_trade_log_entry colorTheme item_db ((Characters { player, shop, others }) as characters) trade_log =
@@ -6592,7 +6634,7 @@ viewShopSummary colorTheme postPhaseData quests =
                             { buttonType = UI.Primary
                             , colorTheme = colorTheme
                             , customAttrs = [ width (fill |> Element.minimum 200) ]
-                            , onPressMsg = ToggleViewGemUpgradesInPostPhase
+                            , onPressMsg = ToggleViewGemUnlocksInPostPhase
                             , textLabel = "Upgrades"
                             }
                     ]
@@ -6612,17 +6654,25 @@ viewShopSummary colorTheme postPhaseData quests =
         ]
 
 
-viewGemUpgradesInPostPhase : UI.ColorTheme -> PostPhaseData -> Quests -> Element Msg
-viewGemUpgradesInPostPhase colorTheme postPhaseData quests =
+viewGemUnlocksInPostPhase : UI.ColorTheme -> ProgressUnlocks -> PostPhaseData -> Quests -> Element Msg
+viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData quests =
     let
         columnStyle =
             [ centerX, width (fill |> Element.maximum 200), alignBottom ]
     in
     column [ width fill, Font.size 16, height fill ]
-        [ Element.el [ UI.font_scaled 3, UI.padding_bottom 10 ] <| text "Upgrades"
+        [ Element.el [ UI.font_scaled 3, UI.padding_bottom 10 ] <| text "Unlocks"
         , column [ spacingXY 0 20 ]
             [ el [ Font.italic ] <| text "You've earned some gems. These will help the next day go a little smoother."
             , paragraph [] [ text "Each unlock is permanent. It might be cosmetic, it might be useless, it might be a whole new mechanic. Only one way to find out." ]
+            ]
+        , column [ paddingXY 0 10, spacing 5 ]
+            [ text "These are the things you can unlock:"
+            , column [] <|
+                (allProgressUnlocks
+                    |> List.filter (\apu -> not <| List.member apu progressUnlocks)
+                    |> List.map (progressUnlockToString >> text)
+                )
             ]
         , column columnStyle
             [ el [ centerX, padding 10, alignBottom ] <|
@@ -6632,20 +6682,20 @@ viewGemUpgradesInPostPhase colorTheme postPhaseData quests =
                     { buttonType = UI.Secondary
                     , colorTheme = colorTheme
                     , customAttrs = [ width (fill |> Element.minimum 200) ]
-                    , onPressMsg = ToggleViewGemUpgradesInPostPhase
+                    , onPressMsg = ToggleViewGemUnlocksInPostPhase
                     , textLabel = "Back"
                     }
             ]
         ]
 
 
-viewShopPostPhase : UI.ColorTheme -> Bool -> PostPhaseData -> Quests -> Element Msg
-viewShopPostPhase colorTheme shouldViewGemUpgradesInPostPhase postPhaseData quests =
+viewShopPostPhase : UI.ColorTheme -> Bool -> ProgressUnlocks -> PostPhaseData -> Quests -> Element Msg
+viewShopPostPhase colorTheme shouldViewGemUpgradesInPostPhase progressUnlocks postPhaseData quests =
     if not shouldViewGemUpgradesInPostPhase then
         viewShopSummary colorTheme postPhaseData quests
 
     else
-        viewGemUpgradesInPostPhase colorTheme postPhaseData quests
+        viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData quests
 
 
 view_shop_tab_type : Model -> Element Msg
@@ -7001,7 +7051,7 @@ view model =
                         Lazy.lazy viewShopPrepPhase model
 
                     PostPhase postPhaseData ->
-                        Lazy.lazy4 viewShopPostPhase model.colorTheme model.shouldViewGemUpgradesInPostPhase postPhaseData model.quests
+                        Lazy.lazy5 viewShopPostPhase model.colorTheme model.shouldViewGemUpgradesInPostPhase model.progressUnlocks postPhaseData model.quests
 
             ItemsUnlockedTabType ->
                 Lazy.lazy2 view_items_unlocked_tab_type model.colorTheme model.item_db

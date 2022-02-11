@@ -6668,7 +6668,7 @@ viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData quests =
                     , colorTheme = colorTheme
                     , customAttrs = [ width (fill |> Element.minimum 200) ]
                     , onPressMsg = Noop
-                    , textLabel = (progressUnlockToString progressUnlock) ++ " (Noop)"
+                    , textLabel = progressUnlockToString progressUnlock ++ " (Noop)"
                     }
     in
     column [ width fill, Font.size 16, height fill ]
@@ -6684,9 +6684,8 @@ viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData quests =
                     |> List.filter (\apu -> not <| List.member apu progressUnlocks)
                     |> List.Extra.greedyGroupsOf 3
                     |> List.map
-                        (\apus ->
-                            row [ spacing 5, centerX ] <|
-                                List.map progressUnlockButton apus
+                        (row [ spacing 5, centerX ]
+                            << List.map progressUnlockButton
                         )
                 )
             ]

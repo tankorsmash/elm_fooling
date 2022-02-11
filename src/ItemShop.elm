@@ -323,6 +323,7 @@ type Msg
     | EndDay
     | CashInQuestType QuestData
     | ToggleViewGemUnlocksInPostPhase
+    | UnlockProgressUnlock ProgressUnlock Price
 
 
 type alias TradeOrder =
@@ -3324,6 +3325,9 @@ update msg model =
 
         ToggleViewGemUnlocksInPostPhase ->
             ( { model | shouldViewGemUpgradesInPostPhase = not model.shouldViewGemUpgradesInPostPhase }, Cmd.none )
+
+        UnlockProgressUnlock progressUnlock gemPrice ->
+            ( { model | progressUnlocks = model.progressUnlocks ++ [ progressUnlock ] }, Cmd.none )
 
 
 
@@ -6662,13 +6666,17 @@ viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData quests =
 
         progressUnlockButton : ProgressUnlock -> Element Msg
         progressUnlockButton progressUnlock =
+            let
+                price =
+                    setPrice 1
+            in
             UI.button <|
                 UI.TextParams
                     { buttonType = UI.Secondary
                     , colorTheme = colorTheme
                     , customAttrs = [ width (fill |> Element.minimum 200) ]
-                    , onPressMsg = Noop
-                    , textLabel = progressUnlockToString progressUnlock ++ " (Noop)"
+                    , onPressMsg = UnlockProgressUnlock progressUnlock price
+                    , textLabel = progressUnlockToString progressUnlock ++ " (" ++ String.fromInt (getPrice price) ++ "gem)"
                     }
     in
     column [ width fill, Font.size 16, height fill ]

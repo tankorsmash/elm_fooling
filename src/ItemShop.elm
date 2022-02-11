@@ -6658,8 +6658,8 @@ viewShopSummary colorTheme postPhaseData quests =
         ]
 
 
-viewGemUnlocksInPostPhase : UI.ColorTheme -> ProgressUnlocks -> PostPhaseData -> Quests -> Element Msg
-viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData quests =
+viewGemUnlocksInPostPhase : UI.ColorTheme -> ProgressUnlocks -> PostPhaseData -> Quantity -> Quests -> Element Msg
+viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData heldGems quests =
     let
         columnStyle =
             [ centerX, width (fill |> Element.maximum 200), alignBottom ]
@@ -6669,15 +6669,42 @@ viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData quests =
             let
                 price =
                     setPrice 1
+
+                alreadyHasUnlock =
+                    containsProgressUnlock progressUnlock progressUnlocks
+
+                buttonType =
+                    if alreadyHasUnlock then
+                        UI.Outline
+
+                    else if getQuantity heldGems >= getPrice price then
+                        UI.Primary
+
+                    else
+                        UI.Danger
+
+                onPressMsg =
+                    if alreadyHasUnlock then
+                        Noop
+
+                    else if getQuantity heldGems >= getPrice price then
+                        UnlockProgressUnlock progressUnlock price
+
+                    else
+                        Noop
             in
-            UI.button <|
-                UI.TextParams
-                    { buttonType = UI.Secondary
-                    , colorTheme = colorTheme
-                    , customAttrs = [ width (fill |> Element.minimum 200) ]
-                    , onPressMsg = UnlockProgressUnlock progressUnlock price
-                    , textLabel = progressUnlockToString progressUnlock ++ " (" ++ String.fromInt (getPrice price) ++ "gem)"
-                    }
+            if not alreadyHasUnlock then
+                UI.button <|
+                    UI.TextParams
+                        { buttonType = buttonType
+                        , colorTheme = colorTheme
+                        , customAttrs = [ width (fill |> Element.minimum 200) ]
+                        , onPressMsg = onPressMsg
+                        , textLabel = progressUnlockToString progressUnlock ++ " (" ++ String.fromInt (getPrice price) ++ "gem)"
+                        }
+
+            else
+                Element.none
     in
     column [ width fill, Font.size 16, height fill ]
         [ Element.el [ UI.font_scaled 3, UI.padding_bottom 10 ] <| text "Unlocks"
@@ -6712,13 +6739,17 @@ viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData quests =
         ]
 
 
-viewShopPostPhase : UI.ColorTheme -> Bool -> ProgressUnlocks -> PostPhaseData -> Quests -> Element Msg
-viewShopPostPhase colorTheme shouldViewGemUpgradesInPostPhase progressUnlocks postPhaseData quests =
+viewShopPostPhase : ( UI.ColorTheme, Bool ) -> ProgressUnlocks -> PostPhaseData -> Characters -> Quests -> Element Msg
+viewShopPostPhase ( colorTheme, shouldViewGemUpgradesInPostPhase ) progressUnlocks postPhaseData characters quests =
     if not shouldViewGemUpgradesInPostPhase then
         viewShopSummary colorTheme postPhaseData quests
 
     else
-        viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData quests
+        let
+            (Player player) =
+                getPlayer characters
+        in
+        viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData (setQuantity player.held_gems) quests
 
 
 view_shop_tab_type : Model -> Element Msg
@@ -7074,7 +7105,7 @@ view model =
                         Lazy.lazy viewShopPrepPhase model
 
                     PostPhase postPhaseData ->
-                        Lazy.lazy5 viewShopPostPhase model.colorTheme model.shouldViewGemUpgradesInPostPhase model.progressUnlocks postPhaseData model.quests
+                        Lazy.lazy5 viewShopPostPhase ( model.colorTheme, model.shouldViewGemUpgradesInPostPhase ) model.progressUnlocks postPhaseData model.characters model.quests
 
             ItemsUnlockedTabType ->
                 Lazy.lazy2 view_items_unlocked_tab_type model.colorTheme model.item_db

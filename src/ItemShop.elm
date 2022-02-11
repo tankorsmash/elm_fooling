@@ -3327,7 +3327,26 @@ update msg model =
             ( { model | shouldViewGemUpgradesInPostPhase = not model.shouldViewGemUpgradesInPostPhase }, Cmd.none )
 
         UnlockProgressUnlock progressUnlock gemPrice ->
-            ( { model | progressUnlocks = model.progressUnlocks ++ [ progressUnlock ] }, Cmd.none )
+            let
+                (Player player) =
+                    getPlayer model.characters
+            in
+            if player.held_gems >= getPrice gemPrice then
+                ( { model
+                    | progressUnlocks = model.progressUnlocks ++ [ progressUnlock ]
+                  }
+                    |> .characters
+                    |> mapPlayer (\p -> { p | held_gems = p.held_gems - getPrice gemPrice })
+                    |> setCharacters model
+                , Cmd.none
+                )
+
+            else
+                let
+                    _ =
+                        Debug.log "else" "else"
+                in
+                ( model, Cmd.none )
 
 
 
@@ -7369,10 +7388,17 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
         ]
 
 
-natural =
+natural0 : Fuzz.Fuzzer Int
+natural0 =
     Fuzz.intRange 0 Random.maxInt
 
 
+natural1 : Fuzz.Fuzzer Int
+natural1 =
+    Fuzz.intRange 1 Random.maxInt
+
+
+positive : Fuzz.Fuzzer Int
 positive =
     Fuzz.intRange 0 Random.maxInt
 
@@ -7521,7 +7547,7 @@ suite =
                             10
                     in
                     Expect.equal orig_avg (add_to_average orig_avg 1 0 0)
-            , fuzz natural "Starting the average from nothing is just the number you add" <|
+            , fuzz natural0 "Starting the average from nothing is just the number you add" <|
                 \val ->
                     Expect.equal val (add_to_average 0 0 val 1)
             , test "Adding a single item works to change the average" <|
@@ -7680,6 +7706,33 @@ suite =
                         in
                         Expect.equal [] <|
                             List.filter questIsCashedIn resultModel.quests.dailyQuests
+                ]
+            , describe "ProgressUnlock "
+                [ fuzz natural1 "paying for a ProgressUnlock removes gems" <|
+                    \rawPrice ->
+                        let
+                            gemPrice =
+                                setPrice rawPrice
+
+                            testModel =
+                                test_model.characters
+                                    |> mapPlayer (\p -> { p | held_gems = rawPrice })
+                                    |> (\c -> { test_model | characters = c })
+
+                            newModel : Model
+                            newModel =
+                                update (UnlockProgressUnlock UnlockedCharts gemPrice) testModel
+                                    |> Tuple.first
+                        in
+                        Expect.all
+                            [ \m ->
+                                Expect.equal 0 (getInnerPlayer <| getPlayer m.characters).held_gems
+                            , \m ->
+                                Expect.true "the unlock should be unlocked" (containsProgressUnlock UnlockedCharts m.progressUnlocks)
+                            , \m ->
+                                Expect.false "the unlock should not be present in the original" (List.member UnlockedCharts testModel.progressUnlocks)
+                            ]
+                            newModel
                 ]
             , fuzz (Fuzz.map Random.initialSeed <| Fuzz.intRange 1 Random.maxInt) "updateActiveTimeOfDay replaces items in shop, and gets a non zero amount" <|
                 \newGlobalSeed ->

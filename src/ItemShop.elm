@@ -1545,6 +1545,11 @@ type alias AiPreUpdateRecord =
     }
 
 
+minutesToMillis : Int -> Int
+minutesToMillis minutes =
+    minutes * 60 * 1000
+
+
 {-| the result of what happens during a ai\_sell/ai\_buy update.
 -}
 type alias AiUpdateRecord =
@@ -2227,29 +2232,31 @@ init timeNow device hash key =
             , progressUnlocks = []
             , quests =
                 { dailyQuests =
-                    [ IncompleteQuest
-                        { questType =
-                            SellAnyItem
-                                { current = setQuantity 2
-                                , target = setQuantity 3
-                                }
-                        , questId =
-                            generateUuid "default sell quest"
-                        }
-                    , CompleteQuest
-                        { questType =
-                            EarnGold
-                                { current = setQuantity 30
-                                , target = setQuantity 30
-                                }
-                        , questId = generateUuid "default earn quest"
-                        }
-                        QuestNotCashedIn
-                    ]
+                    []
+
+                -- [ IncompleteQuest
+                --     { questType =
+                --         SellAnyItem
+                --             { current = setQuantity 2
+                --             , target = setQuantity 3
+                --             }
+                --     , questId =
+                --         generateUuid "default sell quest"
+                --     }
+                -- , CompleteQuest
+                --     { questType =
+                --         EarnGold
+                --             { current = setQuantity 30
+                --             , target = setQuantity 30
+                --             }
+                --     , questId = generateUuid "default earn quest"
+                --     }
+                --     QuestNotCashedIn
+                -- ]
                 , persistentQuests = []
                 }
             , timeOfDay =
-                { dayLengthInMs = 60000
+                { dayLengthInMs = minutesToMillis 5
 
                 -- , currentPhase = ActivePhase { msSinceStartOfDay = 0 }
                 , currentPhase = PrepPhase

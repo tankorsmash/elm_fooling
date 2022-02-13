@@ -1384,6 +1384,13 @@ type alias QuestTracker =
     { current : Quantity, target : Quantity }
 
 
+{-| a type of quest, ie selling items or making a certain amount of money
+-}
+type QuestType
+    = SellAnyItem QuestTracker
+    | EarnGold QuestTracker
+
+
 getQuestTracker : QuestType -> QuestTracker
 getQuestTracker questType =
     case questType of
@@ -1402,13 +1409,6 @@ getQuestData quest =
 
         CompleteQuest questData _ ->
             questData
-
-
-{-| a type of quest, ie selling items or making a certain amount of money
--}
-type QuestType
-    = SellAnyItem QuestTracker
-    | EarnGold QuestTracker
 
 
 type alias QuestId =

@@ -5237,11 +5237,16 @@ hasProgressUnlock progressUnlock model =
 
 containsProgressUnlock : ProgressUnlock -> ProgressUnlocks -> Bool
 containsProgressUnlock progressUnlock progressUnlocks =
-    True
+    List.member progressUnlock progressUnlocks
 
 
 
--- List.member progressUnlock progressUnlocks
+-- True
+
+
+getProgressUnlockGemPrice : ProgressUnlock -> Price
+getProgressUnlockGemPrice progressUnlock =
+    setPrice 1
 
 
 render_inventory_grid :
@@ -6687,16 +6692,19 @@ viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData heldGems ques
         progressUnlockButton progressUnlock =
             let
                 price =
-                    setPrice 1
+                    getProgressUnlockGemPrice progressUnlock
 
                 alreadyHasUnlock =
                     containsProgressUnlock progressUnlock progressUnlocks
+
+                canAfford =
+                    getQuantity heldGems >= getPrice price
 
                 buttonType =
                     if alreadyHasUnlock then
                         UI.Outline
 
-                    else if getQuantity heldGems >= getPrice price then
+                    else if canAfford then
                         UI.Primary
 
                     else
@@ -6706,7 +6714,7 @@ viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData heldGems ques
                     if alreadyHasUnlock then
                         Noop
 
-                    else if getQuantity heldGems >= getPrice price then
+                    else if canAfford then
                         UnlockProgressUnlock progressUnlock price
 
                     else
@@ -6714,12 +6722,25 @@ viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData heldGems ques
             in
             if not alreadyHasUnlock then
                 UI.button <|
-                    UI.TextParams
+                    UI.CustomParams
                         { buttonType = buttonType
                         , colorTheme = colorTheme
                         , customAttrs = [ width (fill |> Element.minimum 200) ]
                         , onPressMsg = onPressMsg
-                        , textLabel = progressUnlockToString progressUnlock ++ " (" ++ String.fromInt (getPrice price) ++ "gem)"
+                        , customLabel =
+                            paragraph []
+                                [ text <|
+                                    progressUnlockToString progressUnlock
+                                , text " ("
+                                , if not canAfford then
+                                    el [ Font.underline ] <|
+                                        UI.renderGem colorTheme <|
+                                            getPrice price
+
+                                  else
+                                    UI.renderGem colorTheme <| getPrice price
+                                , text ")"
+                                ]
                         }
 
             else

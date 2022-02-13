@@ -5246,7 +5246,30 @@ containsProgressUnlock progressUnlock progressUnlocks =
 
 getProgressUnlockGemPrice : ProgressUnlock -> Price
 getProgressUnlockGemPrice progressUnlock =
-    setPrice 1
+    let
+        cosmeticUnlocks =
+            [ UnlockedDarkMode, UnlockedCodex, UnlockedCharts, UnlockedShopTrends ]
+
+        mechanicalUnlocks =
+            [ UnlockedLifeQuests, UnlockedSpecialActions ]
+
+        specialUnlocks =
+            [ UnlockedBattles ]
+
+        containsUnlock unlocks =
+            List.member progressUnlock unlocks
+    in
+    if containsUnlock specialUnlocks then
+        setPrice 3
+
+    else if containsUnlock mechanicalUnlocks then
+        setPrice 2
+
+    else if containsUnlock cosmeticUnlocks then
+        setPrice 1
+
+    else
+        setPrice 1
 
 
 render_inventory_grid :

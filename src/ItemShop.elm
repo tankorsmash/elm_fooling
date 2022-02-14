@@ -7351,11 +7351,20 @@ viewTitleScreen model =
             Animator.linear model.titleScreenAnimationState <|
                 \state ->
                     Animator.at <|
-                        if state == HighTitle then
-                            1
+                        case model.uiOptions.device.class of
+                            UI.Desktop ->
+                                if state == HighTitle then
+                                    1
 
-                        else
-                            5
+                                else
+                                    5
+
+                            _ ->
+                                if state == HighTitle then
+                                    3
+
+                                else
+                                    10
     in
     column [ width fill, height fill, centerX, centerY ]
         [ column

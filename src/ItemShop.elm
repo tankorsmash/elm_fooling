@@ -6373,8 +6373,14 @@ quests_display colorTheme quests progressUnlocks =
     column [ height fill ]
         [ column [ height fill ]
             ([ el [ UI.font_scaled 2, UI.border_bottom 2, alignTop ] <| text "Today's Quests" ]
-                ++ [ column [ paddingXY 0 10, spacing 5 ] <|
-                        List.map viewSingleQuest quests.dailyQuests
+                ++ [ case quests.dailyQuests of
+                        [] ->
+                            el [ paddingXY 0 10, spacing 5 ] <|
+                                text "Nothing for now!"
+
+                        _ ->
+                            column [ paddingXY 0 10, spacing 5 ] <|
+                                List.map viewSingleQuest quests.dailyQuests
                    ]
             )
         , if containsProgressUnlock UnlockedLifeQuests progressUnlocks then
@@ -6429,7 +6435,7 @@ viewDayTimer { colorTheme, timeOfDay, item_db, characters, ai_tick_time } =
                 ++ sharedAttrs
     in
     column [ centerX, width fill ]
-        [ el [ centerX, Font.underline, padding 10 ] <| text "Day Timer"
+        [ el [ centerX, Font.underline, padding 10 ] <| text "Time of Day"
         , case timeOfDay.currentPhase of
             ActivePhase timeDayStarted { msSinceStartOfDay } ->
                 let
@@ -6896,7 +6902,6 @@ view_shop_tab_type model =
     let
         { colorTheme, timeOfDay, ai_tick_time, characters, item_db } =
             model
-
 
         playerChar : Character
         playerChar =

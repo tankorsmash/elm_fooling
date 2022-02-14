@@ -7397,7 +7397,7 @@ viewTitleScreen model =
                         else
                             0
     in
-    column [ width fill, height fill, centerX, centerY ]
+    column [ width fill, height fill, centerX, centerY, Element.clip ]
         [ column
             [ centerX
             , centerY

@@ -6408,83 +6408,6 @@ viewDayTimer { colorTheme, timeOfDay, item_db, characters, ai_tick_time } =
 
             _ ->
                 Element.none
-        , el [ width fill, paddingXY 0 10 ] <|
-            row [ width fill, Element.spaceEvenly ]
-                [ UI.button <|
-                    UI.TextParams
-                        { buttonType = UI.Primary
-                        , customAttrs = []
-                        , onPressMsg = ChangeCurrentPhase PrepPhase
-                        , textLabel =
-                            case timeOfDay.currentPhase of
-                                PrepPhase ->
-                                    "Currently PrepPhase"
-
-                                _ ->
-                                    "Change to PrepPhase"
-                        , colorTheme = colorTheme
-                        }
-                , UI.button <|
-                    UI.TextParams
-                        { buttonType = UI.Primary
-                        , customAttrs = []
-                        , onPressMsg =
-                            ChangeCurrentPhase
-                                (ActivePhase
-                                    ai_tick_time
-                                    { goldAtStartOfDay =
-                                        let
-                                            (Player player) =
-                                                getPlayer characters
-                                        in
-                                        player.held_gold
-                                    , msSinceStartOfDay = 0
-                                    , itemDbAtStart = item_db
-                                    }
-                                )
-                        , textLabel =
-                            case timeOfDay.currentPhase of
-                                ActivePhase _ _ ->
-                                    "Currently ActivePhase"
-
-                                _ ->
-                                    "Change to ActivePhase"
-                        , colorTheme = colorTheme
-                        }
-                , UI.button <|
-                    UI.TextParams
-                        { buttonType = UI.Primary
-                        , customAttrs = []
-                        , onPressMsg =
-                            ChangeCurrentPhase
-                                (PostPhase
-                                    (case timeOfDay.currentPhase of
-                                        ActivePhase timeDayStarted { itemDbAtStart, goldAtStartOfDay } ->
-                                            { itemDbAtStart = itemDbAtStart
-                                            , itemDbAtEnd = item_db
-                                            , goldAtStartOfDay = goldAtStartOfDay
-                                            , goldAtEndOfDay =
-                                                let
-                                                    (Player player) =
-                                                        getPlayer characters
-                                                in
-                                                player.held_gold
-                                            }
-
-                                        _ ->
-                                            Debug.todo "cant really switch to PostPhase without being in ActivePhase first"
-                                    )
-                                )
-                        , textLabel =
-                            case timeOfDay.currentPhase of
-                                PostPhase _ ->
-                                    "Currently PostPhase"
-
-                                _ ->
-                                    "Change to PostPhase"
-                        , colorTheme = colorTheme
-                        }
-                ]
         ]
 
 
@@ -6822,9 +6745,93 @@ viewShopPostPhase ( colorTheme, shouldViewGemUpgradesInPostPhase ) progressUnloc
         viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData (setQuantity player.held_gems) quests
 
 
+debugTimeOfDayControls : Model -> Element Msg
+debugTimeOfDayControls { colorTheme, timeOfDay, ai_tick_time, characters, item_db } =
+    el [ width fill, paddingXY 0 10 ] <|
+        row [ width fill, Element.spaceEvenly ]
+            [ UI.button <|
+                UI.TextParams
+                    { buttonType = UI.Primary
+                    , customAttrs = []
+                    , onPressMsg = ChangeCurrentPhase PrepPhase
+                    , textLabel =
+                        case timeOfDay.currentPhase of
+                            PrepPhase ->
+                                "Currently PrepPhase"
+
+                            _ ->
+                                "Change to PrepPhase"
+                    , colorTheme = colorTheme
+                    }
+            , UI.button <|
+                UI.TextParams
+                    { buttonType = UI.Primary
+                    , customAttrs = []
+                    , onPressMsg =
+                        ChangeCurrentPhase
+                            (ActivePhase
+                                ai_tick_time
+                                { goldAtStartOfDay =
+                                    let
+                                        (Player player) =
+                                            getPlayer characters
+                                    in
+                                    player.held_gold
+                                , msSinceStartOfDay = 0
+                                , itemDbAtStart = item_db
+                                }
+                            )
+                    , textLabel =
+                        case timeOfDay.currentPhase of
+                            ActivePhase _ _ ->
+                                "Currently ActivePhase"
+
+                            _ ->
+                                "Change to ActivePhase"
+                    , colorTheme = colorTheme
+                    }
+            , UI.button <|
+                UI.TextParams
+                    { buttonType = UI.Primary
+                    , customAttrs = []
+                    , onPressMsg =
+                        ChangeCurrentPhase
+                            (PostPhase
+                                (case timeOfDay.currentPhase of
+                                    ActivePhase timeDayStarted { itemDbAtStart, goldAtStartOfDay } ->
+                                        { itemDbAtStart = itemDbAtStart
+                                        , itemDbAtEnd = item_db
+                                        , goldAtStartOfDay = goldAtStartOfDay
+                                        , goldAtEndOfDay =
+                                            let
+                                                (Player player) =
+                                                    getPlayer characters
+                                            in
+                                            player.held_gold
+                                        }
+
+                                    _ ->
+                                        Debug.todo "cant really switch to PostPhase without being in ActivePhase first"
+                                )
+                            )
+                    , textLabel =
+                        case timeOfDay.currentPhase of
+                            PostPhase _ ->
+                                "Currently PostPhase"
+
+                            _ ->
+                                "Change to PostPhase"
+                    , colorTheme = colorTheme
+                    }
+            ]
+
+
 view_shop_tab_type : Model -> Element Msg
 view_shop_tab_type model =
     let
+        { colorTheme, timeOfDay, ai_tick_time, characters, item_db } =
+            model
+
         welcome_header =
             Element.el [ UI.font_scaled 3, UI.padding_bottom 10 ] <| text "Welcome to the Item Shop!"
 
@@ -6989,9 +6996,15 @@ view_shop_tab_type model =
                     (playerInventoryControls model.colorTheme ( model.uiOptions.shiftIsPressed, model.shop_trends ))
             ]
                 ++ [ column [ width fill, spacingXY 0 20 ] <|
-                        showHideDebugInventoriesButton model.colorTheme [] model.uiOptions.show_debug_inventories
-                            :: (if model.uiOptions.show_debug_inventories then
-                                    [ el [] <| tickSecondButton
+                        []
+                            ++ [ showHideDebugInventoriesButton
+                                    model.colorTheme
+                                    []
+                                    model.uiOptions.show_debug_inventories
+                               ]
+                            ++ (if model.uiOptions.show_debug_inventories then
+                                    [ tickSecondButton
+                                    , debugTimeOfDayControls model
                                     , text <|
                                         UI.deviceClassToString model.uiOptions.device.class
                                             ++ " - "

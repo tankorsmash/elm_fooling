@@ -2236,7 +2236,8 @@ init timeNow device hash key =
             , ai_tick_time = timeNow
             , globalSeed = globalSeed
             , ai_updates_paused =
-                if initial_tab_type == ShopTabType || initial_tab_type == BattleTabType then
+                --dont pause if its a game tab
+                if List.member initial_tab_type [ ShopTabType, BattleTabType, TitleScreenTabType ] then
                     False
 
                 else

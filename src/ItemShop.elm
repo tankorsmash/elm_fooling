@@ -327,6 +327,7 @@ type Msg
     | UnlockProgressUnlock ProgressUnlock Price
     | RuntimeTriggeredAnimationStep Time.Posix
     | ClickedTitleTextLabel
+    | ClickedTitlePlayLabel
 
 
 type TitleScreenAnimationState
@@ -3408,6 +3409,9 @@ update msg model =
               }
             , Cmd.none
             )
+
+        ClickedTitlePlayLabel ->
+            ( { model | tab_type = ShopTabType }, Cmd.none )
 
 
 
@@ -7365,6 +7369,16 @@ viewTitleScreen model =
 
                                 else
                                     10
+
+        continueBtnMoveDown =
+            Animator.linear model.titleScreenAnimationState <|
+                \state ->
+                    Animator.at <|
+                        if state == HighTitle then
+                            500
+
+                        else
+                            0
     in
     column [ width fill, height fill, centerX, centerY ]
         [ column
@@ -7385,6 +7399,14 @@ viewTitleScreen model =
             , el [ Font.size 12, centerX ] <|
                 text "you "
             ]
+        , column
+            [ centerX
+            , alignBottom
+            , Font.size 128
+            , Element.moveDown continueBtnMoveDown
+            , Events.onMouseDown ClickedTitlePlayLabel
+            ]
+            [ text "Play" ]
         ]
 
 

@@ -7230,7 +7230,12 @@ view model =
             ]
         }
         [ Element.htmlAttribute <| Html.Attributes.id "itemshop"
-        , Element.inFront <| viewOverlay model
+        , Element.inFront <|
+            if model.tab_type /= TitleScreenTabType then
+                viewOverlay model
+
+            else
+                Element.none
         , Element.htmlAttribute <| Html.Events.on "wheel" (Decode.succeed (GotUiOptionsMsg ScrollViewport))
         , Element.htmlAttribute <| Html.Events.on "scroll" (Decode.succeed (GotUiOptionsMsg ScrollViewport))
         , width fill

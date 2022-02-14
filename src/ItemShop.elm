@@ -7361,17 +7361,15 @@ viewTitleScreen model =
                             5
     in
     column [ width fill, height fill, centerX, centerY ]
-        [ column [ centerX, centerY, Font.center, Element.scale scaling ]
+        [ column [ centerX, centerY, Font.center, Element.scale scaling, Element.pointer ]
             [ el [ Font.size 14, centerX, Events.onMouseDown MouseStoppedMovingAtTitleScreen ] <|
-                text "The"
+                text "Our"
             , el [ Events.onMouseDown MouseMovedAtTitleScreen ] <|
                 text "Item Shop"
             , el [ Font.size 14, centerX, Events.onMouseDown MouseStoppedMovingAtTitleScreen ] <|
                 text "wants "
             , el [ Font.size 12, centerX, Events.onMouseDown MouseStoppedMovingAtTitleScreen ] <|
                 text "you "
-            , el [ Font.size 10, centerX, Events.onMouseDown MouseStoppedMovingAtTitleScreen ] <|
-                text "!"
             ]
         ]
 

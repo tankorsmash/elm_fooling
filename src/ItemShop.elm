@@ -6897,8 +6897,6 @@ view_shop_tab_type model =
         { colorTheme, timeOfDay, ai_tick_time, characters, item_db } =
             model
 
-        welcome_header =
-            Element.el [ UI.font_scaled 3, UI.padding_bottom 10 ] <| text "Welcome to the Item Shop!"
 
         playerChar : Character
         playerChar =
@@ -6974,8 +6972,7 @@ view_shop_tab_type model =
         Element.column
             [ width fill, UI.font_scaled 1, height fill ]
         <|
-            [ welcome_header
-            , row [ spacing 5, width fill ]
+            [ row [ spacing 5, width fill ]
                 [ -- codex button
                   if hasProgressUnlock UnlockedCodex model then
                     Element.link []

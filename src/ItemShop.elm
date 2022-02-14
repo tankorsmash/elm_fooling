@@ -1,5 +1,6 @@
 module ItemShop exposing (Model, Msg, add_to_average, init, setDevice, sub_from_average, subscriptions, suite, update, view)
 
+import Animator
 import Array
 import Battle
 import Browser.Dom
@@ -324,6 +325,14 @@ type Msg
     | CashInQuestType QuestData
     | ToggleViewGemUnlocksInPostPhase
     | UnlockProgressUnlock ProgressUnlock Price
+    | RuntimeTriggeredAnimationStep Time.Posix
+    | MouseMovedAtTitleScreen
+    | MouseStoppedMovingAtTitleScreen
+
+
+type TitleScreenAnimationState
+    = HighTitle
+    | LowTitle
 
 
 type alias TradeOrder =
@@ -1491,6 +1500,7 @@ type alias Model =
     , timeOfDay : TimeOfDay
     , numItemsToStartDayWith : Int
     , shouldViewGemUpgradesInPostPhase : Bool
+    , titleScreenAnimationState : Animator.Timeline TitleScreenAnimationState
     }
 
 
@@ -2270,11 +2280,28 @@ init timeNow device hash key =
                 }
             , numItemsToStartDayWith = 5
             , shouldViewGemUpgradesInPostPhase = False
+            , titleScreenAnimationState = Animator.init <| HighTitle
             }
     in
     ( initModel
     , Task.perform TickSecond Time.now
     )
+
+
+animator : Animator.Animator Model
+animator =
+    Animator.animator
+        |> Animator.watchingWith
+            .titleScreenAnimationState
+            (\newState model -> { model | titleScreenAnimationState = newState })
+            (\state ->
+                case state of
+                    HighTitle ->
+                        False
+
+                    LowTitle ->
+                        True
+            )
 
 
 subscriptions : Model -> Sub Msg
@@ -2288,6 +2315,7 @@ subscriptions model =
         , Browser.Events.onKeyDown keyPressedDecoder
         , Browser.Events.onKeyUp keyReleasedDecoder
         , Sub.map GotBattleMsg <| Battle.subscriptions model.battleModel
+        , Animator.toSubscription RuntimeTriggeredAnimationStep model animator
         ]
 
 
@@ -3361,6 +3389,33 @@ update msg model =
                         Debug.log "else" "else"
                 in
                 ( model, Cmd.none )
+
+        RuntimeTriggeredAnimationStep newTime ->
+            ( Animator.update newTime animator model, Cmd.none )
+
+        MouseMovedAtTitleScreen ->
+            ( { model
+                | titleScreenAnimationState =
+                    Animator.go
+                        Animator.quickly
+                        -- (Animator.current model.titleScreenAnimationState |> LowTitle)
+                        HighTitle
+                        model.titleScreenAnimationState
+              }
+            , Cmd.none
+            )
+
+        MouseStoppedMovingAtTitleScreen ->
+            ( { model
+                | titleScreenAnimationState =
+                    Animator.go
+                        Animator.quickly
+                        -- (Animator.current model.titleScreenAnimationState |> LowTitle)
+                        LowTitle
+                        model.titleScreenAnimationState
+              }
+            , Cmd.none
+            )
 
 
 
@@ -7294,7 +7349,31 @@ build_special_action_button colorTheme hoveredTooltip character special_action t
 
 viewTitleScreen : Model -> Element Msg
 viewTitleScreen model =
-    el [ centerX, centerY ] <| text "Item Shop"
+    let
+        scaling =
+            Animator.linear model.titleScreenAnimationState <|
+                \state ->
+                    Animator.at <|
+                        if state == HighTitle then
+                            1
+
+                        else
+                            5
+    in
+    column [ width fill, height fill, centerX, centerY ]
+        [ column [ centerX, centerY, Font.center, Element.scale scaling ]
+            [ el [ Font.size 14, centerX, Events.onMouseDown MouseStoppedMovingAtTitleScreen ] <|
+                text "The"
+            , el [ Events.onMouseDown MouseMovedAtTitleScreen ] <|
+                text "Item Shop"
+            , el [ Font.size 14, centerX, Events.onMouseDown MouseStoppedMovingAtTitleScreen ] <|
+                text "wants "
+            , el [ Font.size 12, centerX, Events.onMouseDown MouseStoppedMovingAtTitleScreen ] <|
+                text "you "
+            , el [ Font.size 10, centerX, Events.onMouseDown MouseStoppedMovingAtTitleScreen ] <|
+                text "!"
+            ]
+        ]
 
 
 scale_increase_income_cost : Int -> Price

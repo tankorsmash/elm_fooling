@@ -3374,20 +3374,26 @@ update msg model =
                     getPlayer model.characters
             in
             if player.held_gems >= getPrice gemPrice then
-                ( { model
-                    | progressUnlocks = model.progressUnlocks ++ [ progressUnlock ]
-                  }
-                    |> .characters
-                    |> mapPlayer (\p -> { p | held_gems = p.held_gems - getPrice gemPrice })
-                    |> setCharacters model
+                ( model
+                    |> (\m ->
+                            { m
+                                | progressUnlocks = m.progressUnlocks ++ [ progressUnlock ]
+                            }
+                       )
+                    |> (\m ->
+                            mapPlayer
+                                (\p ->
+                                    { p
+                                        | held_gems = p.held_gems - getPrice gemPrice
+                                    }
+                                )
+                                m.characters
+                                |> setCharacters m
+                       )
                 , Cmd.none
                 )
 
             else
-                let
-                    _ =
-                        Debug.log "else" "else"
-                in
                 ( model, Cmd.none )
 
         RuntimeTriggeredAnimationStep newTime ->
@@ -7935,9 +7941,19 @@ suite =
                             [ \m ->
                                 Expect.equal 0 (getInnerPlayer <| getPlayer m.characters).held_gems
                             , \m ->
-                                Expect.true "the unlock should be unlocked" (containsProgressUnlock UnlockedCharts m.progressUnlocks)
+                                Expect.true
+                                    "the unlock should be unlocked in the new model"
+                                    (containsProgressUnlock
+                                        UnlockedCharts
+                                        m.progressUnlocks
+                                    )
                             , \m ->
-                                Expect.false "the unlock should not be present in the original" (List.member UnlockedCharts testModel.progressUnlocks)
+                                Expect.false
+                                    "the unlock should not be present in the original"
+                                    (List.member
+                                        UnlockedCharts
+                                        testModel.progressUnlocks
+                                    )
                             ]
                             newModel
                 ]

@@ -326,8 +326,7 @@ type Msg
     | ToggleViewGemUnlocksInPostPhase
     | UnlockProgressUnlock ProgressUnlock Price
     | RuntimeTriggeredAnimationStep Time.Posix
-    | MouseMovedAtTitleScreen
-    | MouseStoppedMovingAtTitleScreen
+    | ClickedTitleTextLabel
 
 
 type TitleScreenAnimationState
@@ -3393,25 +3392,18 @@ update msg model =
         RuntimeTriggeredAnimationStep newTime ->
             ( Animator.update newTime animator model, Cmd.none )
 
-        MouseMovedAtTitleScreen ->
+        ClickedTitleTextLabel ->
             ( { model
                 | titleScreenAnimationState =
                     Animator.go
                         Animator.quickly
-                        -- (Animator.current model.titleScreenAnimationState |> LowTitle)
-                        HighTitle
-                        model.titleScreenAnimationState
-              }
-            , Cmd.none
-            )
+                        (case Animator.current model.titleScreenAnimationState of
+                            HighTitle ->
+                                LowTitle
 
-        MouseStoppedMovingAtTitleScreen ->
-            ( { model
-                | titleScreenAnimationState =
-                    Animator.go
-                        Animator.quickly
-                        -- (Animator.current model.titleScreenAnimationState |> LowTitle)
-                        LowTitle
+                            LowTitle ->
+                                HighTitle
+                        )
                         model.titleScreenAnimationState
               }
             , Cmd.none
@@ -7366,14 +7358,22 @@ viewTitleScreen model =
                             5
     in
     column [ width fill, height fill, centerX, centerY ]
-        [ column [ centerX, centerY, Font.center, Element.scale scaling, Element.pointer ]
-            [ el [ Font.size 14, centerX, Events.onMouseDown MouseStoppedMovingAtTitleScreen ] <|
+        [ column
+            [ centerX
+            , centerY
+            , Font.center
+            , Element.scale scaling
+            , Element.pointer
+            , Events.onMouseDown ClickedTitleTextLabel
+            , UI.noUserSelect
+            ]
+            [ el [ Font.size 14, centerX ] <|
                 text "Our"
-            , el [ Events.onMouseDown MouseMovedAtTitleScreen ] <|
+            , el [] <|
                 text "Item Shop"
-            , el [ Font.size 14, centerX, Events.onMouseDown MouseStoppedMovingAtTitleScreen ] <|
+            , el [ Font.size 14, centerX ] <|
                 text "wants "
-            , el [ Font.size 12, centerX, Events.onMouseDown MouseStoppedMovingAtTitleScreen ] <|
+            , el [ Font.size 12, centerX ] <|
                 text "you "
             ]
         ]

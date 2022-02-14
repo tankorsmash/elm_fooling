@@ -7416,6 +7416,7 @@ viewTitleScreen model =
             , Font.size 128
             , Element.moveDown continueBtnMoveDown
             , Events.onMouseDown ClickedTitlePlayLabel
+            , Element.pointer
             ]
             [ text "Play" ]
         ]

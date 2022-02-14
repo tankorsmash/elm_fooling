@@ -1140,7 +1140,8 @@ updateItemDbFromTradeRecord item_db record_updater trade_record =
 
 
 type TabType
-    = ShopTabType
+    = TitleScreenTabType
+    | ShopTabType
     | ItemsUnlockedTabType
     | BattleTabType
 
@@ -2104,6 +2105,9 @@ createCharacter char_id name =
 tabTypeToString : TabType -> String
 tabTypeToString tabType =
     case tabType of
+        TitleScreenTabType ->
+            "title"
+
         ShopTabType ->
             "shop"
 
@@ -2117,6 +2121,9 @@ tabTypeToString tabType =
 stringToTabType : String -> TabType
 stringToTabType hash =
     case hash of
+        "title" ->
+            TitleScreenTabType
+
         "shop" ->
             ShopTabType
 
@@ -6911,7 +6918,8 @@ view_shop_tab_type model =
         <|
             [ welcome_header
             , row [ spacing 5, width fill ]
-                [ if hasProgressUnlock UnlockedCodex model then
+                [ -- codex button
+                  if hasProgressUnlock UnlockedCodex model then
                     Element.link []
                         { url = "#items"
                         , label =
@@ -6927,7 +6935,8 @@ view_shop_tab_type model =
 
                   else
                     Element.none
-                , if hasProgressUnlock UnlockedCharts model then
+                , -- charts
+                  if hasProgressUnlock UnlockedCharts model then
                     UI.outline_button [] (GotUiOptionsMsg ToggleShowMainChart) <|
                         if model.uiOptions.show_main_chart then
                             "Hide Charts"
@@ -6937,7 +6946,8 @@ view_shop_tab_type model =
 
                   else
                     Element.none
-                , if hasProgressUnlock UnlockedDarkMode model then
+                , -- color theme button
+                  if hasProgressUnlock UnlockedDarkMode model then
                     UI.outline_button [ alignRight ] ToggleColorTheme <|
                         case model.colorTheme of
                             BrightTheme ->
@@ -7179,6 +7189,9 @@ view model =
         ]
     <|
         case model.tab_type of
+            TitleScreenTabType ->
+                Lazy.lazy viewTitleScreen model
+
             ShopTabType ->
                 case model.timeOfDay.currentPhase of
                     ActivePhase _ _ ->
@@ -7277,6 +7290,11 @@ build_special_action_button colorTheme hoveredTooltip character special_action t
         }
         tooltip_config
         hoveredTooltip
+
+
+viewTitleScreen : Model -> Element Msg
+viewTitleScreen model =
+    el [ centerX, centerY ] <| text "Item Shop"
 
 
 scale_increase_income_cost : Int -> Price

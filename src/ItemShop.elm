@@ -7355,20 +7355,31 @@ viewTitleScreen model =
             Animator.linear model.titleScreenAnimationState <|
                 \state ->
                     Animator.at <|
-                        case model.uiOptions.device.class of
-                            UI.Desktop ->
+                        let
+                            { class, orientation } =
+                                model.uiOptions.device
+                        in
+                        case ( class, orientation ) of
+                            ( UI.Desktop, _ ) ->
                                 if state == HighTitle then
                                     1
 
                                 else
                                     5
 
-                            _ ->
+                            ( _, UI.Portrait ) ->
                                 if state == HighTitle then
                                     3
 
                                 else
                                     10
+
+                            ( _, _ ) ->
+                                if state == HighTitle then
+                                    1
+
+                                else
+                                    5
 
         continueBtnMoveDown =
             Animator.linear model.titleScreenAnimationState <|

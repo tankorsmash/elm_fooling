@@ -1661,6 +1661,43 @@ rawSampleSoundConfig =
            String.replace "\u{000D}" ""
 
 
+{-| TODO: use this as a hit sfx when mining -}
+mineHitConfig : String
+mineHitConfig =
+    """{
+    "oldParams": true,
+    "wave_type": 3,
+    "p_env_attack": -0.08825428594604155,
+    "p_env_sustain": 0.19439443835332876,
+    "p_env_punch": 0.24703231352248575,
+    "p_env_decay": 0.1013850347929815,
+    "p_base_freq": 0.004936297904265606,
+    "p_freq_limit": 0,
+    "p_freq_ramp": 0.26082053372445696,
+    "p_freq_dramp": 0.015424982611428356,
+    "p_vib_strength": 0.005080452919057031,
+    "p_vib_speed": -0.03762815578122818,
+    "p_arp_mod": -0.000428117793670052,
+    "p_arp_speed": 0.6532063218490077,
+    "p_duty": -0.0013428259102489098,
+    "p_duty_ramp": 0.03117420110540306,
+    "p_repeat_speed": -0.028490467015625364,
+    "p_pha_offset": -0.41036034773065005,
+    "p_pha_ramp": -0.31812263856791906,
+    "p_lpf_freq": 1.0079780945733983,
+    "p_lpf_ramp": -0.028497531140068966,
+    "p_lpf_resonance": 0.07894783133324781,
+    "p_hpf_freq": -0.07815351043791481,
+    "p_hpf_ramp": 0.007977817518140522,
+    "sound_vol": 0.25,
+    "sample_rate": 44100,
+    "sample_size": 8,
+    "p_vib_delay": null
+}"""
+        |> --replace \r
+           String.replace "\u{000D}" ""
+
+
 initSoundConfig : SoundConfig
 initSoundConfig =
     { shape = Square

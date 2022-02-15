@@ -1280,6 +1280,7 @@ type ProgressUnlock
     | UnlockedShopTrends
     | UnlockedSpecialActions
     | UnlockedLifeQuests
+    | UnlockedInventoryFilters
 
 
 allProgressUnlocks : ProgressUnlocks
@@ -1292,6 +1293,7 @@ allProgressUnlocks =
     , UnlockedShopTrends
     , UnlockedSpecialActions
     , UnlockedLifeQuests
+    , UnlockedInventoryFilters
     ]
 
 
@@ -1326,6 +1328,9 @@ progressUnlockToString progressUnlock =
         UnlockedLifeQuests ->
             "Life Quests"
 
+        UnlockedInventoryFilters ->
+            "Life Quests"
+
 
 encodeProgressUnlock : ProgressUnlock -> Decode.Value
 encodeProgressUnlock progressUnlock =
@@ -1353,6 +1358,9 @@ encodeProgressUnlock progressUnlock =
 
         UnlockedLifeQuests ->
             Encode.string "UnlockedLifeQuests"
+
+        UnlockedInventoryFilters ->
+            Encode.string "UnlockedInventoryFilters"
 
 
 decodeProgressUnlock : Decoder ProgressUnlock
@@ -5320,7 +5328,7 @@ getProgressUnlockGemPrice : ProgressUnlock -> Price
 getProgressUnlockGemPrice progressUnlock =
     let
         cosmeticUnlocks =
-            [ UnlockedDarkMode, UnlockedCodex, UnlockedCharts, UnlockedShopTrends ]
+            [ UnlockedDarkMode, UnlockedCodex, UnlockedCharts, UnlockedShopTrends, UnlockedInventoryFilters ]
 
         mechanicalUnlocks =
             [ UnlockedLifeQuests, UnlockedSpecialActions ]
@@ -5805,7 +5813,12 @@ render_inventory_grid model header character shop_trends hovered_item context co
             ++ rendered_desires
             ++ rendered_dislikes
             ++ rendered_action_log
-            ++ rendered_inventory_controls
+            ++ (if hasProgressUnlock UnlockedInventoryFilters model then
+                    rendered_inventory_controls
+
+                else
+                    []
+               )
             ++ (if not is_shop_context && List.length character.action_log > 0 then
                     divider
 

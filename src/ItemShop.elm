@@ -2722,6 +2722,15 @@ updateBattleOutMsg battleOutMsg model =
             ( model, Cmd.none )
 
 
+mapPlayerIf : Bool -> (Character -> Character) -> Characters -> Characters
+mapPlayerIf shouldUpdate callback ((Characters { player, shop, others }) as characters) =
+    if shouldUpdate then
+        mapPlayer callback characters
+
+    else
+        characters
+
+
 mapPlayer : (Character -> Character) -> Characters -> Characters
 mapPlayer callback (Characters { player, shop, others }) =
     Characters
@@ -2769,6 +2778,11 @@ transferToBattleModel model =
 setBattleModel : Model -> Battle.Model -> Model
 setBattleModel model battleModel =
     { model | battleModel = battleModel }
+
+
+withCharacters : Characters -> Model -> Model
+withCharacters newCharacters model =
+    { model | characters = newCharacters }
 
 
 setCharacters : Model -> Characters -> Model
@@ -4062,6 +4076,33 @@ special_action_community_fund model =
            )
 
 
+updateMine : Model -> Model
+updateMine ({ globalSeed } as model) =
+    let
+        ( shouldEarnGp, newSeed ) =
+            Random.step
+                (Random.int 0 100
+                    |> Random.map (\rnd -> rnd <= 15)
+                )
+                globalSeed
+
+        gpEarned =
+            1
+
+        newCharacters : Characters
+        newCharacters =
+            mapPlayerIf
+                shouldEarnGp
+                (\p ->
+                    { p | held_gold = p.held_gold + gpEarned }
+                )
+                model.characters
+    in
+    model
+        |> setGlobalSeed newSeed
+        |> withCharacters newCharacters
+
+
 updateSpecialAction : SpecialAction -> Price -> Model -> ( Model, Cmd Msg )
 updateSpecialAction special_action price model =
     case getPlayer model.characters of
@@ -4085,11 +4126,7 @@ updateSpecialAction special_action price model =
                                     )
 
                                 Mine ->
-                                    let
-                                        _ =
-                                            Debug.log "mining" 123
-                                    in
-                                    ( new_model, Cmd.none )
+                                    ( updateMine new_model, Cmd.none )
 
                                 TriggerEvent event ->
                                     ( handle_special_event new_model event, Cmd.none )
@@ -7551,7 +7588,7 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
                         1
                         playerUpgrades
             in
-                specialButtonBuilder
+            specialButtonBuilder
                 IncreaseIncome
                 "Invest"
                 "Invest in another business, earning more income.\n\nIncreases the gold you get per second."
@@ -7572,7 +7609,7 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
                         1
                         playerUpgrades
             in
-                specialButtonBuilder
+            specialButtonBuilder
                 IncreaseBPtoSP
                 "Cut"
                 "Cut deeper, using more of the blood to help yourself.\n\nIncreases the stamina your golem will regain per second, and the amount of blood you'll spend."

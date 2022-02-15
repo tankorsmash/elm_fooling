@@ -7485,7 +7485,7 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
                 Mine
                 "Mine"
                 "Chip away at the mountain, hoping for a sliver of silver.\n\nHas a chance of giving you some GP."
-                (setPrice 50)
+                Free
 
         button_battle =
             if containsProgressUnlock UnlockedBattles progressUnlocks then

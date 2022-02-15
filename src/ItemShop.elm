@@ -3275,7 +3275,7 @@ update msg model =
                     ( model, Cmd.none )
 
         OnSpecialAction special_action price ->
-            update_special_action special_action price model
+            updateSpecialAction special_action price model
 
         ChangeTabType tab_type ->
             ( { model | tab_type = tab_type }
@@ -4062,8 +4062,8 @@ special_action_community_fund model =
            )
 
 
-update_special_action : SpecialAction -> Price -> Model -> ( Model, Cmd Msg )
-update_special_action special_action price model =
+updateSpecialAction : SpecialAction -> Price -> Model -> ( Model, Cmd Msg )
+updateSpecialAction special_action price model =
     case getPlayer model.characters of
         Player player ->
             if hasEnoughGold player price then
@@ -8158,7 +8158,7 @@ suite =
                 \_ ->
                     case getPlayer test_model.characters of
                         Player orig_player ->
-                            update_special_action InviteTrader (setPrice 10) test_model
+                            updateSpecialAction InviteTrader (setPrice 10) test_model
                                 |> (\( new_model, _ ) ->
                                         case getPlayer new_model.characters of
                                             Player new_player ->

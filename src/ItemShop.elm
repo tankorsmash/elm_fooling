@@ -4067,7 +4067,7 @@ special_action_community_fund model =
                         |> replaceCharacter (subGold player price)
                         |> (\m ->
                                 { m
-                                    | communityFund = model.communityFund + getPrice price
+                                    | communityFund = m.communityFund + getPrice price
                                 }
                            )
 
@@ -4104,16 +4104,16 @@ updateMine ({ globalSeed } as model) =
 
 
 updateSpecialAction : SpecialAction -> Price -> Model -> ( Model, Cmd Msg )
-updateSpecialAction special_action price model =
-    case getPlayer model.characters of
+updateSpecialAction special_action price origModel =
+    case getPlayer origModel.characters of
         Player player ->
             if hasEnoughGold player price then
-                model
+                origModel
                     |> replaceCharacter (subGold player price)
-                    |> (\new_model ->
+                    |> (\model ->
                             case special_action of
                                 InviteTrader ->
-                                    ( new_model
+                                    ( model
                                         |> handle_invite_trader
                                         |> handle_invite_trader
                                         |> handle_invite_trader
@@ -4126,13 +4126,13 @@ updateSpecialAction special_action price model =
                                     )
 
                                 Mine ->
-                                    ( updateMine new_model, Cmd.none )
+                                    ( updateMine model, Cmd.none )
 
                                 TriggerEvent event ->
-                                    ( handle_special_event new_model event, Cmd.none )
+                                    ( handle_special_event model event, Cmd.none )
 
                                 TogglePauseAi ->
-                                    ( { new_model | ai_updates_paused = not new_model.ai_updates_paused } |> append_player_action_log TookSpecialActionTogglePauseAi, Cmd.none )
+                                    ( { model | ai_updates_paused = not model.ai_updates_paused } |> append_player_action_log TookSpecialActionTogglePauseAi, Cmd.none )
 
                                 UnlockItem ->
                                     ( special_action_unlock_item model, Cmd.none )
@@ -4148,7 +4148,7 @@ updateSpecialAction special_action price model =
                        )
 
             else
-                ( model, Cmd.none )
+                ( origModel, Cmd.none )
 
 
 {-| adds 1 gold per second. GPM is a misnomer

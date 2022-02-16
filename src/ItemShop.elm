@@ -3757,8 +3757,8 @@ pick_item item_db _ ( prev_seed, folded_items ) =
     ( seed_, result :: folded_items )
 
 
-handle_invite_trader : Model -> Model
-handle_invite_trader model =
+handleInviteTrader : Model -> Model
+handleInviteTrader model =
     let
         { characters, item_db, globalSeed } =
             model
@@ -3826,8 +3826,8 @@ append_player_action_log new_player_action_log model =
     }
 
 
-handle_special_event : Model -> SpecialEvent -> Model
-handle_special_event model spec_event =
+handleSpecialEvent : Model -> SpecialEvent -> Model
+handleSpecialEvent model spec_event =
     let
         { shop_trends, historical_shop_trends } =
             model
@@ -3908,8 +3908,8 @@ update_shop_trends model update_st_func =
     }
 
 
-special_action_increase_bp_to_sp : Model -> Model
-special_action_increase_bp_to_sp model =
+specialActionIncreaseBpToSp : Model -> Model
+specialActionIncreaseBpToSp model =
     let
         (Player player) =
             getPlayer model.characters
@@ -3953,8 +3953,8 @@ special_action_increase_bp_to_sp model =
         model
 
 
-special_action_increase_income : Model -> Model
-special_action_increase_income model =
+specialActionIncreaseIncome : Model -> Model
+specialActionIncreaseIncome model =
     let
         (Player player) =
             getPlayer model.characters
@@ -4002,8 +4002,8 @@ special_action_increase_income model =
         model
 
 
-special_action_unlock_item : Model -> Model
-special_action_unlock_item model =
+specialActionUnlockItem : Model -> Model
+specialActionUnlockItem model =
     let
         { item_db, globalSeed } =
             model
@@ -4054,8 +4054,8 @@ communityFundCost =
 
 {-| adds money to the pool to allow AIs to get new items
 -}
-special_action_community_fund : Model -> Model
-special_action_community_fund model =
+specialActionCommunityFund : Model -> Model
+specialActionCommunityFund model =
     let
         price =
             communityFundCost
@@ -4114,14 +4114,14 @@ updateSpecialAction special_action price origModel =
                             case special_action of
                                 InviteTrader ->
                                     ( model
-                                        |> handle_invite_trader
-                                        |> handle_invite_trader
-                                        |> handle_invite_trader
-                                        |> handle_invite_trader
-                                        |> handle_invite_trader
-                                        |> handle_invite_trader
-                                        |> handle_invite_trader
-                                        |> handle_invite_trader
+                                        |> handleInviteTrader
+                                        |> handleInviteTrader
+                                        |> handleInviteTrader
+                                        |> handleInviteTrader
+                                        |> handleInviteTrader
+                                        |> handleInviteTrader
+                                        |> handleInviteTrader
+                                        |> handleInviteTrader
                                     , Cmd.none
                                     )
 
@@ -4129,22 +4129,22 @@ updateSpecialAction special_action price origModel =
                                     ( updateMine model, Cmd.none )
 
                                 TriggerEvent event ->
-                                    ( handle_special_event model event, Cmd.none )
+                                    ( handleSpecialEvent model event, Cmd.none )
 
                                 TogglePauseAi ->
                                     ( { model | ai_updates_paused = not model.ai_updates_paused } |> append_player_action_log TookSpecialActionTogglePauseAi, Cmd.none )
 
                                 UnlockItem ->
-                                    ( special_action_unlock_item model, Cmd.none )
+                                    ( specialActionUnlockItem model, Cmd.none )
 
                                 IncreaseIncome ->
-                                    ( special_action_increase_income model, Cmd.none )
+                                    ( specialActionIncreaseIncome model, Cmd.none )
 
                                 IncreaseBPtoSP ->
-                                    ( special_action_increase_bp_to_sp model, Cmd.none )
+                                    ( specialActionIncreaseBpToSp model, Cmd.none )
 
                                 CommunityFund ->
-                                    ( special_action_community_fund model, Cmd.none )
+                                    ( specialActionCommunityFund model, Cmd.none )
                        )
 
             else
@@ -8252,7 +8252,7 @@ suite =
                             { test_model | item_db = item_db, ai_tick_time = ai_tick_time }
 
                         updated_model =
-                            special_action_unlock_item model
+                            specialActionUnlockItem model
 
                         updated_item_db =
                             updated_model.item_db
@@ -8271,7 +8271,7 @@ suite =
                             { test_model | item_db = item_db, ai_tick_time = ai_tick_time }
 
                         updated_model =
-                            special_action_unlock_item model
+                            specialActionUnlockItem model
 
                         updated_item_db =
                             updated_model.item_db

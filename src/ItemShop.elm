@@ -1510,6 +1510,8 @@ type alias Model =
     , numItemsToStartDayWith : Int
     , shouldViewGemUpgradesInPostPhase : Bool
     , titleScreenAnimationState : Animator.Timeline TitleScreenAnimationState
+    , hasHadAtLeastOneBlood : Bool
+    , hasHadAtLeastOneGem : Bool
     }
 
 
@@ -1534,6 +1536,8 @@ encodeModel model =
         -- , browserNavKey : Maybe Nav.Key //NOSERIALIZE
         -- , uiOptions : UiOptions //NOSERIALIZE
         , ( "communityFund", Encode.int model.communityFund )
+        , ( "hasHadAtLeastOneBlood", Encode.bool model.hasHadAtLeastOneBlood )
+        , ( "hasHadAtLeastOneGem", Encode.bool model.hasHadAtLeastOneGem )
         ]
 
 
@@ -2291,6 +2295,8 @@ init timeNow device hash key =
             , numItemsToStartDayWith = 5
             , shouldViewGemUpgradesInPostPhase = False
             , titleScreenAnimationState = Animator.init <| HighTitle
+            , hasHadAtLeastOneBlood = False
+            , hasHadAtLeastOneGem = False
             }
     in
     ( initModel
@@ -3165,7 +3171,7 @@ onCashInQuest ({ quests, characters } as model) { questType, questId } =
                     { player | held_gems = player.held_gems + gemsToGain }
             in
             model
-                |> (\m -> { m | quests = newQuests })
+                |> (\m -> { m | quests = newQuests, hasHadAtLeastOneGem = True })
                 |> replaceCharacter newPlayer
 
 
@@ -3329,7 +3335,7 @@ update msg model =
                         )
                         model.characters
             in
-            ( { model | characters = newCharacters }
+            ( { model | characters = newCharacters, hasHadAtLeastOneBlood = True }
             , Cmd.none
             )
 

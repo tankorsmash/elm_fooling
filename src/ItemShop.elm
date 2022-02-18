@@ -5458,6 +5458,48 @@ getProgressUnlockGemPrice progressUnlock =
         setPrice 1
 
 
+buildCompare : (a -> comparable) -> (a -> a -> Order)
+buildCompare getter =
+    \left right ->
+        compare (getter left) (getter right)
+
+
+renderDesires : ItemSentiments -> List (Element Msg)
+renderDesires item_types_desired =
+    Dict.toList item_types_desired
+        |> List.filter (Tuple.second >> (\trd -> trd > 0.0))
+        |> List.map
+            (\( it_id, trd ) ->
+                text <|
+                    "Desires: "
+                        ++ (case id_to_item_type it_id of
+                                Just item_type ->
+                                    itemTypeToString item_type
+
+                                Nothing ->
+                                    "Unknown"
+                           )
+            )
+
+
+renderDislikes : ItemSentiments -> List (Element Msg)
+renderDislikes item_types_desired =
+    Dict.toList item_types_desired
+        |> List.filter (Tuple.second >> (\trd -> trd <= 0.0))
+        |> List.map
+            (\( it_id, trd ) ->
+                text <|
+                    "Dislikes: "
+                        ++ (case id_to_item_type it_id of
+                                Just item_type ->
+                                    itemTypeToString item_type
+
+                                Nothing ->
+                                    "Unknown"
+                           )
+            )
+
+
 render_inventory_grid :
     Model
     -> String
@@ -5480,11 +5522,6 @@ render_inventory_grid { historical_shop_trends, item_db, colorTheme, uiOptions, 
 
         { show_charts_in_hovered_item } =
             uiOptions
-
-        buildCompare : (a -> comparable) -> (a -> a -> Order)
-        buildCompare getter =
-            \left right ->
-                compare (getter left) (getter right)
 
         sortFunc : InventoryRecord -> InventoryRecord -> Order
         sortFunc =
@@ -5531,37 +5568,11 @@ render_inventory_grid { historical_shop_trends, item_db, colorTheme, uiOptions, 
 
         rendered_desires : List (Element Msg)
         rendered_desires =
-            Dict.toList character.item_types_desired
-                |> List.filter (Tuple.second >> (\trd -> trd > 0.0))
-                |> List.map
-                    (\( it_id, trd ) ->
-                        text <|
-                            "Desires: "
-                                ++ (case id_to_item_type it_id of
-                                        Just item_type ->
-                                            itemTypeToString item_type
-
-                                        Nothing ->
-                                            "Unknown"
-                                   )
-                    )
+            renderDesires character.item_types_desired
 
         rendered_dislikes : List (Element Msg)
         rendered_dislikes =
-            Dict.toList character.item_types_desired
-                |> List.filter (Tuple.second >> (\trd -> trd <= 0.0))
-                |> List.map
-                    (\( it_id, trd ) ->
-                        text <|
-                            "Dislikes: "
-                                ++ (case id_to_item_type it_id of
-                                        Just item_type ->
-                                            itemTypeToString item_type
-
-                                        Nothing ->
-                                            "Unknown"
-                                   )
-                    )
+            renderDislikes character.item_types_desired
 
         render_single_action_log : ActionLog -> Element Msg
         render_single_action_log log =
@@ -5573,6 +5584,7 @@ render_inventory_grid { historical_shop_trends, item_db, colorTheme, uiOptions, 
                 character.action_log
                     |> List.reverse
                     |> List.take 50
+                    -- |> List.map (\log -> Lazy.lazy render_single_action_log log)
                     |> List.map render_single_action_log
 
             else
@@ -7031,25 +7043,6 @@ view_shop_tab_type model =
                 Shop s ->
                     s
 
-        debug_inventories : List (Element Msg)
-        debug_inventories =
-            getOthers model.characters
-                |> List.sortBy (.char_id >> UUID.toString)
-                |> List.map
-                    (\character ->
-                        Element.Keyed.el [ height fill, paddingXY 0 10, width fill ]
-                            ( UUID.toString character.char_id
-                            , render_inventory_grid
-                                model
-                                (character.name ++ "'s Inventory")
-                                character
-                                model.shop_trends
-                                model.uiOptions.hovered_item_in_character
-                                CharacterItems
-                                (always Element.none)
-                            )
-                    )
-
         paused_border_attrs =
             [ Border.color
                 (case model.colorTheme of
@@ -7196,7 +7189,23 @@ view_shop_tab_type model =
                                             ++ " - "
                                             ++ UI.orientationToString model.uiOptions.device.orientation
                                     ]
-                                        ++ debug_inventories
+                                        ++ (getOthers model.characters
+                                                |> List.sortBy (.char_id >> UUID.toString)
+                                                |> List.map
+                                                    (\character ->
+                                                        Element.Keyed.el [ height fill, paddingXY 0 10, width fill ]
+                                                            ( UUID.toString character.char_id
+                                                            , render_inventory_grid
+                                                                model
+                                                                (character.name ++ "'s Inventory")
+                                                                character
+                                                                model.shop_trends
+                                                                model.uiOptions.hovered_item_in_character
+                                                                CharacterItems
+                                                                (always Element.none)
+                                                            )
+                                                    )
+                                           )
 
                                 else
                                     []

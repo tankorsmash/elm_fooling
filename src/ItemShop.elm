@@ -4108,6 +4108,7 @@ updateMine ({ globalSeed } as model) =
         mineCmd =
             if not shouldEarnGp then
                 playMineSound
+
             else
                 playMineSuccessSound
     in
@@ -4118,23 +4119,21 @@ updateMine ({ globalSeed } as model) =
     )
 
 
+decodeAndPlaySound : String -> Cmd msg
+decodeAndPlaySound soundConfigStr =
+    soundConfigStr
+        |> Sfxr.decodeAndPlaySoundJson
+        |> Result.withDefault Cmd.none
+
+
 playMineSound : Cmd msg
 playMineSound =
-    case Decode.decodeString Sfxr.decodeSoundConfig Sfxr.mineHitConfig of
-        Ok soundConfig ->
-            Sfxr.sfxrOut <| Sfxr.encodeSoundConfig soundConfig
+    decodeAndPlaySound Sfxr.mineHitConfig
 
-        Err _ ->
-            Cmd.none
 
 playMineSuccessSound : Cmd msg
 playMineSuccessSound =
-    case Decode.decodeString Sfxr.decodeSoundConfig Sfxr.mineSuccessConfig of
-        Ok soundConfig ->
-            Sfxr.sfxrOut <| Sfxr.encodeSoundConfig soundConfig
-
-        Err _ ->
-            Cmd.none
+    decodeAndPlaySound Sfxr.mineSuccessConfig
 
 
 updateSpecialAction : SpecialAction -> Price -> Model -> ( Model, Cmd Msg )

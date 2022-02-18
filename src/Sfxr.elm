@@ -1,4 +1,4 @@
-port module Sfxr exposing (Model, Msg(..), decodeSoundConfig, encodeSoundConfig, init, mineHitConfig, mineSuccessConfig, sfxrOut, subscriptions, suite, update, view)
+port module Sfxr exposing (Model, Msg(..), decodeAndPlaySoundJson, decodeSoundConfig, encodeSoundConfig, init, mineHitConfig, mineSuccessConfig, sfxrOut, subscriptions, suite, update, view)
 
 import Element
     exposing
@@ -1782,6 +1782,13 @@ expectedSoundConfig =
     , highPassFilter = { frequency = 0, ramp = 0 }
     , misc = { volume = 0.05, sampleRate = 44100, sampleSize = 8 }
     }
+
+
+decodeAndPlaySoundJson : String -> Result Decode.Error (Cmd msg)
+decodeAndPlaySoundJson soundConfigStr = 
+    soundConfigStr
+        |> Decode.decodeString decodeSoundConfig
+        |> Result.map (sfxrOut << encodeSoundConfig)
 
 
 suite : Test

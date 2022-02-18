@@ -1511,6 +1511,7 @@ type alias Model =
     , numItemsToStartDayWith : Int
     , shouldViewGemUpgradesInPostPhase : Bool
     , titleScreenAnimationState : Animator.Timeline TitleScreenAnimationState
+    , showMineGpGained : Animator.Timeline Bool
     , hasHadAtLeastOneBlood : Bool
     , hasHadAtLeastOneGem : Bool
     }
@@ -2296,6 +2297,7 @@ init timeNow device hash key =
             , numItemsToStartDayWith = 5
             , shouldViewGemUpgradesInPostPhase = False
             , titleScreenAnimationState = Animator.init <| HighTitle
+            , showMineGpGained = Animator.init <| False
             , hasHadAtLeastOneBlood = False
             , hasHadAtLeastOneGem = False
             }
@@ -2317,6 +2319,17 @@ animator =
                         False
 
                     LowTitle ->
+                        True
+            )
+        |> Animator.watchingWith
+            .showMineGpGained
+            (\newState model -> { model | showMineGpGained = newState })
+            (\state ->
+                case state of
+                    True ->
+                        False
+
+                    False ->
                         True
             )
 
@@ -4111,8 +4124,22 @@ updateMine ({ globalSeed } as model) =
 
             else
                 playMineSuccessSound
+
+        newShowMineGpGained =
+            if shouldEarnGp then
+                Animator.go
+                    Animator.quickly
+                    (if Animator.current model.showMineGpGained then
+                        False
+
+                     else
+                        True
+                    )
+                    model.showMineGpGained
+            else
+                model.showMineGpGained
     in
-    ( model
+    ( { model | showMineGpGained = newShowMineGpGained }
         |> setGlobalSeed newSeed
         |> withCharacters newCharacters
     , mineCmd
@@ -7125,7 +7152,7 @@ view_shop_tab_type model =
                 ]
             , case getPlayer model.characters of
                 Player player ->
-                    special_actions_display model.colorTheme model.progressUnlocks model.playerUpgrades model.uiOptions.hoveredTooltip player model.ai_updates_paused
+                    special_actions_display model.colorTheme model.progressUnlocks model.playerUpgrades model.uiOptions.hoveredTooltip player model.ai_updates_paused model.showMineGpGained
             , if hasProgressUnlock UnlockedShopTrends model then
                 trends_display
                     model.colorTheme
@@ -7532,8 +7559,8 @@ scale_increase_bp_to_sp_cost current_level =
     (60 + (5 * current_level * current_level) * 2) |> setPrice
 
 
-special_actions_display : UI.ColorTheme -> ProgressUnlocks -> List PlayerUpgrade -> UI.HoveredTooltip -> Character -> Bool -> Element Msg
-special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip player ai_updates_paused =
+special_actions_display : UI.ColorTheme -> ProgressUnlocks -> List PlayerUpgrade -> UI.HoveredTooltip -> Character -> Bool -> Animator.Timeline Bool -> Element Msg
+special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip player ai_updates_paused showMineGpGained =
     let
         specialButtonBuilder msg txt price =
             build_special_action_button colorTheme hoveredTooltip player msg txt price
@@ -7657,6 +7684,29 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
             [ Element.wrappedRow [ width <| fillPortion 1, spacingXY 10 10, alignTop ]
                 [ button_toggle_ai_pause
                 , button_mine
+                , let
+                    continueBtnMoveDown : Float
+                    continueBtnMoveDown =
+                            Animator.linear showMineGpGained <|
+                                \state ->
+                                    Animator.at <|
+                                        if state then
+                                            100.0
+
+                                        else
+                                            0.0
+                    alpha : Float
+                    alpha =
+                            Animator.linear showMineGpGained <|
+                                \state ->
+                                    Animator.at <|
+                                        if state then
+                                            1.0
+
+                                        else
+                                            0.0
+                  in
+                  el [ Element.moveRight continueBtnMoveDown, Element.alpha alpha ] <| text "+1"
                 , button_battle
                 ]
             , if hasUnlockedSpecialActions then

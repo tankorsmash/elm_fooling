@@ -63,6 +63,7 @@ import Json.Encode.Extra as EncodeExtra exposing (maybe)
 import List.Extra
 import Random
 import Random.List
+import Sfxr
 import Task
 import Test exposing (..)
 import Time
@@ -4109,6 +4110,16 @@ updateMine ({ globalSeed } as model) =
         |> withCharacters newCharacters
 
 
+playMineSound : Cmd msg
+playMineSound =
+    case Decode.decodeString Sfxr.decodeSoundConfig Sfxr.mineHitConfig of
+        Ok soundConfig ->
+            Sfxr.sfxrOut <| Sfxr.encodeSoundConfig soundConfig
+
+        Err _ ->
+            Cmd.none
+
+
 updateSpecialAction : SpecialAction -> Price -> Model -> ( Model, Cmd Msg )
 updateSpecialAction special_action price origModel =
     case getPlayer origModel.characters of
@@ -4132,7 +4143,7 @@ updateSpecialAction special_action price origModel =
                                     )
 
                                 Mine ->
-                                    ( updateMine model, Cmd.none )
+                                    ( updateMine model, playMineSound )
 
                                 TriggerEvent event ->
                                     ( handleSpecialEvent model event, Cmd.none )

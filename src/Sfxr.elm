@@ -1,4 +1,4 @@
-port module Sfxr exposing (Model, Msg(..), init, subscriptions, suite, update, view)
+port module Sfxr exposing (Model, Msg(..), decodeSoundConfig, encodeSoundConfig, init, mineHitConfig, sfxrOut, subscriptions, suite, update, view)
 
 import Element
     exposing
@@ -1661,7 +1661,8 @@ rawSampleSoundConfig =
            String.replace "\u{000D}" ""
 
 
-{-| TODO: use this as a hit sfx when mining -}
+{-| TODO: use this as a hit sfx when mining
+-}
 mineHitConfig : String
 mineHitConfig =
     """{

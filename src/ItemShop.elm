@@ -7031,6 +7031,10 @@ view_shop_tab_type model =
         { colorTheme, timeOfDay, ai_tick_time, characters, item_db } =
             model
 
+        player : Player
+        player =
+            getPlayer model.characters
+
         playerChar : Character
         playerChar =
             case getPlayer model.characters of
@@ -7141,9 +7145,7 @@ view_shop_tab_type model =
                 , el [ width <| fillPortion 3, alignTop ] <|
                     Lazy.lazy3 quests_display model.colorTheme model.quests model.progressUnlocks
                 ]
-            , case getPlayer model.characters of
-                Player player ->
-                    special_actions_display model.colorTheme model.progressUnlocks model.playerUpgrades model.uiOptions.hoveredTooltip player model.ai_updates_paused model.showMineGpGained
+            , special_actions_display model.colorTheme model.progressUnlocks model.playerUpgrades model.uiOptions.hoveredTooltip playerChar model.ai_updates_paused model.showMineGpGained
             , if hasProgressUnlock UnlockedShopTrends model then
                 trends_display
                     model.colorTheme
@@ -7163,7 +7165,7 @@ view_shop_tab_type model =
                     model.shop_trends
                     model.uiOptions.hovered_item_in_character
                     ShopItems
-                    (shopInventoryControls model.colorTheme (getPlayer model.characters) model.shop_trends)
+                    (shopInventoryControls model.colorTheme player model.shop_trends)
             , Element.el [ paddingXY 0 10, width fill ] <|
                 render_inventory_grid
                     model

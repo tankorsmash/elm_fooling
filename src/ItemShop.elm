@@ -4083,7 +4083,7 @@ specialActionCommunityFund model =
            )
 
 
-updateMine : Model -> Model
+updateMine : Model -> ( Model, Cmd Msg )
 updateMine ({ globalSeed } as model) =
     let
         ( shouldEarnGp, newSeed ) =
@@ -4104,15 +4104,32 @@ updateMine ({ globalSeed } as model) =
                     { p | held_gold = p.held_gold + gpEarned }
                 )
                 model.characters
+
+        mineCmd =
+            if not shouldEarnGp then
+                playMineSound
+            else
+                playMineSuccessSound
     in
-    model
+    ( model
         |> setGlobalSeed newSeed
         |> withCharacters newCharacters
+    , mineCmd
+    )
 
 
 playMineSound : Cmd msg
 playMineSound =
     case Decode.decodeString Sfxr.decodeSoundConfig Sfxr.mineHitConfig of
+        Ok soundConfig ->
+            Sfxr.sfxrOut <| Sfxr.encodeSoundConfig soundConfig
+
+        Err _ ->
+            Cmd.none
+
+playMineSuccessSound : Cmd msg
+playMineSuccessSound =
+    case Decode.decodeString Sfxr.decodeSoundConfig Sfxr.mineSuccessConfig of
         Ok soundConfig ->
             Sfxr.sfxrOut <| Sfxr.encodeSoundConfig soundConfig
 
@@ -4143,7 +4160,7 @@ updateSpecialAction special_action price origModel =
                                     )
 
                                 Mine ->
-                                    ( updateMine model, playMineSound )
+                                    updateMine model
 
                                 TriggerEvent event ->
                                     ( handleSpecialEvent model event, Cmd.none )

@@ -4128,7 +4128,7 @@ updateMine ({ globalSeed } as model) =
         newShowMineGpGained =
             if shouldEarnGp then
                 Animator.go
-                    Animator.quickly
+                    Animator.veryQuickly
                     (if Animator.current model.showMineGpGained then
                         False
 
@@ -5467,7 +5467,7 @@ render_inventory_grid :
     -> ListContext
     -> (InventoryRecord -> Element Msg)
     -> Element Msg
-render_inventory_grid model header character shop_trends hovered_item context controls_column =
+render_inventory_grid { historical_shop_trends, item_db, colorTheme, uiOptions, progressUnlocks, communityFund } header character shop_trends hovered_item context controls_column =
     let
         { char_id, held_items, held_gold, hide_zero_qty_inv_rows } =
             character
@@ -5478,11 +5478,8 @@ render_inventory_grid model header character shop_trends hovered_item context co
         is_player_context =
             context == InventoryItems
 
-        { historical_shop_trends, item_db, colorTheme } =
-            model
-
         { show_charts_in_hovered_item } =
-            model.uiOptions
+            uiOptions
 
         buildCompare : (a -> comparable) -> (a -> a -> Order)
         buildCompare getter =
@@ -5491,7 +5488,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
 
         sortFunc : InventoryRecord -> InventoryRecord -> Order
         sortFunc =
-            case model.uiOptions.inventorySortType of
+            case uiOptions.inventorySortType of
                 SortByName ->
                     buildCompare (.item >> .name)
 
@@ -5615,12 +5612,12 @@ render_inventory_grid model header character shop_trends hovered_item context co
 
                             else
                                 "Hide Nonzero"
-                        , colorTheme = model.colorTheme
+                        , colorTheme = colorTheme
                         }
                 , UI.button <|
                     UI.TextParams
                         { buttonType = UI.Secondary
-                        , colorTheme = model.colorTheme
+                        , colorTheme = colorTheme
                         , customAttrs =
                             [ Html.Events.preventDefaultOn "contextmenu"
                                 (Decode.succeed <| ( GotUiOptionsMsg <| CycleFilterDisplayedItemsBackward character.char_id character.displayedItemType, True ))
@@ -5678,7 +5675,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                                     [ Font.italic
                                     , alignRight
                                     , Font.color <|
-                                        case model.colorTheme of
+                                        case colorTheme of
                                             BrightTheme ->
                                                 UI.color_grey
 
@@ -5694,7 +5691,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                             ]
                         , paragraph [] <|
                             [ text "Current Price: "
-                            , UI.renderGp model.colorTheme (current_price item)
+                            , UI.renderGp colorTheme (current_price item)
                             ]
                                 ++ (if
                                         is_item_trending
@@ -5704,7 +5701,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                                             /= current_price item
                                     then
                                         [ text " (originally "
-                                        , UI.renderGp model.colorTheme item.raw_gold_cost
+                                        , UI.renderGp colorTheme item.raw_gold_cost
                                         , text ")"
                                         ]
 
@@ -5743,8 +5740,8 @@ render_inventory_grid model header character shop_trends hovered_item context co
             <|
                 text
                     (str
-                        ++ (if model.uiOptions.inventorySortType == sortType then
-                                case model.uiOptions.inventorySortDir of
+                        ++ (if uiOptions.inventorySortType == sortType then
+                                case uiOptions.inventorySortDir of
                                     Descending ->
                                         "▲"
 
@@ -5789,7 +5786,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                                     adjustedPrice - getPrice avg_price
                             in
                             paragraph [] <|
-                                [ UI.renderGp model.colorTheme <|
+                                [ UI.renderGp colorTheme <|
                                     get_single_adjusted_item_cost shop_trends item
                                 ]
                                     ++ [ if context /= ShopItems && priceDiff /= 0 && getQuantity quantity /= 0 then
@@ -5817,7 +5814,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
 
                                 _ ->
                                     if getQuantity quantity /= 0 then
-                                        UI.renderGp model.colorTheme <| getPrice avg_price
+                                        UI.renderGp colorTheme <| getPrice avg_price
 
                                     else
                                         Element.none
@@ -5848,7 +5845,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
                     small_header "Item Type" SortByItemType
               , width = fillPortion 2
               , view =
-                    if hasProgressUnlock UnlockedShopTrends model then
+                    if containsProgressUnlock UnlockedShopTrends progressUnlocks then
                         \{ item } ->
                             Element.el [ centerY ] <|
                                 renderItemTypeWithTrend shop_trends item.item_type
@@ -5896,18 +5893,18 @@ render_inventory_grid model header character shop_trends hovered_item context co
                     [ row [ centerX, width Element.shrink, spacingXY 10 0 ]
                         [ row [ Font.alignRight ]
                             [ text "Held: "
-                            , UI.renderGp model.colorTheme held_gold
+                            , UI.renderGp colorTheme held_gold
                             ]
                         , if is_player_context && character.held_blood > 0 then
                             row [ width fill ]
-                                [ UI.renderBlood model.colorTheme character.held_blood
+                                [ UI.renderBlood colorTheme character.held_blood
                                 ]
 
                           else
                             Element.none
                         , row [ width fill ]
                             [ text <| "Community Fund: "
-                            , UI.renderGp model.colorTheme model.communityFund
+                            , UI.renderGp colorTheme communityFund
                             ]
                         ]
                     ]
@@ -5919,7 +5916,7 @@ render_inventory_grid model header character shop_trends hovered_item context co
             ++ rendered_desires
             ++ rendered_dislikes
             ++ rendered_action_log
-            ++ (if hasProgressUnlock UnlockedInventoryFilters model then
+            ++ (if containsProgressUnlock UnlockedInventoryFilters progressUnlocks then
                     rendered_inventory_controls
 
                 else

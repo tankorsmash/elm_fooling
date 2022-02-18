@@ -4136,6 +4136,7 @@ updateMine ({ globalSeed } as model) =
                         True
                     )
                     model.showMineGpGained
+
             else
                 model.showMineGpGained
     in
@@ -7685,28 +7686,32 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
                 [ button_toggle_ai_pause
                 , button_mine
                 , let
-                    continueBtnMoveDown : Float
-                    continueBtnMoveDown =
-                            Animator.linear showMineGpGained <|
-                                \state ->
-                                    Animator.at <|
-                                        if state then
-                                            100.0
+                    gpGainedMovement : Float
+                    gpGainedMovement =
+                        Animator.move showMineGpGained <|
+                            \shouldShow ->
+                                if shouldShow then
+                                    Animator.at 100
+                                        |> Animator.leaveSmoothly 0.5
+                                        |> Animator.arriveSmoothly 0.5
 
-                                        else
-                                            0.0
+                                else
+                                    Animator.at 0
+                                        |> Animator.leaveSmoothly 0.5
+                                        |> Animator.arriveSmoothly 0.5
+
                     alpha : Float
                     alpha =
-                            Animator.linear showMineGpGained <|
-                                \state ->
-                                    Animator.at <|
-                                        if state then
-                                            1.0
+                        Animator.linear showMineGpGained <|
+                            \state ->
+                                Animator.at <|
+                                    if state then
+                                        1.0
 
-                                        else
-                                            0.0
+                                    else
+                                        0.0
                   in
-                  el [ Element.moveRight continueBtnMoveDown, Element.alpha alpha ] <| text "+1"
+                  el [ Element.moveRight gpGainedMovement, Element.alpha alpha ] <| text "+1"
                 , button_battle
                 ]
             , if hasUnlockedSpecialActions then

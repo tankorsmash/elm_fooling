@@ -5555,6 +5555,34 @@ renderDislikes item_types_desired =
             )
 
 
+smallHeaderInGrid : UiOptions -> String -> InventorySortType -> Element Msg
+smallHeaderInGrid uiOptions str sortType =
+    el
+        [ Font.size 10
+        , Events.onClick (GotUiOptionsMsg <| ChangeInventorySortType sortType)
+        , UI.noUserSelect
+        , Border.rounded 2
+        , Element.mouseOver [ Background.color UI.color_very_light_grey ]
+        , padding 2
+        , Element.pointer
+        ]
+    <|
+        text
+            (str
+                ++ (if uiOptions.inventorySortType == sortType then
+                        case uiOptions.inventorySortDir of
+                            Descending ->
+                                "▲"
+
+                            Ascending ->
+                                "▼"
+
+                    else
+                        ""
+                   )
+            )
+
+
 render_inventory_grid :
     Model
     -> String
@@ -5794,36 +5822,10 @@ render_inventory_grid { historical_shop_trends, item_db, colorTheme, uiOptions, 
             -- , Element.below (expanded_display item)
             ]
 
-        small_header str sortType =
-            el
-                [ Font.size 10
-                , Events.onClick (GotUiOptionsMsg <| ChangeInventorySortType sortType)
-                , UI.noUserSelect
-                , Border.rounded 2
-                , Element.mouseOver [ Background.color UI.color_very_light_grey ]
-                , padding 2
-                , Element.pointer
-                ]
-            <|
-                text
-                    (str
-                        ++ (if uiOptions.inventorySortType == sortType then
-                                case uiOptions.inventorySortDir of
-                                    Descending ->
-                                        "▲"
-
-                                    Ascending ->
-                                        "▼"
-
-                            else
-                                ""
-                           )
-                    )
-
         table_columns : List (Element.Column InventoryRecord Msg)
         table_columns =
             [ { header =
-                    small_header "Name" SortByName
+                    Lazy.lazy3 smallHeaderInGrid uiOptions "Name" SortByName
               , width = fillPortion 2
               , view =
                     \{ item, quantity, avg_price } ->
@@ -5838,7 +5840,7 @@ render_inventory_grid { historical_shop_trends, item_db, colorTheme, uiOptions, 
                             (text (UI.clipText item.name 25))
               }
             , { header =
-                    small_header "Price" SortByPrice
+                    Lazy.lazy3 smallHeaderInGrid uiOptions "Price" SortByPrice
               , width = fillPortion 1
               , view =
                     \{ item, quantity, avg_price } ->
@@ -5868,7 +5870,7 @@ render_inventory_grid { historical_shop_trends, item_db, colorTheme, uiOptions, 
                                        ]
               }
             , { header =
-                    small_header "Avg Px" SortByAvgPrice
+                    Lazy.lazy3 smallHeaderInGrid uiOptions "Avg Px" SortByAvgPrice
               , width = fillPortion 1
               , view =
                     \{ quantity, avg_price } ->
@@ -5887,7 +5889,7 @@ render_inventory_grid { historical_shop_trends, item_db, colorTheme, uiOptions, 
                                         Element.none
               }
             , { header =
-                    small_header "Qty." SortByQuantity
+                    Lazy.lazy3 smallHeaderInGrid uiOptions "Qty." SortByQuantity
               , width = fillPortion 1
               , view =
                     \{ quantity } ->
@@ -5909,7 +5911,7 @@ render_inventory_grid { historical_shop_trends, item_db, colorTheme, uiOptions, 
                                 text <| "x" ++ (String.fromInt <| getQuantity quantity)
               }
             , { header =
-                    small_header "Item Type" SortByItemType
+                    Lazy.lazy3 smallHeaderInGrid uiOptions "Item Type" SortByItemType
               , width = fillPortion 2
               , view =
                     if containsProgressUnlock UnlockedShopTrends progressUnlocks then
@@ -5923,12 +5925,12 @@ render_inventory_grid { historical_shop_trends, item_db, colorTheme, uiOptions, 
                                 renderItemTypeWithoutTrend item.item_type
               }
             , { header =
-                    small_header "Item Desc." SortByItemDesc
+                    Lazy.lazy3 smallHeaderInGrid uiOptions "Item Desc." SortByItemDesc
               , width = fillPortion 3
               , view =
                     \{ item } -> el [ centerY ] <| text <| UI.clipText item.description 24
               }
-            , { header = small_header "Controls" SortByName --noop basically
+            , { header = Lazy.lazy3 smallHeaderInGrid uiOptions "Controls" SortByName --noop basically
               , width = fillPortion 1
               , view = controls_column
               }
@@ -7666,8 +7668,9 @@ scale_increase_bp_to_sp_cost current_level =
 special_actions_display : UI.ColorTheme -> ProgressUnlocks -> List PlayerUpgrade -> UI.HoveredTooltip -> Character -> Bool -> Animator.Timeline MineAnimation -> Element Msg
 special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip player ai_updates_paused showMineGpGained =
     let
-        specialButtonBuilder msg txt price =
-            build_special_action_button colorTheme hoveredTooltip player msg txt price
+        specialButtonBuilder : SpecialAction -> String -> String -> Price -> Element Msg
+        specialButtonBuilder specialAction title txt price =
+            build_special_action_button colorTheme hoveredTooltip player specialAction title txt price
 
         button_toggle_ai_pause =
             specialButtonBuilder

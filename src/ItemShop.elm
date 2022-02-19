@@ -61,6 +61,7 @@ import Json.Decode.Pipeline exposing (hardcoded, optional, required)
 import Json.Encode as Encode exposing (Value)
 import Json.Encode.Extra as EncodeExtra exposing (maybe)
 import List.Extra
+import Process
 import Random
 import Random.List
 import Sfxr
@@ -330,6 +331,7 @@ type Msg
     | RuntimeTriggeredAnimationStep Time.Posix
     | ClickedTitleTextLabel
     | ClickedTitlePlayLabel
+    | StopShowMineGpGained
 
 
 type TitleScreenAnimationState
@@ -3463,6 +3465,17 @@ update msg model =
         ClickedTitlePlayLabel ->
             ( { model | tab_type = ShopTabType }, Cmd.none )
 
+        StopShowMineGpGained ->
+            ( { model
+                | showMineGpGained =
+                    Animator.go
+                        Animator.quickly
+                        False
+                        model.showMineGpGained
+              }
+            , Cmd.none
+            )
+
 
 
 --- END OF UPDATE
@@ -4123,18 +4136,18 @@ updateMine ({ globalSeed } as model) =
                 playMineSound
 
             else
-                playMineSuccessSound
+                Cmd.batch
+                    [ playMineSuccessSound
+                    , Process.sleep 1000
+                        |> Task.andThen (always <| Task.succeed StopShowMineGpGained)
+                        |> Task.perform identity
+                    ]
 
         newShowMineGpGained =
             if shouldEarnGp then
                 Animator.go
                     Animator.veryQuickly
-                    (if Animator.current model.showMineGpGained then
-                        False
-
-                     else
-                        True
-                    )
+                    True
                     model.showMineGpGained
 
             else
@@ -7145,7 +7158,14 @@ view_shop_tab_type model =
                 , el [ width <| fillPortion 3, alignTop ] <|
                     Lazy.lazy3 quests_display model.colorTheme model.quests model.progressUnlocks
                 ]
-            , special_actions_display model.colorTheme model.progressUnlocks model.playerUpgrades model.uiOptions.hoveredTooltip playerChar model.ai_updates_paused model.showMineGpGained
+            , special_actions_display
+                model.colorTheme
+                model.progressUnlocks
+                model.playerUpgrades
+                model.uiOptions.hoveredTooltip
+                playerChar
+                model.ai_updates_paused
+                model.showMineGpGained
             , if hasProgressUnlock UnlockedShopTrends model then
                 trends_display
                     model.colorTheme

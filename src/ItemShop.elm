@@ -1513,9 +1513,16 @@ type alias Model =
     , shouldViewGemUpgradesInPostPhase : Bool
     , titleScreenAnimationState : Animator.Timeline TitleScreenAnimationState
     , showMineGpGained : Animator.Timeline MineAnimation
+    , goldGainedTimeline : Animator.Timeline GoldGainedAnimation
     , hasHadAtLeastOneBlood : Bool
     , hasHadAtLeastOneGem : Bool
     }
+
+
+type GoldGainedAnimation
+    = ShowGoldGainedAnimation Random.Seed
+    | HideGoldAnimation Random.Seed
+    | NoGoldAnimation
 
 
 type MineAnimation
@@ -2305,6 +2312,7 @@ init timeNow device hash key =
             , shouldViewGemUpgradesInPostPhase = False
             , titleScreenAnimationState = Animator.init <| HighTitle
             , showMineGpGained = Animator.init <| NoMineAnimation
+            , goldGainedTimeline = Animator.init <| NoGoldAnimation
             , hasHadAtLeastOneBlood = False
             , hasHadAtLeastOneGem = False
             }
@@ -2340,6 +2348,20 @@ animator =
                         True
 
                     NoMineAnimation ->
+                        True
+            )
+        |> Animator.watchingWith
+            .goldGainedTimeline
+            (\newState model -> { model | goldGainedTimeline = newState })
+            (\state ->
+                case state of
+                    ShowGoldGainedAnimation seed ->
+                        False
+
+                    HideGoldAnimation seed ->
+                        False
+
+                    NoGoldAnimation ->
                         True
             )
 
@@ -3273,6 +3295,15 @@ update msg model =
                                                     * getQuantity item_trade_log.quantity
                                                 )
                                             )
+                                , goldGainedTimeline =
+                                    Animator.interrupt
+                                        [ Animator.event Animator.immediately NoGoldAnimation
+                                        , Animator.event Animator.veryQuickly (ShowGoldGainedAnimation model.globalSeed)
+                                        , Animator.wait (Animator.seconds 1)
+                                        , Animator.event Animator.slowly (HideGoldAnimation model.globalSeed)
+                                        , Animator.event Animator.immediately NoGoldAnimation
+                                        ]
+                                        model.goldGainedTimeline
                               }
                                 |> replaceCharacter new_trade_context.from_party
                                 |> replaceCharacter new_trade_context.to_party
@@ -7308,6 +7339,39 @@ view_items_unlocked_tab_type colorTheme item_db =
 
 viewOverlay : Model -> Element Msg
 viewOverlay model =
+    let
+        goldGainedLabelMovementY =
+            Animator.move model.goldGainedTimeline <|
+                \shouldShow ->
+                    case shouldShow of
+                        ShowGoldGainedAnimation seed ->
+                            Animator.at 50
+                                |> Animator.leaveSmoothly 0.5
+                                |> Animator.arriveSmoothly 0.5
+
+                        HideGoldAnimation seed ->
+                            Animator.at 50
+
+                        NoGoldAnimation ->
+                            Animator.at 0
+                                |> Animator.leaveSmoothly 0.5
+                                |> Animator.arriveSmoothly 0.5
+
+        goldGainedAlpha : Float
+        goldGainedAlpha =
+            Animator.linear model.goldGainedTimeline <|
+                \state ->
+                    Animator.at <|
+                        case state of
+                            ShowGoldGainedAnimation seed ->
+                                1.0
+
+                            HideGoldAnimation seed ->
+                                0.0
+
+                            NoGoldAnimation ->
+                                0.0
+    in
     case getPlayer model.characters of
         Player player ->
             el
@@ -7346,7 +7410,7 @@ viewOverlay model =
                 <|
                     row [ UI.noUserSelect ]
                         [ text "Held: "
-                        , UI.renderGp model.colorTheme <| player.held_gold
+                        , el [ Element.inFront <| el [ Element.alpha goldGainedAlpha, Element.moveUp goldGainedLabelMovementY ] <| text "+123" ] <| UI.renderGp model.colorTheme <| player.held_gold
                         , text " "
                         , UI.renderBlood model.colorTheme <| player.held_blood
                         , text " "

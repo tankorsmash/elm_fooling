@@ -4131,7 +4131,8 @@ updateMine ({ globalSeed } as model) =
         newShowMineGpGained =
             if shouldEarnGp then
                 Animator.interrupt
-                    [ Animator.event Animator.veryQuickly True
+                    [ Animator.event Animator.immediately False
+                    , Animator.event Animator.veryQuickly True
                     , Animator.wait (Animator.seconds 1)
                     , Animator.event Animator.slowly False
                     ]

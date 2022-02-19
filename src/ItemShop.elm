@@ -1512,10 +1512,16 @@ type alias Model =
     , numItemsToStartDayWith : Int
     , shouldViewGemUpgradesInPostPhase : Bool
     , titleScreenAnimationState : Animator.Timeline TitleScreenAnimationState
-    , showMineGpGained : Animator.Timeline Bool
+    , showMineGpGained : Animator.Timeline MineAnimation
     , hasHadAtLeastOneBlood : Bool
     , hasHadAtLeastOneGem : Bool
     }
+
+
+type MineAnimation
+    = ShowMineAnimation Random.Seed
+    | HideMineAnimation Random.Seed
+    | NoMineAnimation
 
 
 encodeModel : Model -> Decode.Value
@@ -2298,7 +2304,7 @@ init timeNow device hash key =
             , numItemsToStartDayWith = 5
             , shouldViewGemUpgradesInPostPhase = False
             , titleScreenAnimationState = Animator.init <| HighTitle
-            , showMineGpGained = Animator.init <| False
+            , showMineGpGained = Animator.init <| NoMineAnimation
             , hasHadAtLeastOneBlood = False
             , hasHadAtLeastOneGem = False
             }
@@ -2327,10 +2333,13 @@ animator =
             (\newState model -> { model | showMineGpGained = newState })
             (\state ->
                 case state of
-                    True ->
+                    ShowMineAnimation seed ->
                         False
 
-                    False ->
+                    HideMineAnimation seed ->
+                        True
+
+                    NoMineAnimation ->
                         True
             )
 
@@ -4131,10 +4140,11 @@ updateMine ({ globalSeed } as model) =
         newShowMineGpGained =
             if shouldEarnGp then
                 Animator.interrupt
-                    [ Animator.event Animator.immediately False
-                    , Animator.event Animator.veryQuickly True
+                    [ Animator.event Animator.immediately NoMineAnimation
+                    , Animator.event Animator.veryQuickly (ShowMineAnimation model.globalSeed)
                     , Animator.wait (Animator.seconds 1)
-                    , Animator.event Animator.slowly False
+                    , Animator.event Animator.slowly (HideMineAnimation model.globalSeed)
+                    , Animator.event Animator.immediately NoMineAnimation
                     ]
                     model.showMineGpGained
 
@@ -7576,7 +7586,7 @@ scale_increase_bp_to_sp_cost current_level =
     (60 + (5 * current_level * current_level) * 2) |> setPrice
 
 
-special_actions_display : UI.ColorTheme -> ProgressUnlocks -> List PlayerUpgrade -> UI.HoveredTooltip -> Character -> Bool -> Animator.Timeline Bool -> Element Msg
+special_actions_display : UI.ColorTheme -> ProgressUnlocks -> List PlayerUpgrade -> UI.HoveredTooltip -> Character -> Bool -> Animator.Timeline MineAnimation -> Element Msg
 special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip player ai_updates_paused showMineGpGained =
     let
         specialButtonBuilder msg txt price =
@@ -7702,32 +7712,56 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
                 [ button_toggle_ai_pause
                 , button_mine
                 , let
-                    gpGainedMovement : Float
-                    gpGainedMovement =
+                    gpGainedMovementX : Float
+                    gpGainedMovementX =
                         Animator.move showMineGpGained <|
                             \shouldShow ->
-                                if shouldShow then
-                                    Animator.at 100
-                                        |> Animator.leaveSmoothly 0.5
-                                        |> Animator.arriveSmoothly 0.5
+                                case shouldShow of
+                                    ShowMineAnimation seed ->
+                                        Animator.at 50
+                                            |> Animator.leaveSmoothly 0.5
+                                            |> Animator.arriveSmoothly 0.5
 
-                                else
-                                    Animator.at 0
-                                        |> Animator.leaveSmoothly 0.5
-                                        |> Animator.arriveSmoothly 0.5
+                                    HideMineAnimation seed ->
+                                        Animator.at 50
 
+                                    NoMineAnimation ->
+                                        Animator.at 0
+                                            |> Animator.leaveSmoothly 0.5
+                                            |> Animator.arriveSmoothly 0.5
+
+                    gpGainedMovementY : Float
+                    gpGainedMovementY =
+                        Animator.move showMineGpGained <|
+                            \shouldShow ->
+                                case shouldShow of
+                                    ShowMineAnimation seed ->
+                                        Animator.at 10
+
+                                    HideMineAnimation seed ->
+                                        Animator.at 10
+
+                                    NoMineAnimation ->
+                                        Animator.at 0
+
+                    -- |> Animator.leaveSmoothly 0.5
+                    -- |> Animator.arriveSmoothly 0.5
                     alpha : Float
                     alpha =
                         Animator.linear showMineGpGained <|
                             \state ->
                                 Animator.at <|
-                                    if state then
-                                        1.0
+                                    case state of
+                                        ShowMineAnimation seed ->
+                                            1.0
 
-                                    else
-                                        0.0
+                                        HideMineAnimation seed ->
+                                            0.0
+
+                                        NoMineAnimation ->
+                                            0.0
                   in
-                  el [ Element.moveRight gpGainedMovement, Element.alpha alpha ] <| text "+1"
+                  el [ Element.moveRight gpGainedMovementX, Element.moveUp gpGainedMovementY, Element.alpha alpha ] <| text "+1"
                 , button_battle
                 ]
             , if hasUnlockedSpecialActions then

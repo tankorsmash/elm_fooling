@@ -3221,6 +3221,18 @@ onCashInQuest ({ quests, characters } as model) { questType, questId } =
                 |> replaceCharacter newPlayer
 
 
+animateGoldGained : Animator.Timeline GoldGainedAnimation -> Random.Seed -> Animator.Timeline GoldGainedAnimation
+animateGoldGained timeline seed =
+    Animator.interrupt
+        [ Animator.event Animator.immediately NoGoldAnimation
+        , Animator.event Animator.veryQuickly (ShowGoldGainedAnimation seed)
+        , Animator.wait (Animator.seconds 1)
+        , Animator.event Animator.slowly (HideGoldAnimation seed)
+        , Animator.event Animator.immediately NoGoldAnimation
+        ]
+        timeline
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -3296,14 +3308,7 @@ update msg model =
                                                 )
                                             )
                                 , goldGainedTimeline =
-                                    Animator.interrupt
-                                        [ Animator.event Animator.immediately NoGoldAnimation
-                                        , Animator.event Animator.veryQuickly (ShowGoldGainedAnimation model.globalSeed)
-                                        , Animator.wait (Animator.seconds 1)
-                                        , Animator.event Animator.slowly (HideGoldAnimation model.globalSeed)
-                                        , Animator.event Animator.immediately NoGoldAnimation
-                                        ]
-                                        model.goldGainedTimeline
+                                    animateGoldGained model.goldGainedTimeline model.globalSeed
                               }
                                 |> replaceCharacter new_trade_context.from_party
                                 |> replaceCharacter new_trade_context.to_party

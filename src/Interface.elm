@@ -912,7 +912,8 @@ primary_button_tooltip { colorTheme, customAttrs, onPressMsg, textLabel } { onTo
 
 buildTooltipTextConfig : String -> (TooltipMsg -> msg) -> TooltipConfig msg
 buildTooltipTextConfig text onTooltipMsg =
-    { tooltip_id = UUID.forName text UUID.dnsNamespace |> UUID.toString
+    -- { tooltip_id = UUID.forName text UUID.dnsNamespace |> UUID.toString -- FIXME, generating UUIDs every frame was too slow, I need to use Lazy more
+    { tooltip_id = text
     , tooltip_body = TooltipText text
     , onTooltipMsg = onTooltipMsg
     }
@@ -920,7 +921,8 @@ buildTooltipTextConfig text onTooltipMsg =
 
 buildTooltipElementConfig : TooltipId -> Element msg -> (TooltipMsg -> msg) -> TooltipConfig msg
 buildTooltipElementConfig tooltip_id element onTooltipMsg =
-    { tooltip_id = UUID.forName tooltip_id UUID.dnsNamespace |> UUID.toString
+    -- { tooltip_id = UUID.forName tooltip_id UUID.dnsNamespace |> UUID.toString -- FIXME, generating UUIDs every frame was too slow, I need to use Lazy more
+    { tooltip_id = tooltip_id
     , tooltip_body = TooltipElement element
     , onTooltipMsg = onTooltipMsg
     }

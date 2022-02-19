@@ -4181,18 +4181,21 @@ updateMine ({ globalSeed } as model) =
                 playMineSound
 
             else
-                Cmd.batch
-                    [ playMineSuccessSound
-                    ]
-
-        newShowMineGpGained =
-            if shouldEarnGp then
-                mineSuccessAnimation model.showMineGpGained model.globalSeed
-
-            else
-                model.showMineGpGained
+                playMineSuccessSound
     in
-    ( { model | showMineGpGained = newShowMineGpGained }
+    ( model
+        |> (\m ->
+                if shouldEarnGp then
+                    { m
+                        | showMineGpGained =
+                            mineSuccessAnimation m.showMineGpGained m.globalSeed
+                        , goldGainedTimeline =
+                            animateGoldGained m.goldGainedTimeline m.globalSeed
+                    }
+
+                else
+                    m
+           )
         |> setGlobalSeed newSeed
         |> withCharacters newCharacters
     , mineCmd

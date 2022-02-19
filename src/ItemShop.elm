@@ -5594,7 +5594,7 @@ render_inventory_grid :
     -> Element Msg
 render_inventory_grid { historical_shop_trends, item_db, colorTheme, uiOptions, progressUnlocks, communityFund } header character shop_trends hovered_item context controls_column =
     let
-        { char_id, held_items, held_gold, hide_zero_qty_inv_rows } =
+        { char_id, held_items, held_gold } =
             character
 
         is_shop_context =
@@ -5605,49 +5605,6 @@ render_inventory_grid { historical_shop_trends, item_db, colorTheme, uiOptions, 
 
         { show_charts_in_hovered_item } =
             uiOptions
-
-        sortFunc : InventoryRecord -> InventoryRecord -> Order
-        sortFunc =
-            case uiOptions.inventorySortType of
-                SortByName ->
-                    buildCompare (.item >> .name)
-
-                SortByPrice ->
-                    buildCompare (.item >> get_single_adjusted_item_cost shop_trends)
-
-                SortByAvgPrice ->
-                    buildCompare (.avg_price >> getPrice)
-
-                SortByQuantity ->
-                    buildCompare (.quantity >> getQuantity)
-
-                SortByItemType ->
-                    buildCompare (.item >> .item_type >> itemTypeToString)
-
-                SortByItemDesc ->
-                    buildCompare (.item >> .description)
-
-        items : InventoryRecords
-        items =
-            (if hide_zero_qty_inv_rows then
-                List.filter
-                    (\{ quantity } -> getQuantity quantity > 0)
-                    held_items
-
-             else
-                held_items
-            )
-                |> List.sortWith sortFunc
-                |> (\irs ->
-                        case character.displayedItemType of
-                            Nothing ->
-                                irs
-
-                            Just item_type ->
-                                List.filter
-                                    (\ir -> ir.item.item_type == item_type)
-                                    irs
-                   )
 
         rendered_desires : List (Element Msg)
         rendered_desires =
@@ -5702,7 +5659,7 @@ render_inventory_grid { historical_shop_trends, item_db, colorTheme, uiOptions, 
                         , customAttrs = []
                         , onPressMsg = GotUiOptionsMsg <| ToggleHideNonZeroRows character.char_id
                         , textLabel =
-                            if hide_zero_qty_inv_rows then
+                            if character.hide_zero_qty_inv_rows then
                                 "Show Nonzero"
 
                             else
@@ -5813,14 +5770,105 @@ render_inventory_grid { historical_shop_trends, item_db, colorTheme, uiOptions, 
 
             else
                 Element.none
+    in
+    Element.column [ width fill, spacingXY 0 5, height fill ] <|
+        [ Element.row [ UI.font_scaled 2, width fill ]
+            [ Element.el [ UI.border_bottom 2 ] <| text header
+            , text "   "
+            , if not is_shop_context then
+                row [ width fill, UI.font_scaled 1, centerX, spacingXY 10 0 ] <|
+                    [ row [ centerX, width Element.shrink, spacingXY 10 0 ]
+                        [ row [ Font.alignRight ]
+                            [ text "Held: "
+                            , UI.renderGp colorTheme held_gold
+                            ]
+                        , if is_player_context && character.held_blood > 0 then
+                            row [ width fill ]
+                                [ UI.renderBlood colorTheme character.held_blood
+                                ]
 
+                          else
+                            Element.none
+                        , row [ width fill ]
+                            [ text <| "Community Fund: "
+                            , UI.renderGp colorTheme communityFund
+                            ]
+                        ]
+                    ]
+
+              else
+                Element.none
+            ]
+        ]
+            ++ rendered_desires
+            ++ rendered_dislikes
+            ++ rendered_action_log
+            ++ (if containsProgressUnlock UnlockedInventoryFilters progressUnlocks then
+                    rendered_inventory_controls
+
+                else
+                    []
+               )
+            ++ (if not is_shop_context && List.length character.action_log > 0 then
+                    divider
+
+                else
+                    []
+               )
+            ++ [ inventoryGrid colorTheme uiOptions shop_trends character context progressUnlocks controls_column ]
+
+
+inventoryGrid : ColorTheme -> UiOptions -> ShopTrends -> Character -> ListContext -> ProgressUnlocks -> (InventoryRecord -> Element Msg) -> Element Msg
+inventoryGrid colorTheme uiOptions shop_trends character context progressUnlocks controls_column =
+    let
         mouse_hover_attrs : Item -> List (Element.Attribute Msg)
         mouse_hover_attrs item =
-            [ Events.onMouseEnter <| GotUiOptionsMsg <| MouseEnterShopItem context ( char_id, item )
-            , Events.onMouseLeave <| GotUiOptionsMsg <| MouseLeaveShopItem context ( char_id, item )
-
-            -- , Element.below (expanded_display item)
+            [ Events.onMouseEnter <| GotUiOptionsMsg <| MouseEnterShopItem context ( character.char_id, item )
+            , Events.onMouseLeave <| GotUiOptionsMsg <| MouseLeaveShopItem context ( character.char_id, item )
             ]
+
+        sortFunc : InventoryRecord -> InventoryRecord -> Order
+        sortFunc =
+            case uiOptions.inventorySortType of
+                SortByName ->
+                    buildCompare (.item >> .name)
+
+                SortByPrice ->
+                    buildCompare (.item >> get_single_adjusted_item_cost shop_trends)
+
+                SortByAvgPrice ->
+                    buildCompare (.avg_price >> getPrice)
+
+                SortByQuantity ->
+                    buildCompare (.quantity >> getQuantity)
+
+                SortByItemType ->
+                    buildCompare (.item >> .item_type >> itemTypeToString)
+
+                SortByItemDesc ->
+                    buildCompare (.item >> .description)
+
+        items : InventoryRecords
+        items =
+            (if character.hide_zero_qty_inv_rows then
+                List.filter
+                    (\{ quantity } -> getQuantity quantity > 0)
+                    character.held_items
+
+             else
+                character.held_items
+            )
+                |> List.sortWith sortFunc
+                |> (\irs ->
+                        case character.displayedItemType of
+                            Nothing ->
+                                irs
+
+                            Just item_type ->
+                                List.filter
+                                    (\ir -> ir.item.item_type == item_type)
+                                    irs
+                   )
 
         table_columns : List (Element.Column InventoryRecord Msg)
         table_columns =
@@ -5953,51 +6001,10 @@ render_inventory_grid { historical_shop_trends, item_db, colorTheme, uiOptions, 
                         }
                     )
     in
-    Element.column [ width fill, spacingXY 0 5, height fill ] <|
-        [ Element.row [ UI.font_scaled 2, width fill ]
-            [ Element.el [ UI.border_bottom 2 ] <| text header
-            , text "   "
-            , if not is_shop_context then
-                row [ width fill, UI.font_scaled 1, centerX, spacingXY 10 0 ] <|
-                    [ row [ centerX, width Element.shrink, spacingXY 10 0 ]
-                        [ row [ Font.alignRight ]
-                            [ text "Held: "
-                            , UI.renderGp colorTheme held_gold
-                            ]
-                        , if is_player_context && character.held_blood > 0 then
-                            row [ width fill ]
-                                [ UI.renderBlood colorTheme character.held_blood
-                                ]
-
-                          else
-                            Element.none
-                        , row [ width fill ]
-                            [ text <| "Community Fund: "
-                            , UI.renderGp colorTheme communityFund
-                            ]
-                        ]
-                    ]
-
-              else
-                Element.none
-            ]
-        ]
-            ++ rendered_desires
-            ++ rendered_dislikes
-            ++ rendered_action_log
-            ++ (if containsProgressUnlock UnlockedInventoryFilters progressUnlocks then
-                    rendered_inventory_controls
-
-                else
-                    []
-               )
-            ++ (if not is_shop_context && List.length character.action_log > 0 then
-                    divider
-
-                else
-                    []
-               )
-            ++ [ Element.table [ spacing 5 ] { data = items, columns = table_columns } ]
+    Element.table [ spacing 5 ]
+        { data = items
+        , columns = table_columns
+        }
 
 
 sort_by_bool_true_first : Bool -> Int

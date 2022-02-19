@@ -331,7 +331,6 @@ type Msg
     | RuntimeTriggeredAnimationStep Time.Posix
     | ClickedTitleTextLabel
     | ClickedTitlePlayLabel
-    | StopShowMineGpGained
 
 
 type TitleScreenAnimationState
@@ -3465,17 +3464,6 @@ update msg model =
         ClickedTitlePlayLabel ->
             ( { model | tab_type = ShopTabType }, Cmd.none )
 
-        StopShowMineGpGained ->
-            ( { model
-                | showMineGpGained =
-                    Animator.go
-                        Animator.quickly
-                        False
-                        model.showMineGpGained
-              }
-            , Cmd.none
-            )
-
 
 
 --- END OF UPDATE
@@ -4138,16 +4126,15 @@ updateMine ({ globalSeed } as model) =
             else
                 Cmd.batch
                     [ playMineSuccessSound
-                    , Process.sleep 1000
-                        |> Task.andThen (always <| Task.succeed StopShowMineGpGained)
-                        |> Task.perform identity
                     ]
 
         newShowMineGpGained =
             if shouldEarnGp then
-                Animator.go
-                    Animator.veryQuickly
-                    True
+                Animator.interrupt
+                    [ Animator.event Animator.veryQuickly True
+                    , Animator.wait (Animator.seconds 1)
+                    , Animator.event Animator.slowly False
+                    ]
                     model.showMineGpGained
 
             else

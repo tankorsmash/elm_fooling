@@ -7736,16 +7736,16 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
                             \shouldShow ->
                                 case shouldShow of
                                     ShowMineAnimation seed ->
-                                        Animator.at 10
+                                        Animator.at
+                                            (Random.step (Random.float -30 30) seed |> Tuple.first)
 
                                     HideMineAnimation seed ->
-                                        Animator.at 10
+                                        Animator.at
+                                            (Random.step (Random.float -30 30) seed |> Tuple.first)
 
                                     NoMineAnimation ->
                                         Animator.at 0
 
-                    -- |> Animator.leaveSmoothly 0.5
-                    -- |> Animator.arriveSmoothly 0.5
                     alpha : Float
                     alpha =
                         Animator.linear showMineGpGained <|

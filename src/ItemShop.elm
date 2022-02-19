@@ -4142,6 +4142,18 @@ specialActionCommunityFund model =
            )
 
 
+mineSuccessAnimation : Animator.Timeline MineAnimation -> Random.Seed -> Animator.Timeline MineAnimation
+mineSuccessAnimation timeline seed =
+    Animator.interrupt
+        [ Animator.event Animator.immediately NoMineAnimation
+        , Animator.event Animator.veryQuickly (ShowMineAnimation seed)
+        , Animator.wait (Animator.seconds 1)
+        , Animator.event Animator.slowly (HideMineAnimation seed)
+        , Animator.event Animator.immediately NoMineAnimation
+        ]
+        timeline
+
+
 updateMine : Model -> ( Model, Cmd Msg )
 updateMine ({ globalSeed } as model) =
     let
@@ -4175,14 +4187,7 @@ updateMine ({ globalSeed } as model) =
 
         newShowMineGpGained =
             if shouldEarnGp then
-                Animator.interrupt
-                    [ Animator.event Animator.immediately NoMineAnimation
-                    , Animator.event Animator.veryQuickly (ShowMineAnimation model.globalSeed)
-                    , Animator.wait (Animator.seconds 1)
-                    , Animator.event Animator.slowly (HideMineAnimation model.globalSeed)
-                    , Animator.event Animator.immediately NoMineAnimation
-                    ]
-                    model.showMineGpGained
+                mineSuccessAnimation model.showMineGpGained model.globalSeed
 
             else
                 model.showMineGpGained

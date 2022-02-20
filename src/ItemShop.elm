@@ -7236,7 +7236,7 @@ view_shop_tab_type model =
                     model.shop_trends
                     model.uiOptions.hovered_item_in_character
                     ShopItems
-                    (shopInventoryControls model.colorTheme player model.shop_trends)
+                    (\ir -> Lazy.lazy4 shopInventoryControls model.colorTheme player model.shop_trends ir)
             , Element.el [ paddingXY 0 10, width fill ] <|
                 render_inventory_grid
                     model

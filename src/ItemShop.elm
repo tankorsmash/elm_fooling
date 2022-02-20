@@ -5815,7 +5815,15 @@ render_inventory_grid { historical_shop_trends, item_db, colorTheme, uiOptions, 
                 else
                     []
                )
-            ++ [ inventoryGrid colorTheme uiOptions shop_trends character context progressUnlocks controls_column ]
+            ++ [ inventoryGrid
+                    colorTheme
+                    uiOptions
+                    shop_trends
+                    character
+                    context
+                    progressUnlocks
+                    controls_column
+               ]
 
 
 inventoryGrid : ColorTheme -> UiOptions -> ShopTrends -> Character -> ListContext -> ProgressUnlocks -> (InventoryRecord -> Element Msg) -> Element Msg
@@ -6598,8 +6606,8 @@ quests_display colorTheme quests progressUnlocks =
         ]
 
 
-viewDayTimer : Model -> Element Msg
-viewDayTimer { colorTheme, timeOfDay, item_db, characters, ai_tick_time } =
+viewDayTimer : UI.ColorTheme -> TimeOfDay -> ItemDb -> Characters -> Time.Posix -> Element Msg
+viewDayTimer  colorTheme timeOfDay item_db characters ai_tick_time  =
     let
         sharedAttrs =
             [ height fill
@@ -7092,28 +7100,28 @@ debugTimeOfDayControls { colorTheme, timeOfDay, ai_tick_time, characters, item_d
 view_shop_tab_type : Model -> Element Msg
 view_shop_tab_type model =
     let
-        { colorTheme, timeOfDay, ai_tick_time, characters, item_db } =
+        { historical_player_actions, colorTheme, timeOfDay, ai_updates_paused, ai_tick_time, characters, item_db, progressUnlocks, playerUpgrades, quests, showMineGpGained, uiOptions, historical_shop_trends, shop_trends } =
             model
 
         player : Player
         player =
-            getPlayer model.characters
+            getPlayer characters
 
         playerChar : Character
         playerChar =
-            case getPlayer model.characters of
+            case getPlayer characters of
                 Player p ->
                     p
 
         shopChar : Character
         shopChar =
-            case getShop model.characters of
+            case getShop characters of
                 Shop s ->
                     s
 
         paused_border_attrs =
             [ Border.color
-                (case model.colorTheme of
+                (case colorTheme of
                     BrightTheme ->
                         UI.color_light_grey
 
@@ -7126,7 +7134,7 @@ view_shop_tab_type model =
 
         unpaused_border_attrs =
             [ Border.color
-                (UI.defaultSolidColor model.colorTheme)
+                (UI.defaultSolidColor colorTheme)
             , Border.width 10
             , Border.dashed
             ]
@@ -7135,7 +7143,7 @@ view_shop_tab_type model =
             UI.button <|
                 UI.TextParams
                     { buttonType = UI.Secondary
-                    , colorTheme = model.colorTheme
+                    , colorTheme = colorTheme
                     , customAttrs = []
                     , onPressMsg = ForceTickSecond
                     , textLabel = "Force Tick"
@@ -7143,7 +7151,7 @@ view_shop_tab_type model =
     in
     Element.el
         ([ width fill, padding 10 ]
-            ++ (if model.ai_updates_paused then
+            ++ (if ai_updates_paused then
                     paused_border_attrs
 
                 else
@@ -7156,14 +7164,14 @@ view_shop_tab_type model =
         <|
             [ row [ spacing 5, width fill ]
                 [ -- codex button
-                  if hasProgressUnlock UnlockedCodex model then
+                  if containsProgressUnlock UnlockedCodex progressUnlocks then
                     Element.link []
                         { url = "#items"
                         , label =
                             UI.button <|
                                 UI.TextParams
                                     { buttonType = UI.Secondary
-                                    , colorTheme = model.colorTheme
+                                    , colorTheme = colorTheme
                                     , customAttrs = []
                                     , onPressMsg = ChangeTabType ItemsUnlockedTabType
                                     , textLabel = "View Codex"
@@ -7173,9 +7181,9 @@ view_shop_tab_type model =
                   else
                     Element.none
                 , -- charts
-                  if hasProgressUnlock UnlockedCharts model then
+                  if containsProgressUnlock UnlockedCharts progressUnlocks then
                     UI.outline_button [] (GotUiOptionsMsg ToggleShowMainChart) <|
-                        if model.uiOptions.show_main_chart then
+                        if uiOptions.show_main_chart then
                             "Hide Charts"
 
                         else
@@ -7184,9 +7192,9 @@ view_shop_tab_type model =
                   else
                     Element.none
                 , -- color theme button
-                  if hasProgressUnlock UnlockedDarkMode model then
+                  if containsProgressUnlock UnlockedDarkMode progressUnlocks then
                     UI.outline_button [ alignRight ] ToggleColorTheme <|
-                        case model.colorTheme of
+                        case colorTheme of
                             BrightTheme ->
                                 "Darken"
 
@@ -7196,35 +7204,35 @@ view_shop_tab_type model =
                   else
                     Element.none
                 ]
-            , if model.uiOptions.show_main_chart && hasProgressUnlock UnlockedCharts model then
-                Element.el [ paddingXY 0 10, width fill ] <| viewShopTrendsChart model.uiOptions.device model.historical_shop_trends model.uiOptions.hovered_trend_chart
+            , if uiOptions.show_main_chart && containsProgressUnlock UnlockedCharts progressUnlocks then
+                Element.el [ paddingXY 0 10, width fill ] <| viewShopTrendsChart uiOptions.device historical_shop_trends uiOptions.hovered_trend_chart
 
               else
                 Element.none
-            , row [ width fill ] [ viewDayTimer model ]
+            , row [ width fill ] [ Lazy.lazy5 viewDayTimer colorTheme timeOfDay item_db characters ai_tick_time ]
             , row [ width fill, height <| Element.px 10 ] []
             , row [ width fill, spacingXY 10 0 ]
-                [ el [ width <| fillPortion 3, alignTop ] <| Lazy.lazy2 player_action_log_display model.item_db model.historical_player_actions
-                , el [ width <| fillPortion 6, alignTop ] <| Lazy.lazy3 playerUpgrades_display model.colorTheme model.playerUpgrades model.progressUnlocks
+                [ el [ width <| fillPortion 3, alignTop ] <| Lazy.lazy2 player_action_log_display item_db historical_player_actions
+                , el [ width <| fillPortion 6, alignTop ] <| Lazy.lazy3 playerUpgrades_display colorTheme playerUpgrades progressUnlocks
                 , el [ width <| fillPortion 3, alignTop ] <|
-                    Lazy.lazy3 quests_display model.colorTheme model.quests model.progressUnlocks
+                    Lazy.lazy3 quests_display colorTheme quests progressUnlocks
                 ]
             , special_actions_display
-                model.colorTheme
-                model.progressUnlocks
-                model.playerUpgrades
-                model.uiOptions.hoveredTooltip
+                colorTheme
+                progressUnlocks
+                playerUpgrades
+                uiOptions.hoveredTooltip
                 playerChar
-                model.ai_updates_paused
-                model.showMineGpGained
-            , if hasProgressUnlock UnlockedShopTrends model then
+                ai_updates_paused
+                showMineGpGained
+            , if containsProgressUnlock UnlockedShopTrends progressUnlocks then
                 trends_display
-                    model.colorTheme
-                    model.uiOptions.shiftIsPressed
-                    model.item_db
-                    model.shop_trends
-                    model.characters
-                    model.uiOptions.shop_trends_hovered
+                    colorTheme
+                    uiOptions.shiftIsPressed
+                    item_db
+                    shop_trends
+                    characters
+                    uiOptions.shop_trends_hovered
 
               else
                 Element.none
@@ -7233,36 +7241,36 @@ view_shop_tab_type model =
                     model
                     "Items For Sale"
                     shopChar
-                    model.shop_trends
-                    model.uiOptions.hovered_item_in_character
+                    shop_trends
+                    uiOptions.hovered_item_in_character
                     ShopItems
-                    (\ir -> Lazy.lazy4 shopInventoryControls model.colorTheme player model.shop_trends ir)
+                    (\ir -> Lazy.lazy4 shopInventoryControls colorTheme player shop_trends ir)
             , Element.el [ paddingXY 0 10, width fill ] <|
                 render_inventory_grid
                     model
                     "Items In Inventory"
                     playerChar
-                    model.shop_trends
-                    model.uiOptions.hovered_item_in_character
+                    shop_trends
+                    uiOptions.hovered_item_in_character
                     InventoryItems
-                    (playerInventoryControls model.colorTheme ( model.uiOptions.shiftIsPressed, model.shop_trends ))
+                    (playerInventoryControls colorTheme ( uiOptions.shiftIsPressed, shop_trends ))
             ]
                 ++ [ column [ width fill, spacingXY 0 20 ] <|
                         []
                             ++ [ showHideDebugInventoriesButton
-                                    model.colorTheme
+                                    colorTheme
                                     []
-                                    model.uiOptions.show_debug_inventories
+                                    uiOptions.show_debug_inventories
                                ]
-                            ++ (if model.uiOptions.show_debug_inventories then
+                            ++ (if uiOptions.show_debug_inventories then
                                     [ tickSecondButton
                                     , debugTimeOfDayControls model
                                     , text <|
-                                        UI.deviceClassToString model.uiOptions.device.class
+                                        UI.deviceClassToString uiOptions.device.class
                                             ++ " - "
-                                            ++ UI.orientationToString model.uiOptions.device.orientation
+                                            ++ UI.orientationToString uiOptions.device.orientation
                                     ]
-                                        ++ (getOthers model.characters
+                                        ++ (getOthers characters
                                                 |> List.sortBy (.char_id >> UUID.toString)
                                                 |> List.map
                                                     (\character ->
@@ -7272,8 +7280,8 @@ view_shop_tab_type model =
                                                                 model
                                                                 (character.name ++ "'s Inventory")
                                                                 character
-                                                                model.shop_trends
-                                                                model.uiOptions.hovered_item_in_character
+                                                                shop_trends
+                                                                uiOptions.hovered_item_in_character
                                                                 CharacterItems
                                                                 (always Element.none)
                                                             )

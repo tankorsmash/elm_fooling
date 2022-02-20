@@ -7530,9 +7530,10 @@ view model =
                                 model.battleModel
 
 
-build_special_action_button : UI.ColorTheme -> UI.HoveredTooltip -> Character -> SpecialAction -> String -> String -> Price -> Element Msg
-build_special_action_button colorTheme hoveredTooltip character special_action title tooltip_text price =
+build_special_action_button : UI.ColorTheme -> UI.HoveredTooltip -> Character -> SpecialActionConfig -> Element Msg
+build_special_action_button colorTheme hoveredTooltip character { action, title, tooltip_text, price } =
     let
+        -- _ = Debug.log "special" 123
         is_disabled =
             case price of
                 Free ->
@@ -7592,7 +7593,7 @@ build_special_action_button colorTheme hoveredTooltip character special_action t
 
         msg =
             if not is_disabled then
-                OnSpecialAction special_action price
+                OnSpecialAction action price
 
             else
                 Noop
@@ -7747,31 +7748,98 @@ viewMineGpGained showMineGpGained =
     el [ Element.moveRight gpGainedMovementX, Element.moveUp gpGainedMovementY, Element.alpha alpha ] <| text "+1"
 
 
+type alias SpecialActionConfig =
+    { action : SpecialAction
+    , title : String
+    , tooltip_text : String
+    , price : Price
+    }
+
+
+sacToggleAiPause : Bool -> SpecialActionConfig
+sacToggleAiPause ai_updates_paused =
+    { action = TogglePauseAi
+    , title =
+        if ai_updates_paused then
+            "Resume"
+
+        else
+            "Pause"
+    , tooltip_text = "You tap your medallion, and time comes to a halt.\n\nYou take a breath, and feel a weight off your shoulders. You'll take your time with things."
+    , price = Free
+    }
+
+
+sacMine : SpecialActionConfig
+sacMine =
+    { action = Mine
+    , title = "Mine"
+    , tooltip_text = "Chip away at the mountain, hoping for a sliver of silver.\n\nHas a chance of giving you some GP."
+    , price = Free
+    }
+
+
+sacSearch : SpecialActionConfig
+sacSearch =
+    { action = InviteTrader
+    , title = "Invite Trader"
+    , tooltip_text = "Invite a fellow Trader.\n\nThey may or may not have new wares you've never seen!"
+    , price = setPrice 50
+    }
+
+
+sacHighDesire : SpecialActionConfig
+sacHighDesire =
+    { action = TriggerEvent (EventVeryDesiredItemType Nothing)
+    , title = "Spread Good Rumour"
+    , tooltip_text = "Sets a random Item Type to high value.\n\nSpreads a rumour that a given Item Type was the talk of the next town over."
+    , price = setPrice 45
+    }
+
+
+sacLowDesire : SpecialActionConfig
+sacLowDesire =
+    { action = TriggerEvent (EventLeastDesiredItemType Nothing)
+    , title = "Spread Bad Rumour"
+    , tooltip_text = "Sets a random Item Type to low value.\n\nSpreads a rumour that a given Item Type has a surplus of sellers."
+    , price = setPrice 45
+    }
+
+
+sacUnlockItem : SpecialActionConfig
+sacUnlockItem =
+    { action = UnlockItem
+    , title = "Item Search"
+    , tooltip_text = "Spend cash to hire a mercenary to seek out items.\n\nAllows for invited traders to have new items."
+    , price = setPrice 25
+    }
+
+
+sacCommunityFund : SpecialActionConfig
+sacCommunityFund =
+    { action = CommunityFund
+    , title = "Contribute"
+    , tooltip_text = "You've always been a public member of the community. Add to the Community fund.\n\nAllows for invited traders to be able to afford finding new items."
+    , price = communityFundCost
+    }
+
+
 special_actions_display : UI.ColorTheme -> ProgressUnlocks -> List PlayerUpgrade -> UI.HoveredTooltip -> Character -> Bool -> Animator.Timeline MineAnimation -> Element Msg
 special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip player ai_updates_paused showMineGpGained =
     let
-        specialButtonBuilder : SpecialAction -> String -> String -> Price -> Element Msg
-        specialButtonBuilder specialAction title txt price =
-            build_special_action_button colorTheme hoveredTooltip player specialAction title txt price
+        specialButtonBuilder : SpecialActionConfig -> Element Msg
+        specialButtonBuilder specialActionConfig =
+            build_special_action_button colorTheme hoveredTooltip player specialActionConfig
 
+        button_toggle_ai_pause : Element Msg
         button_toggle_ai_pause =
             specialButtonBuilder
-                TogglePauseAi
-                (if ai_updates_paused then
-                    "Resume"
+                (sacToggleAiPause ai_updates_paused)
 
-                 else
-                    "Pause"
-                )
-                "You tap your medallion, and time comes to a halt.\n\nYou take a breath, and feel a weight off your shoulders. You'll take your time with things."
-                Free
-
+        button_mine : Element Msg
         button_mine =
             specialButtonBuilder
-                Mine
-                "Mine"
-                "Chip away at the mountain, hoping for a sliver of silver.\n\nHas a chance of giving you some GP."
-                Free
+                sacMine
 
         button_battle =
             if containsProgressUnlock UnlockedBattles progressUnlocks then
@@ -7789,38 +7857,23 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
 
         button_search =
             specialButtonBuilder
-                InviteTrader
-                "Invite Trader"
-                "Invite a fellow Trader.\n\nThey may or may not have new wares you've never seen!"
-                (setPrice 50)
+                sacSearch
 
         button_high_desire =
             specialButtonBuilder
-                (TriggerEvent (EventVeryDesiredItemType Nothing))
-                "Spread Good Rumour"
-                "Sets a random Item Type to high value.\n\nSpreads a rumour that a given Item Type was the talk of the next town over."
-                (setPrice 45)
+                sacHighDesire
 
         button_low_desire =
             specialButtonBuilder
-                (TriggerEvent (EventLeastDesiredItemType Nothing))
-                "Spread Bad Rumour"
-                "Sets a random Item Type to low value.\n\nSpreads a rumour that a given Item Type has a surplus of sellers."
-                (setPrice 45)
+                sacLowDesire
 
         button_unlock_item =
             specialButtonBuilder
-                UnlockItem
-                "Item Search"
-                "Spend cash to hire a mercenary to seek out items.\n\nAllows for invited traders to have new items."
-                (setPrice 25)
+                sacUnlockItem
 
         button_community_fund =
             specialButtonBuilder
-                CommunityFund
-                "Contribute"
-                "You've always been a public member of the community. Add to the Community fund.\n\nAllows for invited traders to be able to afford finding new items."
-                communityFundCost
+                sacCommunityFund
 
         button_increase_income =
             let
@@ -7838,10 +7891,11 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
                         playerUpgrades
             in
             specialButtonBuilder
-                IncreaseIncome
-                "Invest"
-                "Invest in another business, earning more income.\n\nIncreases the gold you get per second."
-                (scale_increase_income_cost income_level)
+                { action = IncreaseIncome
+                , title = "Invest"
+                , tooltip_text = "Invest in another business, earning more income.\n\nIncreases the gold you get per second."
+                , price = scale_increase_income_cost income_level
+                }
 
         button_increase_bp_to_sp =
             let
@@ -7859,10 +7913,11 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
                         playerUpgrades
             in
             specialButtonBuilder
-                IncreaseBPtoSP
-                "Cut"
-                "Cut deeper, using more of the blood to help yourself.\n\nIncreases the stamina your golem will regain per second, and the amount of blood you'll spend."
-                (scale_increase_bp_to_sp_cost bp_to_sp_level)
+                { action = IncreaseBPtoSP
+                , title = "Cut"
+                , tooltip_text = "Cut deeper, using more of the blood to help yourself.\n\nIncreases the stamina your golem will regain per second, and the amount of blood you'll spend."
+                , price = scale_increase_bp_to_sp_cost bp_to_sp_level
+                }
 
         hasUnlockedSpecialActions =
             containsProgressUnlock UnlockedSpecialActions progressUnlocks

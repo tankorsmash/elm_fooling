@@ -5583,28 +5583,11 @@ smallHeaderInGrid uiOptions str sortType =
             )
 
 
-render_inventory_grid :
-    Model
-    -> String
-    -> Character
-    -> ShopTrends
-    -> Maybe ( CharacterId, Item )
-    -> ListContext
-    -> (InventoryRecord -> Element Msg)
-    -> Element Msg
-render_inventory_grid { historical_shop_trends, item_db, colorTheme, uiOptions, progressUnlocks, communityFund } header character shop_trends hovered_item context controls_column =
+renderCharacterDetails : UI.ColorTheme -> Character -> ItemDb -> ProgressUnlocks -> Bool -> Element Msg
+renderCharacterDetails colorTheme character item_db progressUnlocks is_shop_context =
     let
         { char_id, held_items, held_gold } =
             character
-
-        is_shop_context =
-            context == ShopItems
-
-        is_player_context =
-            context == InventoryItems
-
-        { show_charts_in_hovered_item } =
-            uiOptions
 
         rendered_desires : List (Element Msg)
         rendered_desires =
@@ -5688,6 +5671,42 @@ render_inventory_grid { historical_shop_trends, item_db, colorTheme, uiOptions, 
                         }
                 ]
             ]
+    in
+    row [ width fill ]
+        (rendered_desires
+            ++ rendered_dislikes
+            ++ rendered_action_log
+            ++ (if containsProgressUnlock UnlockedInventoryFilters progressUnlocks then
+                    rendered_inventory_controls
+
+                else
+                    []
+               )
+        )
+
+
+render_inventory_grid :
+    Model
+    -> String
+    -> Character
+    -> ShopTrends
+    -> Maybe ( CharacterId, Item )
+    -> ListContext
+    -> (InventoryRecord -> Element Msg)
+    -> Element Msg
+render_inventory_grid { historical_shop_trends, item_db, colorTheme, uiOptions, progressUnlocks, communityFund } header character shop_trends hovered_item context controls_column =
+    let
+        { char_id, held_items, held_gold } =
+            character
+
+        is_shop_context =
+            context == ShopItems
+
+        is_player_context =
+            context == InventoryItems
+
+        { show_charts_in_hovered_item } =
+            uiOptions
 
         is_hovered_item item =
             case hovered_item of
@@ -5800,15 +5819,8 @@ render_inventory_grid { historical_shop_trends, item_db, colorTheme, uiOptions, 
                 Element.none
             ]
         ]
-            ++ rendered_desires
-            ++ rendered_dislikes
-            ++ rendered_action_log
-            ++ (if containsProgressUnlock UnlockedInventoryFilters progressUnlocks then
-                    rendered_inventory_controls
-
-                else
-                    []
-               )
+            ++ [ Lazy.lazy5 renderCharacterDetails colorTheme character item_db progressUnlocks is_shop_context
+               ]
             ++ (if not is_shop_context && List.length character.action_log > 0 then
                     divider
 
@@ -6607,7 +6619,7 @@ quests_display colorTheme quests progressUnlocks =
 
 
 viewDayTimer : UI.ColorTheme -> TimeOfDay -> ItemDb -> Characters -> Time.Posix -> Element Msg
-viewDayTimer  colorTheme timeOfDay item_db characters ai_tick_time  =
+viewDayTimer colorTheme timeOfDay item_db characters ai_tick_time =
     let
         sharedAttrs =
             [ height fill

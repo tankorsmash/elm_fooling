@@ -7692,6 +7692,61 @@ scale_increase_bp_to_sp_cost current_level =
     (60 + (5 * current_level * current_level) * 2) |> setPrice
 
 
+viewMineGpGained : Animator.Timeline MineAnimation -> Element Msg
+viewMineGpGained showMineGpGained =
+    let
+        gpGainedMovementX : Float
+        gpGainedMovementX =
+            Animator.move showMineGpGained <|
+                \shouldShow ->
+                    case shouldShow of
+                        ShowMineAnimation seed ->
+                            Animator.at 50
+                                |> Animator.leaveSmoothly 0.5
+                                |> Animator.arriveSmoothly 0.5
+
+                        HideMineAnimation seed ->
+                            Animator.at 50
+
+                        NoMineAnimation ->
+                            Animator.at 0
+                                |> Animator.leaveSmoothly 0.5
+                                |> Animator.arriveSmoothly 0.5
+
+        gpGainedMovementY : Float
+        gpGainedMovementY =
+            Animator.move showMineGpGained <|
+                \shouldShow ->
+                    case shouldShow of
+                        ShowMineAnimation seed ->
+                            Animator.at
+                                (Random.step (Random.float -30 30) seed |> Tuple.first)
+
+                        HideMineAnimation seed ->
+                            Animator.at
+                                (Random.step (Random.float -30 30) seed |> Tuple.first)
+
+                        NoMineAnimation ->
+                            Animator.at 0
+
+        alpha : Float
+        alpha =
+            Animator.linear showMineGpGained <|
+                \state ->
+                    Animator.at <|
+                        case state of
+                            ShowMineAnimation seed ->
+                                1.0
+
+                            HideMineAnimation seed ->
+                                0.0
+
+                            NoMineAnimation ->
+                                0.0
+    in
+    el [ Element.moveRight gpGainedMovementX, Element.moveUp gpGainedMovementY, Element.alpha alpha ] <| text "+1"
+
+
 special_actions_display : UI.ColorTheme -> ProgressUnlocks -> List PlayerUpgrade -> UI.HoveredTooltip -> Character -> Bool -> Animator.Timeline MineAnimation -> Element Msg
 special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip player ai_updates_paused showMineGpGained =
     let
@@ -7818,57 +7873,7 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
             [ Element.wrappedRow [ width <| fillPortion 1, spacingXY 10 10, alignTop ]
                 [ button_toggle_ai_pause
                 , button_mine
-                , let
-                    gpGainedMovementX : Float
-                    gpGainedMovementX =
-                        Animator.move showMineGpGained <|
-                            \shouldShow ->
-                                case shouldShow of
-                                    ShowMineAnimation seed ->
-                                        Animator.at 50
-                                            |> Animator.leaveSmoothly 0.5
-                                            |> Animator.arriveSmoothly 0.5
-
-                                    HideMineAnimation seed ->
-                                        Animator.at 50
-
-                                    NoMineAnimation ->
-                                        Animator.at 0
-                                            |> Animator.leaveSmoothly 0.5
-                                            |> Animator.arriveSmoothly 0.5
-
-                    gpGainedMovementY : Float
-                    gpGainedMovementY =
-                        Animator.move showMineGpGained <|
-                            \shouldShow ->
-                                case shouldShow of
-                                    ShowMineAnimation seed ->
-                                        Animator.at
-                                            (Random.step (Random.float -30 30) seed |> Tuple.first)
-
-                                    HideMineAnimation seed ->
-                                        Animator.at
-                                            (Random.step (Random.float -30 30) seed |> Tuple.first)
-
-                                    NoMineAnimation ->
-                                        Animator.at 0
-
-                    alpha : Float
-                    alpha =
-                        Animator.linear showMineGpGained <|
-                            \state ->
-                                Animator.at <|
-                                    case state of
-                                        ShowMineAnimation seed ->
-                                            1.0
-
-                                        HideMineAnimation seed ->
-                                            0.0
-
-                                        NoMineAnimation ->
-                                            0.0
-                  in
-                  el [ Element.moveRight gpGainedMovementX, Element.moveUp gpGainedMovementY, Element.alpha alpha ] <| text "+1"
+                , Lazy.lazy viewMineGpGained showMineGpGained
                 , button_battle
                 ]
             , if hasUnlockedSpecialActions then

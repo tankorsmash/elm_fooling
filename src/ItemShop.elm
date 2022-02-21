@@ -7416,6 +7416,23 @@ viewOverlay model =
 
         (Player player) =
             getPlayer model.characters
+
+        overlayAttrs =
+            [ UI.defaultBackgroundColor model.colorTheme
+            , Border.color
+                (case model.colorTheme of
+                    BrightTheme ->
+                        UI.color_ultra_light_grey
+
+                    DarkTheme ->
+                        UI.convertColor Color.lightCharcoal
+                )
+            , Border.width 1
+            , Border.rounded 3
+            , UI.pointerEventsAll
+            , UI.noUserSelect
+            , padding 10
+            ]
     in
     el
         [ width fill
@@ -7432,26 +7449,22 @@ viewOverlay model =
                 Element.none
         ]
     <|
-        el
-            [ Font.alignRight
-            , Element.alignRight
-            , Element.alignBottom
-            , UI.defaultBackgroundColor model.colorTheme
-            , Border.color
-                (case model.colorTheme of
-                    BrightTheme ->
-                        UI.color_ultra_light_grey
-
-                    DarkTheme ->
-                        UI.convertColor Color.lightCharcoal
+        row
+            [ width fill, height fill ]
+            [ row
+                (Font.alignLeft
+                    :: Element.alignLeft
+                    :: Element.alignBottom
+                    :: overlayAttrs
                 )
-            , Border.width 1
-            , Border.rounded 3
-            , UI.pointerEventsAll
-            , padding 10
-            ]
-        <|
-            row [ UI.noUserSelect ]
+                [ text "Settings "
+                ]
+            , row
+                (Font.alignRight
+                    :: Element.alignRight
+                    :: Element.alignBottom
+                    :: overlayAttrs
+                )
                 [ text "Held: "
                 , el [ Element.inFront <| el [ Element.alpha goldGainedAlpha, Element.moveUp goldGainedLabelMovementY ] <| text "+123" ] <| UI.renderGp model.colorTheme <| player.held_gold
                 , text " "
@@ -7459,6 +7472,7 @@ viewOverlay model =
                 , text " "
                 , UI.renderGem model.colorTheme <| player.held_gems
                 ]
+            ]
 
 
 setDevice : Model -> UI.Device -> Model

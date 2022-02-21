@@ -7824,6 +7824,24 @@ sacCommunityFund =
     }
 
 
+sacIncreaseIncome : Int -> SpecialActionConfig
+sacIncreaseIncome income_level =
+    { action = IncreaseIncome
+    , title = "Invest"
+    , tooltip_text = "Invest in another business, earning more income.\n\nIncreases the gold you get per second."
+    , price = scale_increase_income_cost income_level
+    }
+
+
+sacIncreaseBpToSp : Int -> SpecialActionConfig
+sacIncreaseBpToSp bp_to_sp_level =
+    { action = IncreaseBPtoSP
+    , title = "Cut"
+    , tooltip_text = "Cut deeper, using more of the blood to help yourself.\n\nIncreases the stamina your golem will regain per second, and the amount of blood you'll spend."
+    , price = scale_increase_bp_to_sp_cost bp_to_sp_level
+    }
+
+
 special_actions_display : UI.ColorTheme -> ProgressUnlocks -> List PlayerUpgrade -> UI.HoveredTooltip -> Character -> Bool -> Animator.Timeline MineAnimation -> Element Msg
 special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip player ai_updates_paused showMineGpGained =
     let
@@ -7890,12 +7908,8 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
                         1
                         playerUpgrades
             in
-            specialButtonBuilder
-                { action = IncreaseIncome
-                , title = "Invest"
-                , tooltip_text = "Invest in another business, earning more income.\n\nIncreases the gold you get per second."
-                , price = scale_increase_income_cost income_level
-                }
+            specialButtonBuilder <|
+                sacIncreaseIncome income_level
 
         button_increase_bp_to_sp =
             let
@@ -7913,11 +7927,7 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
                         playerUpgrades
             in
             specialButtonBuilder
-                { action = IncreaseBPtoSP
-                , title = "Cut"
-                , tooltip_text = "Cut deeper, using more of the blood to help yourself.\n\nIncreases the stamina your golem will regain per second, and the amount of blood you'll spend."
-                , price = scale_increase_bp_to_sp_cost bp_to_sp_level
-                }
+                <| sacIncreaseBpToSp bp_to_sp_level
 
         hasUnlockedSpecialActions =
             containsProgressUnlock UnlockedSpecialActions progressUnlocks

@@ -7413,51 +7413,52 @@ viewOverlay model =
 
                             NoGoldAnimation ->
                                 0.0
+
+        (Player player) =
+            getPlayer model.characters
     in
-    case getPlayer model.characters of
-        Player player ->
-            el
-                [ width fill
-                , height fill
-                , Font.size 12
-                , UI.pointerEventsNone
-                , padding 1
-                , Element.inFront <|
-                    if model.uiOptions.shouldDisplayShowDebugInventoriesOverlay then
-                        el [ width fill, padding 10 ] <|
-                            showHideDebugInventoriesButton model.colorTheme [ width fill ] model.uiOptions.show_debug_inventories
+    el
+        [ width fill
+        , height fill
+        , Font.size 12
+        , UI.pointerEventsNone
+        , padding 1
+        , Element.inFront <|
+            if model.uiOptions.shouldDisplayShowDebugInventoriesOverlay then
+                el [ width fill, padding 10 ] <|
+                    showHideDebugInventoriesButton model.colorTheme [ width fill ] model.uiOptions.show_debug_inventories
 
-                    else
-                        Element.none
+            else
+                Element.none
+        ]
+    <|
+        el
+            [ Font.alignRight
+            , Element.alignRight
+            , Element.alignBottom
+            , UI.defaultBackgroundColor model.colorTheme
+            , Border.color
+                (case model.colorTheme of
+                    BrightTheme ->
+                        UI.color_ultra_light_grey
+
+                    DarkTheme ->
+                        UI.convertColor Color.lightCharcoal
+                )
+            , Border.width 1
+            , Border.rounded 3
+            , UI.pointerEventsAll
+            , padding 10
+            ]
+        <|
+            row [ UI.noUserSelect ]
+                [ text "Held: "
+                , el [ Element.inFront <| el [ Element.alpha goldGainedAlpha, Element.moveUp goldGainedLabelMovementY ] <| text "+123" ] <| UI.renderGp model.colorTheme <| player.held_gold
+                , text " "
+                , UI.renderBlood model.colorTheme <| player.held_blood
+                , text " "
+                , UI.renderGem model.colorTheme <| player.held_gems
                 ]
-            <|
-                el
-                    [ Font.alignRight
-                    , Element.alignRight
-                    , Element.alignBottom
-                    , UI.defaultBackgroundColor model.colorTheme
-                    , Border.color
-                        (case model.colorTheme of
-                            BrightTheme ->
-                                UI.color_ultra_light_grey
-
-                            DarkTheme ->
-                                UI.convertColor Color.lightCharcoal
-                        )
-                    , Border.width 1
-                    , Border.rounded 3
-                    , UI.pointerEventsAll
-                    , padding 10
-                    ]
-                <|
-                    row [ UI.noUserSelect ]
-                        [ text "Held: "
-                        , el [ Element.inFront <| el [ Element.alpha goldGainedAlpha, Element.moveUp goldGainedLabelMovementY ] <| text "+123" ] <| UI.renderGp model.colorTheme <| player.held_gold
-                        , text " "
-                        , UI.renderBlood model.colorTheme <| player.held_blood
-                        , text " "
-                        , UI.renderGem model.colorTheme <| player.held_gems
-                        ]
 
 
 setDevice : Model -> UI.Device -> Model
@@ -7919,8 +7920,8 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
                         1
                         playerUpgrades
             in
-            specialButtonBuilder
-                <| sacIncreaseBpToSp bp_to_sp_level
+            specialButtonBuilder <|
+                sacIncreaseBpToSp bp_to_sp_level
 
         hasUnlockedSpecialActions =
             containsProgressUnlock UnlockedSpecialActions progressUnlocks

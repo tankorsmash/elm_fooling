@@ -1,4 +1,4 @@
-port module Sfxr exposing (Model, Msg(..), decodeAndPlaySoundJson, decodeSoundConfig, encodeSoundConfig, init, mineHitConfig, mineSuccessConfig, sfxrOut, subscriptions, suite, update, view)
+port module Sfxr exposing (Model, Msg(..), decodeAndPlaySoundJson, decodeSoundConfig, encodeSoundConfig, init, mineHitConfig, mineSuccessConfig, playSoundConfigWithVol, sfxrOut, subscriptions, suite, update, view)
 
 import Element
     exposing
@@ -1799,6 +1799,19 @@ decodeAndPlaySoundJson soundConfigStr =
     soundConfigStr
         |> Decode.decodeString decodeSoundConfig
         |> Result.map (sfxrOut << encodeSoundConfig)
+
+
+playSoundConfig : SoundConfig -> Cmd msg
+playSoundConfig =
+    encodeSoundConfig >> sfxrOut
+
+
+playSoundConfigWithVol : Float -> SoundConfig -> Cmd msg
+playSoundConfigWithVol vol soundConfig =
+    soundConfig.misc
+        |> setMiscVol vol
+        |> (\misc -> setMisc misc soundConfig)
+        |> playSoundConfig
 
 
 suite : Test

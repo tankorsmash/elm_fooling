@@ -7533,7 +7533,6 @@ view model =
 build_special_action_button : UI.ColorTheme -> UI.HoveredTooltip -> Character -> SpecialActionConfig -> Element Msg
 build_special_action_button colorTheme hoveredTooltip character { action, title, tooltip_text, price } =
     let
-        -- _ = Debug.log "special" 123
         is_disabled =
             case price of
                 Free ->
@@ -7851,13 +7850,11 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
 
         button_toggle_ai_pause : Element Msg
         button_toggle_ai_pause =
-            specialButtonBuilder
-                (sacToggleAiPause ai_updates_paused)
+            specialButtonBuilder (sacToggleAiPause ai_updates_paused)
 
         button_mine : Element Msg
         button_mine =
-            specialButtonBuilder
-                sacMine
+            Lazy.lazy specialButtonBuilder sacMine
 
         button_battle =
             if containsProgressUnlock UnlockedBattles progressUnlocks then
@@ -7874,24 +7871,20 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
                 Element.none
 
         button_search =
-            specialButtonBuilder
-                sacSearch
+            Lazy.lazy specialButtonBuilder sacSearch
 
         button_high_desire =
-            specialButtonBuilder
-                sacHighDesire
+            Lazy.lazy specialButtonBuilder sacHighDesire
 
         button_low_desire =
-            specialButtonBuilder
-                sacLowDesire
+            Lazy.lazy specialButtonBuilder sacLowDesire
 
         button_unlock_item =
-            specialButtonBuilder
-                sacUnlockItem
+            Lazy.lazy specialButtonBuilder sacUnlockItem
 
         button_community_fund =
-            specialButtonBuilder
-                sacCommunityFund
+            -- Lazy.lazy4 build_special_action_button colorTheme hoveredTooltip player sacCommunityFund
+            Lazy.lazy specialButtonBuilder sacCommunityFund
 
         button_increase_income =
             let

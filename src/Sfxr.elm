@@ -403,6 +403,16 @@ decodeMisc =
         (Decode.field "sample_size" Decode.int)
 
 
+setMiscVol : Float -> Misc -> Misc
+setMiscVol vol misc =
+    { misc | volume = vol }
+
+
+setMisc : Misc -> SoundConfig -> SoundConfig
+setMisc misc sc =
+    { sc | misc = misc }
+
+
 setFreqBase : Float -> Frequency -> Frequency
 setFreqBase newBase frequency =
     { frequency | base = newBase }
@@ -1785,7 +1795,7 @@ expectedSoundConfig =
 
 
 decodeAndPlaySoundJson : String -> Result Decode.Error (Cmd msg)
-decodeAndPlaySoundJson soundConfigStr = 
+decodeAndPlaySoundJson soundConfigStr =
     soundConfigStr
         |> Decode.decodeString decodeSoundConfig
         |> Result.map (sfxrOut << encodeSoundConfig)

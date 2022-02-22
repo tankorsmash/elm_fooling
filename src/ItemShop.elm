@@ -2485,15 +2485,16 @@ add_inventory_record_to_character { item, quantity, avg_price } character =
 
 add_item_to_inventory_records : InventoryRecords -> Item -> Quantity -> Int -> InventoryRecords
 add_item_to_inventory_records records item qty total_cost =
+    let
+        single_cost =
+            total_cost // getQuantity qty
+    in
     case List.filter (find_matching_records item) records of
         [] ->
-            -- records ++ [ ( item, qty, setPrice (total_cost // getQuantity qty) ) ]
             records
                 ++ [ { item = item
                      , quantity = qty
-                     , avg_price =
-                        setPrice <|
-                            (total_cost // getQuantity qty)
+                     , avg_price = setPrice single_cost
                      }
                    ]
 
@@ -2509,14 +2510,8 @@ add_item_to_inventory_records records item qty total_cost =
                             , avg_price =
                                 .price <|
                                     addAverage
-                                        { price = avg_price
-                                        , count = quantity
-                                        }
-                                        { price =
-                                            (total_cost // (getQuantity <| qty))
-                                                |> setPrice
-                                        , count = qty
-                                        }
+                                        { price = avg_price, count = quantity }
+                                        { price = setPrice single_cost, count = qty }
                             }
                         )
                         matching_records

@@ -1,4 +1,4 @@
-module ItemShop exposing (Model, Msg, add_to_average, init, setDevice, sub_from_average, subscriptions, suite, update, view)
+module ItemShop exposing (Model, Msg, addAverage, init, setDevice, sub_from_average, subscriptions, suite, update, view)
 
 import Animator
 import Array
@@ -2437,9 +2437,33 @@ can_afford_item shop_trends held_gold { item, qty } =
     held_gold >= get_adjusted_item_cost shop_trends item qty
 
 
-add_to_average : Int -> Int -> Int -> Int -> Int
-add_to_average old_avg old_count new_value new_count =
-    (old_count * old_avg + new_value) // (old_count + new_count)
+type alias Average =
+    { count : Quantity
+    , price : Price
+    }
+
+
+addAverage : Average -> Average -> Average
+addAverage old new =
+    let
+        old_count =
+            getQuantity old.count
+
+        old_price =
+            getPrice old.price
+
+        new_count =
+            getQuantity new.count
+
+        new_price =
+            getPrice new.price
+    in
+    { price =
+        setPrice <|
+            (old_count * old_price + new_price)
+                // (old_count + new_count)
+    , count = addQuantity old.count new.count
+    }
 
 
 sub_from_average : Int -> Int -> Int -> Int -> Int
@@ -2468,8 +2492,8 @@ add_item_to_inventory_records records item qty total_cost =
                 ++ [ { item = item
                      , quantity = qty
                      , avg_price =
-                        setPrice
-                            (add_to_average 0 0 total_cost (getQuantity qty))
+                        setPrice <|
+                            (total_cost // getQuantity qty)
                      }
                    ]
 
@@ -2483,12 +2507,14 @@ add_item_to_inventory_records records item qty total_cost =
                             { item = ir.item
                             , quantity = addQuantity quantity qty
                             , avg_price =
-                                setPrice <|
-                                    add_to_average
-                                        (getPrice avg_price)
-                                        (getQuantity quantity)
-                                        total_cost
-                                        (getQuantity <| addQuantity quantity qty)
+                                .price <|
+                                    addAverage
+                                        { price = avg_price
+                                        , count = quantity
+                                        }
+                                        { price = setPrice <| total_cost // (getQuantity <| addQuantity quantity qty)
+                                        , count = addQuantity quantity qty
+                                        }
                             }
                         )
                         matching_records
@@ -8322,10 +8348,22 @@ suite =
                         orig_avg =
                             10
                     in
-                    Expect.equal orig_avg (add_to_average orig_avg 1 0 0)
+                    Expect.equal orig_avg
+                        (getPrice <|
+                            .price <|
+                                addAverage
+                                    { price = setPrice orig_avg, count = setQuantity 1 }
+                                    { price = setPrice 0, count = setQuantity 0 }
+                        )
             , fuzz natural0 "Starting the average from nothing is just the number you add" <|
                 \val ->
-                    Expect.equal val (add_to_average 0 0 val 1)
+                    let
+                        result =
+                            addAverage
+                                { price = setPrice 0, count = setQuantity 0 }
+                                { price = setPrice val, count = setQuantity 1 }
+                    in
+                    Expect.equal val (result.price |> getPrice)
             , test "Adding the same number doesn't change the average" <|
                 \_ ->
                     let
@@ -8342,17 +8380,21 @@ suite =
                             1
                     in
                     Expect.equal 10
-                        (add_to_average orig_avg orig_num new_single_cost added_num)
+                        (getPrice <|
+                            .price <|
+                                addAverage
+                                    { price = setPrice orig_avg, count = setQuantity orig_num }
+                                    { price = setPrice new_single_cost, count = setQuantity added_num }
+                        )
             , test "Adding a single item works to change the average" <|
                 \_ ->
-                    let
-                        orig_avg =
-                            10
-
-                        orig_num =
-                            1
-                    in
-                    Expect.equal 15 (add_to_average orig_avg orig_num 20 1)
+                    Expect.equal 15
+                        (getPrice <|
+                            .price <|
+                                addAverage
+                                    { price = setPrice 20, count = setQuantity 1 }
+                                    { price = setPrice 10, count = setQuantity 1 }
+                        )
             , test "Removing nothing changes nothing in average" <|
                 \_ ->
                     let

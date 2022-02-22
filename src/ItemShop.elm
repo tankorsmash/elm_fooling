@@ -2512,8 +2512,10 @@ add_item_to_inventory_records records item qty total_cost =
                                         { price = avg_price
                                         , count = quantity
                                         }
-                                        { price = setPrice <| total_cost // (getQuantity <| addQuantity quantity qty)
-                                        , count = addQuantity quantity qty
+                                        { price =
+                                            (total_cost // (getQuantity <| qty))
+                                                |> setPrice
+                                        , count = qty
                                         }
                             }
                         )

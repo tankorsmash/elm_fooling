@@ -1527,8 +1527,8 @@ type alias Model =
 
 
 type GoldGainedAnimation
-    = ShowGoldGainedAnimation Random.Seed
-    | HideGoldAnimation Random.Seed
+    = ShowGoldGainedAnimation Random.Seed Int
+    | HideGoldAnimation Random.Seed Int
     | NoGoldAnimation
 
 
@@ -2367,10 +2367,10 @@ animator =
             (\newState model -> { model | goldGainedTimeline = newState })
             (\state ->
                 case state of
-                    ShowGoldGainedAnimation seed ->
+                    ShowGoldGainedAnimation seed _ ->
                         False
 
-                    HideGoldAnimation seed ->
+                    HideGoldAnimation seed _ ->
                         False
 
                     NoGoldAnimation ->
@@ -3233,13 +3233,13 @@ onCashInQuest ({ quests, characters } as model) { questType, questId } =
                 |> replaceCharacter newPlayer
 
 
-animateGoldGained : Animator.Timeline GoldGainedAnimation -> Random.Seed -> Animator.Timeline GoldGainedAnimation
-animateGoldGained timeline seed =
+animateGoldGained : Animator.Timeline GoldGainedAnimation -> Random.Seed -> Int -> Animator.Timeline GoldGainedAnimation
+animateGoldGained timeline seed goldGained =
     Animator.interrupt
         [ Animator.event Animator.immediately NoGoldAnimation
-        , Animator.event Animator.veryQuickly (ShowGoldGainedAnimation seed)
+        , Animator.event Animator.veryQuickly (ShowGoldGainedAnimation seed goldGained)
         , Animator.wait (Animator.seconds 1)
-        , Animator.event Animator.slowly (HideGoldAnimation seed)
+        , Animator.event Animator.slowly (HideGoldAnimation seed goldGained)
         , Animator.event Animator.immediately NoGoldAnimation
         ]
         timeline
@@ -3305,6 +3305,10 @@ update msg model =
                     in
                     case trade_record of
                         CompletedTradeRecord new_trade_context item_trade_log ->
+                            let
+                                earnedGold =
+                                    item_trade_log.gold_cost * getQuantity item_trade_log.quantity
+                            in
                             ( { model
                                 | shop_trends = new_trade_context.shop_trends
                                 , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
@@ -3314,13 +3318,9 @@ update msg model =
                                         |> playerSoldItem
                                             item_trade_log.quantity
                                         |> playerEarnedGold
-                                            (setQuantity
-                                                (item_trade_log.gold_cost
-                                                    * getQuantity item_trade_log.quantity
-                                                )
-                                            )
+                                            (setQuantity earnedGold)
                                 , goldGainedTimeline =
-                                    animateGoldGained model.goldGainedTimeline model.globalSeed
+                                    animateGoldGained model.goldGainedTimeline model.globalSeed earnedGold
                               }
                                 |> replaceCharacter new_trade_context.from_party
                                 |> replaceCharacter new_trade_context.to_party
@@ -4212,7 +4212,7 @@ updateMine ({ globalSeed, masterVol } as model) =
                         | showMineGpGained =
                             mineSuccessAnimation m.showMineGpGained m.globalSeed
                         , goldGainedTimeline =
-                            animateGoldGained m.goldGainedTimeline m.globalSeed
+                            animateGoldGained m.goldGainedTimeline m.globalSeed gpEarned
                     }
 
                 else
@@ -7414,12 +7414,12 @@ getGoldGainedLabelMovementY timeline =
     Animator.move timeline <|
         \shouldShow ->
             case shouldShow of
-                ShowGoldGainedAnimation seed ->
+                ShowGoldGainedAnimation seed _ ->
                     Animator.at 50
                         |> Animator.leaveSmoothly 0.5
                         |> Animator.arriveSmoothly 0.5
 
-                HideGoldAnimation seed ->
+                HideGoldAnimation seed _ ->
                     Animator.at 50
 
                 NoGoldAnimation ->
@@ -7434,18 +7434,18 @@ getGoldGainedAlpha timeline =
         \state ->
             Animator.at <|
                 case state of
-                    ShowGoldGainedAnimation seed ->
+                    ShowGoldGainedAnimation seed _ ->
                         1.0
 
-                    HideGoldAnimation seed ->
+                    HideGoldAnimation seed _ ->
                         0.0
 
                     NoGoldAnimation ->
                         0.0
 
 
-viewCurrenciesOverlay : UI.ColorTheme -> Player -> Float -> Float -> Element Msg
-viewCurrenciesOverlay colorTheme (Player player) goldGainedLabelMovementY goldGainedAlpha =
+viewCurrenciesOverlay : UI.ColorTheme -> Player -> Float -> Float -> Int -> Element Msg
+viewCurrenciesOverlay colorTheme (Player player) goldGainedLabelMovementY goldGainedAlpha goldGainedQuantity =
     row []
         [ text "Held: "
         , el
@@ -7456,10 +7456,9 @@ viewCurrenciesOverlay colorTheme (Player player) goldGainedLabelMovementY goldGa
                     , Font.family [ Font.monospace ]
                     , Font.size 16
                     , Font.color UI.color_black
-                    , Font.shadow { offset = ( 0, 0 ), blur = 2, color = UI.color_white }
                     ]
                 <|
-                    text "+123"
+                    UI.renderGp colorTheme goldGainedQuantity
             ]
           <|
             UI.renderGp colorTheme <|
@@ -7538,13 +7537,30 @@ viewOverlay model =
                     :: Element.alignBottom
                     :: overlayAttrs
                 )
-                [ Lazy.lazy4 viewCurrenciesOverlay
+                [ viewCurrenciesOverlay
                     model.colorTheme
                     (getPlayer model.characters)
                     (getGoldGainedLabelMovementY model.goldGainedTimeline)
                     (getGoldGainedAlpha model.goldGainedTimeline)
+                    (getGoldGainedQuantity model.goldGainedTimeline |> Maybe.withDefault 0)
                 ]
             ]
+
+
+getGoldGainedQuantity : Animator.Timeline GoldGainedAnimation -> Maybe Int
+getGoldGainedQuantity timeline =
+    Animator.current timeline
+        |> (\state ->
+                case state of
+                    ShowGoldGainedAnimation _ goldGained ->
+                        Just goldGained
+
+                    HideGoldAnimation _ goldGained ->
+                        Just goldGained
+
+                    NoGoldAnimation ->
+                        Nothing
+           )
 
 
 setDevice : Model -> UI.Device -> Model

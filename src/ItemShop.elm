@@ -3278,7 +3278,7 @@ update msg model =
                         --it doesn't matter who was what party, they're still getting updated
                         |> replaceCharacter new_trade_context.to_party
                         |> replaceCharacter new_trade_context.from_party
-                    , Cmd.none
+                    , playPlayerBuyItemSound model.masterVol
                     )
 
         PlayerSellItemToShop item qty ->
@@ -4252,6 +4252,10 @@ playMineSuccessSound vol =
 playPlayerSellItemSound : Float -> Cmd msg
 playPlayerSellItemSound vol =
     decodeAndPlaySoundWithVol vol Sfxr.playerSellItemConfig
+
+playPlayerBuyItemSound : Float -> Cmd msg
+playPlayerBuyItemSound vol =
+    decodeAndPlaySoundWithVol vol Sfxr.playerBuyItemConfig
 
 
 updateSpecialAction : SpecialAction -> Price -> Model -> ( Model, Cmd Msg )

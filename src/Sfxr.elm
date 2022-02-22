@@ -1,4 +1,4 @@
-port module Sfxr exposing (Model, Msg(..), decodeAndPlaySoundJson, decodeSoundConfig, decodeSoundConfigStr, encodeSoundConfig, init, mineHitConfig, mineSuccessConfig, playSoundConfigWithVol, playerSellItemConfig, sfxrOut, subscriptions, suite, update, view)
+port module Sfxr exposing (Model, Msg(..), decodeAndPlaySoundJson, decodeSoundConfig, decodeSoundConfigStr, encodeSoundConfig, init, mineHitConfig, mineSuccessConfig, playSoundConfigWithVol, playerBuyItemConfig, playerSellItemConfig, sfxrOut, subscriptions, suite, update, view)
 
 import Element
     exposing
@@ -1740,6 +1740,41 @@ mineSuccessConfig =
         "p_lpf_ramp": 0,
         "p_lpf_resonance": 0,
         "p_hpf_freq": 0.9801920618075308,
+        "p_hpf_ramp": 0,
+        "sound_vol": 0.25,
+        "sample_rate": 44100,
+        "sample_size": 8
+}"""
+
+
+{-| sounds more like a falling or losing sound than a buy-item sound but w/e
+-}
+playerBuyItemConfig : String
+playerBuyItemConfig =
+    """{
+        "oldParams": true,
+        "wave_type": 2,
+        "p_env_attack": 0,
+        "p_env_sustain": 0.12764099232804377,
+        "p_env_punch": 0.016136560198250913,
+        "p_env_decay": 0.19344197841389166,
+        "p_base_freq": 0.5751323195597562,
+        "p_freq_limit": 0.2,
+        "p_freq_ramp": -0.2117360101355858,
+        "p_freq_dramp": 0,
+        "p_vib_strength": 0,
+        "p_vib_speed": 0,
+        "p_arp_mod": 0,
+        "p_arp_speed": 0,
+        "p_duty": 0.44162522752470157,
+        "p_duty_ramp": -0.024945093628069535,
+        "p_repeat_speed": 0,
+        "p_pha_offset": 0,
+        "p_pha_ramp": 0,
+        "p_lpf_freq": 1,
+        "p_lpf_ramp": 0,
+        "p_lpf_resonance": 0,
+        "p_hpf_freq": 0.25405481328401497,
         "p_hpf_ramp": 0,
         "sound_vol": 0.25,
         "sample_rate": 44100,

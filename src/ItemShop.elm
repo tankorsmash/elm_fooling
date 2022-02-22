@@ -2674,6 +2674,7 @@ sell_items_from_party_to_other orig_trade_context { item, qty } =
     in
     if has_items && can_afford then
         let
+            trade_record : TradeRecord
             trade_record =
                 trade_items_from_party_to_other
                     shop_trends
@@ -2681,6 +2682,7 @@ sell_items_from_party_to_other orig_trade_context { item, qty } =
                     to_party
                     { item = item, qty = qty }
 
+            trade_context : TradeContext
             trade_context =
                 getTradeContext trade_record
 
@@ -4252,6 +4254,7 @@ playMineSuccessSound vol =
 playPlayerSellItemSound : Float -> Cmd msg
 playPlayerSellItemSound vol =
     decodeAndPlaySoundWithVol vol Sfxr.playerSellItemConfig
+
 
 playPlayerBuyItemSound : Float -> Cmd msg
 playPlayerBuyItemSound vol =
@@ -8323,6 +8326,23 @@ suite =
             , fuzz natural0 "Starting the average from nothing is just the number you add" <|
                 \val ->
                     Expect.equal val (add_to_average 0 0 val 1)
+            , test "Adding the same number doesn't change the average" <|
+                \_ ->
+                    let
+                        orig_avg =
+                            10
+
+                        orig_num =
+                            1
+
+                        new_single_cost =
+                            10
+
+                        added_num =
+                            1
+                    in
+                    Expect.equal 10
+                        (add_to_average orig_avg orig_num new_single_cost added_num)
             , test "Adding a single item works to change the average" <|
                 \_ ->
                     let

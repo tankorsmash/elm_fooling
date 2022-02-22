@@ -1,4 +1,4 @@
-port module Sfxr exposing (Model, Msg(..), decodeAndPlaySoundJson, decodeSoundConfig, encodeSoundConfig, init, mineHitConfig, mineSuccessConfig, playSoundConfigWithVol, sfxrOut, subscriptions, suite, update, view)
+port module Sfxr exposing (decodeSoundConfigStr, Model, Msg(..), decodeAndPlaySoundJson, decodeSoundConfig, encodeSoundConfig, init, mineHitConfig, mineSuccessConfig, playSoundConfigWithVol, sfxrOut, subscriptions, suite, update, view)
 
 import Element
     exposing
@@ -552,6 +552,9 @@ decodeSoundConfig =
         decodeSoundConfigA
         decodeSoundConfigB
 
+decodeSoundConfigStr : String -> Result Decode.Error SoundConfig
+decodeSoundConfigStr soundConfigStr =
+    Decode.decodeString decodeSoundConfig soundConfigStr
 
 combinePartialsIntoSoundConfig : PartialSoundConfigA -> PartialSoundConfigB -> SoundConfig
 combinePartialsIntoSoundConfig partialA partialB =

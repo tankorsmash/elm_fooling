@@ -2326,7 +2326,7 @@ init timeNow device hash key =
             , goldGainedTimeline = Animator.init <| NoGoldAnimation
             , hasHadAtLeastOneBlood = False
             , hasHadAtLeastOneGem = False
-            , masterVol = 1.0
+            , masterVol = 0.10
             }
     in
     ( initModel
@@ -4177,7 +4177,7 @@ mineSuccessAnimation timeline seed =
 
 
 updateMine : Model -> ( Model, Cmd Msg )
-updateMine ({ globalSeed } as model) =
+updateMine ({ globalSeed, masterVol } as model) =
     let
         ( shouldEarnGp, newSeed ) =
             Random.step
@@ -4200,10 +4200,10 @@ updateMine ({ globalSeed } as model) =
 
         mineCmd =
             if not shouldEarnGp then
-                playMineSound
+                playMineSound masterVol
 
             else
-                playMineSuccessSound
+                playMineSuccessSound masterVol
     in
     ( model
         |> (\m ->
@@ -4224,6 +4224,15 @@ updateMine ({ globalSeed } as model) =
     )
 
 
+
+decodeAndPlaySoundWithVol : Float -> String -> Cmd msg
+decodeAndPlaySoundWithVol volume soundConfigStr =
+    soundConfigStr
+        |> Sfxr.decodeSoundConfigStr
+        |> Result.map (Sfxr.playSoundConfigWithVol volume)
+        |> Result.withDefault Cmd.none
+
+
 decodeAndPlaySound : String -> Cmd msg
 decodeAndPlaySound soundConfigStr =
     soundConfigStr
@@ -4231,14 +4240,14 @@ decodeAndPlaySound soundConfigStr =
         |> Result.withDefault Cmd.none
 
 
-playMineSound : Cmd msg
-playMineSound =
-    decodeAndPlaySound Sfxr.mineHitConfig
+playMineSound : Float -> Cmd msg
+playMineSound vol =
+    decodeAndPlaySoundWithVol vol Sfxr.mineHitConfig
 
 
-playMineSuccessSound : Cmd msg
-playMineSuccessSound =
-    decodeAndPlaySound Sfxr.mineSuccessConfig
+playMineSuccessSound : Float -> Cmd msg
+playMineSuccessSound vol =
+    decodeAndPlaySoundWithVol vol Sfxr.mineSuccessConfig
 
 
 updateSpecialAction : SpecialAction -> Price -> Model -> ( Model, Cmd Msg )

@@ -7578,9 +7578,81 @@ view model =
                 viewSettingsTab model
 
 
+settingsSlider : List (Element.Attribute Msg) -> (Float -> Msg) -> Float -> Element Msg
+settingsSlider attrs onChange value =
+    let
+        leftSize =
+            round <| value * 100
+
+        rightSize =
+            round <| (1 - value) * 100
+
+        background =
+            row
+                [ width fill
+                , height <| Element.px 6
+                , centerY
+                ]
+                [ el
+                    [ Background.color <| UI.color_off_black
+                    , width <| fillPortion leftSize
+                    , height fill
+                    , Border.width 1
+                    , Border.rounded 2
+                    ]
+                  <|
+                    Element.none
+                , el
+                    [ Background.color <| UI.color_grey
+                    , width <| fillPortion rightSize
+                    , height fill
+                    , Border.width 1
+                    , Border.rounded 2
+                    ]
+                  <|
+                    Element.none
+                ]
+    in
+    Input.slider
+        ([ width fill
+         , Element.behindContent background
+         , Element.mouseOver [ Element.scale 2.0, Background.color <| UI.color_primary ]
+         ]
+            ++ attrs
+        )
+        { onChange = onChange
+        , label =
+            Input.labelRight
+                [ Element.width (Element.px 100) ]
+            <|
+                (text <| String.fromFloat value)
+        , min = 0.0
+        , max = 1.0
+        , value = value
+        , thumb =
+            -- Input.defaultThumb
+            Input.thumb
+                [ Element.mouseOver [ Element.scale 2.0, Background.color <| UI.color_primary ]
+                , height <| Element.px 20
+                , width <| Element.px 20
+                , Background.color UI.color_grey
+                , Border.rounded 10
+                , Border.width 2
+                , Border.color UI.color_off_black
+                ]
+        , step = Just 0.00001
+        }
+
+
 viewSettingsTab : Model -> Element Msg
 viewSettingsTab model =
-    text "SETTINGS"
+    column [ width (fill |> Element.maximum 700), centerX, Font.center, Font.size 16 ] <|
+        [ el [ width fill, Font.size 24, padding 20 ] <| text "Settings"
+        , row [ width fill, spacing 10 ]
+            [ text "Master Vol"
+            , settingsSlider [] (always Noop) 0.75
+            ]
+        ]
 
 
 build_special_action_button : UI.ColorTheme -> UI.HoveredTooltip -> Character -> SpecialActionConfig -> Element Msg

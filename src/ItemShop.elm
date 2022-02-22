@@ -7379,44 +7379,59 @@ view_items_unlocked_tab_type colorTheme item_db =
         ]
 
 
+getGoldGainedLabelMovementY : Animator.Timeline GoldGainedAnimation -> Float
+getGoldGainedLabelMovementY timeline =
+    Animator.move timeline <|
+        \shouldShow ->
+            case shouldShow of
+                ShowGoldGainedAnimation seed ->
+                    Animator.at 50
+                        |> Animator.leaveSmoothly 0.5
+                        |> Animator.arriveSmoothly 0.5
+
+                HideGoldAnimation seed ->
+                    Animator.at 50
+
+                NoGoldAnimation ->
+                    Animator.at 0
+                        |> Animator.leaveSmoothly 0.5
+                        |> Animator.arriveSmoothly 0.5
+
+
+getGoldGainedAlpha : Animator.Timeline GoldGainedAnimation -> Float
+getGoldGainedAlpha timeline =
+    Animator.linear timeline <|
+        \state ->
+            Animator.at <|
+                case state of
+                    ShowGoldGainedAnimation seed ->
+                        1.0
+
+                    HideGoldAnimation seed ->
+                        0.0
+
+                    NoGoldAnimation ->
+                        0.0
+
+
+viewCurrenciesOverlay : UI.ColorTheme -> Player -> Float -> Float -> Element Msg
+viewCurrenciesOverlay colorTheme (Player player) goldGainedLabelMovementY goldGainedAlpha =
+    row []
+        [ text "Held: "
+        , el [ Element.inFront <| el [ Element.alpha goldGainedAlpha, Element.moveUp goldGainedLabelMovementY ] <| text "+123" ] <| UI.renderGp colorTheme <| player.held_gold
+        , text " "
+        , UI.renderBlood colorTheme <| player.held_blood
+        , text " "
+        , UI.renderGem colorTheme <| player.held_gems
+        ]
+
+viewSettingsOverlay : Element Msg
+viewSettingsOverlay =
+    text "Settings"
+
 viewOverlay : Model -> Element Msg
 viewOverlay model =
     let
-        goldGainedLabelMovementY =
-            Animator.move model.goldGainedTimeline <|
-                \shouldShow ->
-                    case shouldShow of
-                        ShowGoldGainedAnimation seed ->
-                            Animator.at 50
-                                |> Animator.leaveSmoothly 0.5
-                                |> Animator.arriveSmoothly 0.5
-
-                        HideGoldAnimation seed ->
-                            Animator.at 50
-
-                        NoGoldAnimation ->
-                            Animator.at 0
-                                |> Animator.leaveSmoothly 0.5
-                                |> Animator.arriveSmoothly 0.5
-
-        goldGainedAlpha : Float
-        goldGainedAlpha =
-            Animator.linear model.goldGainedTimeline <|
-                \state ->
-                    Animator.at <|
-                        case state of
-                            ShowGoldGainedAnimation seed ->
-                                1.0
-
-                            HideGoldAnimation seed ->
-                                0.0
-
-                            NoGoldAnimation ->
-                                0.0
-
-        (Player player) =
-            getPlayer model.characters
-
         overlayAttrs =
             [ UI.defaultBackgroundColor model.colorTheme
             , Border.color
@@ -7457,7 +7472,7 @@ viewOverlay model =
                     :: Element.alignBottom
                     :: overlayAttrs
                 )
-                [ text "Settings "
+                [ viewSettingsOverlay
                 ]
             , row
                 (Font.alignRight
@@ -7465,12 +7480,11 @@ viewOverlay model =
                     :: Element.alignBottom
                     :: overlayAttrs
                 )
-                [ text "Held: "
-                , el [ Element.inFront <| el [ Element.alpha goldGainedAlpha, Element.moveUp goldGainedLabelMovementY ] <| text "+123" ] <| UI.renderGp model.colorTheme <| player.held_gold
-                , text " "
-                , UI.renderBlood model.colorTheme <| player.held_blood
-                , text " "
-                , UI.renderGem model.colorTheme <| player.held_gems
+                [ Lazy.lazy4 viewCurrenciesOverlay
+                    model.colorTheme
+                    (getPlayer model.characters)
+                    (getGoldGainedLabelMovementY model.goldGainedTimeline)
+                    (getGoldGainedAlpha model.goldGainedTimeline)
                 ]
             ]
 

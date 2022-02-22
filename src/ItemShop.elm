@@ -3324,7 +3324,7 @@ update msg model =
                               }
                                 |> replaceCharacter new_trade_context.from_party
                                 |> replaceCharacter new_trade_context.to_party
-                            , Cmd.none
+                            , playPlayerSellItemSound model.masterVol
                             )
 
                         IncompleteTradeRecord _ ->
@@ -4247,6 +4247,11 @@ playMineSound vol =
 playMineSuccessSound : Float -> Cmd msg
 playMineSuccessSound vol =
     decodeAndPlaySoundWithVol vol Sfxr.mineSuccessConfig
+
+
+playPlayerSellItemSound : Float -> Cmd msg
+playPlayerSellItemSound vol =
+    decodeAndPlaySoundWithVol vol Sfxr.playerSellItemConfig
 
 
 updateSpecialAction : SpecialAction -> Price -> Model -> ( Model, Cmd Msg )

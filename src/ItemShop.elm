@@ -306,6 +306,10 @@ type UiOptionMsg
     | ToggleShowDebugInventories
 
 
+type SettingsMsg
+    = ChangedMasterVol Float
+
+
 type Msg
     = Noop
     | PlayerBuyItemFromShop Item Quantity
@@ -331,6 +335,7 @@ type Msg
     | RuntimeTriggeredAnimationStep Time.Posix
     | ClickedTitleTextLabel
     | ClickedTitlePlayLabel
+    | GotSettingsMsg SettingsMsg
 
 
 type TitleScreenAnimationState
@@ -1517,6 +1522,7 @@ type alias Model =
     , goldGainedTimeline : Animator.Timeline GoldGainedAnimation
     , hasHadAtLeastOneBlood : Bool
     , hasHadAtLeastOneGem : Bool
+    , masterVol : Float
     }
 
 
@@ -1555,6 +1561,7 @@ encodeModel model =
         , ( "communityFund", Encode.int model.communityFund )
         , ( "hasHadAtLeastOneBlood", Encode.bool model.hasHadAtLeastOneBlood )
         , ( "hasHadAtLeastOneGem", Encode.bool model.hasHadAtLeastOneGem )
+        , ( "masterVol", Encode.float model.masterVol )
         ]
 
 
@@ -2319,6 +2326,7 @@ init timeNow device hash key =
             , goldGainedTimeline = Animator.init <| NoGoldAnimation
             , hasHadAtLeastOneBlood = False
             , hasHadAtLeastOneGem = False
+            , masterVol = 1.0
             }
     in
     ( initModel
@@ -3513,9 +3521,19 @@ update msg model =
         ClickedTitlePlayLabel ->
             ( { model | currentTabType = ShopTabType }, Cmd.none )
 
+        GotSettingsMsg settingsMsg ->
+            ( updateSettings settingsMsg model, Cmd.none )
+
 
 
 --- END OF UPDATE
+
+
+updateSettings : SettingsMsg -> Model -> Model
+updateSettings settingsMsg model =
+    case settingsMsg of
+        ChangedMasterVol newVol ->
+            { model | masterVol = clamp 0.0 1.0 newVol }
 
 
 setTimeOfDay : Model -> TimeOfDay -> Model
@@ -7625,7 +7643,7 @@ settingsSlider attrs onChange value =
             Input.labelRight
                 [ Element.width (Element.px 100) ]
             <|
-                (text <| String.fromFloat value)
+                (text <| float_to_percent value)
         , min = 0.0
         , max = 1.0
         , value = value
@@ -7647,14 +7665,14 @@ settingsSlider attrs onChange value =
 viewSettingsTab : Model -> Element Msg
 viewSettingsTab model =
     let
-        { colorTheme } =
+        { colorTheme, masterVol } =
             model
     in
     column [ width (fill |> Element.maximum 700), height fill, centerX, Font.center, Font.size 16 ] <|
         [ el [ width fill, Font.size 24, padding 20 ] <| text "Settings"
         , row [ width fill, spacing 10 ]
             [ text "Master Vol"
-            , settingsSlider [] (always Noop) 0.75
+            , settingsSlider [] (GotSettingsMsg << ChangedMasterVol) masterVol
             ]
         , el [ padding 50, centerX, alignBottom ] <|
             UI.button <|

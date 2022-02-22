@@ -4224,7 +4224,6 @@ updateMine ({ globalSeed, masterVol } as model) =
     )
 
 
-
 decodeAndPlaySoundWithVol : Float -> String -> Cmd msg
 decodeAndPlaySoundWithVol volume soundConfigStr =
     soundConfigStr
@@ -7449,7 +7448,22 @@ viewCurrenciesOverlay : UI.ColorTheme -> Player -> Float -> Float -> Element Msg
 viewCurrenciesOverlay colorTheme (Player player) goldGainedLabelMovementY goldGainedAlpha =
     row []
         [ text "Held: "
-        , el [ Element.inFront <| el [ Element.alpha goldGainedAlpha, Element.moveUp goldGainedLabelMovementY ] <| text "+123" ] <| UI.renderGp colorTheme <| player.held_gold
+        , el
+            [ Element.inFront <|
+                el
+                    [ Element.alpha goldGainedAlpha
+                    , Element.moveUp goldGainedLabelMovementY
+                    , Font.family [ Font.monospace ]
+                    , Font.size 16
+                    , Font.color UI.color_black
+                    , Font.shadow { offset = ( 0, 0 ), blur = 2, color = UI.color_white }
+                    ]
+                <|
+                    text "+123"
+            ]
+          <|
+            UI.renderGp colorTheme <|
+                player.held_gold
         , text " "
         , UI.renderBlood colorTheme <| player.held_blood
         , text " "

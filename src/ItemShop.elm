@@ -1156,6 +1156,7 @@ type TabType
     | ShopTabType
     | ItemsUnlockedTabType
     | BattleTabType
+    | SettingsTabType
 
 
 type PlayerUpgrade
@@ -1501,7 +1502,7 @@ type alias Model =
     , ai_tick_time : Time.Posix --used to seed the ai randomness
     , globalSeed : Random.Seed --used to seed anything; will be constantly changed throughout the app
     , ai_updates_paused : Bool
-    , tab_type : TabType
+    , currentTabType : TabType
     , battleModel : Battle.Model
     , browserNavKey : Maybe Nav.Key
     , uiOptions : UiOptions
@@ -1547,7 +1548,7 @@ encodeModel model =
         -- , globalSeed : Random.Seed --used to seed anything; will be constantly changed throughout the app
         , ( "ai_updates_paused", Encode.bool model.ai_updates_paused )
 
-        -- , tab_type : TabType //NOSERIALIZE
+        -- , currentTabType : TabType //NOSERIALIZE
         -- , battleModel : Battle.Model
         -- , browserNavKey : Maybe Nav.Key //NOSERIALIZE
         -- , uiOptions : UiOptions //NOSERIALIZE
@@ -2156,6 +2157,9 @@ tabTypeToString tabType =
         BattleTabType ->
             "battle"
 
+        SettingsTabType ->
+            "settings"
+
 
 stringToTabType : String -> TabType
 stringToTabType hash =
@@ -2215,8 +2219,8 @@ init timeNow device hash key =
         characters =
             Characters { player = player, shop = shop, others = initial_characters item_db }
 
-        initial_tab_type : TabType
-        initial_tab_type =
+        initial_currentTabType : TabType
+        initial_currentTabType =
             stringToTabType hash
 
         spRefillUpgradeLvl =
@@ -2266,12 +2270,12 @@ init timeNow device hash key =
             , globalSeed = globalSeed
             , ai_updates_paused =
                 --dont pause if its a game tab
-                if List.member initial_tab_type [ ShopTabType, BattleTabType, TitleScreenTabType ] then
+                if List.member initial_currentTabType [ ShopTabType, BattleTabType, TitleScreenTabType ] then
                     False
 
                 else
                     True
-            , tab_type = initial_tab_type
+            , currentTabType = initial_currentTabType
             , battleModel = battleModel
             , browserNavKey = key
             , uiOptions = initUiOptions
@@ -2761,7 +2765,7 @@ updateBattleOutMsg battleOutMsg model =
         Battle.ReturnToShop ->
             case model.browserNavKey of
                 Just key ->
-                    ( { model | tab_type = ShopTabType }
+                    ( { model | currentTabType = ShopTabType }
                     , Nav.pushUrl
                         key
                         ("#" ++ tabTypeToString ShopTabType)
@@ -3357,13 +3361,13 @@ update msg model =
         OnSpecialAction special_action price ->
             updateSpecialAction special_action price model
 
-        ChangeTabType tab_type ->
-            ( { model | tab_type = tab_type }
+        ChangeTabType currentTabType ->
+            ( { model | currentTabType = currentTabType }
             , case model.browserNavKey of
                 Just key ->
                     Nav.pushUrl
                         key
-                        ("#" ++ tabTypeToString tab_type)
+                        ("#" ++ tabTypeToString currentTabType)
 
                 Nothing ->
                     Cmd.none
@@ -3507,7 +3511,7 @@ update msg model =
             )
 
         ClickedTitlePlayLabel ->
-            ( { model | tab_type = ShopTabType }, Cmd.none )
+            ( { model | currentTabType = ShopTabType }, Cmd.none )
 
 
 
@@ -7109,8 +7113,8 @@ debugTimeOfDayControls { colorTheme, timeOfDay, ai_tick_time, characters, item_d
             ]
 
 
-view_shop_tab_type : Model -> Element Msg
-view_shop_tab_type model =
+view_shop_currentTabType : Model -> Element Msg
+view_shop_currentTabType model =
     let
         { historical_player_actions, colorTheme, timeOfDay, ai_updates_paused, ai_tick_time, characters, item_db, progressUnlocks, playerUpgrades, quests, showMineGpGained, uiOptions, historical_shop_trends, shop_trends } =
             model
@@ -7354,8 +7358,8 @@ render_item_db_item colorTheme { item, trade_stats, is_unlocked } =
         ]
 
 
-view_items_unlocked_tab_type : UI.ColorTheme -> ItemDb -> Element Msg
-view_items_unlocked_tab_type colorTheme item_db =
+view_items_unlocked_currentTabType : UI.ColorTheme -> ItemDb -> Element Msg
+view_items_unlocked_currentTabType colorTheme item_db =
     let
         back_btn =
             Element.link []
@@ -7425,9 +7429,22 @@ viewCurrenciesOverlay colorTheme (Player player) goldGainedLabelMovementY goldGa
         , UI.renderGem colorTheme <| player.held_gems
         ]
 
-viewSettingsOverlay : Element Msg
-viewSettingsOverlay =
-    text "Settings"
+
+viewSettingsOverlay : TabType -> Element Msg
+viewSettingsOverlay currentTabType =
+    el
+        [ Element.pointer
+        , Element.mouseOver [ Font.color UI.color_primary ]
+        , Events.onMouseDown <|
+            if currentTabType /= SettingsTabType then
+                ChangeTabType SettingsTabType
+
+            else
+                ChangeTabType ShopTabType
+        ]
+    <|
+        text "Settings"
+
 
 viewOverlay : Model -> Element Msg
 viewOverlay model =
@@ -7472,7 +7489,7 @@ viewOverlay model =
                     :: Element.alignBottom
                     :: overlayAttrs
                 )
-                [ viewSettingsOverlay
+                [ viewSettingsOverlay model.currentTabType
                 ]
             , row
                 (Font.alignRight
@@ -7516,7 +7533,7 @@ view model =
         }
         [ Element.htmlAttribute <| Html.Attributes.id "itemshop"
         , Element.inFront <|
-            if model.tab_type /= TitleScreenTabType then
+            if model.currentTabType /= TitleScreenTabType then
                 viewOverlay model
 
             else
@@ -7533,14 +7550,14 @@ view model =
         , UI.defaultFontColor model.colorTheme
         ]
     <|
-        case model.tab_type of
+        case model.currentTabType of
             TitleScreenTabType ->
                 Lazy.lazy viewTitleScreen model
 
             ShopTabType ->
                 case model.timeOfDay.currentPhase of
                     ActivePhase _ _ ->
-                        Lazy.lazy view_shop_tab_type model
+                        Lazy.lazy view_shop_currentTabType model
 
                     PrepPhase ->
                         Lazy.lazy viewShopPrepPhase model
@@ -7549,14 +7566,21 @@ view model =
                         Lazy.lazy5 viewShopPostPhase ( model.colorTheme, model.shouldViewGemUpgradesInPostPhase ) model.progressUnlocks postPhaseData model.characters model.quests
 
             ItemsUnlockedTabType ->
-                Lazy.lazy2 view_items_unlocked_tab_type model.colorTheme model.item_db
+                Lazy.lazy2 view_items_unlocked_currentTabType model.colorTheme model.item_db
 
             BattleTabType ->
                 Element.map GotBattleMsg <|
                     case getPlayer model.characters of
                         Player player ->
-                            Lazy.lazy Battle.view
-                                model.battleModel
+                            Lazy.lazy Battle.view model.battleModel
+
+            SettingsTabType ->
+                viewSettingsTab model
+
+
+viewSettingsTab : Model -> Element Msg
+viewSettingsTab model =
+    text "SETTINGS"
 
 
 build_special_action_button : UI.ColorTheme -> UI.HoveredTooltip -> Character -> SpecialActionConfig -> Element Msg

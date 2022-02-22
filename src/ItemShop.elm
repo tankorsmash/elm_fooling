@@ -2326,7 +2326,7 @@ init timeNow device hash key =
             , goldGainedTimeline = Animator.init <| NoGoldAnimation
             , hasHadAtLeastOneBlood = False
             , hasHadAtLeastOneGem = False
-            , masterVol = 0.10
+            , masterVol = 0.1
             }
     in
     ( initModel

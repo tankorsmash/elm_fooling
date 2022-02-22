@@ -7646,12 +7646,25 @@ settingsSlider attrs onChange value =
 
 viewSettingsTab : Model -> Element Msg
 viewSettingsTab model =
-    column [ width (fill |> Element.maximum 700), centerX, Font.center, Font.size 16 ] <|
+    let
+        { colorTheme } =
+            model
+    in
+    column [ width (fill |> Element.maximum 700), height fill, centerX, Font.center, Font.size 16 ] <|
         [ el [ width fill, Font.size 24, padding 20 ] <| text "Settings"
         , row [ width fill, spacing 10 ]
             [ text "Master Vol"
             , settingsSlider [] (always Noop) 0.75
             ]
+        , el [ padding 50, centerX, alignBottom ] <|
+            UI.button <|
+                UI.TextParams
+                    { buttonType = UI.Primary
+                    , colorTheme = colorTheme
+                    , customAttrs = []
+                    , onPressMsg = ChangeTabType ShopTabType
+                    , textLabel = "Back"
+                    }
         ]
 
 

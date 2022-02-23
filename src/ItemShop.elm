@@ -6813,35 +6813,39 @@ viewShopPrepPhase model =
         [ Element.el [ UI.font_scaled 3, UI.padding_bottom 10 ] <| text "Prep Phase"
         , column [ Font.size 16, spacingXY 0 20 ]
             [ paragraph [] [ el [ Font.italic ] <| text "You are about to begin a new day, running your shop the best you can." ]
-            , paragraph [] [ text "Each day, the shop's wares change, opposing trades come and go, and who knows what else might happen." ]
-            , paragraph []
-                [ text <|
-                    ("You may see one of "
-                        ++ (model.item_db
-                                |> Dict.filter (\_ idbr -> idbr.is_unlocked)
-                                |> Dict.size
-                                |> String.fromInt
-                           )
-                        ++ " unlocked items, among the "
-                        ++ String.fromInt model.numItemsToStartDayWith
-                        ++ " the Shop will be starting with today. Maybe you can find more?"
-                    )
+            , row [ width fill ]
+                [ paragraph [ alignTop ] [ text "Each day, the shop's wares change, opposing trades come and go, and who knows what else might happen." ]
+                , paragraph [ alignTop ]
+                    [ text <|
+                        ("You may see one of "
+                            ++ (model.item_db
+                                    |> Dict.filter (\_ idbr -> idbr.is_unlocked)
+                                    |> Dict.size
+                                    |> String.fromInt
+                               )
+                            ++ " unlocked items, among the "
+                            ++ String.fromInt model.numItemsToStartDayWith
+                            ++ " the Shop will be starting with today. Maybe you can find more?"
+                        )
+                    ]
                 ]
-            , paragraph []
-                [ text <|
-                    ("There has been word that "
-                        ++ (getOthers model.characters |> List.length |> String.fromInt)
-                        ++ " other traders have come to trade."
-                    )
+            , row [ width fill ]
+                [ paragraph [ alignTop ]
+                    [ text <|
+                        ("There has been word that "
+                            ++ (getOthers model.characters |> List.length |> String.fromInt)
+                            ++ " other traders have come to trade."
+                        )
+                    ]
+                , paragraph [ alignTop ]
+                    [ text <|
+                        ("The day tomorrow will last: "
+                            ++ (String.fromInt <| model.timeOfDay.dayLengthInMs // 1000)
+                            ++ " seconds."
+                        )
+                    ]
                 ]
-            , paragraph []
-                [ text <|
-                    ("The day tomorrow will last: "
-                        ++ (String.fromInt <| model.timeOfDay.dayLengthInMs // 1000)
-                        ++ " seconds."
-                    )
-                ]
-            , paragraph [] <|
+            , row [ width fill ] <|
                 let
                     unpopularItemTypes =
                         model.shop_trends.item_type_sentiment
@@ -6855,24 +6859,30 @@ viewShopPrepPhase model =
                             |> Dict.keys
                             |> List.filterMap id_to_item_type
                 in
-                [ text <|
+                [ column [ alignTop, width fill ] <|
                     case String.join ", " <| List.map itemTypeToString unpopularItemTypes of
                         "" ->
-                            ""
+                            [ text "" ]
 
                         item_types ->
-                            "The following types of things are less popular: "
-                                ++ item_types
-                                ++ ". "
-                , text <|
+                            [ text "The following types of things are less popular: "
+                            , paragraph []
+                                [ text item_types
+                                , text ". "
+                                ]
+                            ]
+                , column [ alignTop, width fill ] <|
                     case String.join ", " <| List.map itemTypeToString popularItemTypes of
                         "" ->
-                            ""
+                            [ text "" ]
 
                         item_types ->
-                            "The following types of things are more popular: "
-                                ++ item_types
-                                ++ "."
+                            [ text "The following types of things are more popular: "
+                            , paragraph []
+                                [ text item_types
+                                , text ". "
+                                ]
+                            ]
                 ]
             , column [ width fill ] <|
                 [ header "Today's Quests" ]

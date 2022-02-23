@@ -1814,10 +1814,8 @@ mouseoverUIBeepConfig =
 }"""
 
 
-{-| sounds more like a falling or losing sound than a buy-item sound but w/e
--}
-playerBuyItemConfig : String
-playerBuyItemConfig =
+playerSellItemConfig : String
+playerSellItemConfig =
     """{
         "oldParams": true,
         "wave_type": 2,
@@ -1849,10 +1847,10 @@ playerBuyItemConfig =
 }"""
 
 
-{-| Supposed to be a sell sound, but it sounds more like a hammer-building sound
+{-| Sounds like a construction-related sound more than anything else
 -}
-playerSellItemConfig : String
-playerSellItemConfig =
+playerBuyItemConfig : String
+playerBuyItemConfig =
     """{
         "oldParams": true,
         "wave_type": 3,

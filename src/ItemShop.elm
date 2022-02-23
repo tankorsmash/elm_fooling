@@ -5570,7 +5570,7 @@ action_log_to_str colorTheme item_db action_log =
             "Fetched an item: " ++ (lookup_item_id_default item_db itemId).name
 
         FetchedItemButFundNotBigEnough itemId ->
-            "Tried to fetch an item, but the Community Fund didn't contain enough gold. Needed" ++ UI.renderGpString (lookup_item_id_default item_db itemId).raw_gold_cost
+            "Tried to fetch an item, but the Community Fund didn't contain enough gold. Needed " ++ UI.renderGpString (lookup_item_id_default item_db itemId).raw_gold_cost
 
         DidNothing ->
             "Did nothing"
@@ -5630,15 +5630,16 @@ renderDesires item_types_desired =
         |> List.filter (Tuple.second >> (\trd -> trd > 0.0))
         |> List.map
             (\( it_id, trd ) ->
-                text <|
-                    "Desires: "
-                        ++ (case id_to_item_type it_id of
-                                Just item_type ->
-                                    itemTypeToString item_type
+                el [ alignTop ] <|
+                    text <|
+                        "Desires: "
+                            ++ (case id_to_item_type it_id of
+                                    Just item_type ->
+                                        itemTypeToString item_type
 
-                                Nothing ->
-                                    "Unknown"
-                           )
+                                    Nothing ->
+                                        "Unknown"
+                               )
             )
 
 
@@ -5648,15 +5649,16 @@ renderDislikes item_types_desired =
         |> List.filter (Tuple.second >> (\trd -> trd <= 0.0))
         |> List.map
             (\( it_id, trd ) ->
-                text <|
-                    "Dislikes: "
-                        ++ (case id_to_item_type it_id of
-                                Just item_type ->
-                                    itemTypeToString item_type
+                el [ alignTop ] <|
+                    text <|
+                        "Dislikes: "
+                            ++ (case id_to_item_type it_id of
+                                    Just item_type ->
+                                        itemTypeToString item_type
 
-                                Nothing ->
-                                    "Unknown"
-                           )
+                                    Nothing ->
+                                        "Unknown"
+                               )
             )
 
 
@@ -5704,7 +5706,7 @@ renderCharacterDetails colorTheme character item_db progressUnlocks is_shop_cont
 
         render_single_action_log : ActionLog -> Element Msg
         render_single_action_log log =
-            el [] (text <| action_log_to_str colorTheme item_db log)
+            el [ alignTop ] (text <| action_log_to_str colorTheme item_db log)
 
         rendered_action_log_items : List (Element Msg)
         rendered_action_log_items =
@@ -5722,13 +5724,13 @@ renderCharacterDetails colorTheme character item_db progressUnlocks is_shop_cont
         rendered_action_log =
             [ column
                 [ width fill
-                , Element.clip
-                , paddingXY 0 10
+                , Element.scrollbars
                 , if not is_shop_context && List.length character.action_log > 0 then
-                    height (fill |> Element.maximum 600 |> Element.minimum 50)
+                    height (fill |> Element.maximum 50 |> Element.minimum 50)
 
                   else
                     height fill
+                , alignTop
                 ]
                 (if not is_shop_context then
                     rendered_action_log_items
@@ -5778,7 +5780,7 @@ renderCharacterDetails colorTheme character item_db progressUnlocks is_shop_cont
                 ]
             ]
     in
-    row [ width fill ]
+    row [ width fill, spacing 15, alignTop ]
         (rendered_desires
             ++ rendered_dislikes
             ++ rendered_action_log

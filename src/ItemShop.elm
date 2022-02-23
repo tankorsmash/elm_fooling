@@ -4297,6 +4297,7 @@ playUnlockProgressUnlock : Float -> Cmd msg
 playUnlockProgressUnlock vol =
     decodeAndPlaySoundWithVol vol Sfxr.buyGemConfig
 
+
 playMouseOverButtonSound : Float -> Cmd msg
 playMouseOverButtonSound vol =
     decodeAndPlaySoundWithVol vol Sfxr.mouseoverUIBeepConfig
@@ -6967,7 +6968,13 @@ viewShopSummary colorTheme postPhaseData quests =
                 in
                 []
                     ++ [ header "Daily Quests" ]
-                    ++ List.map questRender quests.dailyQuests
+                    ++ (case quests.dailyQuests of
+                            [] ->
+                                [ text "No Quests" ]
+
+                            qs ->
+                                List.map questRender qs
+                       )
             , column [ width (fillPortion 1) ] <|
                 []
                     ++ [ header "Stats (todo)"

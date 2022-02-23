@@ -2943,11 +2943,19 @@ updateUiOptions uiOptMsg model =
                             }
                         )
                         model
-                    , Task.attempt (GotUiOptionsMsg << GotTooltipSize) (Browser.Dom.getElement ("tooltip__" ++ tooltip_id))
+                    , Cmd.batch
+                        [ Task.attempt (GotUiOptionsMsg << GotTooltipSize) (Browser.Dom.getElement ("tooltip__" ++ tooltip_id))
+
+                        -- since tooltips have their own onMouseEnter logic, we duplicate it here
+                        , playMouseOverButtonSound model.masterVol
+                        ]
                     )
 
                 UI.EndTooltipHover tooltip_id ->
-                    ( updateUiOption (\uio -> { uio | hoveredTooltip = UI.NoHoveredTooltip }) model, Cmd.none )
+                    ( updateUiOption (\uio -> { uio | hoveredTooltip = UI.NoHoveredTooltip }) model
+                      -- since tooltips have their own onMouseEnter logic, we duplicate it here
+                    , playMouseOverLeaveButtonSound model.masterVol
+                    )
 
         GotTooltipSize tooltip_size_result ->
             case tooltip_size_result of

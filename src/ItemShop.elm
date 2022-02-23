@@ -304,6 +304,8 @@ type UiOptionMsg
       -- | OnTrendChartHover (List (CI.One TrendSnapshot CI.Dot))
     | OnTrendChartHover (List (CI.One TrendChartDatum CI.Dot))
     | ToggleShowDebugInventories
+    | MouseEntersButton
+    | MouseLeavesButton
 
 
 type SettingsMsg
@@ -477,6 +479,13 @@ type alias ItemTypeSentiment =
 
 type alias ItemSentiments =
     Dict.Dict ItemTypeId Float
+
+
+defaultCustomAttrs : List (Element.Attribute Msg)
+defaultCustomAttrs =
+    [ Events.onMouseEnter (GotUiOptionsMsg MouseEntersButton)
+    , Events.onMouseLeave (GotUiOptionsMsg MouseLeavesButton)
+    ]
 
 
 type alias ShopTrends =
@@ -3154,6 +3163,12 @@ updateUiOptions uiOptMsg model =
             , Cmd.none
             )
 
+        MouseEntersButton ->
+            ( model, playMouseOverButtonSound model.masterVol )
+
+        MouseLeavesButton ->
+            ( model, playMouseOverLeaveButtonSound model.masterVol )
+
 
 onTickSecond : Model -> Time.Posix -> ( Model, Cmd Msg )
 onTickSecond origModel time =
@@ -4269,6 +4284,16 @@ playMineSound vol =
     decodeAndPlaySoundWithVol vol Sfxr.mineHitConfig
 
 
+playMouseOverButtonSound : Float -> Cmd msg
+playMouseOverButtonSound vol =
+    decodeAndPlaySoundWithVol vol Sfxr.mouseoverUIBeepConfig
+
+
+playMouseOverLeaveButtonSound : Float -> Cmd msg
+playMouseOverLeaveButtonSound vol =
+    decodeAndPlaySoundWithVol vol Sfxr.mouseoverUIBeepLowConfig
+
+
 playMineSuccessSound : Float -> Cmd msg
 playMineSuccessSound vol =
     decodeAndPlaySoundWithVol vol Sfxr.mineSuccessConfig
@@ -5134,9 +5159,9 @@ shop_buy_button colorTheme gold_cost gold_in_pocket { item, quantity, avg_price 
             { buttonType = button_type
             , colorTheme = colorTheme
             , customAttrs =
-                [ getQuantity quantity < 1 |> Element.transparent
-                , width (fill |> Element.minimum 120)
-                ]
+                (getQuantity quantity < 1 |> Element.transparent)
+                    :: width (fill |> Element.minimum 120)
+                    :: defaultCustomAttrs
             , onPressMsg =
                 PlayerBuyItemFromShop item (Quantity 1)
             , textLabel =
@@ -5172,6 +5197,7 @@ shop_sell_button colorTheme has_items_to_sell_ { item } =
                 [ Element.transparent <| not has_items_to_sell_
                 , width (fill |> Element.minimum 120)
                 ]
+                    ++ defaultCustomAttrs
             , onPressMsg =
                 PlayerSellItemToShop item (Quantity 1)
             , textLabel = buttonText
@@ -5704,7 +5730,7 @@ renderCharacterDetails colorTheme character item_db progressUnlocks is_shop_cont
                 [ UI.button <|
                     UI.TextParams
                         { buttonType = UI.Primary
-                        , customAttrs = []
+                        , customAttrs = defaultCustomAttrs
                         , onPressMsg = GotUiOptionsMsg <| ToggleHideNonZeroRows character.char_id
                         , textLabel =
                             if character.hide_zero_qty_inv_rows then
@@ -5723,6 +5749,7 @@ renderCharacterDetails colorTheme character item_db progressUnlocks is_shop_cont
                                 (Decode.succeed <| ( GotUiOptionsMsg <| CycleFilterDisplayedItemsBackward character.char_id character.displayedItemType, True ))
                                 |> Element.htmlAttribute
                             ]
+                                ++ defaultCustomAttrs
                         , onPressMsg = GotUiOptionsMsg <| CycleFilterDisplayedItemsForward character.char_id character.displayedItemType
                         , textLabel =
                             "Filter: "
@@ -6545,7 +6572,7 @@ showHideDebugInventoriesButton colorTheme attrs show_debug_inventories =
     UI.button <|
         UI.TextParams
             { buttonType = UI.Danger
-            , customAttrs = UI.defineHtmlId "show_debug_inventories" :: attrs
+            , customAttrs = UI.defineHtmlId "show_debug_inventories" :: (defaultCustomAttrs ++ attrs)
             , onPressMsg = GotUiOptionsMsg ToggleShowDebugInventories
             , textLabel = buttonText
             , colorTheme = colorTheme
@@ -6578,9 +6605,10 @@ playerInventoryControls colorTheme ( shiftIsPressed, shop_trends ) { item, quant
             UI.TextParams
                 { buttonType = UI.Danger
                 , customAttrs =
-                    [ Element.transparent <| not hasItemsToSell
-                    , width (fill |> Element.minimum 120)
-                    ]
+                    defaultCustomAttrs
+                        ++ [ Element.transparent <| not hasItemsToSell
+                           , width (fill |> Element.minimum 120)
+                           ]
                 , onPressMsg = SacrificeItem item
                 , textLabel = "Sacrifice"
                 , colorTheme = colorTheme
@@ -6856,7 +6884,7 @@ viewShopPrepPhase model =
                     UI.TextParams
                         { buttonType = UI.Secondary
                         , colorTheme = model.colorTheme
-                        , customAttrs = [ width (fill |> Element.minimum 200) ]
+                        , customAttrs = defaultCustomAttrs ++ [ width (fill |> Element.minimum 200) ]
                         , onPressMsg = BeginDay
                         , textLabel = "Begin Day"
                         }
@@ -6914,7 +6942,7 @@ viewShopSummary colorTheme postPhaseData quests =
                                             UI.button <|
                                                 UI.TextParams
                                                     { buttonType = UI.Primary
-                                                    , customAttrs = []
+                                                    , customAttrs = defaultCustomAttrs
                                                     , onPressMsg = CashInQuestType questData
                                                     , textLabel = "Cash In"
                                                     , colorTheme = colorTheme
@@ -6962,7 +6990,7 @@ viewShopSummary colorTheme postPhaseData quests =
                         UI.TextParams
                             { buttonType = UI.Primary
                             , colorTheme = colorTheme
-                            , customAttrs = [ width (fill |> Element.minimum 200) ]
+                            , customAttrs = defaultCustomAttrs ++ [ width (fill |> Element.minimum 200) ]
                             , onPressMsg = ToggleViewGemUnlocksInPostPhase
                             , textLabel = "Upgrades"
                             }
@@ -6974,7 +7002,7 @@ viewShopSummary colorTheme postPhaseData quests =
                         UI.TextParams
                             { buttonType = UI.Secondary
                             , colorTheme = colorTheme
-                            , customAttrs = [ width (fill |> Element.minimum 200) ]
+                            , customAttrs = defaultCustomAttrs ++ [ width (fill |> Element.minimum 200) ]
                             , onPressMsg = EndDay
                             , textLabel = "Go to sleep"
                             }
@@ -7026,7 +7054,7 @@ viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData heldGems ques
                     UI.CustomParams
                         { buttonType = buttonType
                         , colorTheme = colorTheme
-                        , customAttrs = [ width (fill |> Element.minimum 200) ]
+                        , customAttrs = defaultCustomAttrs ++ [ width (fill |> Element.minimum 200) ]
                         , onPressMsg = onPressMsg
                         , customLabel =
                             paragraph []
@@ -7072,7 +7100,7 @@ viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData heldGems ques
                 UI.TextParams
                     { buttonType = UI.Secondary
                     , colorTheme = colorTheme
-                    , customAttrs = [ width (fill |> Element.minimum 200) ]
+                    , customAttrs = defaultCustomAttrs ++ [ width (fill |> Element.minimum 200) ]
                     , onPressMsg = ToggleViewGemUnlocksInPostPhase
                     , textLabel = "Back"
                     }
@@ -7100,7 +7128,7 @@ debugTimeOfDayControls { colorTheme, timeOfDay, ai_tick_time, characters, item_d
             [ UI.button <|
                 UI.TextParams
                     { buttonType = UI.Primary
-                    , customAttrs = []
+                    , customAttrs = defaultCustomAttrs
                     , onPressMsg = ChangeCurrentPhase PrepPhase
                     , textLabel =
                         case timeOfDay.currentPhase of
@@ -7114,7 +7142,7 @@ debugTimeOfDayControls { colorTheme, timeOfDay, ai_tick_time, characters, item_d
             , UI.button <|
                 UI.TextParams
                     { buttonType = UI.Primary
-                    , customAttrs = []
+                    , customAttrs = defaultCustomAttrs
                     , onPressMsg =
                         ChangeCurrentPhase
                             (ActivePhase
@@ -7141,7 +7169,7 @@ debugTimeOfDayControls { colorTheme, timeOfDay, ai_tick_time, characters, item_d
             , UI.button <|
                 UI.TextParams
                     { buttonType = UI.Primary
-                    , customAttrs = []
+                    , customAttrs = defaultCustomAttrs
                     , onPressMsg =
                         ChangeCurrentPhase
                             (PostPhase
@@ -7221,7 +7249,7 @@ view_shop_currentTabType model =
                 UI.TextParams
                     { buttonType = UI.Secondary
                     , colorTheme = colorTheme
-                    , customAttrs = []
+                    , customAttrs = defaultCustomAttrs
                     , onPressMsg = ForceTickSecond
                     , textLabel = "Force Tick"
                     }
@@ -7249,7 +7277,7 @@ view_shop_currentTabType model =
                                 UI.TextParams
                                     { buttonType = UI.Secondary
                                     , colorTheme = colorTheme
-                                    , customAttrs = []
+                                    , customAttrs = defaultCustomAttrs
                                     , onPressMsg = ChangeTabType ItemsUnlockedTabType
                                     , textLabel = "View Codex"
                                     }
@@ -7425,7 +7453,7 @@ view_items_unlocked_currentTabType colorTheme item_db =
         back_btn =
             Element.link []
                 { url = "#shop"
-                , label = UI.button <| UI.TextParams { buttonType = UI.Danger, customAttrs = [], onPressMsg = ChangeTabType ShopTabType, textLabel = "Back to Shop", colorTheme = colorTheme }
+                , label = UI.button <| UI.TextParams { buttonType = UI.Danger, customAttrs = defaultCustomAttrs, onPressMsg = ChangeTabType ShopTabType, textLabel = "Back to Shop", colorTheme = colorTheme }
                 }
 
         -- item_grid : Element Msg
@@ -7753,7 +7781,7 @@ viewSettingsTab model =
                 UI.TextParams
                     { buttonType = UI.Primary
                     , colorTheme = colorTheme
-                    , customAttrs = []
+                    , customAttrs = defaultCustomAttrs
                     , onPressMsg = ChangeTabType ShopTabType
                     , textLabel = "Back"
                     }
@@ -7830,7 +7858,7 @@ build_special_action_button colorTheme hoveredTooltip character { action, title,
     UI.primary_button_tooltip
         { buttonType = UI.Primary
         , colorTheme = colorTheme
-        , customAttrs = button_attrs
+        , customAttrs = defaultCustomAttrs ++ button_attrs
         , onPressMsg = msg
         , textLabel = title
         }
@@ -8092,7 +8120,7 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
                     UI.TextParams
                         { buttonType = UI.Primary
                         , colorTheme = colorTheme
-                        , customAttrs = []
+                        , customAttrs = defaultCustomAttrs
                         , onPressMsg = ChangeTabType BattleTabType
                         , textLabel = "To Battle!"
                         }

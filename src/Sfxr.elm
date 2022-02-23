@@ -1,4 +1,4 @@
-port module Sfxr exposing (mouseoverUIBeepConfig, Model, Msg(..), decodeAndPlaySoundJson, decodeSoundConfig, decodeSoundConfigStr, encodeSoundConfig, init, mineHitConfig, mineSuccessConfig, playSoundConfigWithVol, playerBuyItemConfig, playerSellItemConfig, sfxrOut, subscriptions, suite, update, view)
+port module Sfxr exposing (Model, Msg(..), decodeAndPlaySoundJson, decodeSoundConfig, decodeSoundConfigStr, encodeSoundConfig, init, mineHitConfig, mineSuccessConfig, mouseoverUIBeepConfig, mouseoverUIBeepLowConfig, playSoundConfigWithVol, playerBuyItemConfig, playerSellItemConfig, sfxrOut, subscriptions, suite, update, view)
 
 import Element
     exposing
@@ -1747,6 +1747,40 @@ mineSuccessConfig =
 }"""
 
 
+mouseoverUIBeepLowConfig : String
+mouseoverUIBeepLowConfig =
+    """{
+        "oldParams": true,
+        "wave_type": 2,
+        "p_env_attack": -0.050338515708570356,
+        "p_env_sustain": 0.03407718326590583,
+        "p_env_punch": 0.37578879716883257,
+        "p_env_decay": 0.12103057820845771,
+        "p_base_freq": 0.4080977945366259,
+        "p_freq_limit": 0,
+        "p_freq_ramp": 0.01015985247170672,
+        "p_freq_dramp": 0.022564213165965963,
+        "p_vib_strength": 0.00539553731918796,
+        "p_vib_speed": 0.06970080280492233,
+        "p_arp_mod": 0.29339667355214183,
+        "p_arp_speed": 0.4614275713614929,
+        "p_duty": 0.03363205994984342,
+        "p_duty_ramp": 0.034488032276534325,
+        "p_repeat_speed": -0.0024615255697144622,
+        "p_pha_offset": 0.03658644419248831,
+        "p_pha_ramp": 0.04674177467755132,
+        "p_lpf_freq": 1.0431990620392029,
+        "p_lpf_ramp": 0.006201476192648568,
+        "p_lpf_resonance": -0.00570808713924089,
+        "p_hpf_freq": -0.006867311274713746,
+        "p_hpf_ramp": -0.03622855880558651,
+        "sound_vol": 0.25,
+        "sample_rate": 44100,
+        "sample_size": 8,
+        "p_vib_delay": null
+} """
+
+
 mouseoverUIBeepConfig : String
 mouseoverUIBeepConfig =
     """{
@@ -1778,6 +1812,7 @@ mouseoverUIBeepConfig =
         "sample_rate": 44100,
         "sample_size": 8
 }"""
+
 
 {-| sounds more like a falling or losing sound than a buy-item sound but w/e
 -}

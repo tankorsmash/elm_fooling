@@ -2220,6 +2220,7 @@ init timeNow device hash key =
                     , held_gold = 25
                     , party = PlayerParty
                     , held_blood = 100
+                    , held_gems = 123
                 }
 
         shop : Shop
@@ -3540,7 +3541,7 @@ update msg model =
                                 m.characters
                                 |> setCharacters m
                        )
-                , Cmd.none
+                , playUnlockProgressUnlock model.masterVol
                 )
 
             else
@@ -4291,6 +4292,10 @@ playMineSound : Float -> Cmd msg
 playMineSound vol =
     decodeAndPlaySoundWithVol vol Sfxr.mineHitConfig
 
+
+playUnlockProgressUnlock : Float -> Cmd msg
+playUnlockProgressUnlock vol =
+    decodeAndPlaySoundWithVol vol Sfxr.buyGemConfig
 
 playMouseOverButtonSound : Float -> Cmd msg
 playMouseOverButtonSound vol =
@@ -7051,7 +7056,7 @@ viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData heldGems ques
                     if alreadyHasUnlock then
                         Noop
 
-                    else if canAfford then
+                    else if True || canAfford then
                         UnlockProgressUnlock progressUnlock price
 
                     else

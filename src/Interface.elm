@@ -900,11 +900,11 @@ primary_button_tooltip { colorTheme, customAttrs, onPressMsg, textLabel } { onTo
         { buttonType = Primary
         , colorTheme = colorTheme
         , customAttrs =
-            [ Events.onMouseLeave <| onTooltipMsg <| EndTooltipHover tooltip_id
-            , Events.onMouseEnter <| onTooltipMsg <| StartTooltipHover tooltip_id
-            ]
-                ++ tooltipAttr
+            tooltipAttr
                 ++ customAttrs
+                ++ [ Events.onMouseLeave <| onTooltipMsg <| EndTooltipHover tooltip_id
+                   , Events.onMouseEnter <| onTooltipMsg <| StartTooltipHover tooltip_id
+                   ]
         , onPressMsg = onPressMsg
         , textLabel = textLabel
         }

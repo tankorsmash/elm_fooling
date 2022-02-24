@@ -2219,8 +2219,8 @@ init timeNow device hash key =
                     | held_items = initial_owned_items item_db
                     , held_gold = 25
                     , party = PlayerParty
-                    , held_blood = 100
-                    , held_gems = 123
+                    , held_blood = 0
+                    , held_gems = 0
                 }
 
         shop : Shop

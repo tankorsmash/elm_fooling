@@ -5167,24 +5167,34 @@ shop_buy_button colorTheme gold_cost gold_in_pocket { item, quantity, avg_price 
 
             else
                 UI.Secondary
-    in
-    UI.button <|
-        UI.TextParams
-            { buttonType = button_type
-            , colorTheme = colorTheme
-            , customAttrs =
-                (getQuantity quantity < 1 |> Element.transparent)
-                    :: width (fill |> Element.minimum 120)
-                    :: defaultCustomAttrs
-            , onPressMsg =
-                PlayerBuyItemFromShop item (Quantity 1)
-            , textLabel =
-                if can_afford then
-                    "BUY"
 
-                else
-                    "Need GP"
-            }
+        atLeastOne =
+            getQuantity quantity < 1
+    in
+    el
+        [ width (fill |> Element.minimum 120)
+        , height (fill |> Element.minimum 40)
+        ]
+    <|
+        if not atLeastOne then
+            UI.button <|
+                UI.TextParams
+                    { buttonType = button_type
+                    , colorTheme = colorTheme
+                    , customAttrs =
+                        width (fill |> Element.minimum 120) :: defaultCustomAttrs
+                    , onPressMsg =
+                        PlayerBuyItemFromShop item (Quantity 1)
+                    , textLabel =
+                        if can_afford then
+                            "BUY"
+
+                        else
+                            "Need GP"
+                    }
+
+        else
+            Element.none
 
 
 shop_sell_button : ColorTheme -> Bool -> InventoryRecord -> Element Msg
@@ -9049,51 +9059,51 @@ suite =
                             |> getPlayer
                 in
                 [ fuzz (Fuzz.intRange 1 10) "Golem's SP goes up" <|
-                        \upgradeLevel ->
-                            let
-                                upgrader p =
-                                    applyUpgrade (AutomaticBPtoSP upgradeLevel) ( p, newTestModel )
-                            in
-                            let
-                                expectedNewPlayer =
-                                    { player
-                                        | held_blood = player.held_blood - (bloodCostForRefillSp * upgradeLevel)
+                    \upgradeLevel ->
+                        let
+                            upgrader p =
+                                applyUpgrade (AutomaticBPtoSP upgradeLevel) ( p, newTestModel )
+                        in
+                        let
+                            expectedNewPlayer =
+                                { player
+                                    | held_blood = player.held_blood - (bloodCostForRefillSp * upgradeLevel)
+                                }
+
+                            intendedBattleModel =
+                                Battle.increaseGolemStamina newBattleModel upgradeLevel
+
+                            newSecondsWaitedSince =
+                                newTestModel.secondsWaitedSince
+                                    |> (\sws -> { sws | lastSpRefill = 99999 })
+
+                            expectedPlayerAndModel : ( Character, Model )
+                            expectedPlayerAndModel =
+                                ( expectedNewPlayer
+                                , replaceCharacter
+                                    expectedNewPlayer
+                                    { newTestModel
+                                        | battleModel = intendedBattleModel
+                                        , secondsWaitedSince = newSecondsWaitedSince
                                     }
-
-                                intendedBattleModel =
-                                    Battle.increaseGolemStamina newBattleModel upgradeLevel
-
-                                newSecondsWaitedSince =
-                                    newTestModel.secondsWaitedSince
-                                        |> (\sws -> { sws | lastSpRefill = 99999 })
-
-                                expectedPlayerAndModel : ( Character, Model )
-                                expectedPlayerAndModel =
-                                    ( expectedNewPlayer
-                                    , replaceCharacter
-                                        expectedNewPlayer
-                                        { newTestModel
-                                            | battleModel = intendedBattleModel
-                                            , secondsWaitedSince = newSecondsWaitedSince
-                                        }
-                                    )
-
-                                ( resultPlayer, resultModel ) =
-                                    upgrader player
-                            in
-                            Expect.equal
-                                (Battle.monsterMap
-                                    (.statStamina >> .curVal)
-                                    (expectedPlayerAndModel
-                                        |> Tuple.second
-                                        |> .battleModel
-                                        |> .golem
-                                    )
                                 )
-                                (Battle.monsterMap
-                                    (.statStamina >> .curVal)
-                                    resultModel.battleModel.golem
+
+                            ( resultPlayer, resultModel ) =
+                                upgrader player
+                        in
+                        Expect.equal
+                            (Battle.monsterMap
+                                (.statStamina >> .curVal)
+                                (expectedPlayerAndModel
+                                    |> Tuple.second
+                                    |> .battleModel
+                                    |> .golem
                                 )
+                            )
+                            (Battle.monsterMap
+                                (.statStamina >> .curVal)
+                                resultModel.battleModel.golem
+                            )
                 , fuzz (Fuzz.intRange 1 10) "BP goes down" <|
                     \upgradeLevel ->
                         let

@@ -308,7 +308,7 @@ type UiOptionMsg
     | MouseLeavesButton
 
 
-type SettingsMsg
+type SettingsFormMsg
     = ChangedMasterVol Float
     | SaveChanges
 
@@ -338,7 +338,7 @@ type Msg
     | RuntimeTriggeredAnimationStep Time.Posix
     | ClickedTitleTextLabel
     | ClickedTitlePlayLabel
-    | GotSettingsMsg SettingsMsg
+    | GotSettingsFormMsg SettingsFormMsg
 
 
 type TitleScreenAnimationState
@@ -1505,9 +1505,14 @@ type alias TimeOfDay =
     }
 
 
-type alias Settings =
+type alias SettingsData =
     { masterVol : Float
     }
+
+
+type SettingsForm
+    = InitialSettings SettingsData
+    | DirtySettings { initialData : SettingsData, dirtyData : SettingsData }
 
 
 type alias Model =
@@ -1537,13 +1542,19 @@ type alias Model =
     , goldGainedTimeline : Animator.Timeline GoldGainedAnimation
     , hasHadAtLeastOneBlood : Bool
     , hasHadAtLeastOneGem : Bool
-    , settings : Settings
+    , settings : SettingsData
+    , settingsForm : Maybe SettingsForm
     }
 
 
-setSettings : Model -> Settings -> Model
+setSettings : Model -> SettingsData -> Model
 setSettings model settings =
     { model | settings = settings }
+
+
+setSettingsForm : Model -> Maybe SettingsForm -> Model
+setSettingsForm model maybeSettingsForm =
+    { model | settingsForm = maybeSettingsForm }
 
 
 type GoldGainedAnimation
@@ -2347,12 +2358,19 @@ init timeNow device hash key =
             , goldGainedTimeline = Animator.init <| NoGoldAnimation
             , hasHadAtLeastOneBlood = False
             , hasHadAtLeastOneGem = False
-            , settings = { masterVol = 0.1 }
+            , settings = initSettings
+            , settingsForm = Nothing
             }
     in
     ( initModel
     , Task.perform TickSecond Time.now
     )
+
+
+initSettings : SettingsData
+initSettings =
+    { masterVol = 0.1
+    }
 
 
 animator : Animator.Animator Model
@@ -3431,6 +3449,13 @@ update msg model =
 
         ChangeTabType currentTabType ->
             ( { model | currentTabType = currentTabType }
+                |> (\m ->
+                        if currentTabType == SettingsTabType then
+                            { m | settingsForm = Just <| InitialSettings m.settings }
+
+                        else
+                            m
+                   )
             , case model.browserNavKey of
                 Just key ->
                     Nav.pushUrl
@@ -3581,27 +3606,63 @@ update msg model =
         ClickedTitlePlayLabel ->
             ( { model | currentTabType = ShopTabType }, Cmd.none )
 
-        GotSettingsMsg settingsMsg ->
-            ( updateSettings settingsMsg model, Cmd.none )
+        GotSettingsFormMsg settingsMsg ->
+            let
+                newModel =
+                    model.settingsForm
+                        |> Maybe.withDefault (InitialSettings model.settings)
+                        |> updateSettingsForm settingsMsg model
+            in
+            ( newModel, Cmd.none )
 
 
 
 --- END OF UPDATE
 
 
-updateSettings : SettingsMsg -> Model -> Model
-updateSettings settingsMsg ({settings} as model) =
+updateSettingsForm : SettingsFormMsg -> Model -> SettingsForm -> Model
+updateSettingsForm settingsMsg model settingsForm =
     let
         noop =
             model
     in
     case settingsMsg of
         ChangedMasterVol newVol ->
-            { settings | masterVol = clamp 0.0 1.0 newVol }
-                |> setSettings model
+            let
+                newMasterVol =
+                    clamp 0.0 1.0 newVol
+            in
+            case settingsForm of
+                InitialSettings initialSettings ->
+                    DirtySettings
+                        { initialData = initialSettings
+                        , dirtyData = { initialSettings | masterVol = newMasterVol }
+                        }
+                        |> Just
+                        |> setSettingsForm model
 
+                DirtySettings { initialData, dirtyData } ->
+                    DirtySettings
+                        { initialData = initialData
+                        , dirtyData = { dirtyData | masterVol = newMasterVol }
+                        }
+                        |> Just
+                        |> setSettingsForm model
+
+        -- { settings | masterVol = newMasterVol }
+        --     |> setSettings model
         SaveChanges ->
-            noop
+            case model.settingsForm of
+                Just sf ->
+                    case sf of
+                        InitialSettings _ ->
+                            noop
+
+                        DirtySettings data ->
+                            setSettings model <| data.dirtyData
+
+                Nothing ->
+                    noop
 
 
 setTimeOfDay : Model -> TimeOfDay -> Model
@@ -7826,30 +7887,54 @@ settingsSlider attrs onChange value =
 
 
 viewSettingsTab : Model -> Element Msg
-viewSettingsTab model =
+viewSettingsTab { colorTheme, settingsForm } =
     let
-        { colorTheme, settings } =
-            model
-
-        { masterVol } =
-            settings
+        _ =
+            123
     in
-    column [ width (fill |> Element.maximum 700), height fill, centerX, Font.center, Font.size 16 ] <|
-        [ el [ width fill, Font.size 24, padding 20 ] <| text "Settings"
-        , row [ width fill, spacing 10 ]
-            [ text "Master Vol"
-            , settingsSlider [] (GotSettingsMsg << ChangedMasterVol) masterVol
-            ]
-        , el [ padding 50, centerX, alignBottom ] <|
-            UI.button <|
-                UI.TextParams
-                    { buttonType = UI.Primary
-                    , colorTheme = colorTheme
-                    , customAttrs = defaultCustomAttrs
-                    , onPressMsg = ChangeTabType ShopTabType
-                    , textLabel = "Back"
-                    }
-        ]
+    case settingsForm of
+        Just settingsForm_ ->
+            let
+                masterVol =
+                    case settingsForm_ of
+                        DirtySettings { dirtyData } ->
+                            dirtyData.masterVol
+
+                        InitialSettings data ->
+                            data.masterVol
+
+                isDirty =
+                    case settingsForm_ of
+                        DirtySettings _ ->
+                            True
+
+                        InitialSettings data ->
+                            False
+            in
+            column [ width (fill |> Element.maximum 700), height fill, centerX, Font.center, Font.size 16 ] <|
+                [ el [ width fill, Font.size 24, padding 20 ] <| text "Settings"
+                , row [ width fill, spacing 10 ]
+                    [ text "Master Vol"
+                    , settingsSlider [] (GotSettingsFormMsg << ChangedMasterVol) masterVol
+                    ]
+                , el [ padding 50, centerX, alignBottom ] <|
+                    UI.button <|
+                        UI.TextParams
+                            { buttonType =
+                                if not isDirty then
+                                    UI.Primary
+
+                                else
+                                    UI.Danger
+                            , colorTheme = colorTheme
+                            , customAttrs = defaultCustomAttrs
+                            , onPressMsg = ChangeTabType ShopTabType
+                            , textLabel = "Back"
+                            }
+                ]
+
+        Nothing ->
+            text "NOTHING"
 
 
 build_special_action_button : UI.ColorTheme -> UI.HoveredTooltip -> Character -> SpecialActionConfig -> Element Msg

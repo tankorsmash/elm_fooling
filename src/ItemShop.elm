@@ -1505,6 +1505,11 @@ type alias TimeOfDay =
     }
 
 
+type alias Settings =
+    { masterVol : Float
+    }
+
+
 type alias Model =
     { colorTheme : UI.ColorTheme
     , playerUpgrades : List PlayerUpgrade
@@ -1532,8 +1537,13 @@ type alias Model =
     , goldGainedTimeline : Animator.Timeline GoldGainedAnimation
     , hasHadAtLeastOneBlood : Bool
     , hasHadAtLeastOneGem : Bool
-    , masterVol : Float
+    , settings : Settings
     }
+
+
+setSettings : Model -> Settings -> Model
+setSettings model settings =
+    { model | settings = settings }
 
 
 type GoldGainedAnimation
@@ -1571,7 +1581,7 @@ encodeModel model =
         , ( "communityFund", Encode.int model.communityFund )
         , ( "hasHadAtLeastOneBlood", Encode.bool model.hasHadAtLeastOneBlood )
         , ( "hasHadAtLeastOneGem", Encode.bool model.hasHadAtLeastOneGem )
-        , ( "masterVol", Encode.float model.masterVol )
+        , ( "masterVol", Encode.float model.settings.masterVol )
         ]
 
 
@@ -2337,7 +2347,7 @@ init timeNow device hash key =
             , goldGainedTimeline = Animator.init <| NoGoldAnimation
             , hasHadAtLeastOneBlood = False
             , hasHadAtLeastOneGem = False
-            , masterVol = 0.1
+            , settings = { masterVol = 0.1 }
             }
     in
     ( initModel
@@ -2949,14 +2959,14 @@ updateUiOptions uiOptMsg model =
                         [ Task.attempt (GotUiOptionsMsg << GotTooltipSize) (Browser.Dom.getElement ("tooltip__" ++ tooltip_id))
 
                         -- since tooltips have their own onMouseEnter logic, we duplicate it here
-                        , playMouseOverButtonSound model.masterVol
+                        , playMouseOverButtonSound model.settings.masterVol
                         ]
                     )
 
                 UI.EndTooltipHover tooltip_id ->
                     ( updateUiOption (\uio -> { uio | hoveredTooltip = UI.NoHoveredTooltip }) model
                       -- since tooltips have their own onMouseEnter logic, we duplicate it here
-                    , playMouseOverLeaveButtonSound model.masterVol
+                    , playMouseOverLeaveButtonSound model.settings.masterVol
                     )
 
         GotTooltipSize tooltip_size_result ->
@@ -3174,10 +3184,10 @@ updateUiOptions uiOptMsg model =
             )
 
         MouseEntersButton ->
-            ( model, playMouseOverButtonSound model.masterVol )
+            ( model, playMouseOverButtonSound model.settings.masterVol )
 
         MouseLeavesButton ->
-            ( model, playMouseOverLeaveButtonSound model.masterVol )
+            ( model, playMouseOverLeaveButtonSound model.settings.masterVol )
 
 
 onTickSecond : Model -> Time.Posix -> ( Model, Cmd Msg )
@@ -3328,7 +3338,7 @@ update msg model =
                         --it doesn't matter who was what party, they're still getting updated
                         |> replaceCharacter new_trade_context.to_party
                         |> replaceCharacter new_trade_context.from_party
-                    , playPlayerBuyItemSound model.masterVol
+                    , playPlayerBuyItemSound model.settings.masterVol
                     )
 
         PlayerSellItemToShop item qty ->
@@ -3374,7 +3384,7 @@ update msg model =
                               }
                                 |> replaceCharacter new_trade_context.from_party
                                 |> replaceCharacter new_trade_context.to_party
-                            , playPlayerSellItemSound model.masterVol
+                            , playPlayerSellItemSound model.settings.masterVol
                             )
 
                         IncompleteTradeRecord _ ->
@@ -3542,7 +3552,7 @@ update msg model =
                                 m.characters
                                 |> setCharacters m
                        )
-                , playUnlockProgressUnlock model.masterVol
+                , playUnlockProgressUnlock model.settings.masterVol
                 )
 
             else
@@ -3580,18 +3590,18 @@ update msg model =
 
 
 updateSettings : SettingsMsg -> Model -> Model
-updateSettings settingsMsg model =
+updateSettings settingsMsg ({settings} as model) =
     let
-        noop = model
+        noop =
+            model
     in
     case settingsMsg of
         ChangedMasterVol newVol ->
-            { model | masterVol = clamp 0.0 1.0 newVol }
+            { settings | masterVol = clamp 0.0 1.0 newVol }
+                |> setSettings model
 
         SaveChanges ->
             noop
-
-
 
 
 setTimeOfDay : Model -> TimeOfDay -> Model
@@ -4235,7 +4245,7 @@ mineSuccessAnimation timeline seed =
 
 
 updateMine : Model -> ( Model, Cmd Msg )
-updateMine ({ globalSeed, masterVol } as model) =
+updateMine ({ globalSeed, settings } as model) =
     let
         ( shouldEarnGp, newSeed ) =
             Random.step
@@ -4258,10 +4268,10 @@ updateMine ({ globalSeed, masterVol } as model) =
 
         mineCmd =
             if not shouldEarnGp then
-                playMineSound masterVol
+                playMineSound settings.masterVol
 
             else
-                playMineSuccessSound masterVol
+                playMineSuccessSound settings.masterVol
     in
     ( model
         |> (\m ->
@@ -7818,8 +7828,11 @@ settingsSlider attrs onChange value =
 viewSettingsTab : Model -> Element Msg
 viewSettingsTab model =
     let
-        { colorTheme, masterVol } =
+        { colorTheme, settings } =
             model
+
+        { masterVol } =
+            settings
     in
     column [ width (fill |> Element.maximum 700), height fill, centerX, Font.center, Font.size 16 ] <|
         [ el [ width fill, Font.size 24, padding 20 ] <| text "Settings"

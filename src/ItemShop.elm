@@ -310,6 +310,7 @@ type UiOptionMsg
 
 type SettingsMsg
     = ChangedMasterVol Float
+    | SaveChanges
 
 
 type Msg
@@ -3580,9 +3581,17 @@ update msg model =
 
 updateSettings : SettingsMsg -> Model -> Model
 updateSettings settingsMsg model =
+    let
+        noop = model
+    in
     case settingsMsg of
         ChangedMasterVol newVol ->
             { model | masterVol = clamp 0.0 1.0 newVol }
+
+        SaveChanges ->
+            noop
+
+
 
 
 setTimeOfDay : Model -> TimeOfDay -> Model

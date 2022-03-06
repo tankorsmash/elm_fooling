@@ -2369,7 +2369,7 @@ init timeNow device hash key =
 
 initSettings : SettingsData
 initSettings =
-    { masterVol = 0.1
+    { masterVol = 0.0
     }
 
 

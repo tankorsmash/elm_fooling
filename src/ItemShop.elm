@@ -1515,6 +1515,11 @@ type SettingsForm
     | DirtySettings { initialData : SettingsData, dirtyData : SettingsData }
 
 
+type ScreenshakeAnimation
+    = NoScreenshakeAnimation
+    | RandomScreenShake Float
+
+
 type alias Model =
     { colorTheme : UI.ColorTheme
     , playerUpgrades : List PlayerUpgrade
@@ -1540,6 +1545,7 @@ type alias Model =
     , titleScreenAnimationState : Animator.Timeline TitleScreenAnimationState
     , showMineGpGained : Animator.Timeline MineAnimation
     , goldGainedTimeline : Animator.Timeline GoldGainedAnimation
+    , screenshakeTimeline : Animator.Timeline ScreenshakeAnimation
     , hasHadAtLeastOneBlood : Bool
     , hasHadAtLeastOneGem : Bool
     , settings : SettingsData
@@ -2356,6 +2362,7 @@ init timeNow device hash key =
             , titleScreenAnimationState = Animator.init <| HighTitle
             , showMineGpGained = Animator.init <| NoMineAnimation
             , goldGainedTimeline = Animator.init <| NoGoldAnimation
+            , screenshakeTimeline = Animator.init <| NoScreenshakeAnimation
             , hasHadAtLeastOneBlood = False
             , hasHadAtLeastOneGem = False
             , settings = initSettings
@@ -2413,6 +2420,17 @@ animator =
                         False
 
                     NoGoldAnimation ->
+                        True
+            )
+        |> Animator.watchingWith
+            .screenshakeTimeline
+            (\newState model -> { model | screenshakeTimeline = newState })
+            (\state ->
+                case state of
+                    RandomScreenShake _ ->
+                        False
+
+                    NoScreenshakeAnimation ->
                         True
             )
 
@@ -3321,6 +3339,24 @@ animateGoldGained timeline seed goldGained =
         , Animator.event Animator.immediately NoGoldAnimation
         ]
         timeline
+
+
+animateRandomScreenshake : Animator.Timeline ScreenshakeAnimation -> Random.Seed -> Float -> Animator.Timeline ScreenshakeAnimation
+animateRandomScreenshake timeline seed maxWidth =
+    Animator.interrupt
+        [ Animator.event Animator.immediately NoScreenshakeAnimation
+        , Animator.event veryVeryQuickly (RandomScreenShake <| maxWidth)
+        , Animator.event veryVeryQuickly (RandomScreenShake <| -maxWidth)
+        , Animator.event veryVeryQuickly (RandomScreenShake <| maxWidth / 2)
+        , Animator.event veryVeryQuickly (RandomScreenShake <| -maxWidth / 2)
+        , Animator.event veryVeryQuickly NoScreenshakeAnimation
+        ]
+        timeline
+
+
+veryVeryQuickly : Animator.Duration
+veryVeryQuickly =
+    Animator.millis 50
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -4342,10 +4378,15 @@ updateMine ({ globalSeed, settings } as model) =
                             mineSuccessAnimation m.showMineGpGained m.globalSeed
                         , goldGainedTimeline =
                             animateGoldGained m.goldGainedTimeline m.globalSeed gpEarned
+                        , screenshakeTimeline =
+                            animateRandomScreenshake m.screenshakeTimeline m.globalSeed 3
                     }
 
                 else
-                    m
+                    { m
+                        | screenshakeTimeline =
+                            animateRandomScreenshake m.screenshakeTimeline m.globalSeed 1
+                    }
            )
         |> setGlobalSeed newSeed
         |> withCharacters newCharacters
@@ -7594,6 +7635,22 @@ view_items_unlocked_currentTabType colorTheme item_db =
         ]
 
 
+getScreenshakeMoveRight : Animator.Timeline ScreenshakeAnimation -> Float
+getScreenshakeMoveRight timeline =
+    Animator.move timeline <|
+        \animation ->
+            case animation of
+                RandomScreenShake maxWidth ->
+                    Animator.at maxWidth
+                        |> Animator.leaveSmoothly 0.5
+                        |> Animator.arriveSmoothly 0.5
+
+                NoScreenshakeAnimation ->
+                    Animator.at 0.0
+                        |> Animator.leaveSmoothly 0.5
+                        |> Animator.arriveSmoothly 0.5
+
+
 getGoldGainedLabelMovementY : Animator.Timeline GoldGainedAnimation -> Float
 getGoldGainedLabelMovementY timeline =
     Animator.move timeline <|
@@ -7790,6 +7847,7 @@ view model =
             padding 20
         , UI.defaultBackgroundColor model.colorTheme
         , UI.defaultFontColor model.colorTheme
+        , Element.moveRight <| getScreenshakeMoveRight model.screenshakeTimeline
         ]
     <|
         case model.currentTabType of

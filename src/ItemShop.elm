@@ -7840,6 +7840,7 @@ view model =
         , Element.htmlAttribute <| Html.Events.on "wheel" (Decode.succeed (GotUiOptionsMsg ScrollViewport))
         , Element.htmlAttribute <| Html.Events.on "scroll" (Decode.succeed (GotUiOptionsMsg ScrollViewport))
         , width fill
+        , height fill
         , if deviceClass == UI.Desktop then
             paddingXY 200 20
 
@@ -7850,8 +7851,10 @@ view model =
         ]
     <|
         el
-        -- has to be its own element; otherwise scrollbars show up
+            -- has to be its own element; otherwise scrollbars show up
             [ Element.moveRight <| getScreenshakeMoveRight model.screenshakeTimeline
+            , width fill
+            , height fill
             ]
         <|
             case model.currentTabType of

@@ -2408,7 +2408,7 @@ animator =
                         False
 
                     HideMineAnimation seed ->
-                        True
+                        False
 
                     NoMineAnimation ->
                         True

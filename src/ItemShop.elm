@@ -2264,8 +2264,8 @@ init timeNow device hash key =
         characters =
             Characters { player = player, shop = shop, others = initial_characters item_db }
 
-        initial_currentTabType : TabType
-        initial_currentTabType =
+        initialCurrentTabType : TabType
+        initialCurrentTabType =
             stringToTabType hash
 
         spRefillUpgradeLvl =
@@ -2315,12 +2315,12 @@ init timeNow device hash key =
             , globalSeed = globalSeed
             , ai_updates_paused =
                 --dont pause if its a game tab
-                if List.member initial_currentTabType [ ShopTabType, BattleTabType, TitleScreenTabType ] then
+                if List.member initialCurrentTabType [ ShopTabType, BattleTabType, TitleScreenTabType ] then
                     False
 
                 else
                     True
-            , currentTabType = initial_currentTabType
+            , currentTabType = initialCurrentTabType
             , battleModel = battleModel
             , browserNavKey = key
             , uiOptions = initUiOptions

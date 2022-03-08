@@ -7847,35 +7847,39 @@ view model =
             padding 20
         , UI.defaultBackgroundColor model.colorTheme
         , UI.defaultFontColor model.colorTheme
-        , Element.moveRight <| getScreenshakeMoveRight model.screenshakeTimeline
         ]
     <|
-        case model.currentTabType of
-            TitleScreenTabType ->
-                Lazy.lazy viewTitleScreen model
+        el
+        -- has to be its own element; otherwise scrollbars show up
+            [ Element.moveRight <| getScreenshakeMoveRight model.screenshakeTimeline
+            ]
+        <|
+            case model.currentTabType of
+                TitleScreenTabType ->
+                    Lazy.lazy viewTitleScreen model
 
-            ShopTabType ->
-                case model.timeOfDay.currentPhase of
-                    ActivePhase _ _ ->
-                        Lazy.lazy view_shop_currentTabType model
+                ShopTabType ->
+                    case model.timeOfDay.currentPhase of
+                        ActivePhase _ _ ->
+                            Lazy.lazy view_shop_currentTabType model
 
-                    PrepPhase ->
-                        Lazy.lazy viewShopPrepPhase model
+                        PrepPhase ->
+                            Lazy.lazy viewShopPrepPhase model
 
-                    PostPhase postPhaseData ->
-                        Lazy.lazy5 viewShopPostPhase ( model.colorTheme, model.shouldViewGemUpgradesInPostPhase ) model.progressUnlocks postPhaseData model.characters model.quests
+                        PostPhase postPhaseData ->
+                            Lazy.lazy5 viewShopPostPhase ( model.colorTheme, model.shouldViewGemUpgradesInPostPhase ) model.progressUnlocks postPhaseData model.characters model.quests
 
-            ItemsUnlockedTabType ->
-                Lazy.lazy2 view_items_unlocked_currentTabType model.colorTheme model.item_db
+                ItemsUnlockedTabType ->
+                    Lazy.lazy2 view_items_unlocked_currentTabType model.colorTheme model.item_db
 
-            BattleTabType ->
-                Element.map GotBattleMsg <|
-                    case getPlayer model.characters of
-                        Player player ->
-                            Lazy.lazy Battle.view model.battleModel
+                BattleTabType ->
+                    Element.map GotBattleMsg <|
+                        case getPlayer model.characters of
+                            Player player ->
+                                Lazy.lazy Battle.view model.battleModel
 
-            SettingsTabType ->
-                viewSettingsTab model
+                SettingsTabType ->
+                    viewSettingsTab model
 
 
 settingsSlider : List (Element.Attribute Msg) -> (Float -> Msg) -> Float -> Element Msg

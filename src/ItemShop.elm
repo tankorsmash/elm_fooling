@@ -7370,8 +7370,8 @@ debugTimeOfDayControls { colorTheme, timeOfDay, ai_tick_time, characters, item_d
             ]
 
 
-view_shop_currentTabType : Model -> Element Msg
-view_shop_currentTabType model =
+viewShopActivePhase : Model -> Element Msg
+viewShopActivePhase model =
     let
         { historical_player_actions, colorTheme, timeOfDay, ai_updates_paused, ai_tick_time, characters, item_db, progressUnlocks, playerUpgrades, quests, showMineGpGained, uiOptions, historical_shop_trends, shop_trends } =
             model
@@ -7869,7 +7869,7 @@ view model =
                 ShopTabType ->
                     case model.timeOfDay.currentPhase of
                         ActivePhase _ _ ->
-                            Lazy.lazy view_shop_currentTabType model
+                            Lazy.lazy viewShopActivePhase model
 
                         PrepPhase ->
                             Lazy.lazy viewShopPrepPhase model

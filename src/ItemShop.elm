@@ -2301,6 +2301,34 @@ init timeNow device hash key =
             , show_charts_in_hovered_item = False
             }
 
+        initialQuests =
+            { dailyQuests =
+                -- []
+                --
+                [ IncompleteQuest
+                    { questType =
+                        SellAnyItem
+                            { current = setQuantity 0
+                            , target = setQuantity 3
+                            }
+                    , questId =
+                        generateUuid "default sell quest"
+                    }
+                ]
+
+            -- , CompleteQuest
+            --     { questType =
+            --         EarnGold
+            --             { current = setQuantity 30
+            --             , target = setQuantity 30
+            --             }
+            --     , questId = generateUuid "default earn quest"
+            --     }
+            --     QuestNotCashedIn
+            -- ]
+            , persistentQuests = []
+            }
+
         initModel : Model
         initModel =
             { colorTheme = BrightTheme
@@ -2327,30 +2355,7 @@ init timeNow device hash key =
             , communityFund = 0
             , progressUnlocks = []
             , quests =
-                { dailyQuests =
-                    []
-
-                -- [ IncompleteQuest
-                --     { questType =
-                --         SellAnyItem
-                --             { current = setQuantity 2
-                --             , target = setQuantity 3
-                --             }
-                --     , questId =
-                --         generateUuid "default sell quest"
-                --     }
-                -- , CompleteQuest
-                --     { questType =
-                --         EarnGold
-                --             { current = setQuantity 30
-                --             , target = setQuantity 30
-                --             }
-                --     , questId = generateUuid "default earn quest"
-                --     }
-                --     QuestNotCashedIn
-                -- ]
-                , persistentQuests = []
-                }
+                initialQuests
             , timeOfDay =
                 { dayLengthInMs = minutesToMillis 5
 
@@ -6771,7 +6776,7 @@ getQuestTitle : QuestType -> String
 getQuestTitle questType =
     case questType of
         SellAnyItem _ ->
-            "Sell any Item!"
+            "Sell any Item"
 
         EarnGold _ ->
             "Earn gold!"
@@ -6817,7 +6822,7 @@ viewSingleQuest quest =
                             ++ quantityToStr target
 
         CompleteQuest { questType, questId } cashedInStatus ->
-            text <| "Completed quest!\n" ++ getQuestTitle questType
+            text <| "Complete! " ++ getQuestTitle questType
 
 
 quests_display : UI.ColorTheme -> Quests -> ProgressUnlocks -> Element Msg

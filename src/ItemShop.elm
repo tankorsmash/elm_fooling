@@ -339,6 +339,7 @@ type Msg
     | ClickedTitleTextLabel
     | ClickedTitlePlayLabel
     | GotSettingsFormMsg SettingsFormMsg
+    | TimeOfDayHovered Bool
 
 
 type TitleScreenAnimationState
@@ -1550,6 +1551,7 @@ type alias Model =
     , hasHadAtLeastOneGem : Bool
     , settings : SettingsData
     , settingsForm : Maybe SettingsForm
+    , timeOfDayHovered : Bool -- TODO move this into a UiOptions-like record to track these temporary states easier
     }
 
 
@@ -2372,6 +2374,7 @@ init timeNow device hash key =
             , hasHadAtLeastOneGem = False
             , settings = initSettings
             , settingsForm = Nothing
+            , timeOfDayHovered = False
             }
     in
     ( initModel
@@ -3655,6 +3658,9 @@ update msg model =
                         |> updateSettingsForm settingsMsg model
             in
             ( newModel, Cmd.none )
+
+        TimeOfDayHovered isHovered ->
+            ( { model | timeOfDayHovered = isHovered }, Cmd.none )
 
 
 
@@ -6863,9 +6869,12 @@ quests_display colorTheme quests progressUnlocks =
         ]
 
 
-viewDayTimer : UI.ColorTheme -> TimeOfDay -> ItemDb -> Characters -> Time.Posix -> Element Msg
-viewDayTimer colorTheme timeOfDay item_db characters ai_tick_time =
+viewDayTimer : UI.ColorTheme -> TimeOfDay -> ItemDb -> Bool -> Time.Posix -> Element Msg
+viewDayTimer colorTheme timeOfDay item_db isHovered ai_tick_time =
     let
+        _ =
+            Debug.log "render viewDayTimer" 123
+
         sharedAttrs =
             [ height fill
             , Border.shadow { offset = ( 2, 2 ), size = 0, blur = 1.0, color = UI.color_light_grey }
@@ -6890,9 +6899,41 @@ viewDayTimer colorTheme timeOfDay item_db characters ai_tick_time =
                 }
             ]
                 ++ sharedAttrs
+
+        controls =
+            el [ alignRight, height fill, Font.center, padding 10 ] <|
+                el [ centerY ] <|
+                    UI.button <|
+                        UI.TextParams
+                            { buttonType = UI.Secondary
+                            , colorTheme = colorTheme
+                            , customAttrs =
+                                defaultCustomAttrs
+                                    ++ [ height (Element.px 30)
+                                       , padding 0
+                                       ]
+                            , onPressMsg = EndDay
+                            , textLabel = "End Early (TODO)"
+                            }
     in
-    column [ centerX, width fill ]
-        [ el [ centerX, Font.underline, padding 10 ] <| text "Time of Day"
+    column [ centerX, width fill, Events.onMouseEnter <| TimeOfDayHovered True, Events.onMouseLeave <| TimeOfDayHovered False ]
+        [ row [ width fill, centerX, height fill ]
+            [ el
+                [ Font.center
+                , centerX
+                , Font.underline
+                , padding 20
+                , width fill
+                , Element.inFront <|
+                    if  isHovered then
+                        controls
+
+                    else
+                        Element.none
+                ]
+              <|
+                text "Time of Day"
+            ]
         , case timeOfDay.currentPhase of
             ActivePhase timeDayStarted { msSinceStartOfDay } ->
                 let
@@ -7373,7 +7414,7 @@ debugTimeOfDayControls { colorTheme, timeOfDay, ai_tick_time, characters, item_d
 viewShopActivePhase : Model -> Element Msg
 viewShopActivePhase model =
     let
-        { historical_player_actions, colorTheme, timeOfDay, ai_updates_paused, ai_tick_time, characters, item_db, progressUnlocks, playerUpgrades, quests, showMineGpGained, uiOptions, historical_shop_trends, shop_trends } =
+        { historical_player_actions, colorTheme, timeOfDay, ai_updates_paused, ai_tick_time, characters, item_db, progressUnlocks, playerUpgrades, quests, showMineGpGained, uiOptions, historical_shop_trends, shop_trends, timeOfDayHovered } =
             model
 
         player : Player
@@ -7482,7 +7523,7 @@ viewShopActivePhase model =
 
               else
                 Element.none
-            , row [ width fill ] [ Lazy.lazy5 viewDayTimer colorTheme timeOfDay item_db characters ai_tick_time ]
+            , row [ width fill ] [ Lazy.lazy5 viewDayTimer colorTheme timeOfDay item_db timeOfDayHovered ai_tick_time ]
             , row [ width fill, height <| Element.px 10 ] []
             , row [ width fill, spacingXY 10 0 ]
                 [ el [ width <| fillPortion 3, alignTop ] <| Lazy.lazy2 player_action_log_display item_db historical_player_actions

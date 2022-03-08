@@ -332,6 +332,8 @@ type Msg
     | BeginDay
       -- EndDay triggers onPrepNewDay
     | EndDay
+      -- EndDayEarly triggered by user skipping current active day
+    | EndDayEarly
     | CashInQuestType QuestData
     | ToggleViewGemUnlocksInPostPhase
     | UnlockProgressUnlock ProgressUnlock Price
@@ -3369,6 +3371,10 @@ veryVeryQuickly =
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
+    let
+        noop =
+            ( model, Cmd.none )
+    in
     case msg of
         Noop ->
             ( model, Cmd.none )
@@ -3588,6 +3594,28 @@ update msg model =
 
         EndDay ->
             ( onEndCurrentDay model, Cmd.none )
+
+        EndDayEarly ->
+            case model.timeOfDay.currentPhase of
+                ActivePhase _ { msSinceStartOfDay, itemDbAtStart, goldAtStartOfDay } ->
+                    let
+                        { timeOfDay } =
+                            model
+
+                        (Player player) =
+                            getPlayer model.characters
+
+                        newPhase =
+                            changeToPostPhaseAtEndOfDay
+                                goldAtStartOfDay
+                                player.held_gold
+                                itemDbAtStart
+                                model.item_db
+                    in
+                    ( setTimeOfDay model { timeOfDay | currentPhase = newPhase }, Cmd.none )
+
+                _ ->
+                    noop
 
         CashInQuestType ({ questType, questId } as questData) ->
             if isQuestTrackerComplete (getQuestTracker questType) then
@@ -3827,6 +3855,18 @@ onPrepNewDay ({ timeOfDay, item_db, globalSeed, characters, ai_tick_time, quests
     }
 
 
+{-| Helper we need to call when changing the current phase of the game. We
+do it awkwardly like this so the code has to get changed in all places (ending normally, and user pressing 'End Early')
+-}
+changeToPostPhaseAtEndOfDay goldAtStartOfDay playerHeldGold itemDbAtStart itemDbAtEnd =
+    PostPhase
+        { goldAtStartOfDay = goldAtStartOfDay
+        , goldAtEndOfDay = playerHeldGold
+        , itemDbAtStart = itemDbAtStart
+        , itemDbAtEnd = itemDbAtEnd
+        }
+
+
 updateActiveTimeOfDay : Time.Posix -> Model -> Model
 updateActiveTimeOfDay newTime ({ ai_tick_time, timeOfDay } as model) =
     case timeOfDay.currentPhase of
@@ -3854,20 +3894,13 @@ updateActiveTimeOfDay newTime ({ ai_tick_time, timeOfDay } as model) =
                             }
 
                     else
-                        PostPhase
-                            { goldAtStartOfDay = goldAtStartOfDay
-                            , goldAtEndOfDay = player.held_gold
-                            , itemDbAtStart = itemDbAtStart
-                            , itemDbAtEnd = model.item_db
-                            }
+                        changeToPostPhaseAtEndOfDay
+                            goldAtStartOfDay
+                            player.held_gold
+                            itemDbAtStart
+                            model.item_db
             in
-            { model
-                | timeOfDay =
-                    { timeOfDay
-                        | currentPhase =
-                            newPhase
-                    }
-            }
+            setTimeOfDay model { timeOfDay | currentPhase = newPhase }
 
         _ ->
             --NOOP
@@ -6912,8 +6945,8 @@ viewDayTimer colorTheme timeOfDay item_db isHovered ai_tick_time =
                                     ++ [ height (Element.px 30)
                                        , padding 0
                                        ]
-                            , onPressMsg = EndDay
-                            , textLabel = "End Early (TODO)"
+                            , onPressMsg = EndDayEarly
+                            , textLabel = "End Early"
                             }
     in
     column [ centerX, width fill, Events.onMouseEnter <| TimeOfDayHovered True, Events.onMouseLeave <| TimeOfDayHovered False ]
@@ -6925,7 +6958,7 @@ viewDayTimer colorTheme timeOfDay item_db isHovered ai_tick_time =
                 , padding 20
                 , width fill
                 , Element.inFront <|
-                    if  isHovered then
+                    if isHovered then
                         controls
 
                     else

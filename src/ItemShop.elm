@@ -2833,11 +2833,15 @@ replaceCharacter new_char model =
 
 updateBattleOutMsg : Battle.OutMsg -> Model -> ( Model, Cmd Msg )
 updateBattleOutMsg battleOutMsg model =
+    let
+        noop =
+            ( model, Cmd.none )
+    in
     case battleOutMsg of
         Battle.OnMonsterDefeat defeatAction ->
             case defeatAction of
                 Battle.NoDefeatAction ->
-                    ( model, Cmd.none )
+                    noop
 
                 Battle.DeliverItemToShop ->
                     let
@@ -2872,10 +2876,10 @@ updateBattleOutMsg battleOutMsg model =
                     )
 
                 Nothing ->
-                    ( model, Cmd.none )
+                    noop
 
         _ ->
-            ( model, Cmd.none )
+            noop
 
 
 mapPlayerIf : Bool -> (Character -> Character) -> Characters -> Characters
@@ -3054,7 +3058,7 @@ updateUiOptions uiOptMsg model =
                     in
                     case model.uiOptions.hoveredTooltip of
                         UI.NoHoveredTooltip ->
-                            ( model, Cmd.none )
+                            noop
 
                         UI.HoveredTooltipWithoutOffset oldTooltipData ->
                             let
@@ -3156,7 +3160,7 @@ updateUiOptions uiOptMsg model =
                     ( replaceCharacter { character | displayedItemType = newItemType } model, Cmd.none )
 
                 Nothing ->
-                    ( model, Cmd.none )
+                    noop
 
         CycleFilterDisplayedItemsBackward character_id mb_item_type ->
             let
@@ -3188,7 +3192,7 @@ updateUiOptions uiOptMsg model =
                     ( replaceCharacter { character | displayedItemType = newItemType } model, Cmd.none )
 
                 Nothing ->
-                    ( model, Cmd.none )
+                    noop
 
         ScrollViewport ->
             ( model, Task.perform (GotUiOptionsMsg << GotViewport) Browser.Dom.getViewport )
@@ -3377,7 +3381,7 @@ update msg model =
     in
     case msg of
         Noop ->
-            ( model, Cmd.none )
+            noop
 
         PlayerBuyItemFromShop item qty ->
             case ( getShop model.characters, getPlayer model.characters ) of
@@ -3456,7 +3460,7 @@ update msg model =
                             )
 
                         IncompleteTradeRecord _ ->
-                            ( model, Cmd.none )
+                            noop
 
         TickSecond time ->
             onTickSecond model time
@@ -3477,7 +3481,7 @@ update msg model =
                     ( { model | uiOptions = newUiOptions }, Cmd.none )
 
                 _ ->
-                    ( model, Cmd.none )
+                    noop
 
         KeyReleasedMsg key_event_msg ->
             case key_event_msg of
@@ -3492,7 +3496,7 @@ update msg model =
                     ( { model | uiOptions = newUiOptions }, Cmd.none )
 
                 _ ->
-                    ( model, Cmd.none )
+                    noop
 
         OnSpecialAction special_action price ->
             updateSpecialAction special_action price model
@@ -3622,7 +3626,7 @@ update msg model =
                 ( onCashInQuest model questData, Cmd.none )
 
             else
-                ( model, Cmd.none )
+                noop
 
         ToggleViewGemUnlocksInPostPhase ->
             ( { model | shouldViewGemUpgradesInPostPhase = not model.shouldViewGemUpgradesInPostPhase }, Cmd.none )
@@ -3653,7 +3657,7 @@ update msg model =
                 )
 
             else
-                ( model, Cmd.none )
+                noop
 
         RuntimeTriggeredAnimationStep newTime ->
             ( Animator.update newTime animator model, Cmd.none )

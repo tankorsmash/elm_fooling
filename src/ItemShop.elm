@@ -1548,6 +1548,7 @@ type alias Model =
     , shouldViewGemUpgradesInPostPhase : Bool
     , titleScreenAnimationState : Animator.Timeline TitleScreenAnimationState
     , showMineGpGained : Animator.Timeline MineAnimation
+    , mineClickedTimeline : Animator.Timeline MineClickedAnimation
     , goldGainedTimeline : Animator.Timeline GoldGainedAnimation
     , screenshakeTimeline : Animator.Timeline ScreenshakeAnimation
     , hasHadAtLeastOneBlood : Bool
@@ -1578,6 +1579,12 @@ type MineAnimation
     = ShowMineAnimation Random.Seed
     | HideMineAnimation Random.Seed
     | NoMineAnimation
+
+
+type MineClickedAnimation
+    = ShowMineClickedAnimation Random.Seed
+    | HideMineClickedAnimation Random.Seed
+    | NoMineClickedAnimation
 
 
 encodeModel : Model -> Decode.Value
@@ -2371,6 +2378,7 @@ init timeNow device hash key =
             , shouldViewGemUpgradesInPostPhase = False
             , titleScreenAnimationState = Animator.init <| HighTitle
             , showMineGpGained = Animator.init <| NoMineAnimation
+            , mineClickedTimeline = Animator.init <| NoMineClickedAnimation
             , goldGainedTimeline = Animator.init <| NoGoldAnimation
             , screenshakeTimeline = Animator.init <| NoScreenshakeAnimation
             , hasHadAtLeastOneBlood = False
@@ -2417,6 +2425,20 @@ animator =
                         False
 
                     NoMineAnimation ->
+                        True
+            )
+        |> Animator.watchingWith
+            .mineClickedTimeline
+            (\newState model -> { model | mineClickedTimeline = newState })
+            (\state ->
+                case state of
+                    ShowMineClickedAnimation seed ->
+                        False
+
+                    HideMineClickedAnimation seed ->
+                        False
+
+                    NoMineClickedAnimation ->
                         True
             )
         |> Animator.watchingWith
@@ -4390,6 +4412,18 @@ mineSuccessAnimation timeline seed =
         timeline
 
 
+mineClickedAnimation : Animator.Timeline MineClickedAnimation -> Random.Seed -> Animator.Timeline MineClickedAnimation
+mineClickedAnimation timeline seed =
+    Animator.interrupt
+        [ Animator.event Animator.immediately NoMineClickedAnimation
+        , Animator.event Animator.veryQuickly (ShowMineClickedAnimation seed)
+        , Animator.wait (Animator.seconds 1)
+        , Animator.event Animator.slowly (HideMineClickedAnimation seed)
+        , Animator.event Animator.immediately NoMineClickedAnimation
+        ]
+        timeline
+
+
 updateMine : Model -> ( Model, Cmd Msg )
 updateMine ({ globalSeed, settings } as model) =
     let
@@ -4425,6 +4459,8 @@ updateMine ({ globalSeed, settings } as model) =
                     { m
                         | showMineGpGained =
                             mineSuccessAnimation m.showMineGpGained m.globalSeed
+                        , mineClickedTimeline =
+                            mineClickedAnimation m.mineClickedTimeline m.globalSeed
                         , goldGainedTimeline =
                             animateGoldGained m.goldGainedTimeline m.globalSeed gpEarned
                         , screenshakeTimeline =
@@ -4435,6 +4471,8 @@ updateMine ({ globalSeed, settings } as model) =
                     { m
                         | screenshakeTimeline =
                             animateRandomScreenshake m.screenshakeTimeline m.globalSeed 1
+                        , mineClickedTimeline =
+                            mineClickedAnimation m.mineClickedTimeline m.globalSeed
                     }
            )
         |> setGlobalSeed newSeed
@@ -7458,7 +7496,7 @@ debugTimeOfDayControls { colorTheme, timeOfDay, ai_tick_time, characters, item_d
 viewShopActivePhase : Model -> Element Msg
 viewShopActivePhase model =
     let
-        { historical_player_actions, colorTheme, timeOfDay, ai_updates_paused, ai_tick_time, characters, item_db, progressUnlocks, playerUpgrades, quests, showMineGpGained, uiOptions, historical_shop_trends, shop_trends, timeOfDayHovered } =
+        { historical_player_actions, colorTheme, timeOfDay, ai_updates_paused, ai_tick_time, characters, item_db, progressUnlocks, playerUpgrades, quests, showMineGpGained, mineClickedTimeline, uiOptions, historical_shop_trends, shop_trends, timeOfDayHovered } =
             model
 
         player : Player
@@ -7583,6 +7621,7 @@ viewShopActivePhase model =
                 playerChar
                 ai_updates_paused
                 showMineGpGained
+                mineClickedTimeline
             , if containsProgressUnlock UnlockedShopTrends progressUnlocks then
                 trends_display
                     colorTheme
@@ -8309,6 +8348,77 @@ viewMineGpGained showMineGpGained =
     el [ Element.moveRight gpGainedMovementX, Element.moveUp gpGainedMovementY, Element.alpha alpha ] <| text "+1"
 
 
+viewMineClicked : Animator.Timeline MineClickedAnimation -> Element Msg
+viewMineClicked showMineGpGained =
+    let
+        gpGainedMovementX : Float
+        gpGainedMovementX =
+            Animator.move showMineGpGained <|
+                \shouldShow ->
+                    case shouldShow of
+                        ShowMineClickedAnimation seed ->
+                            Animator.at
+                                (Random.step (Random.float -10 10) seed |> Tuple.first)
+                                |> Animator.leaveSmoothly 0.5
+                                |> Animator.arriveSmoothly 0.5
+
+                        HideMineClickedAnimation seed ->
+                            Animator.at 
+                                (Random.step (Random.float -10 10) seed |> Tuple.first)
+
+                        NoMineClickedAnimation ->
+                            Animator.at 0
+                                |> Animator.leaveSmoothly 0.5
+                                |> Animator.arriveSmoothly 0.5
+
+        gpGainedMovementY : Float
+        gpGainedMovementY =
+            Animator.move showMineGpGained <|
+                \shouldShow ->
+                    case shouldShow of
+                        ShowMineClickedAnimation seed ->
+                            Animator.at
+                                (Random.step (Random.float -30 -40) seed |> Tuple.first)
+
+                        HideMineClickedAnimation seed ->
+                            Animator.at
+                                (Random.step (Random.float -30 -40) seed |> Tuple.first)
+
+                        NoMineClickedAnimation ->
+                            Animator.at 0
+
+        alpha : Float
+        alpha =
+            Animator.linear showMineGpGained <|
+                \state ->
+                    Animator.at <|
+                        case state of
+                            ShowMineClickedAnimation seed ->
+                                1.0
+
+                            HideMineClickedAnimation seed ->
+                                0.0
+
+                            NoMineClickedAnimation ->
+                                0.0
+    in
+    el
+        [ Element.moveRight gpGainedMovementX
+        , Element.moveUp (gpGainedMovementY - 20)
+        , Element.alpha alpha
+        , Background.color UI.color_primary
+        , Border.color UI.color_primary
+        , Border.rounded 50
+        , UI.noUserSelect
+        , UI.pointerEventsNone
+        , width (Element.px 15)
+        , height (Element.px 15)
+        , Element.htmlAttribute <| style "z-index" "1000"
+        ]
+    <|
+        text " "
+
+
 type alias SpecialActionConfig =
     { action : SpecialAction
     , title : String
@@ -8403,8 +8513,8 @@ sacIncreaseBpToSp bp_to_sp_level =
     }
 
 
-special_actions_display : UI.ColorTheme -> ProgressUnlocks -> List PlayerUpgrade -> UI.HoveredTooltip -> Character -> Bool -> Animator.Timeline MineAnimation -> Element Msg
-special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip player ai_updates_paused showMineGpGained =
+special_actions_display : UI.ColorTheme -> ProgressUnlocks -> List PlayerUpgrade -> UI.HoveredTooltip -> Character -> Bool -> Animator.Timeline MineAnimation -> Animator.Timeline MineClickedAnimation -> Element Msg
+special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip player ai_updates_paused showMineGpGained mineClickedTimeline =
     let
         specialButtonBuilder : SpecialActionConfig -> Element Msg
         specialButtonBuilder specialActionConfig =
@@ -8492,7 +8602,7 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
         , Element.wrappedRow [ width fill, spacingXY 20 0 ]
             [ Element.wrappedRow [ width <| fillPortion 1, spacingXY 10 10, alignTop ]
                 [ button_toggle_ai_pause
-                , button_mine
+                , el [ Element.inFront <| Lazy.lazy viewMineClicked mineClickedTimeline ] button_mine
                 , Lazy.lazy viewMineGpGained showMineGpGained
                 , button_battle
                 ]

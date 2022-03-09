@@ -1336,7 +1336,7 @@ progressUnlockToString progressUnlock =
             "Battles"
 
         UnlockedDarkMode ->
-            "Dark Mode"
+            "Dark UI Mode"
 
         UnlockedUpgrades ->
             "Upgrades"

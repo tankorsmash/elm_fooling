@@ -6909,9 +6909,6 @@ quests_display colorTheme quests progressUnlocks =
 viewDayTimer : UI.ColorTheme -> TimeOfDay -> ItemDb -> Bool -> Time.Posix -> Element Msg
 viewDayTimer colorTheme timeOfDay item_db isHovered ai_tick_time =
     let
-        _ =
-            Debug.log "render viewDayTimer" 123
-
         sharedAttrs =
             [ height fill
             , Border.shadow { offset = ( 2, 2 ), size = 0, blur = 1.0, color = UI.color_light_grey }
@@ -7289,7 +7286,7 @@ viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData heldGems ques
                     if alreadyHasUnlock then
                         Noop
 
-                    else if True || canAfford then
+                    else if canAfford then
                         UnlockProgressUnlock progressUnlock price
 
                     else
@@ -7757,16 +7754,16 @@ getGoldGainedAlpha : Animator.Timeline GoldGainedAnimation -> Float
 getGoldGainedAlpha timeline =
     Animator.linear timeline <|
         \state ->
-            Animator.at <|
-                case state of
-                    ShowGoldGainedAnimation seed _ ->
-                        1.0
+            case state of
+                ShowGoldGainedAnimation seed _ ->
+                    Animator.at 1.0
+                        |> Animator.arriveEarly 0.1
 
-                    HideGoldAnimation seed _ ->
-                        0.0
+                HideGoldAnimation seed _ ->
+                    Animator.at 0.0
 
-                    NoGoldAnimation ->
-                        0.0
+                NoGoldAnimation ->
+                    Animator.at 0.0
 
 
 viewCurrenciesOverlay : UI.ColorTheme -> Player -> Float -> Float -> Int -> Element Msg

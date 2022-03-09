@@ -4417,7 +4417,6 @@ mineClickedAnimation timeline seed =
     Animator.interrupt
         [ Animator.event Animator.immediately NoMineClickedAnimation
         , Animator.event Animator.veryQuickly (ShowMineClickedAnimation seed)
-        , Animator.wait (Animator.seconds 1)
         , Animator.event Animator.slowly (HideMineClickedAnimation seed)
         , Animator.event Animator.immediately NoMineClickedAnimation
         ]
@@ -8397,18 +8396,34 @@ viewMineClicked showMineGpGained =
                                 1.0
 
                             HideMineClickedAnimation seed ->
-                                0.0
+                                0.5
 
                             NoMineClickedAnimation ->
                                 0.0
+
+        rotationInTurns : Float
+        rotationInTurns =
+            Animator.move showMineGpGained <|
+                \state ->
+                    Animator.at <|
+                        case state of
+                            ShowMineClickedAnimation seed ->
+                                turns 2
+
+                            HideMineClickedAnimation seed ->
+                                turns 0.1
+
+                            NoMineClickedAnimation ->
+                                turns 0.0
     in
     el
         [ Element.moveRight gpGainedMovementX
         , Element.moveUp (gpGainedMovementY - 20)
         , Element.alpha alpha
+        , Element.rotate rotationInTurns
         , Background.color UI.color_primary
         , Border.color UI.color_primary
-        , Border.rounded 50
+        , Border.rounded 4
         , UI.noUserSelect
         , UI.pointerEventsNone
         , width (Element.px 15)

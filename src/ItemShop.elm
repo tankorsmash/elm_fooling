@@ -13,6 +13,7 @@ import Chart.Item as CI
 import Color
 import Color.Convert as Convert
 import DOM exposing (offsetWidth, target)
+import DateFormat.Relative
 import Dict
 import Element
     exposing
@@ -6981,6 +6982,11 @@ viewDayTimer colorTheme timeOfDay item_db isHovered ai_tick_time =
                         in
                         sinceStart / dayLength
 
+                    timeLeftStr =
+                        DateFormat.Relative.relativeTime
+                            (Time.millisToPosix msSinceStartOfDay)
+                            (Time.millisToPosix timeOfDay.dayLengthInMs)
+
                     dayElapsed =
                         dayElapsedRaw * 100
                 in
@@ -7003,7 +7009,11 @@ viewDayTimer colorTheme timeOfDay item_db isHovered ai_tick_time =
                                 ]
                             <|
                                 text <|
-                                    float_to_percent dayElapsedRaw
+                                    if isHovered then
+                                        timeLeftStr
+
+                                    else
+                                        float_to_percent dayElapsedRaw
                     ]
                     [ row ([ width <| fillPortion (round <| dayElapsed) ] ++ fillingAttrs) []
                     , row ([ width <| fillPortion (round <| 100 - dayElapsed) ] ++ emptyAttrs) []

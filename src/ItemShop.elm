@@ -7004,7 +7004,7 @@ viewDayTimer colorTheme timeOfDay item_db isHovered ai_tick_time =
                                 , Font.color UI.color_black
                                 , Font.glow UI.color_white 1
                                 , Background.color UI.color_light_grey
-                                , padding 2
+                                , paddingXY 10 2
                                 , Border.rounded 5
                                 ]
                             <|

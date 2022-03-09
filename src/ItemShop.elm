@@ -4416,7 +4416,7 @@ mineClickedAnimation : Animator.Timeline MineClickedAnimation -> Random.Seed -> 
 mineClickedAnimation timeline seed =
     Animator.interrupt
         [ Animator.event Animator.immediately NoMineClickedAnimation
-        , Animator.event Animator.veryQuickly (ShowMineClickedAnimation seed)
+        , Animator.event Animator.quickly (ShowMineClickedAnimation seed)
         , Animator.event Animator.slowly (HideMineClickedAnimation seed)
         , Animator.event Animator.immediately NoMineClickedAnimation
         ]
@@ -8357,13 +8357,16 @@ viewMineClicked showMineGpGained =
                     case shouldShow of
                         ShowMineClickedAnimation seed ->
                             Animator.at
-                                (Random.step (Random.float -10 10) seed |> Tuple.first)
+                                (Random.step (Random.float -20 20) seed |> Tuple.first)
                                 |> Animator.leaveSmoothly 0.5
                                 |> Animator.arriveSmoothly 0.5
 
                         HideMineClickedAnimation seed ->
                             Animator.at
-                                (Random.step (Random.float -10 10) seed |> Tuple.first)
+                                (Random.step (Random.float -20 20) seed
+                                    |> Tuple.first
+                                    |> (*) 2
+                                )
 
                         NoMineClickedAnimation ->
                             Animator.at 0
@@ -8374,32 +8377,33 @@ viewMineClicked showMineGpGained =
         gpGainedMovementY =
             Animator.move showMineGpGained <|
                 \shouldShow ->
-                    case shouldShow of
-                        ShowMineClickedAnimation seed ->
-                            Animator.at
-                                (Random.step (Random.float -30 -40) seed |> Tuple.first)
+                    Animator.withWobble 1 <|
+                        case shouldShow of
+                            ShowMineClickedAnimation seed ->
+                                Animator.at
+                                    (Random.step (Random.float 10 20) seed |> Tuple.first)
 
-                        HideMineClickedAnimation seed ->
-                            Animator.at
-                                (Random.step (Random.float -30 -40) seed |> Tuple.first)
+                            HideMineClickedAnimation seed ->
+                                Animator.at
+                                    (Random.step (Random.float -30 -40) seed |> Tuple.first)
 
-                        NoMineClickedAnimation ->
-                            Animator.at 0
+                            NoMineClickedAnimation ->
+                                Animator.at 0
 
         alpha : Float
         alpha =
             Animator.linear showMineGpGained <|
                 \state ->
-                    Animator.at <|
-                        case state of
-                            ShowMineClickedAnimation seed ->
-                                1.0
+                    case state of
+                        ShowMineClickedAnimation seed ->
+                            Animator.at 1.0
+                                |> Animator.arriveEarly 0.1
 
-                            HideMineClickedAnimation seed ->
-                                0.5
+                        HideMineClickedAnimation seed ->
+                            Animator.at 0.5
 
-                            NoMineClickedAnimation ->
-                                0.0
+                        NoMineClickedAnimation ->
+                            Animator.at 0.0
 
         rotationInTurns : Float
         rotationInTurns =

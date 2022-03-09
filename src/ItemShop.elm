@@ -8363,7 +8363,7 @@ viewMineClicked showMineGpGained =
                                 |> Animator.arriveSmoothly 0.5
 
                         HideMineClickedAnimation seed ->
-                            Animator.at 
+                            Animator.at
                                 (Random.step (Random.float -10 10) seed |> Tuple.first)
 
                         NoMineClickedAnimation ->

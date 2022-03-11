@@ -8358,13 +8358,17 @@ viewMineClicked showMineGpGained =
                     case shouldShow of
                         ShowMineClickedAnimation seed ->
                             Animator.at
-                                (Random.step (Random.float -20 20) seed |> Tuple.first)
+                                (seed
+                                    |> Random.step (Random.float -20 20)
+                                    |> Tuple.first
+                                )
                                 |> Animator.leaveSmoothly 0.5
                                 |> Animator.arriveSmoothly 0.5
 
                         HideMineClickedAnimation seed ->
                             Animator.at
-                                (Random.step (Random.float -20 20) seed
+                                (seed
+                                    |> Random.step (Random.float -20 20)
                                     |> Tuple.first
                                     |> (*) 2
                                 )
@@ -8382,11 +8386,17 @@ viewMineClicked showMineGpGained =
                         case shouldShow of
                             ShowMineClickedAnimation seed ->
                                 Animator.at
-                                    (Random.step (Random.float 10 20) seed |> Tuple.first)
+                                    (seed
+                                        |> Random.step (Random.float 10 20)
+                                        |> Tuple.first
+                                    )
 
                             HideMineClickedAnimation seed ->
                                 Animator.at
-                                    (Random.step (Random.float -30 -40) seed |> Tuple.first)
+                                    (seed
+                                        |> Random.step (Random.float -30 -40)
+                                        |> Tuple.first
+                                    )
 
                             NoMineClickedAnimation ->
                                 Animator.at 0

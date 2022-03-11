@@ -4412,8 +4412,8 @@ mineSuccessAnimation timeline seed =
         timeline
 
 
-mineClickedAnimation : Animator.Timeline MineClickedAnimation -> Random.Seed -> Animator.Timeline MineClickedAnimation
-mineClickedAnimation timeline seed =
+animateMineClicked : Animator.Timeline MineClickedAnimation -> Random.Seed -> Animator.Timeline MineClickedAnimation
+animateMineClicked timeline seed =
     Animator.interrupt
         [ Animator.event Animator.immediately NoMineClickedAnimation
         , Animator.event Animator.quickly (ShowMineClickedAnimation seed)
@@ -4459,7 +4459,7 @@ updateMine ({ globalSeed, settings } as model) =
                         | showMineGpGained =
                             mineSuccessAnimation m.showMineGpGained m.globalSeed
                         , mineClickedTimeline =
-                            mineClickedAnimation m.mineClickedTimeline m.globalSeed
+                            animateMineClicked m.mineClickedTimeline m.globalSeed
                         , goldGainedTimeline =
                             animateGoldGained m.goldGainedTimeline m.globalSeed gpEarned
                         , screenshakeTimeline =
@@ -4471,7 +4471,7 @@ updateMine ({ globalSeed, settings } as model) =
                         | screenshakeTimeline =
                             animateRandomScreenshake m.screenshakeTimeline m.globalSeed 1
                         , mineClickedTimeline =
-                            mineClickedAnimation m.mineClickedTimeline m.globalSeed
+                            animateMineClicked m.mineClickedTimeline m.globalSeed
                     }
            )
         |> setGlobalSeed newSeed

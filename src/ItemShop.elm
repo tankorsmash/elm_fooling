@@ -8348,9 +8348,13 @@ viewMineGpGained showMineGpGained =
     el [ Element.moveRight gpGainedMovementX, Element.moveUp gpGainedMovementY, Element.alpha alpha ] <| text "+1"
 
 
-viewMineClicked : Animator.Timeline MineClickedAnimation -> Element Msg
-viewMineClicked showMineGpGained =
+viewMineClicked : Animator.Timeline MineClickedAnimation -> Int -> Element Msg
+viewMineClicked showMineGpGained particleNum =
     let
+        transformSeed : Random.Seed -> Random.Seed
+        transformSeed =
+            incrementSeed particleNum
+
         gpGainedMovementX : Float
         gpGainedMovementX =
             Animator.move showMineGpGained <|
@@ -8359,6 +8363,7 @@ viewMineClicked showMineGpGained =
                         ShowMineClickedAnimation seed ->
                             Animator.at
                                 (seed
+                                    |> transformSeed
                                     |> Random.step (Random.float -20 20)
                                     |> Tuple.first
                                 )
@@ -8368,6 +8373,7 @@ viewMineClicked showMineGpGained =
                         HideMineClickedAnimation seed ->
                             Animator.at
                                 (seed
+                                    |> transformSeed
                                     |> Random.step (Random.float -20 20)
                                     |> Tuple.first
                                     |> (*) 2
@@ -8387,6 +8393,7 @@ viewMineClicked showMineGpGained =
                             ShowMineClickedAnimation seed ->
                                 Animator.at
                                     (seed
+                                        |> transformSeed
                                         |> Random.step (Random.float 10 20)
                                         |> Tuple.first
                                     )
@@ -8394,7 +8401,8 @@ viewMineClicked showMineGpGained =
                             HideMineClickedAnimation seed ->
                                 Animator.at
                                     (seed
-                                        |> Random.step (Random.float -30 -40)
+                                        |> transformSeed
+                                        |> Random.step (Random.float -50 -70)
                                         |> Tuple.first
                                     )
 
@@ -8443,7 +8451,7 @@ viewMineClicked showMineGpGained =
         , UI.pointerEventsNone
         , width (Element.px 15)
         , height (Element.px 15)
-        , Element.htmlAttribute <| style "z-index" "1000"
+        , Element.htmlAttribute <| style "z-index" (String.fromInt 1)
         ]
     <|
         text " "
@@ -8626,13 +8634,34 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
 
         hasUnlockedSpecialActions =
             containsProgressUnlock UnlockedSpecialActions progressUnlocks
+
+        animatedParticle0 =
+            Lazy.lazy2 viewMineClicked mineClickedTimeline 0
+
+        animatedParticle1 =
+            Lazy.lazy2 viewMineClicked mineClickedTimeline 1
+
+        animatedParticle2 =
+            Lazy.lazy2 viewMineClicked mineClickedTimeline 2
+
+        animatedParticle3 =
+            Lazy.lazy2 viewMineClicked mineClickedTimeline 3
     in
     column [ width fill, spacing 10, paddingXY 0 10 ]
         [ el [ UI.font_scaled 2, UI.border_bottom 2 ] <| text "Special Actions"
         , Element.wrappedRow [ width fill, spacingXY 20 0 ]
             [ Element.wrappedRow [ width <| fillPortion 1, spacingXY 10 10, alignTop ]
                 [ button_toggle_ai_pause
-                , el [ Element.inFront <| Lazy.lazy viewMineClicked mineClickedTimeline ] button_mine
+                , el
+                    [ Element.inFront <|
+                        row [Element.moveUp 20]
+                            [ animatedParticle0
+                            , animatedParticle1
+                            , animatedParticle2
+                            , animatedParticle3
+                            ]
+                    ]
+                    button_mine
                 , Lazy.lazy viewMineGpGained showMineGpGained
                 , button_battle
                 ]
@@ -8674,6 +8703,21 @@ positive =
     Fuzz.intRange 0 Random.maxInt
 
 
+{-| basically just increments the seed `count` times, so that its a unique seed
+compared to what was passed in
+-}
+incrementSeed : Int -> Random.Seed -> Random.Seed
+incrementSeed count seed =
+    if count == 0 then
+        seed
+
+    else
+        seed
+            |> Random.step (Random.int 0 1)
+            |> Tuple.second
+            |> incrementSeed (count - 1)
+
+
 suite : Test
 suite =
     let
@@ -8685,7 +8729,23 @@ suite =
     in
     -- todo "Implement our first test. See https://package.elm-lang.org/packages/elm-explorations/test/latest for how to do this!"
     describe "root test suite"
-        [ describe "encoders"
+        [ describe "randomness helpers"
+            [ fuzz positive "Incrementing RNG zero times does nothing" <|
+                \seedNum ->
+                    let
+                        rootSeed =
+                            Random.initialSeed seedNum
+                    in
+                    Expect.equal rootSeed (incrementSeed 0 rootSeed)
+            , fuzz positive "Incrementing RNG one time does something" <|
+                \seedNum ->
+                    let
+                        rootSeed =
+                            Random.initialSeed seedNum
+                    in
+                    Expect.notEqual rootSeed (incrementSeed 1 rootSeed)
+            ]
+        , describe "encoders"
             [ test "ShopTrends encoding" <|
                 \_ ->
                     let

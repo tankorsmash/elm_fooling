@@ -7020,9 +7020,10 @@ viewDayTimer colorTheme timeOfDay item_db isHovered ai_tick_time =
                         sinceStart / dayLength
 
                     timeLeftStr =
-                        "Ends "++ DateFormat.Relative.relativeTime
-                            (Time.millisToPosix msSinceStartOfDay)
-                            (Time.millisToPosix timeOfDay.dayLengthInMs)
+                        "Ends "
+                            ++ DateFormat.Relative.relativeTime
+                                (Time.millisToPosix msSinceStartOfDay)
+                                (Time.millisToPosix timeOfDay.dayLengthInMs)
 
                     dayElapsed =
                         dayElapsedRaw * 100

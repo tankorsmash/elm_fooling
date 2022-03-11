@@ -1548,7 +1548,7 @@ type alias Model =
     , shouldViewGemUpgradesInPostPhase : Bool
     , titleScreenAnimationState : Animator.Timeline TitleScreenAnimationState
     , showMineGpGained : Animator.Timeline MineAnimation
-    , mineClickedTimeline : Animator.Timeline MineClickedAnimation
+    , mineClickedTimeline : Animator.Timeline MineClickedAnimationDict
     , goldGainedTimeline : Animator.Timeline GoldGainedAnimation
     , screenshakeTimeline : Animator.Timeline ScreenshakeAnimation
     , hasHadAtLeastOneBlood : Bool
@@ -1585,6 +1585,10 @@ type MineClickedAnimation
     = ShowMineClickedAnimation Random.Seed
     | HideMineClickedAnimation Random.Seed
     | NoMineClickedAnimation
+
+
+type alias MineClickedAnimationDict =
+    Dict.Dict Int MineClickedAnimation
 
 
 encodeModel : Model -> Decode.Value
@@ -2378,7 +2382,7 @@ init timeNow device hash key =
             , shouldViewGemUpgradesInPostPhase = False
             , titleScreenAnimationState = Animator.init <| HighTitle
             , showMineGpGained = Animator.init <| NoMineAnimation
-            , mineClickedTimeline = Animator.init <| NoMineClickedAnimation
+            , mineClickedTimeline = Animator.init <| Dict.fromList [ ( 0, NoMineClickedAnimation ), ( 1, NoMineClickedAnimation ), ( 2, NoMineClickedAnimation ) ]
             , goldGainedTimeline = Animator.init <| NoGoldAnimation
             , screenshakeTimeline = Animator.init <| NoScreenshakeAnimation
             , hasHadAtLeastOneBlood = False
@@ -2431,15 +2435,16 @@ animator =
             .mineClickedTimeline
             (\newState model -> { model | mineClickedTimeline = newState })
             (\state ->
-                case state of
-                    ShowMineClickedAnimation seed ->
-                        False
-
-                    HideMineClickedAnimation seed ->
-                        False
-
-                    NoMineClickedAnimation ->
-                        True
+                state |> Dict.values |> List.any (\s -> s == NoMineClickedAnimation)
+             -- case state of
+             --     ShowMineClickedAnimation seed ->
+             --         False
+             --
+             --     HideMineClickedAnimation seed ->
+             --         False
+             --
+             --     NoMineClickedAnimation ->
+             --         True
             )
         |> Animator.watchingWith
             .goldGainedTimeline
@@ -4412,13 +4417,17 @@ mineSuccessAnimation timeline seed =
         timeline
 
 
-animateMineClicked : Animator.Timeline MineClickedAnimation -> Random.Seed -> Animator.Timeline MineClickedAnimation
-animateMineClicked timeline seed =
+animateMineClicked : Animator.Timeline MineClickedAnimationDict -> Random.Seed -> Int -> Animator.Timeline MineClickedAnimationDict
+animateMineClicked timeline seed idx =
+    let
+        setter msg =
+            Dict.update idx (Maybe.map (\_ -> msg)) <| Animator.current timeline
+    in
     Animator.interrupt
-        [ Animator.event Animator.immediately NoMineClickedAnimation
-        , Animator.event Animator.quickly (ShowMineClickedAnimation seed)
-        , Animator.event Animator.slowly (HideMineClickedAnimation seed)
-        , Animator.event Animator.immediately NoMineClickedAnimation
+        [ Animator.event Animator.immediately (setter NoMineClickedAnimation)
+        , Animator.event Animator.quickly (setter (ShowMineClickedAnimation seed))
+        , Animator.event Animator.slowly (setter (HideMineClickedAnimation seed))
+        , Animator.event Animator.immediately (setter NoMineClickedAnimation)
         ]
         timeline
 
@@ -4451,6 +4460,9 @@ updateMine ({ globalSeed, settings } as model) =
 
             else
                 playMineSuccessSound settings.masterVol
+
+        ( waveNum, newerSeed ) =
+            Random.step (Random.int 0 2) newSeed
     in
     ( model
         |> (\m ->
@@ -4459,7 +4471,7 @@ updateMine ({ globalSeed, settings } as model) =
                         | showMineGpGained =
                             mineSuccessAnimation m.showMineGpGained m.globalSeed
                         , mineClickedTimeline =
-                            animateMineClicked m.mineClickedTimeline m.globalSeed
+                            animateMineClicked m.mineClickedTimeline m.globalSeed waveNum
                         , goldGainedTimeline =
                             animateGoldGained m.goldGainedTimeline m.globalSeed gpEarned
                         , screenshakeTimeline =
@@ -4471,10 +4483,10 @@ updateMine ({ globalSeed, settings } as model) =
                         | screenshakeTimeline =
                             animateRandomScreenshake m.screenshakeTimeline m.globalSeed 1
                         , mineClickedTimeline =
-                            animateMineClicked m.mineClickedTimeline m.globalSeed
+                            animateMineClicked m.mineClickedTimeline m.globalSeed waveNum
                     }
            )
-        |> setGlobalSeed newSeed
+        |> setGlobalSeed newerSeed
         |> withCharacters newCharacters
     , mineCmd
     )
@@ -8348,18 +8360,22 @@ viewMineGpGained showMineGpGained =
     el [ Element.moveRight gpGainedMovementX, Element.moveUp gpGainedMovementY, Element.alpha alpha ] <| text "+1"
 
 
-viewMineClicked : Animator.Timeline MineClickedAnimation -> Int -> Element Msg
-viewMineClicked mineClickedTimeline particleNum =
+viewMineClicked : Animator.Timeline MineClickedAnimationDict -> Int -> Int -> Element Msg
+viewMineClicked mineClickedTimeline particleNum waveNum =
     let
         transformSeed : Random.Seed -> Random.Seed
         transformSeed =
             incrementSeed particleNum
 
+        -- getTimeline : MineClickedAnimation
+        getTimeline dict =
+            Dict.get waveNum dict |> Maybe.withDefault NoMineClickedAnimation
+
         movementX : Float
         movementX =
             Animator.move mineClickedTimeline <|
                 \shouldShow ->
-                    case shouldShow of
+                    case getTimeline shouldShow of
                         ShowMineClickedAnimation seed ->
                             Animator.at
                                 (seed
@@ -8391,7 +8407,7 @@ viewMineClicked mineClickedTimeline particleNum =
             Animator.move mineClickedTimeline <|
                 \shouldShow ->
                     Animator.withWobble 1 <|
-                        case shouldShow of
+                        case getTimeline shouldShow of
                             ShowMineClickedAnimation seed ->
                                 Animator.at
                                     (seed
@@ -8415,7 +8431,7 @@ viewMineClicked mineClickedTimeline particleNum =
         alpha =
             Animator.linear mineClickedTimeline <|
                 \state ->
-                    case state of
+                    case getTimeline state of
                         ShowMineClickedAnimation seed ->
                             Animator.at 1.0
                                 |> Animator.arriveEarly 0.1
@@ -8432,7 +8448,7 @@ viewMineClicked mineClickedTimeline particleNum =
             Animator.move mineClickedTimeline <|
                 \state ->
                     Animator.at <|
-                        case state of
+                        case getTimeline state of
                             ShowMineClickedAnimation seed ->
                                 turns 2
 
@@ -8555,7 +8571,7 @@ sacIncreaseBpToSp bp_to_sp_level =
     }
 
 
-special_actions_display : UI.ColorTheme -> ProgressUnlocks -> List PlayerUpgrade -> UI.HoveredTooltip -> Character -> Bool -> Animator.Timeline MineAnimation -> Animator.Timeline MineClickedAnimation -> Element Msg
+special_actions_display : UI.ColorTheme -> ProgressUnlocks -> List PlayerUpgrade -> UI.HoveredTooltip -> Character -> Bool -> Animator.Timeline MineAnimation -> Animator.Timeline MineClickedAnimationDict -> Element Msg
 special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip player ai_updates_paused showMineGpGained mineClickedTimeline =
     let
         specialButtonBuilder : SpecialActionConfig -> Element Msg
@@ -8639,17 +8655,29 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
         hasUnlockedSpecialActions =
             containsProgressUnlock UnlockedSpecialActions progressUnlocks
 
-        animatedParticle0 =
-            Lazy.lazy2 viewMineClicked mineClickedTimeline 0
+        animatedParticle00 =
+            Lazy.lazy3 viewMineClicked mineClickedTimeline 0 0
 
-        animatedParticle1 =
-            Lazy.lazy2 viewMineClicked mineClickedTimeline 1
+        animatedParticle10 =
+            Lazy.lazy3 viewMineClicked mineClickedTimeline 1 0
 
-        animatedParticle2 =
-            Lazy.lazy2 viewMineClicked mineClickedTimeline 2
+        animatedParticle20 =
+            Lazy.lazy3 viewMineClicked mineClickedTimeline 2 0
 
-        animatedParticle3 =
-            Lazy.lazy2 viewMineClicked mineClickedTimeline 3
+        animatedParticle30 =
+            Lazy.lazy3 viewMineClicked mineClickedTimeline 3 0
+
+        animatedParticle01 =
+            Lazy.lazy3 viewMineClicked mineClickedTimeline 0 1
+
+        animatedParticle11 =
+            Lazy.lazy3 viewMineClicked mineClickedTimeline 1 1
+
+        animatedParticle21 =
+            Lazy.lazy3 viewMineClicked mineClickedTimeline 2 1
+
+        animatedParticle31 =
+            Lazy.lazy3 viewMineClicked mineClickedTimeline 3 1
     in
     column [ width fill, spacing 10, paddingXY 0 10 ]
         [ el [ UI.font_scaled 2, UI.border_bottom 2 ] <| text "Special Actions"
@@ -8659,10 +8687,14 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
                 , el
                     [ Element.inFront <|
                         row [ Element.moveUp 20, Element.moveRight 20 ]
-                            [ animatedParticle0
-                            , animatedParticle1
-                            , animatedParticle2
-                            , animatedParticle3
+                            [ animatedParticle00
+                            , animatedParticle10
+                            , animatedParticle20
+                            , animatedParticle30
+                            , animatedParticle01
+                            , animatedParticle11
+                            , animatedParticle21
+                            , animatedParticle31
                             ]
                     ]
                     button_mine

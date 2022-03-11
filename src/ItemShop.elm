@@ -8451,6 +8451,7 @@ viewMineClicked showMineGpGained particleNum =
         , UI.pointerEventsNone
         , width (Element.px 15)
         , height (Element.px 15)
+        , Element.htmlAttribute <| style "position" "absolute"
         , Element.htmlAttribute <| style "z-index" (String.fromInt 1)
         ]
     <|
@@ -8654,7 +8655,7 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
                 [ button_toggle_ai_pause
                 , el
                     [ Element.inFront <|
-                        row [Element.moveUp 20]
+                        row [ Element.moveUp 20, Element.moveRight 20 ]
                             [ animatedParticle0
                             , animatedParticle1
                             , animatedParticle2

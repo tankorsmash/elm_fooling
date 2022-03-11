@@ -8364,6 +8364,7 @@ viewMineClicked mineClickedTimeline particleNum =
                             Animator.at
                                 (seed
                                     |> transformSeed
+                                    |> transformSeed
                                     |> Random.step (Random.float -20 20)
                                     |> Tuple.first
                                 )
@@ -8373,6 +8374,7 @@ viewMineClicked mineClickedTimeline particleNum =
                         HideMineClickedAnimation seed ->
                             Animator.at
                                 (seed
+                                    |> transformSeed
                                     |> transformSeed
                                     |> Random.step (Random.float -40 40)
                                     |> Tuple.first

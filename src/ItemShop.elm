@@ -2441,7 +2441,10 @@ animator =
             .mineClickedTimeline
             (\newState model -> { model | mineClickedTimeline = newState })
             (\state ->
-                state |> Dict.values |> List.any (\s -> s == NoMineClickedAnimation)
+                state
+                    |> Dict.values
+                    -- timeline is resting if all the sub timelines are on NoMineClickedAnimation
+                    |> List.all (\s -> s == NoMineClickedAnimation)
              -- case state of
              --     ShowMineClickedAnimation seed ->
              --         False
@@ -7801,8 +7804,8 @@ getScreenshakeMoveRight timeline =
 getGoldGainedLabelMovementY : Animator.Timeline GoldGainedAnimation -> Float
 getGoldGainedLabelMovementY timeline =
     Animator.move timeline <|
-        \shouldShow ->
-            case shouldShow of
+        \state ->
+            case state of
                 ShowGoldGainedAnimation seed _ ->
                     Animator.at 50
                         |> Animator.leaveSmoothly 0.5
@@ -8317,8 +8320,8 @@ viewMineGpGained showMineGpGained =
         gpGainedMovementX : Float
         gpGainedMovementX =
             Animator.move showMineGpGained <|
-                \shouldShow ->
-                    case shouldShow of
+                \state ->
+                    case state of
                         ShowMineAnimation seed ->
                             Animator.at 50
                                 |> Animator.leaveSmoothly 0.5
@@ -8335,8 +8338,8 @@ viewMineGpGained showMineGpGained =
         gpGainedMovementY : Float
         gpGainedMovementY =
             Animator.move showMineGpGained <|
-                \shouldShow ->
-                    case shouldShow of
+                \state ->
+                    case state of
                         ShowMineAnimation seed ->
                             Animator.at
                                 (Random.step (Random.float -30 30) seed |> Tuple.first)
@@ -8380,8 +8383,8 @@ viewMineClicked mineClickedTimeline particleNum waveNum =
         movementX : Float
         movementX =
             Animator.move mineClickedTimeline <|
-                \shouldShow ->
-                    case getTimeline shouldShow of
+                \state ->
+                    case getTimeline state of
                         ShowMineClickedAnimation seed ->
                             Animator.at
                                 (seed
@@ -8411,9 +8414,9 @@ viewMineClicked mineClickedTimeline particleNum waveNum =
         movementY : Float
         movementY =
             Animator.move mineClickedTimeline <|
-                \shouldShow ->
+                \state ->
                     Animator.withWobble 1 <|
-                        case getTimeline shouldShow of
+                        case getTimeline state of
                             ShowMineClickedAnimation seed ->
                                 Animator.at
                                     (seed

@@ -2382,7 +2382,13 @@ init timeNow device hash key =
             , shouldViewGemUpgradesInPostPhase = False
             , titleScreenAnimationState = Animator.init <| HighTitle
             , showMineGpGained = Animator.init <| NoMineAnimation
-            , mineClickedTimeline = Animator.init <| Dict.fromList [ ( 0, NoMineClickedAnimation ), ( 1, NoMineClickedAnimation ), ( 2, NoMineClickedAnimation ) ]
+            , mineClickedTimeline =
+                Animator.init <|
+                    Dict.fromList
+                        [ ( 0, NoMineClickedAnimation )
+                        , ( 1, NoMineClickedAnimation )
+                        , ( 2, NoMineClickedAnimation )
+                        ]
             , goldGainedTimeline = Animator.init <| NoGoldAnimation
             , screenshakeTimeline = Animator.init <| NoScreenshakeAnimation
             , hasHadAtLeastOneBlood = False

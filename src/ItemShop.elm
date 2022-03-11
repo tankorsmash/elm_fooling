@@ -8349,15 +8349,15 @@ viewMineGpGained showMineGpGained =
 
 
 viewMineClicked : Animator.Timeline MineClickedAnimation -> Int -> Element Msg
-viewMineClicked showMineGpGained particleNum =
+viewMineClicked mineClickedTimeline particleNum =
     let
         transformSeed : Random.Seed -> Random.Seed
         transformSeed =
             incrementSeed particleNum
 
-        gpGainedMovementX : Float
-        gpGainedMovementX =
-            Animator.move showMineGpGained <|
+        movementX : Float
+        movementX =
+            Animator.move mineClickedTimeline <|
                 \shouldShow ->
                     case shouldShow of
                         ShowMineClickedAnimation seed ->
@@ -8384,9 +8384,9 @@ viewMineClicked showMineGpGained particleNum =
                                 |> Animator.leaveSmoothly 0.5
                                 |> Animator.arriveSmoothly 0.5
 
-        gpGainedMovementY : Float
-        gpGainedMovementY =
-            Animator.move showMineGpGained <|
+        movementY : Float
+        movementY =
+            Animator.move mineClickedTimeline <|
                 \shouldShow ->
                     Animator.withWobble 1 <|
                         case shouldShow of
@@ -8411,7 +8411,7 @@ viewMineClicked showMineGpGained particleNum =
 
         alpha : Float
         alpha =
-            Animator.linear showMineGpGained <|
+            Animator.linear mineClickedTimeline <|
                 \state ->
                     case state of
                         ShowMineClickedAnimation seed ->
@@ -8426,7 +8426,7 @@ viewMineClicked showMineGpGained particleNum =
 
         rotationInTurns : Float
         rotationInTurns =
-            Animator.move showMineGpGained <|
+            Animator.move mineClickedTimeline <|
                 \state ->
                     Animator.at <|
                         case state of
@@ -8440,8 +8440,8 @@ viewMineClicked showMineGpGained particleNum =
                                 turns 0.0
     in
     el
-        [ Element.moveRight gpGainedMovementX
-        , Element.moveUp (gpGainedMovementY - 20)
+        [ Element.moveRight movementX
+        , Element.moveUp (movementY - 20)
         , Element.alpha alpha
         , Element.rotate rotationInTurns
         , Background.color UI.color_primary

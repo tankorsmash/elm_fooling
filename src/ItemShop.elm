@@ -1548,7 +1548,7 @@ type alias Model =
     , shouldViewGemUpgradesInPostPhase : Bool
     , titleScreenAnimationState : Animator.Timeline TitleScreenAnimationState
     , showMineGpGained : Animator.Timeline MineAnimation
-    , mineClickedTimeline : Animator.Timeline MineClickedAnimationDict
+    , mineClickedTimeline : MineClickedAnimationDict
     , goldGainedTimeline : Animator.Timeline GoldGainedAnimation
     , screenshakeTimeline : Animator.Timeline ScreenshakeAnimation
     , hasHadAtLeastOneBlood : Bool
@@ -1588,7 +1588,7 @@ type MineClickedAnimation
 
 
 type alias MineClickedAnimationDict =
-    Dict.Dict Int MineClickedAnimation
+    Dict.Dict Int (Animator.Timeline MineClickedAnimation)
 
 
 encodeModel : Model -> Decode.Value
@@ -2383,12 +2383,11 @@ init timeNow device hash key =
             , titleScreenAnimationState = Animator.init <| HighTitle
             , showMineGpGained = Animator.init <| NoMineAnimation
             , mineClickedTimeline =
-                Animator.init <|
-                    Dict.fromList
-                        [ ( 0, NoMineClickedAnimation )
-                        , ( 1, NoMineClickedAnimation )
-                        , ( 2, NoMineClickedAnimation )
-                        ]
+                Dict.fromList
+                    [ ( 0, Animator.init NoMineClickedAnimation )
+                    , ( 1, Animator.init NoMineClickedAnimation )
+                    , ( 2, Animator.init NoMineClickedAnimation )
+                    ]
             , goldGainedTimeline = Animator.init <| NoGoldAnimation
             , screenshakeTimeline = Animator.init <| NoScreenshakeAnimation
             , hasHadAtLeastOneBlood = False
@@ -2409,8 +2408,57 @@ initSettings =
     }
 
 
-animator : Animator.Animator Model
-animator =
+animator : Model -> Animator.Animator Model
+animator outerModel =
+    let
+        mineClickedWatchers : Animator.Animator Model -> Animator.Animator Model
+        mineClickedWatchers animator_ =
+            let
+                isResting state =
+                    False
+
+                -- state
+                --     |> Dict.values
+                --     -- timeline is resting if all the sub timelines are on NoMineClickedAnimation
+                --     |> List.all (\s -> s == NoMineClickedAnimation)
+                -- case state of
+                --     ShowMineClickedAnimation seed ->
+                --         False
+                --
+                --     HideMineClickedAnimation seed ->
+                --         False
+                --
+                --     NoMineClickedAnimation ->
+                --         True
+                timelineGetter : Int -> Model -> Animator.Timeline MineClickedAnimation
+                timelineGetter waveNum model =
+                    model.mineClickedTimeline
+                        |> Dict.get waveNum
+                        |> Maybe.withDefault (Animator.init NoMineClickedAnimation)
+
+                timelineSetter : Int -> Animator.Timeline MineClickedAnimation -> Model -> Model
+                timelineSetter waveNum newTimeline model =
+                    model.mineClickedTimeline
+                        |> Dict.update
+                            waveNum
+                            (Maybe.map (\_ -> newTimeline))
+                        |> (\timelines -> { model | mineClickedTimeline = timelines })
+            in
+            List.foldl
+                (\waveNum anim_ ->
+                    Animator.watchingWith
+                        (timelineGetter waveNum)
+                        -- (\newState model -> { model | mineClickedTimeline = newState })
+                        (timelineSetter waveNum)
+                        isResting
+                        anim_
+                )
+                animator_
+            <|
+                List.range 0 <|
+                    List.length <|
+                        Dict.values outerModel.mineClickedTimeline
+    in
     Animator.animator
         |> Animator.watchingWith
             .titleScreenAnimationState
@@ -2437,24 +2485,7 @@ animator =
                     NoMineAnimation ->
                         True
             )
-        |> Animator.watchingWith
-            .mineClickedTimeline
-            (\newState model -> { model | mineClickedTimeline = newState })
-            (\state ->
-                state
-                    |> Dict.values
-                    -- timeline is resting if all the sub timelines are on NoMineClickedAnimation
-                    |> List.all (\s -> s == NoMineClickedAnimation)
-             -- case state of
-             --     ShowMineClickedAnimation seed ->
-             --         False
-             --
-             --     HideMineClickedAnimation seed ->
-             --         False
-             --
-             --     NoMineClickedAnimation ->
-             --         True
-            )
+        |> mineClickedWatchers
         |> Animator.watchingWith
             .goldGainedTimeline
             (\newState model -> { model | goldGainedTimeline = newState })
@@ -2493,7 +2524,7 @@ subscriptions model =
         , Browser.Events.onKeyDown keyPressedDecoder
         , Browser.Events.onKeyUp keyReleasedDecoder
         , Sub.map GotBattleMsg <| Battle.subscriptions model.battleModel
-        , Animator.toSubscription RuntimeTriggeredAnimationStep model animator
+        , Animator.toSubscription RuntimeTriggeredAnimationStep model (animator model)
         ]
 
 
@@ -3697,7 +3728,7 @@ update msg model =
                 noop
 
         RuntimeTriggeredAnimationStep newTime ->
-            ( Animator.update newTime animator model, Cmd.none )
+            ( Animator.update newTime (animator model) model, Cmd.none )
 
         ClickedTitleTextLabel ->
             ( { model
@@ -4426,19 +4457,30 @@ mineSuccessAnimation timeline seed =
         timeline
 
 
-animateMineClicked : Animator.Timeline MineClickedAnimationDict -> Random.Seed -> Int -> Animator.Timeline MineClickedAnimationDict
-animateMineClicked timeline seed idx =
+updateMineClickedTimeline : MineClickedAnimationDict -> Int -> Animator.Timeline MineClickedAnimation -> MineClickedAnimationDict
+updateMineClickedTimeline mineClickedTimelines waveNum newTimeline =
+    Dict.update waveNum (Maybe.map (\_ -> newTimeline)) mineClickedTimelines
+
+
+animateMineClicked : MineClickedAnimationDict -> Random.Seed -> Int -> MineClickedAnimationDict
+animateMineClicked timelines seed idx =
     let
-        setter msg =
-            Dict.update idx (Maybe.map (\_ -> msg)) <| Animator.current timeline
+        animations =
+            [ Animator.event Animator.immediately NoMineClickedAnimation
+            , Animator.event Animator.quickly (ShowMineClickedAnimation seed)
+            , Animator.event Animator.slowly (HideMineClickedAnimation seed)
+            , Animator.event Animator.immediately NoMineClickedAnimation
+            ]
     in
-    Animator.interrupt
-        [ Animator.event Animator.immediately (setter NoMineClickedAnimation)
-        , Animator.event Animator.quickly (setter (ShowMineClickedAnimation seed))
-        , Animator.event Animator.slowly (setter (HideMineClickedAnimation seed))
-        , Animator.event Animator.immediately (setter NoMineClickedAnimation)
-        ]
-        timeline
+    Dict.update idx
+        (Maybe.map
+            (\timeline ->
+                Animator.interrupt
+                    animations
+                    timeline
+            )
+        )
+        timelines
 
 
 updateMine : Model -> ( Model, Cmd Msg )
@@ -4480,6 +4522,7 @@ updateMine ({ globalSeed, settings } as model) =
                         | showMineGpGained =
                             mineSuccessAnimation m.showMineGpGained m.globalSeed
                         , mineClickedTimeline =
+                            -- updateMineClickedTimeline m.mineClickedTimeline waveNum (animateMineClicked m.mineClickedTimeline m.globalSeed waveNum)
                             animateMineClicked m.mineClickedTimeline m.globalSeed waveNum
                         , goldGainedTimeline =
                             animateGoldGained m.goldGainedTimeline m.globalSeed gpEarned
@@ -8369,22 +8412,23 @@ viewMineGpGained showMineGpGained =
     el [ Element.moveRight gpGainedMovementX, Element.moveUp gpGainedMovementY, Element.alpha alpha ] <| text "+1"
 
 
-viewMineClicked : Animator.Timeline MineClickedAnimationDict -> Int -> Int -> Element Msg
-viewMineClicked mineClickedTimeline particleNum waveNum =
+viewMineClicked : MineClickedAnimationDict -> Int -> Int -> Element Msg
+viewMineClicked mineClickedTimelines particleNum waveNum =
     let
         transformSeed : Random.Seed -> Random.Seed
         transformSeed =
             incrementSeed particleNum
 
-        -- getTimeline : MineClickedAnimation
-        getTimeline dict =
-            Dict.get waveNum dict |> Maybe.withDefault NoMineClickedAnimation
+        mineClickedTimeline : Animator.Timeline MineClickedAnimation
+        mineClickedTimeline =
+            Dict.get waveNum mineClickedTimelines
+                |> Maybe.withDefault (Animator.init NoMineClickedAnimation)
 
         movementX : Float
         movementX =
             Animator.move mineClickedTimeline <|
                 \state ->
-                    case getTimeline state of
+                    case state of
                         ShowMineClickedAnimation seed ->
                             Animator.at
                                 (seed
@@ -8416,7 +8460,7 @@ viewMineClicked mineClickedTimeline particleNum waveNum =
             Animator.move mineClickedTimeline <|
                 \state ->
                     Animator.withWobble 1 <|
-                        case getTimeline state of
+                        case state of
                             ShowMineClickedAnimation seed ->
                                 Animator.at
                                     (seed
@@ -8440,7 +8484,7 @@ viewMineClicked mineClickedTimeline particleNum waveNum =
         alpha =
             Animator.linear mineClickedTimeline <|
                 \state ->
-                    case getTimeline state of
+                    case state of
                         ShowMineClickedAnimation seed ->
                             Animator.at 1.0
                                 |> Animator.arriveEarly 0.1
@@ -8457,7 +8501,7 @@ viewMineClicked mineClickedTimeline particleNum waveNum =
             Animator.move mineClickedTimeline <|
                 \state ->
                     Animator.at <|
-                        case getTimeline state of
+                        case state of
                             ShowMineClickedAnimation seed ->
                                 turns 2
 
@@ -8580,7 +8624,7 @@ sacIncreaseBpToSp bp_to_sp_level =
     }
 
 
-special_actions_display : UI.ColorTheme -> ProgressUnlocks -> List PlayerUpgrade -> UI.HoveredTooltip -> Character -> Bool -> Animator.Timeline MineAnimation -> Animator.Timeline MineClickedAnimationDict -> Element Msg
+special_actions_display : UI.ColorTheme -> ProgressUnlocks -> List PlayerUpgrade -> UI.HoveredTooltip -> Character -> Bool -> Animator.Timeline MineAnimation -> MineClickedAnimationDict -> Element Msg
 special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip player ai_updates_paused showMineGpGained mineClickedTimeline =
     let
         specialButtonBuilder : SpecialActionConfig -> Element Msg

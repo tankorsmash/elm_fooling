@@ -343,6 +343,8 @@ type Msg
     | ClickedTitlePlayLabel
     | GotSettingsFormMsg SettingsFormMsg
     | TimeOfDayHovered Bool
+    | PressJuicyButton String
+    | ReleaseJuicyButton String
 
 
 type TitleScreenAnimationState
@@ -1556,6 +1558,7 @@ type alias Model =
     , mineClickedParticleIdx : Int
     , goldGainedTimeline : Animator.Timeline GoldGainedAnimation
     , screenshakeTimeline : Animator.Timeline ScreenshakeAnimation
+    , juicyButtonTimelines : JuicyButtonAnimationDict
     , hasHadAtLeastOneBlood : Bool
     , hasHadAtLeastOneGem : Bool
     , settings : SettingsData
@@ -1594,6 +1597,16 @@ type MineClickedAnimation
 
 type alias MineClickedAnimationDict =
     Dict.Dict Int (Animator.Timeline MineClickedAnimation)
+
+
+type JuicyButtonAnimation
+    = JuicyButtonPressedAnimation
+    | JuicyButtonReleasedAnimation
+    | NoJuicyButtonAnimation
+
+
+type alias JuicyButtonAnimationDict =
+    Dict.Dict String (Animator.Timeline JuicyButtonAnimation)
 
 
 encodeModel : Model -> Decode.Value
@@ -2245,6 +2258,11 @@ stringToTabType hash =
             ShopTabType
 
 
+juicyButtonNames : List String
+juicyButtonNames =
+    [ "mine action button" ]
+
+
 init : Time.Posix -> UI.Device -> String -> Maybe Nav.Key -> ( Model, Cmd Msg )
 init timeNow device hash key =
     let
@@ -2394,6 +2412,10 @@ init timeNow device hash key =
             , mineClickedParticleIdx = 0
             , goldGainedTimeline = Animator.init <| NoGoldAnimation
             , screenshakeTimeline = Animator.init <| NoScreenshakeAnimation
+            , juicyButtonTimelines =
+                juicyButtonNames
+                    |> List.map (\name -> ( name, Animator.init NoJuicyButtonAnimation ))
+                    |> Dict.fromList
             , hasHadAtLeastOneBlood = False
             , hasHadAtLeastOneGem = False
             , settings = initSettings
@@ -2463,6 +2485,39 @@ animator outerModel =
                     List.length <|
                         --we use outerModel since it shouldn't change right?
                         Dict.values outerModel.mineClickedTimelines
+
+        juicyButtonWatchers : Animator.Animator Model -> Animator.Animator Model
+        juicyButtonWatchers animator_ =
+            let
+                isResting state =
+                    False
+
+                timelineGetter : String -> Model -> Animator.Timeline JuicyButtonAnimation
+                timelineGetter buttonName model =
+                    model.juicyButtonTimelines
+                        |> Dict.get buttonName
+                        |> Maybe.withDefault (Animator.init NoJuicyButtonAnimation)
+
+                timelineSetter : String -> Animator.Timeline JuicyButtonAnimation -> Model -> Model
+                timelineSetter buttonName newTimeline model =
+                    model.juicyButtonTimelines
+                        |> Dict.update
+                            buttonName
+                            (Maybe.map (\_ -> newTimeline))
+                        |> (\timelines -> { model | juicyButtonTimelines = timelines })
+            in
+            List.foldl
+                (\buttonName anim_ ->
+                    Animator.watchingWith
+                        (timelineGetter buttonName)
+                        (timelineSetter buttonName)
+                        isResting
+                        anim_
+                )
+                animator_
+            <|
+                --we use outerModel since it shouldn't change right?
+                Dict.keys outerModel.juicyButtonTimelines
     in
     Animator.animator
         |> Animator.watchingWith
@@ -2491,6 +2546,7 @@ animator outerModel =
                         True
             )
         |> mineClickedWatchers
+        |> juicyButtonWatchers
         |> Animator.watchingWith
             .goldGainedTimeline
             (\newState model -> { model | goldGainedTimeline = newState })
@@ -3766,6 +3822,12 @@ update msg model =
 
         TimeOfDayHovered isHovered ->
             ( { model | timeOfDayHovered = isHovered }, Cmd.none )
+
+        PressJuicyButton buttonName ->
+            ( model, Cmd.none )
+
+        ReleaseJuicyButton buttonName ->
+            ( model, Cmd.none )
 
 
 
@@ -7566,7 +7628,7 @@ debugTimeOfDayControls { colorTheme, timeOfDay, ai_tick_time, characters, item_d
 viewShopActivePhase : Model -> Element Msg
 viewShopActivePhase model =
     let
-        { historical_player_actions, colorTheme, timeOfDay, ai_updates_paused, ai_tick_time, characters, item_db, progressUnlocks, playerUpgrades, quests, showMineGpGained, mineClickedTimelines, uiOptions, historical_shop_trends, shop_trends, timeOfDayHovered } =
+        { historical_player_actions, colorTheme, timeOfDay, ai_updates_paused, ai_tick_time, characters, item_db, progressUnlocks, playerUpgrades, quests, showMineGpGained, mineClickedTimelines, juicyButtonTimelines, uiOptions, historical_shop_trends, shop_trends, timeOfDayHovered } =
             model
 
         player : Player
@@ -7692,6 +7754,7 @@ viewShopActivePhase model =
                 ai_updates_paused
                 showMineGpGained
                 mineClickedTimelines
+                juicyButtonTimelines
             , if containsProgressUnlock UnlockedShopTrends progressUnlocks then
                 trends_display
                     colorTheme
@@ -8630,8 +8693,8 @@ sacIncreaseBpToSp bp_to_sp_level =
     }
 
 
-special_actions_display : UI.ColorTheme -> ProgressUnlocks -> List PlayerUpgrade -> UI.HoveredTooltip -> Character -> Bool -> Animator.Timeline MineAnimation -> MineClickedAnimationDict -> Element Msg
-special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip player ai_updates_paused showMineGpGained mineClickedTimelines =
+special_actions_display : UI.ColorTheme -> ProgressUnlocks -> List PlayerUpgrade -> UI.HoveredTooltip -> Character -> Bool -> Animator.Timeline MineAnimation -> MineClickedAnimationDict -> JuicyButtonAnimationDict -> Element Msg
+special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip player ai_updates_paused showMineGpGained mineClickedTimelines juicyButtonTimelines =
     let
         specialButtonBuilder : SpecialActionConfig -> Element Msg
         specialButtonBuilder specialActionConfig =
@@ -8643,7 +8706,33 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
 
         button_mine : Element Msg
         button_mine =
-            Lazy.lazy specialButtonBuilder sacMine
+            let
+                buttonName =
+                    "mine action button"
+
+                timeline =
+                    Dict.get buttonName juicyButtonTimelines
+                        |> Maybe.withDefault (Animator.init NoJuicyButtonAnimation)
+            in
+            el
+                [ Events.onMouseDown <| PressJuicyButton buttonName
+                , Events.onMouseUp <| ReleaseJuicyButton buttonName
+                , Element.scale <|
+                    Animator.move timeline <|
+                        \state ->
+                            case state of
+                                JuicyButtonPressedAnimation ->
+                                    Animator.at 1.3
+                                        |> Animator.arriveEarly 0.1
+
+                                JuicyButtonReleasedAnimation ->
+                                    Animator.at 1.2
+
+                                NoJuicyButtonAnimation ->
+                                    Animator.at 1.0
+                ]
+            <|
+                Lazy.lazy specialButtonBuilder sacMine
 
         button_battle =
             if containsProgressUnlock UnlockedBattles progressUnlocks then

@@ -1548,7 +1548,7 @@ type alias Model =
     , shouldViewGemUpgradesInPostPhase : Bool
     , titleScreenAnimationState : Animator.Timeline TitleScreenAnimationState
     , showMineGpGained : Animator.Timeline MineAnimation
-    , mineClickedTimeline : MineClickedAnimationDict
+    , mineClickedTimelines : MineClickedAnimationDict
     , goldGainedTimeline : Animator.Timeline GoldGainedAnimation
     , screenshakeTimeline : Animator.Timeline ScreenshakeAnimation
     , hasHadAtLeastOneBlood : Bool
@@ -2382,7 +2382,7 @@ init timeNow device hash key =
             , shouldViewGemUpgradesInPostPhase = False
             , titleScreenAnimationState = Animator.init <| HighTitle
             , showMineGpGained = Animator.init <| NoMineAnimation
-            , mineClickedTimeline =
+            , mineClickedTimelines =
                 Dict.fromList
                     [ ( 0, Animator.init NoMineClickedAnimation )
                     , ( 1, Animator.init NoMineClickedAnimation )
@@ -2432,23 +2432,23 @@ animator outerModel =
                 --         True
                 timelineGetter : Int -> Model -> Animator.Timeline MineClickedAnimation
                 timelineGetter waveNum model =
-                    model.mineClickedTimeline
+                    model.mineClickedTimelines
                         |> Dict.get waveNum
                         |> Maybe.withDefault (Animator.init NoMineClickedAnimation)
 
                 timelineSetter : Int -> Animator.Timeline MineClickedAnimation -> Model -> Model
                 timelineSetter waveNum newTimeline model =
-                    model.mineClickedTimeline
+                    model.mineClickedTimelines
                         |> Dict.update
                             waveNum
                             (Maybe.map (\_ -> newTimeline))
-                        |> (\timelines -> { model | mineClickedTimeline = timelines })
+                        |> (\timelines -> { model | mineClickedTimelines = timelines })
             in
             List.foldl
                 (\waveNum anim_ ->
                     Animator.watchingWith
                         (timelineGetter waveNum)
-                        -- (\newState model -> { model | mineClickedTimeline = newState })
+                        -- (\newState model -> { model | mineClickedTimelines = newState })
                         (timelineSetter waveNum)
                         isResting
                         anim_
@@ -2457,7 +2457,8 @@ animator outerModel =
             <|
                 List.range 0 <|
                     List.length <|
-                        Dict.values outerModel.mineClickedTimeline
+                        --we use outerModel since it shouldn't change right?
+                        Dict.values outerModel.mineClickedTimelines
     in
     Animator.animator
         |> Animator.watchingWith
@@ -4521,9 +4522,9 @@ updateMine ({ globalSeed, settings } as model) =
                     { m
                         | showMineGpGained =
                             mineSuccessAnimation m.showMineGpGained m.globalSeed
-                        , mineClickedTimeline =
-                            -- updateMineClickedTimeline m.mineClickedTimeline waveNum (animateMineClicked m.mineClickedTimeline m.globalSeed waveNum)
-                            animateMineClicked m.mineClickedTimeline m.globalSeed waveNum
+                        , mineClickedTimelines =
+                            -- updateMineClickedTimeline m.mineClickedTimelines waveNum (animateMineClicked m.mineClickedTimeline m.globalSeed waveNum)
+                            animateMineClicked m.mineClickedTimelines m.globalSeed waveNum
                         , goldGainedTimeline =
                             animateGoldGained m.goldGainedTimeline m.globalSeed gpEarned
                         , screenshakeTimeline =
@@ -4534,8 +4535,8 @@ updateMine ({ globalSeed, settings } as model) =
                     { m
                         | screenshakeTimeline =
                             animateRandomScreenshake m.screenshakeTimeline m.globalSeed 1
-                        , mineClickedTimeline =
-                            animateMineClicked m.mineClickedTimeline m.globalSeed waveNum
+                        , mineClickedTimelines =
+                            animateMineClicked m.mineClickedTimelines m.globalSeed waveNum
                     }
            )
         |> setGlobalSeed newerSeed
@@ -7560,7 +7561,7 @@ debugTimeOfDayControls { colorTheme, timeOfDay, ai_tick_time, characters, item_d
 viewShopActivePhase : Model -> Element Msg
 viewShopActivePhase model =
     let
-        { historical_player_actions, colorTheme, timeOfDay, ai_updates_paused, ai_tick_time, characters, item_db, progressUnlocks, playerUpgrades, quests, showMineGpGained, mineClickedTimeline, uiOptions, historical_shop_trends, shop_trends, timeOfDayHovered } =
+        { historical_player_actions, colorTheme, timeOfDay, ai_updates_paused, ai_tick_time, characters, item_db, progressUnlocks, playerUpgrades, quests, showMineGpGained, mineClickedTimelines, uiOptions, historical_shop_trends, shop_trends, timeOfDayHovered } =
             model
 
         player : Player
@@ -7685,7 +7686,7 @@ viewShopActivePhase model =
                 playerChar
                 ai_updates_paused
                 showMineGpGained
-                mineClickedTimeline
+                mineClickedTimelines
             , if containsProgressUnlock UnlockedShopTrends progressUnlocks then
                 trends_display
                     colorTheme
@@ -8625,7 +8626,7 @@ sacIncreaseBpToSp bp_to_sp_level =
 
 
 special_actions_display : UI.ColorTheme -> ProgressUnlocks -> List PlayerUpgrade -> UI.HoveredTooltip -> Character -> Bool -> Animator.Timeline MineAnimation -> MineClickedAnimationDict -> Element Msg
-special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip player ai_updates_paused showMineGpGained mineClickedTimeline =
+special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip player ai_updates_paused showMineGpGained mineClickedTimelines =
     let
         specialButtonBuilder : SpecialActionConfig -> Element Msg
         specialButtonBuilder specialActionConfig =
@@ -8709,28 +8710,28 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
             containsProgressUnlock UnlockedSpecialActions progressUnlocks
 
         animatedParticle00 =
-            Lazy.lazy3 viewMineClicked mineClickedTimeline 0 0
+            Lazy.lazy3 viewMineClicked mineClickedTimelines 0 0
 
         animatedParticle10 =
-            Lazy.lazy3 viewMineClicked mineClickedTimeline 1 0
+            Lazy.lazy3 viewMineClicked mineClickedTimelines 1 0
 
         animatedParticle20 =
-            Lazy.lazy3 viewMineClicked mineClickedTimeline 2 0
+            Lazy.lazy3 viewMineClicked mineClickedTimelines 2 0
 
         animatedParticle30 =
-            Lazy.lazy3 viewMineClicked mineClickedTimeline 3 0
+            Lazy.lazy3 viewMineClicked mineClickedTimelines 3 0
 
         animatedParticle01 =
-            Lazy.lazy3 viewMineClicked mineClickedTimeline 0 1
+            Lazy.lazy3 viewMineClicked mineClickedTimelines 0 1
 
         animatedParticle11 =
-            Lazy.lazy3 viewMineClicked mineClickedTimeline 1 1
+            Lazy.lazy3 viewMineClicked mineClickedTimelines 1 1
 
         animatedParticle21 =
-            Lazy.lazy3 viewMineClicked mineClickedTimeline 2 1
+            Lazy.lazy3 viewMineClicked mineClickedTimelines 2 1
 
         animatedParticle31 =
-            Lazy.lazy3 viewMineClicked mineClickedTimeline 3 1
+            Lazy.lazy3 viewMineClicked mineClickedTimelines 3 1
     in
     column [ width fill, spacing 10, paddingXY 0 10 ]
         [ el [ UI.font_scaled 2, UI.border_bottom 2 ] <| text "Special Actions"

@@ -3824,7 +3824,12 @@ update msg model =
             ( { model | timeOfDayHovered = isHovered }, Cmd.none )
 
         PressJuicyButton buttonName ->
-            ( model, Cmd.none )
+            ( { model
+                | juicyButtonTimelines =
+                    animateJuicyButtonClicked model.juicyButtonTimelines buttonName
+              }
+            , Cmd.none
+            )
 
         ReleaseJuicyButton buttonName ->
             ( model, Cmd.none )
@@ -4543,6 +4548,22 @@ animateMineClicked timelines seed idx =
             Maybe.map (Animator.interrupt animations)
     in
     Dict.update idx setNewAnimations timelines
+
+
+animateJuicyButtonClicked : JuicyButtonAnimationDict -> String -> JuicyButtonAnimationDict
+animateJuicyButtonClicked timelines buttonName =
+    let
+        animations =
+            [ Animator.event Animator.immediately NoJuicyButtonAnimation
+            , Animator.event Animator.quickly JuicyButtonPressedAnimation
+            , Animator.event Animator.slowly JuicyButtonReleasedAnimation
+            , Animator.event Animator.veryQuickly NoJuicyButtonAnimation
+            ]
+
+        setNewAnimations =
+            Maybe.map (Animator.interrupt animations)
+    in
+    Dict.update buttonName setNewAnimations timelines
 
 
 updateMine : Model -> ( Model, Cmd Msg )
@@ -8722,14 +8743,17 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
                         \state ->
                             case state of
                                 JuicyButtonPressedAnimation ->
-                                    Animator.at 1.3
+                                    Animator.at 0.9
                                         |> Animator.arriveEarly 0.1
+                                        |> Animator.withWobble 1
 
                                 JuicyButtonReleasedAnimation ->
-                                    Animator.at 1.2
+                                    Animator.at 1.1
+                                        |> Animator.withWobble 1
 
                                 NoJuicyButtonAnimation ->
                                     Animator.at 1.0
+                                        |> Animator.withWobble 1
                 ]
             <|
                 Lazy.lazy specialButtonBuilder sacMine

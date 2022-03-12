@@ -4472,16 +4472,11 @@ animateMineClicked timelines seed idx =
             , Animator.event Animator.slowly (HideMineClickedAnimation seed)
             , Animator.event Animator.immediately NoMineClickedAnimation
             ]
+
+        setNewAnimations =
+            Maybe.map (Animator.interrupt animations)
     in
-    Dict.update idx
-        (Maybe.map
-            (\timeline ->
-                Animator.interrupt
-                    animations
-                    timeline
-            )
-        )
-        timelines
+    Dict.update idx setNewAnimations timelines
 
 
 updateMine : Model -> ( Model, Cmd Msg )
@@ -4518,25 +4513,27 @@ updateMine ({ globalSeed, settings } as model) =
     in
     ( model
         |> (\m ->
+                let
+                    animatedMineClick =
+                        animateMineClicked m.mineClickedTimelines m.globalSeed waveNum
+
+                    animatedScreenshake =
+                        animateRandomScreenshake m.screenshakeTimeline m.globalSeed
+                in
                 if shouldEarnGp then
                     { m
                         | showMineGpGained =
                             mineSuccessAnimation m.showMineGpGained m.globalSeed
-                        , mineClickedTimelines =
-                            -- updateMineClickedTimeline m.mineClickedTimelines waveNum (animateMineClicked m.mineClickedTimeline m.globalSeed waveNum)
-                            animateMineClicked m.mineClickedTimelines m.globalSeed waveNum
                         , goldGainedTimeline =
                             animateGoldGained m.goldGainedTimeline m.globalSeed gpEarned
-                        , screenshakeTimeline =
-                            animateRandomScreenshake m.screenshakeTimeline m.globalSeed 3
+                        , screenshakeTimeline = animatedScreenshake 3
+                        , mineClickedTimelines = animatedMineClick
                     }
 
                 else
                     { m
-                        | screenshakeTimeline =
-                            animateRandomScreenshake m.screenshakeTimeline m.globalSeed 1
-                        , mineClickedTimelines =
-                            animateMineClicked m.mineClickedTimelines m.globalSeed waveNum
+                        | screenshakeTimeline = animatedScreenshake 1
+                        , mineClickedTimelines = animatedMineClick
                     }
            )
         |> setGlobalSeed newerSeed

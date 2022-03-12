@@ -407,6 +407,10 @@ setQuantity qty =
     Quantity qty
 
 
+maxMineClickedParticles =
+    5
+
+
 type Price
     = Price Int
     | Free
@@ -1549,6 +1553,7 @@ type alias Model =
     , titleScreenAnimationState : Animator.Timeline TitleScreenAnimationState
     , showMineGpGained : Animator.Timeline MineAnimation
     , mineClickedTimelines : MineClickedAnimationDict
+    , mineClickedParticleIdx : Int
     , goldGainedTimeline : Animator.Timeline GoldGainedAnimation
     , screenshakeTimeline : Animator.Timeline ScreenshakeAnimation
     , hasHadAtLeastOneBlood : Bool
@@ -2383,11 +2388,10 @@ init timeNow device hash key =
             , titleScreenAnimationState = Animator.init <| HighTitle
             , showMineGpGained = Animator.init <| NoMineAnimation
             , mineClickedTimelines =
-                Dict.fromList
-                    [ ( 0, Animator.init NoMineClickedAnimation )
-                    , ( 1, Animator.init NoMineClickedAnimation )
-                    , ( 2, Animator.init NoMineClickedAnimation )
-                    ]
+                List.range 0 (maxMineClickedParticles + 1)
+                    |> List.map (\num -> ( num, Animator.init NoMineClickedAnimation ))
+                    |> Dict.fromList
+            , mineClickedParticleIdx = 0
             , goldGainedTimeline = Animator.init <| NoGoldAnimation
             , screenshakeTimeline = Animator.init <| NoScreenshakeAnimation
             , hasHadAtLeastOneBlood = False
@@ -4508,15 +4512,15 @@ updateMine ({ globalSeed, settings } as model) =
             else
                 playMineSuccessSound settings.masterVol
 
-        ( waveNum, newerSeed ) =
-            Random.step (Random.int 0 2) newSeed
+        waveNum =
+            remainderBy maxMineClickedParticles (model.mineClickedParticleIdx + 1)
+
+        animatedMineClick =
+            animateMineClicked model.mineClickedTimelines model.globalSeed waveNum
     in
     ( model
         |> (\m ->
                 let
-                    animatedMineClick =
-                        animateMineClicked m.mineClickedTimelines m.globalSeed waveNum
-
                     animatedScreenshake =
                         animateRandomScreenshake m.screenshakeTimeline m.globalSeed
                 in
@@ -4527,16 +4531,20 @@ updateMine ({ globalSeed, settings } as model) =
                         , goldGainedTimeline =
                             animateGoldGained m.goldGainedTimeline m.globalSeed gpEarned
                         , screenshakeTimeline = animatedScreenshake 3
-                        , mineClickedTimelines = animatedMineClick
                     }
 
                 else
                     { m
                         | screenshakeTimeline = animatedScreenshake 1
-                        , mineClickedTimelines = animatedMineClick
                     }
            )
-        |> setGlobalSeed newerSeed
+        |> (\m ->
+                { m
+                    | mineClickedParticleIdx = waveNum
+                    , mineClickedTimelines = animatedMineClick
+                }
+           )
+        |> setGlobalSeed newSeed
         |> withCharacters newCharacters
     , mineCmd
     )
@@ -8432,7 +8440,7 @@ viewMineClicked mineClickedTimelines particleNum waveNum =
                                 (seed
                                     |> transformSeed
                                     |> transformSeed
-                                    |> Random.step (Random.float -20 20)
+                                    |> Random.step (Random.float -100 100)
                                     |> Tuple.first
                                 )
                                 |> Animator.leaveSmoothly 0.5
@@ -8443,7 +8451,7 @@ viewMineClicked mineClickedTimelines particleNum waveNum =
                                 (seed
                                     |> transformSeed
                                     |> transformSeed
-                                    |> Random.step (Random.float -40 40)
+                                    |> Random.step (Random.float -100 100)
                                     |> Tuple.first
                                     |> (*) 2
                                 )
@@ -8471,7 +8479,7 @@ viewMineClicked mineClickedTimelines particleNum waveNum =
                                 Animator.at
                                     (seed
                                         |> transformSeed
-                                        |> Random.step (Random.float -100 -170)
+                                        |> Random.step (Random.float -50 -70)
                                         |> Tuple.first
                                     )
 
@@ -8489,7 +8497,7 @@ viewMineClicked mineClickedTimelines particleNum waveNum =
 
                         HideMineClickedAnimation seed ->
                             Animator.at 0.0
-                                |> Animator.arriveEarly 0.1
+                                |> Animator.arriveEarly 0.5
 
                         NoMineClickedAnimation ->
                             Animator.at 0.0

@@ -8709,49 +8709,26 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
         hasUnlockedSpecialActions =
             containsProgressUnlock UnlockedSpecialActions progressUnlocks
 
-        animatedParticle00 =
-            Lazy.lazy3 viewMineClicked mineClickedTimelines 0 0
+        particleGroup waveNum =
+            List.range 0 3
+                |> List.map
+                    (\particleNum ->
+                        viewMineClicked mineClickedTimelines particleNum waveNum
+                    )
 
-        animatedParticle10 =
-            Lazy.lazy3 viewMineClicked mineClickedTimelines 1 0
-
-        animatedParticle20 =
-            Lazy.lazy3 viewMineClicked mineClickedTimelines 2 0
-
-        animatedParticle30 =
-            Lazy.lazy3 viewMineClicked mineClickedTimelines 3 0
-
-        animatedParticle01 =
-            Lazy.lazy3 viewMineClicked mineClickedTimelines 0 1
-
-        animatedParticle11 =
-            Lazy.lazy3 viewMineClicked mineClickedTimelines 1 1
-
-        animatedParticle21 =
-            Lazy.lazy3 viewMineClicked mineClickedTimelines 2 1
-
-        animatedParticle31 =
-            Lazy.lazy3 viewMineClicked mineClickedTimelines 3 1
+        particles =
+            row [ Element.moveUp 20, Element.moveRight 20 ] <|
+                (List.range 0 3
+                    |> List.map particleGroup
+                    |> List.concat
+                )
     in
     column [ width fill, spacing 10, paddingXY 0 10 ]
         [ el [ UI.font_scaled 2, UI.border_bottom 2 ] <| text "Special Actions"
         , Element.wrappedRow [ width fill, spacingXY 20 0 ]
             [ Element.wrappedRow [ width <| fillPortion 1, spacingXY 10 10, alignTop ]
                 [ button_toggle_ai_pause
-                , el
-                    [ Element.inFront <|
-                        row [ Element.moveUp 20, Element.moveRight 20 ]
-                            [ animatedParticle00
-                            , animatedParticle10
-                            , animatedParticle20
-                            , animatedParticle30
-                            , animatedParticle01
-                            , animatedParticle11
-                            , animatedParticle21
-                            , animatedParticle31
-                            ]
-                    ]
-                    button_mine
+                , el [ Element.inFront particles ] button_mine
                 , Lazy.lazy viewMineGpGained showMineGpGained
                 , button_battle
                 ]

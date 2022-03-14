@@ -345,6 +345,7 @@ type Msg
     | TimeOfDayHovered Bool
     | PressJuicyButton String
     | ReleaseJuicyButton String
+    | ClickedNotificationBar
 
 
 type TitleScreenAnimationState
@@ -2271,7 +2272,8 @@ juicyButtonNames =
 
 initNotificationModel : NotificationModel
 initNotificationModel =
-    NoNotificationText
+    -- NoNotificationText
+    HasNotificationText "This is a notification"
 
 
 init : Time.Posix -> UI.Device -> String -> Maybe Nav.Key -> ( Model, Cmd Msg )
@@ -3845,6 +3847,9 @@ update msg model =
 
         ReleaseJuicyButton buttonName ->
             ( model, Cmd.none )
+
+        ClickedNotificationBar ->
+            ( { model | notificationModel = NoNotificationText }, Cmd.none )
 
 
 
@@ -8116,14 +8121,20 @@ viewNotification notificationModel =
             overlayAttrs UI.BrightTheme
                 ++ [ width (fillPortion 8)
                    , Font.center
+                   , Events.onMouseDown ClickedNotificationBar
                    ]
     in
-    row [ alignBottom, width fill, Element.moveUp 20 ]
-        [ spacer
-        , el notificationBarAttrs <|
-            text "NOTIFICATION"
-        , spacer
-        ]
+    case notificationModel of
+        NoNotificationText ->
+            Element.none
+
+        HasNotificationText notificationText ->
+            row [ alignBottom, width fill, Element.moveUp 20 ]
+                [ spacer
+                , el notificationBarAttrs <|
+                    text notificationText
+                , spacer
+                ]
 
 
 view : Model -> Html.Html Msg

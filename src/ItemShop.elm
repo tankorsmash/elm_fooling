@@ -346,6 +346,7 @@ type Msg
     | PressJuicyButton String
     | ReleaseJuicyButton String
     | ClickedNotificationBar
+    | AddNotification String
 
 
 type TitleScreenAnimationState
@@ -3851,9 +3852,17 @@ update msg model =
         ClickedNotificationBar ->
             ( { model | notificationModel = NoNotificationText }, Cmd.none )
 
+        AddNotification notificationText ->
+            ( addNotification notificationText model, Cmd.none )
+
 
 
 --- END OF UPDATE
+
+
+addNotification : String -> Model -> Model
+addNotification notificationText model =
+    { model | notificationModel = HasNotificationText notificationText }
 
 
 updateSettingsForm : SettingsFormMsg -> Model -> SettingsForm -> Model
@@ -7340,7 +7349,7 @@ viewShopPrepPhase model =
                         { buttonType = UI.Secondary
                         , colorTheme = model.colorTheme
                         , customAttrs = defaultCustomAttrs ++ [ width (fill |> Element.minimum 200) ]
-                        , onPressMsg = BeginDay
+                        , onPressMsg = AddNotification "Began the day!"
                         , textLabel = "Begin Day"
                         }
                 ]

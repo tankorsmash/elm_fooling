@@ -1530,6 +1530,11 @@ type ScreenshakeAnimation
     | RandomScreenShake Float
 
 
+type NotificationModel
+    = NoNotificationText
+    | HasNotificationText String
+
+
 type alias Model =
     { colorTheme : UI.ColorTheme
     , playerUpgrades : List PlayerUpgrade
@@ -1564,6 +1569,7 @@ type alias Model =
     , settings : SettingsData
     , settingsForm : Maybe SettingsForm
     , timeOfDayHovered : Bool -- TODO move this into a UiOptions-like record to track these temporary states easier
+    , notificationModel : NotificationModel
     }
 
 
@@ -2263,6 +2269,11 @@ juicyButtonNames =
     [ "mine action button" ]
 
 
+initNotificationModel : NotificationModel
+initNotificationModel =
+    NoNotificationText
+
+
 init : Time.Posix -> UI.Device -> String -> Maybe Nav.Key -> ( Model, Cmd Msg )
 init timeNow device hash key =
     let
@@ -2421,6 +2432,7 @@ init timeNow device hash key =
             , settings = initSettings
             , settingsForm = Nothing
             , timeOfDayHovered = False
+            , notificationModel = initNotificationModel
             }
     in
     ( initModel
@@ -8011,26 +8023,27 @@ viewSettingsOverlay currentTabType =
         text "Settings"
 
 
+overlayAttrs : UI.ColorTheme -> List (Element.Attribute Msg)
+overlayAttrs colorTheme =
+    [ UI.defaultBackgroundColor colorTheme
+    , Border.color
+        (case colorTheme of
+            BrightTheme ->
+                UI.color_ultra_light_grey
+
+            DarkTheme ->
+                UI.convertColor Color.lightCharcoal
+        )
+    , Border.width 1
+    , Border.rounded 3
+    , UI.pointerEventsAll
+    , UI.noUserSelect
+    , padding 10
+    ]
+
+
 viewOverlay : Model -> Element Msg
 viewOverlay model =
-    let
-        overlayAttrs =
-            [ UI.defaultBackgroundColor model.colorTheme
-            , Border.color
-                (case model.colorTheme of
-                    BrightTheme ->
-                        UI.color_ultra_light_grey
-
-                    DarkTheme ->
-                        UI.convertColor Color.lightCharcoal
-                )
-            , Border.width 1
-            , Border.rounded 3
-            , UI.pointerEventsAll
-            , UI.noUserSelect
-            , padding 10
-            ]
-    in
     el
         [ width fill
         , height fill
@@ -8052,7 +8065,7 @@ viewOverlay model =
                 (Font.alignLeft
                     :: Element.alignLeft
                     :: Element.alignBottom
-                    :: overlayAttrs
+                    :: overlayAttrs model.colorTheme
                 )
                 [ viewSettingsOverlay model.currentTabType
                 ]
@@ -8060,7 +8073,7 @@ viewOverlay model =
                 (Font.alignRight
                     :: Element.alignRight
                     :: Element.alignBottom
-                    :: overlayAttrs
+                    :: overlayAttrs model.colorTheme
                 )
                 [ viewCurrenciesOverlay
                     model.colorTheme
@@ -8093,8 +8106,24 @@ setDevice ({ uiOptions } as model) device =
     { model | uiOptions = { uiOptions | device = device } }
 
 
+viewNotification : NotificationModel -> Element Msg
+viewNotification notificationModel =
+    let
+        spacer =
+            el [ width fill ] <| Element.none
 
--- convertColor Color.grey
+        notificationBarAttrs =
+            overlayAttrs UI.BrightTheme
+                ++ [ width (fillPortion 8)
+                   , Font.center
+                   ]
+    in
+    row [ alignBottom, width fill, Element.moveUp 20 ]
+        [ spacer
+        , el notificationBarAttrs <|
+            text "NOTIFICATION"
+        , spacer
+        ]
 
 
 view : Model -> Html.Html Msg
@@ -8136,6 +8165,7 @@ view model =
         el
             -- has to be its own element; otherwise scrollbars show up
             [ Element.moveRight <| getScreenshakeMoveRight model.screenshakeTimeline
+            , Element.inFront <| viewNotification model.notificationModel
             , width fill
             , height fill
             ]

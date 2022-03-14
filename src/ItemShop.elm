@@ -8748,7 +8748,7 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
                                         |> Animator.withWobble 1
 
                                 JuicyButtonReleasedAnimation ->
-                                    Animator.at 1.1
+                                    Animator.at 1.025
                                         |> Animator.withWobble 1
 
                                 NoJuicyButtonAnimation ->

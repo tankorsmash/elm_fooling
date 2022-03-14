@@ -1533,8 +1533,12 @@ type ScreenshakeAnimation
 
 
 type NotificationModel
-    = NoNotificationText
-    | HasNotificationText String
+    = NoNotifications
+    | HasNotifications (List Notification)
+
+
+type Notification
+    = TextNotification String
 
 
 type alias Model =
@@ -2274,7 +2278,7 @@ juicyButtonNames =
 initNotificationModel : NotificationModel
 initNotificationModel =
     -- NoNotificationText
-    HasNotificationText "This is a notification"
+    HasNotifications [ TextNotification "This is a notification" ]
 
 
 init : Time.Posix -> UI.Device -> String -> Maybe Nav.Key -> ( Model, Cmd Msg )
@@ -3850,7 +3854,20 @@ update msg model =
             ( model, Cmd.none )
 
         ClickedNotificationBar ->
-            ( { model | notificationModel = NoNotificationText }, Cmd.none )
+            case model.notificationModel of
+                NoNotifications ->
+                    noop
+
+                HasNotifications existingNotifications ->
+                    case existingNotifications of
+                        [] ->
+                            noop
+
+                        [ singleNotification ] ->
+                            ( { model | notificationModel = NoNotifications }, Cmd.none )
+
+                        _ :: remainingNotifs ->
+                            ( { model | notificationModel = HasNotifications remainingNotifs }, Cmd.none )
 
         AddNotification notificationText ->
             ( addNotification notificationText model, Cmd.none )
@@ -3861,8 +3878,17 @@ update msg model =
 
 
 addNotification : String -> Model -> Model
-addNotification notificationText model =
-    { model | notificationModel = HasNotificationText notificationText }
+addNotification notificationText ({ notificationModel } as model) =
+    let
+        newNotificationModel =
+            case notificationModel of
+                NoNotifications ->
+                    HasNotifications [ TextNotification notificationText ]
+
+                HasNotifications existingNotifications ->
+                    HasNotifications <| existingNotifications ++ [ TextNotification notificationText ]
+    in
+    { model | notificationModel = newNotificationModel }
 
 
 updateSettingsForm : SettingsFormMsg -> Model -> SettingsForm -> Model
@@ -8131,19 +8157,53 @@ viewNotification notificationModel =
                 ++ [ width (fillPortion 8)
                    , Font.center
                    , Events.onMouseDown ClickedNotificationBar
+                   , Border.shadow
+                        { offset = ( 2, 2 )
+                        , size = 1
+                        , blur = 1
+                        , color = UI.color_very_very_light_grey
+                        }
                    ]
     in
     case notificationModel of
-        NoNotificationText ->
+        NoNotifications ->
             Element.none
 
-        HasNotificationText notificationText ->
-            row [ alignBottom, width fill, Element.moveUp 20 ]
-                [ spacer
-                , el notificationBarAttrs <|
-                    text notificationText
-                , spacer
-                ]
+        HasNotifications notifications ->
+            case notifications of
+                [] ->
+                    text "ERRR: no notification"
+
+                (TextNotification notificationText) :: rest ->
+                    let
+                        notifCounter =
+                            el
+                                [ alignRight
+                                , alignTop
+                                , Font.size 12
+                                , Font.color <| UI.color_light_grey
+                                ]
+                            <|
+                                if not <| List.isEmpty rest then
+                                    text ("+" ++ (String.fromInt <| List.length rest))
+
+                                else
+                                    Element.none
+
+                        notificationBody =
+                            el
+                                [ width fill
+                                , height fill
+                                , Element.inFront notifCounter
+                                ]
+                            <|
+                                text notificationText
+                    in
+                    row [ alignBottom, width fill, Element.moveUp 20 ]
+                        [ spacer
+                        , el notificationBarAttrs notificationBody
+                        , spacer
+                        ]
 
 
 view : Model -> Html.Html Msg

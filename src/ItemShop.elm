@@ -3595,10 +3595,8 @@ update msg model =
                                 , item_db = new_item_db
                                 , quests =
                                     model.quests
-                                        |> playerSoldItem
-                                            item_trade_log.quantity
-                                        |> playerEarnedGold
-                                            (setQuantity earnedGold)
+                                        |> playerSoldItem item_trade_log.quantity
+                                        |> playerEarnedGold (setQuantity earnedGold)
                                 , goldGainedTimeline =
                                     animateGoldGained model.goldGainedTimeline model.globalSeed earnedGold
                               }
@@ -7375,7 +7373,7 @@ viewShopPrepPhase model =
                         { buttonType = UI.Secondary
                         , colorTheme = model.colorTheme
                         , customAttrs = defaultCustomAttrs ++ [ width (fill |> Element.minimum 200) ]
-                        , onPressMsg = AddNotification "Began the day!"
+                        , onPressMsg = BeginDay
                         , textLabel = "Begin Day"
                         }
                 ]

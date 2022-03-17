@@ -1482,6 +1482,21 @@ type Quest
     | CompleteQuest QuestData CashedInStatus
 
 
+questIsComplete : Quest -> Bool
+questIsComplete quest =
+    case quest of
+        IncompleteQuest _ ->
+            False
+
+        CompleteQuest _ _ ->
+            True
+
+
+getCompleteQuests : List Quest -> List Quest
+getCompleteQuests =
+    List.filter questIsComplete
+
+
 type alias Quests =
     { dailyQuests : List Quest, persistentQuests : List Quest }
 
@@ -3588,15 +3603,28 @@ update msg model =
                             let
                                 earnedGold =
                                     item_trade_log.gold_cost * getQuantity item_trade_log.quantity
+
+                                newQuests =
+                                    model.quests
+                                        |> playerSoldItem item_trade_log.quantity
+                                        |> playerEarnedGold (setQuantity earnedGold)
+
+                                newlyCompleteQuests : List Quest
+                                newlyCompleteQuests =
+                                    let
+                                        oldCompletes =
+                                            getCompleteQuests model.quests.dailyQuests
+
+                                        newCompletes =
+                                            getCompleteQuests newQuests.dailyQuests
+                                    in
+                                    []
                             in
                             ( { model
                                 | shop_trends = new_trade_context.shop_trends
                                 , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
                                 , item_db = new_item_db
-                                , quests =
-                                    model.quests
-                                        |> playerSoldItem item_trade_log.quantity
-                                        |> playerEarnedGold (setQuantity earnedGold)
+                                , quests = newQuests
                                 , goldGainedTimeline =
                                     animateGoldGained model.goldGainedTimeline model.globalSeed earnedGold
                               }

@@ -3536,6 +3536,27 @@ veryVeryQuickly =
     Animator.millis 50
 
 
+updateQuestsOnPlayerSellItemsToShop quests item_trade_log earnedGold =
+    let
+        newQuests =
+            quests
+                |> playerSoldItem item_trade_log.quantity
+                |> playerEarnedGold (setQuantity earnedGold)
+
+        newlyCompleteQuests : List Quest
+        newlyCompleteQuests =
+            let
+                oldCompletes =
+                    getCompleteQuests quests.dailyQuests
+
+                newCompletes =
+                    getCompleteQuests newQuests.dailyQuests
+            in
+            []
+    in
+    newQuests
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     let
@@ -3605,20 +3626,7 @@ update msg model =
                                     item_trade_log.gold_cost * getQuantity item_trade_log.quantity
 
                                 newQuests =
-                                    model.quests
-                                        |> playerSoldItem item_trade_log.quantity
-                                        |> playerEarnedGold (setQuantity earnedGold)
-
-                                newlyCompleteQuests : List Quest
-                                newlyCompleteQuests =
-                                    let
-                                        oldCompletes =
-                                            getCompleteQuests model.quests.dailyQuests
-
-                                        newCompletes =
-                                            getCompleteQuests newQuests.dailyQuests
-                                    in
-                                    []
+                                    updateQuestsOnPlayerSellItemsToShop model.quests item_trade_log earnedGold
                             in
                             ( { model
                                 | shop_trends = new_trade_context.shop_trends
@@ -9301,7 +9309,57 @@ suite =
                 ( test_item2, test_item_qty2, test_avg_price2 ) =
                     ( lookup_item_id_str_default test_item_db "c3c38323-1743-5a47-a8e3-bf6ec28137f9", Quantity 12, setPrice 9999 )
             in
-            [ fuzz (Fuzz.map setQuantity <| Fuzz.intRange 0 ((Random.maxInt // 2) - 1)) "playerSoldItem marks the quest complete when you sell enough, and it doesn't go over" <|
+            [ describe "quests"
+                [ test "selling item quests" <|
+                    \_ ->
+                        let
+                            oldQuests =
+                                { dailyQuests =
+                                    [ IncompleteQuest
+                                        { questType =
+                                            SellAnyItem
+                                                { current = setQuantity 3
+                                                , target = setQuantity 3
+                                                }
+                                        , questId =
+                                            generateUuid "123 default sell quest"
+                                        }
+                                    ]
+                                , persistentQuests = []
+                                }
+
+                            fakeItemTradeLog : ItemTradeLog
+                            fakeItemTradeLog =
+                                { from_party = ShopParty
+                                , to_party = PlayerParty
+                                , gold_cost = fakeEarnedGold
+                                , quantity = fakeQuantity
+                                , item_id = generateUuid "asdasdas kajd askdj asd"
+                                }
+
+                            fakeQuantity =
+                                setQuantity 123
+
+                            fakeEarnedGold =
+                                123
+
+                            newQuests =
+                                updateQuestsOnPlayerSellItemsToShop oldQuests fakeItemTradeLog fakeEarnedGold
+
+                            oldCompletes =
+                                getCompleteQuests oldQuests.dailyQuests
+
+                            newCompletes =
+                                getCompleteQuests newQuests.dailyQuests
+
+                            unseenCompletes =
+                                List.filter
+                                    (\new -> List.member new oldCompletes |> not)
+                                    newCompletes
+                        in
+                        Expect.equal (List.length unseenCompletes) 1
+                ]
+            , fuzz (Fuzz.map setQuantity <| Fuzz.intRange 0 ((Random.maxInt // 2) - 1)) "playerSoldItem marks the quest complete when you sell enough, and it doesn't go over" <|
                 \targetQty ->
                     let
                         questId =

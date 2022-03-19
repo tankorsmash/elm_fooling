@@ -4694,6 +4694,13 @@ updateMine ({ globalSeed, settings } as model) =
 
         animatedMineClick =
             animateMineClicked model.mineClickedTimelines model.globalSeed waveNum
+
+        newQuests =
+            if shouldEarnGp then
+                playerEarnedGold (setQuantity gpEarned) model.quests
+
+            else
+                model.quests
     in
     ( model
         |> (\m ->
@@ -4719,6 +4726,7 @@ updateMine ({ globalSeed, settings } as model) =
                 { m
                     | mineClickedParticleIdx = waveNum
                     , mineClickedTimelines = animatedMineClick
+                    , quests = newQuests
                 }
            )
         |> setGlobalSeed newSeed

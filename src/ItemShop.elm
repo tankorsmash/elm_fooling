@@ -1438,6 +1438,7 @@ type alias QuestTracker =
 type QuestType
     = SellAnyItem QuestTracker
     | EarnGold QuestTracker
+    | HoldGold QuestTracker
 
 
 getQuestTracker : QuestType -> QuestTracker
@@ -1447,6 +1448,9 @@ getQuestTracker questType =
             tracker
 
         SellAnyItem tracker ->
+            tracker
+
+        HoldGold tracker ->
             tracker
 
 
@@ -4199,8 +4203,9 @@ playerSoldItem soldQty { dailyQuests, persistentQuests } =
                         SellAnyItem questTracker ->
                             onSellAnyItem questTracker questId soldQty
 
-                        EarnGold questTracker ->
-                            onEarnGold questTracker questId soldQty
+                        _ ->
+                            -- we know we can return an IncompleteQuest because this is a function that only deals with IncompleteQuests
+                            IncompleteQuest { questType = questType, questId = questId }
                 )
     in
     { dailyQuests = List.map questUpdater dailyQuests
@@ -7102,7 +7107,10 @@ getQuestTitle questType =
             "Sell any Item"
 
         EarnGold _ ->
-            "Earn gold!"
+            "Earn Gold!"
+
+        HoldGold _ ->
+            "Hold Gold!"
 
 
 questProgress : QuestType -> String
@@ -7114,6 +7122,11 @@ questProgress questType =
                 ++ quantityToStr target
 
         SellAnyItem { current, target } ->
+            quantityToStr current
+                ++ "/"
+                ++ quantityToStr target
+
+        HoldGold { current, target } ->
             quantityToStr current
                 ++ "/"
                 ++ quantityToStr target
@@ -7137,6 +7150,14 @@ viewSingleQuest quest =
                             ++ quantityToStr target
 
                 EarnGold { current, target } ->
+                    text <|
+                        questTitle
+                            ++ "\n"
+                            ++ quantityToStr current
+                            ++ "/"
+                            ++ quantityToStr target
+
+                HoldGold { current, target } ->
                     text <|
                         questTitle
                             ++ "\n"

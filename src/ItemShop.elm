@@ -2292,8 +2292,11 @@ juicyButtonNames =
 
 initNotificationModel : NotificationModel
 initNotificationModel =
-    -- NoNotificationText
-    HasNotifications [ TextNotification "This is a notification" ]
+    NoNotifications
+
+
+
+-- HasNotifications [ TextNotification "This is a notification" ]
 
 
 init : Time.Posix -> UI.Device -> String -> Maybe Nav.Key -> ( Model, Cmd Msg )
@@ -8526,12 +8529,12 @@ viewTitleScreen model =
                                 else
                                     5
 
-                            ( _, UI.Portrait ) ->
+                            ( UI.Phone, UI.Portrait ) ->
                                 if state == HighTitle then
-                                    3
+                                    1
 
                                 else
-                                    10
+                                    3
 
                             ( _, _ ) ->
                                 if state == HighTitle then

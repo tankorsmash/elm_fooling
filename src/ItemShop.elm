@@ -1501,7 +1501,7 @@ getCompleteQuests =
     List.filter questIsComplete
 
 
-type alias Quests =
+type alias PlayerQuests =
     { dailyQuests : List Quest, persistentQuests : List Quest }
 
 
@@ -1578,7 +1578,7 @@ type alias Model =
     , uiOptions : UiOptions
     , communityFund : Int
     , progressUnlocks : ProgressUnlocks
-    , quests : Quests
+    , quests : PlayerQuests
     , timeOfDay : TimeOfDay
     , numItemsToStartDayWith : Int
     , shouldViewGemUpgradesInPostPhase : Bool
@@ -3543,10 +3543,10 @@ veryVeryQuickly =
     Animator.millis 50
 
 
-updateQuestsOnPlayerSellItemsToShop : Quests -> ItemTradeLog -> Int -> ( Quests, List Notification )
+updateQuestsOnPlayerSellItemsToShop : PlayerQuests -> ItemTradeLog -> Int -> ( PlayerQuests, List Notification )
 updateQuestsOnPlayerSellItemsToShop quests item_trade_log earnedGold =
     let
-        -- newQuests : ( Quests, List Notification )
+        -- newQuests : ( PlayerQuests, List Notification )
         ( newQuests, newNotifications ) =
             quests
                 |> playerSoldItem item_trade_log.quantity
@@ -4079,7 +4079,7 @@ onPrepNewDay ({ timeOfDay, item_db, globalSeed, characters, ai_tick_time, quests
         ( questId, newGlobalSeed ) =
             Random.step UUID.generator globalSeedForUuid
 
-        newQuests : Quests
+        newQuests : PlayerQuests
         newQuests =
             { quests
                 | dailyQuests =
@@ -4204,7 +4204,7 @@ onEarnGold { current, target } questId soldQty =
         IncompleteQuest newQuestData
 
 
-playerSoldItem : Quantity -> Quests -> ( Quests, List Notification )
+playerSoldItem : Quantity -> PlayerQuests -> ( PlayerQuests, List Notification )
 playerSoldItem soldQty { dailyQuests, persistentQuests } =
     let
         questUpdater =
@@ -4226,7 +4226,7 @@ playerSoldItem soldQty { dailyQuests, persistentQuests } =
     )
 
 
-playerEarnedGold : Quantity -> Quests -> ( Quests, List Notification )
+playerEarnedGold : Quantity -> PlayerQuests -> ( PlayerQuests, List Notification )
 playerEarnedGold earnedGold { dailyQuests, persistentQuests } =
     let
         questUpdater =
@@ -7192,7 +7192,7 @@ viewSingleQuest quest =
             text <| "Complete! " ++ getQuestTitle questType
 
 
-quests_display : UI.ColorTheme -> Quests -> ProgressUnlocks -> Element Msg
+quests_display : UI.ColorTheme -> PlayerQuests -> ProgressUnlocks -> Element Msg
 quests_display colorTheme quests progressUnlocks =
     column [ height fill ]
         [ column [ height fill ]
@@ -7463,7 +7463,7 @@ viewShopPrepPhase model =
         ]
 
 
-viewShopSummary : UI.ColorTheme -> PostPhaseData -> Quests -> Element Msg
+viewShopSummary : UI.ColorTheme -> PostPhaseData -> PlayerQuests -> Element Msg
 viewShopSummary colorTheme postPhaseData quests =
     let
         getSoldNumFromItemDbRecord : ItemDbRecord -> Int
@@ -7588,7 +7588,7 @@ viewShopSummary colorTheme postPhaseData quests =
         ]
 
 
-viewGemUnlocksInPostPhase : UI.ColorTheme -> ProgressUnlocks -> PostPhaseData -> Quantity -> Quests -> Element Msg
+viewGemUnlocksInPostPhase : UI.ColorTheme -> ProgressUnlocks -> PostPhaseData -> Quantity -> PlayerQuests -> Element Msg
 viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData heldGems quests =
     let
         columnStyle =
@@ -7685,7 +7685,7 @@ viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData heldGems ques
         ]
 
 
-viewShopPostPhase : ( UI.ColorTheme, Bool ) -> ProgressUnlocks -> PostPhaseData -> Characters -> Quests -> Element Msg
+viewShopPostPhase : ( UI.ColorTheme, Bool ) -> ProgressUnlocks -> PostPhaseData -> Characters -> PlayerQuests -> Element Msg
 viewShopPostPhase ( colorTheme, shouldViewGemUpgradesInPostPhase ) progressUnlocks postPhaseData characters quests =
     if not shouldViewGemUpgradesInPostPhase then
         viewShopSummary colorTheme postPhaseData quests

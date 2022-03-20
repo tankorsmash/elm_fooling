@@ -2386,9 +2386,13 @@ init timeNow device hash key =
                 --
                 [ IncompleteQuest
                     { questType =
-                        SellAnyItem
-                            { current = setQuantity 0
-                            , target = setQuantity 3
+                        -- SellAnyItem
+                        --     { current = setQuantity 0
+                        --     , target = setQuantity 3
+                        --     }
+                        EarnGold
+                            { current = setQuantity 29
+                            , target = setQuantity 30
                             }
                     , questId =
                         generateUuid "default sell quest"
@@ -3922,24 +3926,40 @@ update msg model =
                             ( { model | notificationModel = HasNotifications remainingNotifs }, Cmd.none )
 
         AddNotification notificationText ->
-            ( addNotification notificationText model, Cmd.none )
+            ( addNotificationByString notificationText model.notificationModel |> setNotificationModel model, Cmd.none )
 
 
 
 --- END OF UPDATE
 
 
-addNotification : String -> Model -> Model
-addNotification notificationText ({ notificationModel } as model) =
-    let
-        newNotificationModel =
-            case notificationModel of
-                NoNotifications ->
-                    HasNotifications [ TextNotification notificationText ]
+addNotification : Notification -> NotificationModel -> NotificationModel
+addNotification newNotification notificationModel =
+    case notificationModel of
+        NoNotifications ->
+            HasNotifications [ newNotification ]
 
-                HasNotifications existingNotifications ->
-                    HasNotifications <| existingNotifications ++ [ TextNotification notificationText ]
-    in
+        HasNotifications existingNotifications ->
+            HasNotifications <| existingNotifications ++ [ newNotification ]
+
+
+addNotifications : List Notification -> NotificationModel -> NotificationModel
+addNotifications notifications notificationModel =
+    List.foldl addNotification notificationModel notifications
+
+
+addNotificationByString : String -> NotificationModel -> NotificationModel
+addNotificationByString notificationText notificationModel =
+    case notificationModel of
+        NoNotifications ->
+            HasNotifications [ TextNotification notificationText ]
+
+        HasNotifications existingNotifications ->
+            HasNotifications <| existingNotifications ++ [ TextNotification notificationText ]
+
+
+setNotificationModel : Model -> NotificationModel -> Model
+setNotificationModel model newNotificationModel =
     { model | notificationModel = newNotificationModel }
 
 
@@ -4227,24 +4247,39 @@ playerSoldItem soldQty { dailyQuests, persistentQuests } =
 
 
 playerEarnedGold : Quantity -> PlayerQuests -> ( PlayerQuests, List Notification )
-playerEarnedGold earnedGold { dailyQuests, persistentQuests } =
+playerEarnedGold earnedGold ({ dailyQuests, persistentQuests } as playerQuests) =
     let
-        questUpdater =
-            mapIncompleteQuestType
-                (\questType questId ->
-                    case questType of
-                        EarnGold questTracker ->
-                            onEarnGold questTracker questId earnedGold
+        questUpdater : Quest -> ( List Quest, List Notification ) -> ( List Quest, List Notification )
+        questUpdater quest ( questsSoFar, notificationsSoFar ) =
+            let
+                ( newQuest, newMaybeNotification ) =
+                    case quest of
+                        IncompleteQuest { questType, questId } ->
+                            case questType of
+                                EarnGold questTracker ->
+                                    ( onEarnGold questTracker questId earnedGold, [ TextNotification "Quest complete!" ] )
 
-                        _ ->
-                            -- we know we can return an IncompleteQuest because this is a function that only deals with IncompleteQuests
-                            IncompleteQuest { questType = questType, questId = questId }
-                )
+                                _ ->
+                                    -- we know we can return an IncompleteQuest because this is a function that only deals with IncompleteQuests
+                                    ( IncompleteQuest { questType = questType, questId = questId }, [] )
+
+                        completedQuest ->
+                            ( completedQuest, [] )
+            in
+            ( questsSoFar ++ [ newQuest ]
+            , notificationsSoFar ++ newMaybeNotification
+            )
+
+        ( newDailyQuests, newDailyNotifs ) =
+            List.foldl questUpdater ( [], [] ) dailyQuests
+
+        ( newPersistentQuests, newPersistentNotifs ) =
+            List.foldl questUpdater ( [], [] ) persistentQuests
     in
-    ( { dailyQuests = List.map questUpdater dailyQuests
-      , persistentQuests = List.map questUpdater persistentQuests
+    ( { dailyQuests = newDailyQuests
+      , persistentQuests = newPersistentQuests
       }
-    , []
+    , newDailyNotifs ++ newPersistentNotifs
     )
 
 
@@ -4742,6 +4777,8 @@ updateMine ({ globalSeed, settings } as model) =
                     | mineClickedParticleIdx = waveNum
                     , mineClickedTimelines = animatedMineClick
                     , quests = newQuests
+                    , notificationModel =
+                        addNotifications newNotifications model.notificationModel
                 }
            )
         |> setGlobalSeed newSeed

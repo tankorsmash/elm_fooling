@@ -8345,7 +8345,8 @@ view model =
         [ Element.htmlAttribute <| Html.Attributes.id "itemshop"
         , Element.inFront <|
             if model.currentTabType /= TitleScreenTabType then
-                viewOverlay model
+                el [ alignBottom, width fill, Element.inFront <| viewNotification model.notificationModel ] <|
+                    viewOverlay model
 
             else
                 Element.none
@@ -8365,7 +8366,6 @@ view model =
         el
             -- has to be its own element; otherwise scrollbars show up
             [ Element.moveRight <| getScreenshakeMoveRight model.screenshakeTimeline
-            , Element.inFront <| viewNotification model.notificationModel
             , width fill
             , height fill
             ]

@@ -8525,11 +8525,7 @@ build_special_action_button colorTheme hoveredTooltip character { action, title,
                     False
 
                 Price cost ->
-                    if character.held_gold >= cost then
-                        False
-
-                    else
-                        True
+                    character.held_gold < cost
 
         tooltip_config : UI.TooltipConfig Msg
         tooltip_config =

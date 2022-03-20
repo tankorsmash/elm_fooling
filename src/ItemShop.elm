@@ -9128,10 +9128,14 @@ incrementSeed count seed =
         seed
 
     else
-        seed
-            |> Random.step (Random.int 0 1)
-            |> Tuple.second
-            |> incrementSeed (count - 1)
+        let
+            s =
+                seed
+                    |> Random.step (Random.int 0 1)
+                    |> Tuple.second
+        in
+        -- for tail call optmization, this needs to be split out from the `s = ...` part. see `elm-review --template jfmengels/elm-review-performance/example` for more details
+        incrementSeed (count - 1) s
 
 
 suite : Test

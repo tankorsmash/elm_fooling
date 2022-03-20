@@ -4257,17 +4257,20 @@ playerEarnedGold earnedGold ({ dailyQuests, persistentQuests } as playerQuests) 
                         IncompleteQuest { questType, questId } ->
                             case questType of
                                 EarnGold questTracker ->
-                                    ( onEarnGold questTracker questId earnedGold, [ TextNotification "Quest complete!" ] )
+                                    ( onEarnGold questTracker questId earnedGold, Just <| TextNotification "Quest complete!" )
 
                                 _ ->
                                     -- we know we can return an IncompleteQuest because this is a function that only deals with IncompleteQuests
-                                    ( IncompleteQuest { questType = questType, questId = questId }, [] )
+                                    ( IncompleteQuest { questType = questType, questId = questId }, Nothing )
 
                         completedQuest ->
-                            ( completedQuest, [] )
+                            ( completedQuest, Nothing )
             in
             ( questsSoFar ++ [ newQuest ]
-            , notificationsSoFar ++ newMaybeNotification
+            , newMaybeNotification
+                --Note the new one is appended to the front
+                |> Maybe.map (\newNotif -> newNotif :: notificationsSoFar)
+                |> Maybe.withDefault notificationsSoFar
             )
 
         ( newDailyQuests, newDailyNotifs ) =

@@ -3543,25 +3543,35 @@ veryVeryQuickly =
     Animator.millis 50
 
 
+updateQuestsOnPlayerSellItemsToShop : Quests -> ItemTradeLog -> Int -> ( Quests, List Notification )
 updateQuestsOnPlayerSellItemsToShop quests item_trade_log earnedGold =
     let
-        newQuests =
+        -- newQuests : ( Quests, List Notification )
+        ( newQuests, newNotifications ) =
             quests
                 |> playerSoldItem item_trade_log.quantity
-                |> playerEarnedGold (setQuantity earnedGold)
+                |> (\( qs, notifs ) ->
+                        let
+                            ( newQs, newNotifs ) =
+                                playerEarnedGold (setQuantity earnedGold) qs
+                        in
+                        ( newQs, notifs ++ newNotifs )
+                   )
 
-        newlyCompleteQuests : List Quest
-        newlyCompleteQuests =
-            let
-                oldCompletes =
-                    getCompleteQuests quests.dailyQuests
-
-                newCompletes =
-                    getCompleteQuests newQuests.dailyQuests
-            in
-            []
+        -- newlyCompleteDailyQuests : List Quest
+        -- newlyCompleteDailyQuests =
+        --     let
+        --         oldCompletes =
+        --             getCompleteQuests quests.dailyQuests
+        --
+        --         newCompletes =
+        --             getCompleteQuests newQuests.dailyQuests
+        --     in
+        --     List.filter
+        --         (\new -> List.member new oldCompletes)
+        --         newCompletes
     in
-    newQuests
+    ( newQuests, newNotifications )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -3634,6 +3644,7 @@ update msg model =
 
                                 newQuests =
                                     updateQuestsOnPlayerSellItemsToShop model.quests item_trade_log earnedGold
+                                        |> Tuple.first
                             in
                             ( { model
                                 | shop_trends = new_trade_context.shop_trends
@@ -4193,7 +4204,7 @@ onEarnGold { current, target } questId soldQty =
         IncompleteQuest newQuestData
 
 
-playerSoldItem : Quantity -> Quests -> Quests
+playerSoldItem : Quantity -> Quests -> ( Quests, List Notification )
 playerSoldItem soldQty { dailyQuests, persistentQuests } =
     let
         questUpdater =
@@ -4208,12 +4219,14 @@ playerSoldItem soldQty { dailyQuests, persistentQuests } =
                             IncompleteQuest { questType = questType, questId = questId }
                 )
     in
-    { dailyQuests = List.map questUpdater dailyQuests
-    , persistentQuests = List.map questUpdater persistentQuests
-    }
+    ( { dailyQuests = List.map questUpdater dailyQuests
+      , persistentQuests = List.map questUpdater persistentQuests
+      }
+    , []
+    )
 
 
-playerEarnedGold : Quantity -> Quests -> Quests
+playerEarnedGold : Quantity -> Quests -> ( Quests, List Notification )
 playerEarnedGold earnedGold { dailyQuests, persistentQuests } =
     let
         questUpdater =
@@ -4228,9 +4241,11 @@ playerEarnedGold earnedGold { dailyQuests, persistentQuests } =
                             IncompleteQuest { questType = questType, questId = questId }
                 )
     in
-    { dailyQuests = List.map questUpdater dailyQuests
-    , persistentQuests = List.map questUpdater persistentQuests
-    }
+    ( { dailyQuests = List.map questUpdater dailyQuests
+      , persistentQuests = List.map questUpdater persistentQuests
+      }
+    , []
+    )
 
 
 generateUuid : String -> UUID.UUID
@@ -4695,12 +4710,12 @@ updateMine ({ globalSeed, settings } as model) =
         animatedMineClick =
             animateMineClicked model.mineClickedTimelines model.globalSeed waveNum
 
-        newQuests =
+        ( newQuests, newNotifications ) =
             if shouldEarnGp then
                 playerEarnedGold (setQuantity gpEarned) model.quests
 
             else
-                model.quests
+                ( model.quests, [] )
     in
     ( model
         |> (\m ->
@@ -9375,7 +9390,7 @@ suite =
                             fakeEarnedGold =
                                 123
 
-                            newQuests =
+                            ( newQuests, newNotifications ) =
                                 updateQuestsOnPlayerSellItemsToShop oldQuests fakeItemTradeLog fakeEarnedGold
 
                             oldCompletes =
@@ -9409,6 +9424,7 @@ suite =
 
                         updatedQuests =
                             playerSoldItem (addQuantityInt targetQty 100000) quests
+                                |> Tuple.first
                     in
                     Expect.equal
                         { dailyQuests =
@@ -9558,7 +9574,7 @@ suite =
                             }
 
                         updatedQuests =
-                            playerSoldItem (setQuantity 0) quests
+                            playerSoldItem (setQuantity 0) quests |> Tuple.first
                     in
                     Expect.equal
                         { dailyQuests =

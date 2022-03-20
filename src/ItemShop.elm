@@ -7978,44 +7978,43 @@ viewShopActivePhase model =
                     uiOptions.hovered_item_in_character
                     InventoryItems
                     (playerInventoryControls colorTheme ( uiOptions.shiftIsPressed, shop_trends ))
-            ]
-                ++ [ column [ width fill, spacingXY 0 20 ] <|
-                        []
-                            ++ [ showHideDebugInventoriesButton
-                                    colorTheme
-                                    []
-                                    uiOptions.show_debug_inventories
-                               ]
-                            ++ (if uiOptions.show_debug_inventories then
-                                    [ tickSecondButton
-                                    , debugTimeOfDayControls model
-                                    , text <|
-                                        UI.deviceClassToString uiOptions.device.class
-                                            ++ " - "
-                                            ++ UI.orientationToString uiOptions.device.orientation
-                                    ]
-                                        ++ (getOthers characters
-                                                |> List.sortBy (.char_id >> UUID.toString)
-                                                |> List.map
-                                                    (\character ->
-                                                        Element.Keyed.el [ height fill, paddingXY 0 10, width fill ]
-                                                            ( UUID.toString character.char_id
-                                                            , render_inventory_grid
-                                                                model
-                                                                (character.name ++ "'s Inventory")
-                                                                character
-                                                                shop_trends
-                                                                uiOptions.hovered_item_in_character
-                                                                CharacterItems
-                                                                (always Element.none)
-                                                            )
+            , column [ width fill, spacingXY 0 20 ] <|
+                []
+                    ++ [ showHideDebugInventoriesButton
+                            colorTheme
+                            []
+                            uiOptions.show_debug_inventories
+                       ]
+                    ++ (if uiOptions.show_debug_inventories then
+                            [ tickSecondButton
+                            , debugTimeOfDayControls model
+                            , text <|
+                                UI.deviceClassToString uiOptions.device.class
+                                    ++ " - "
+                                    ++ UI.orientationToString uiOptions.device.orientation
+                            ]
+                                ++ (getOthers characters
+                                        |> List.sortBy (.char_id >> UUID.toString)
+                                        |> List.map
+                                            (\character ->
+                                                Element.Keyed.el [ height fill, paddingXY 0 10, width fill ]
+                                                    ( UUID.toString character.char_id
+                                                    , render_inventory_grid
+                                                        model
+                                                        (character.name ++ "'s Inventory")
+                                                        character
+                                                        shop_trends
+                                                        uiOptions.hovered_item_in_character
+                                                        CharacterItems
+                                                        (always Element.none)
                                                     )
-                                           )
+                                            )
+                                   )
 
-                                else
-                                    []
-                               )
-                   ]
+                        else
+                            []
+                       )
+            ]
 
 
 render_item_db_item : UI.ColorTheme -> ItemDbRecord -> Element Msg

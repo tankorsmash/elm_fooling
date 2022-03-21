@@ -1520,6 +1520,25 @@ type alias PostPhaseData =
     }
 
 
+type Milliseconds
+    = Milliseconds Int
+
+
+getMillis : Milliseconds -> Int
+getMillis (Milliseconds millis) =
+    millis
+
+
+setMillis : Int -> Milliseconds
+setMillis =
+    Milliseconds
+
+
+mapMillis : (Int -> Int) -> Milliseconds -> Milliseconds
+mapMillis updater (Milliseconds millis) =
+    updater millis |> Milliseconds
+
+
 type TimePhase
     = --viewing what the day'll be (which location, how many enemy traders, any active events), maybe picking an item
       PrepPhase

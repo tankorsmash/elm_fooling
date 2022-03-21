@@ -8283,6 +8283,10 @@ viewNotification notificationModel =
                         , blur = 1
                         , color = UI.color_very_very_light_grey
                         }
+                   , Element.pointer
+                   , Element.mouseOver
+                        [ Background.color <| UI.color_ultra_light_grey
+                        ]
                    ]
     in
     case notificationModel of

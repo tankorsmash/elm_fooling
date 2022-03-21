@@ -1506,7 +1506,7 @@ type alias PlayerQuests =
 
 
 type alias ActivePhaseData =
-    { msSinceStartOfDay : Int
+    { msSinceStartOfDay : Milliseconds
     , itemDbAtStart : ItemDb
     , goldAtStartOfDay : Int
     }
@@ -1534,6 +1534,16 @@ setMillis =
     Milliseconds
 
 
+addMillis : Milliseconds -> Milliseconds -> Milliseconds
+addMillis (Milliseconds leftMillis) (Milliseconds rightMillis) =
+    Milliseconds <| leftMillis + rightMillis
+
+
+zeroMillis : Milliseconds
+zeroMillis =
+    Milliseconds 0
+
+
 mapMillis : (Int -> Int) -> Milliseconds -> Milliseconds
 mapMillis updater (Milliseconds millis) =
     updater millis |> Milliseconds
@@ -1543,14 +1553,14 @@ type TimePhase
     = --viewing what the day'll be (which location, how many enemy traders, any active events), maybe picking an item
       PrepPhase
     | -- ai and player upgrades tick up. itemDbAtStart is for comparing model.item_db after-hours, to show interesting facts like 'you sold X boots' or 'ais bought a lot of swords'
-      ActivePhase Time.Posix ActivePhaseData
+      ActivePhase Milliseconds ActivePhaseData
     | -- viewing day's results, shop restocks etc
       PostPhase PostPhaseData
 
 
 type alias TimeOfDay =
     { -- msSinceStartOfDay : Int
-      dayLengthInMs : Int
+      dayLengthInMs : Milliseconds
     , currentPhase : TimePhase
     }
 
@@ -2459,7 +2469,7 @@ init timeNow device hash key =
             , quests =
                 initialQuests
             , timeOfDay =
-                { dayLengthInMs = minutesToMillis 5
+                { dayLengthInMs = setMillis <| minutesToMillis 5
 
                 -- , currentPhase = ActivePhase { msSinceStartOfDay = 0 }
                 , currentPhase = PrepPhase
@@ -3439,6 +3449,11 @@ onTickSecond origModel time =
         model =
             { origModel | ai_tick_time = time }
 
+        deltaMillis =
+            Time.posixToMillis time
+                - Time.posixToMillis origModel.ai_tick_time
+                |> setMillis
+
         noop =
             ( model, Cmd.none )
     in
@@ -3446,7 +3461,7 @@ onTickSecond origModel time =
         case model.timeOfDay.currentPhase of
             ActivePhase _ _ ->
                 ( model
-                    |> updateActiveTimeOfDay time
+                    |> updateActiveTimeOfDay deltaMillis
                     |> update_player
                     |> update_ai_chars
                 , Cmd.none
@@ -4052,14 +4067,14 @@ onBeginCurrentDay ({ timeOfDay, item_db, globalSeed, characters, ai_tick_time } 
             { timeOfDay
                 | currentPhase =
                     ActivePhase
-                        ai_tick_time
+                        zeroMillis
                         { goldAtStartOfDay =
                             let
                                 (Player player) =
                                     getPlayer characters
                             in
                             player.held_gold
-                        , msSinceStartOfDay = 0
+                        , msSinceStartOfDay = zeroMillis
                         , itemDbAtStart = item_db
                         }
             }
@@ -4154,19 +4169,16 @@ changeToPostPhaseAtEndOfDay goldAtStartOfDay playerHeldGold itemDbAtStart itemDb
         }
 
 
-updateActiveTimeOfDay : Time.Posix -> Model -> Model
-updateActiveTimeOfDay newTime ({ ai_tick_time, timeOfDay } as model) =
+updateActiveTimeOfDay : Milliseconds -> Model -> Model
+updateActiveTimeOfDay deltaMillis ({ ai_tick_time, timeOfDay } as model) =
     case timeOfDay.currentPhase of
-        ActivePhase timeDayStarted { msSinceStartOfDay, itemDbAtStart, goldAtStartOfDay } ->
+        ActivePhase (Milliseconds millisElapsed) { msSinceStartOfDay, itemDbAtStart, goldAtStartOfDay } ->
             let
-                msDiff =
-                    Time.posixToMillis newTime - Time.posixToMillis timeDayStarted
-
                 newMsSinceStartOfDay =
-                    msSinceStartOfDay + msDiff
+                    addMillis (Milliseconds millisElapsed) deltaMillis
 
                 isWithinCurrentDay =
-                    newMsSinceStartOfDay < timeOfDay.dayLengthInMs
+                    getMillis newMsSinceStartOfDay < getMillis timeOfDay.dayLengthInMs
 
                 (Player player) =
                     getPlayer model.characters
@@ -4174,7 +4186,7 @@ updateActiveTimeOfDay newTime ({ ai_tick_time, timeOfDay } as model) =
                 newPhase =
                     if isWithinCurrentDay then
                         ActivePhase
-                            model.ai_tick_time
+                            newMsSinceStartOfDay
                             { goldAtStartOfDay = goldAtStartOfDay
                             , msSinceStartOfDay = newMsSinceStartOfDay
                             , itemDbAtStart = itemDbAtStart
@@ -7357,18 +7369,18 @@ viewDayTimer colorTheme timeOfDay item_db isHovered ai_tick_time =
                     dayElapsedRaw =
                         let
                             sinceStart =
-                                toFloat msSinceStartOfDay
+                                toFloat (getMillis msSinceStartOfDay)
 
                             dayLength =
-                                toFloat timeOfDay.dayLengthInMs
+                                toFloat (getMillis timeOfDay.dayLengthInMs)
                         in
                         sinceStart / dayLength
 
                     timeLeftStr =
                         "Ends "
                             ++ DateFormat.Relative.relativeTime
-                                (Time.millisToPosix msSinceStartOfDay)
-                                (Time.millisToPosix timeOfDay.dayLengthInMs)
+                                (Time.millisToPosix (getMillis msSinceStartOfDay))
+                                (Time.millisToPosix (getMillis timeOfDay.dayLengthInMs))
 
                     dayElapsed =
                         dayElapsedRaw * 100
@@ -7444,7 +7456,7 @@ viewShopPrepPhase model =
                 , paragraph [ alignTop ]
                     [ text <|
                         ("The day tomorrow will last: "
-                            ++ (String.fromInt <| model.timeOfDay.dayLengthInMs // 1000)
+                            ++ (String.fromInt <| (getMillis model.timeOfDay.dayLengthInMs) // 1000)
                             ++ " seconds."
                         )
                     ]
@@ -7782,14 +7794,14 @@ debugTimeOfDayControls { colorTheme, timeOfDay, ai_tick_time, characters, item_d
                     , onPressMsg =
                         ChangeCurrentPhase
                             (ActivePhase
-                                ai_tick_time
+                                zeroMillis
                                 { goldAtStartOfDay =
                                     let
                                         (Player player) =
                                             getPlayer characters
                                     in
                                     player.held_gold
-                                , msSinceStartOfDay = 0
+                                , msSinceStartOfDay = zeroMillis
                                 , itemDbAtStart = item_db
                                 }
                             )

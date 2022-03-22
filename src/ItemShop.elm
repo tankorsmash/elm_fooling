@@ -1348,7 +1348,7 @@ progressUnlockToString progressUnlock =
             "Dark UI Mode"
 
         UnlockedUpgrades ->
-            "Upgrades"
+            "Upgrades (WIP)"
 
         UnlockedShopTrends ->
             "Shop Trends"

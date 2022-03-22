@@ -2135,7 +2135,13 @@ reset_avg_price_to_default ({ item } as inventory_record) =
 
 initial_owned_items : ItemDb -> InventoryRecords
 initial_owned_items item_db =
-    [ { item = lookup_item_id_str_default item_db "a41ae9d3-61f0-54f9-800e-56f53ed3ac98", quantity = Quantity 12, avg_price = setPrice 9999 }
+    [ { item =
+            lookup_item_id_str_default
+                item_db
+                "a41ae9d3-61f0-54f9-800e-56f53ed3ac98"
+      , quantity = Quantity 1
+      , avg_price = setPrice 9999
+      }
     ]
         |> List.map reset_avg_price_to_default
 

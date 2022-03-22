@@ -8180,9 +8180,15 @@ viewCurrenciesOverlay colorTheme (Player player) goldGainedLabelMovementY goldGa
                     , Font.family [ Font.monospace ]
                     , Font.size 16
                     , Font.color UI.color_black
+                    , Background.color <| UI.color_white
+                    , Border.rounded 5
+                    , padding 5
                     ]
                 <|
-                    UI.renderGp colorTheme goldGainedQuantity
+                    paragraph []
+                        [ text "+"
+                        , UI.renderGp colorTheme goldGainedQuantity
+                        ]
             ]
           <|
             UI.renderGp colorTheme <|

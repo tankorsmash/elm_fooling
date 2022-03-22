@@ -2651,11 +2651,7 @@ animator outerModel =
 subscriptions : Model -> Sub Msg
 subscriptions model =
     Sub.batch
-        [ if not model.ai_updates_paused then
-            Time.every 1000 TickSecond
-
-          else
-            Sub.none
+        [ Time.every 1000 TickSecond
         , Browser.Events.onKeyDown keyPressedDecoder
         , Browser.Events.onKeyUp keyReleasedDecoder
         , Sub.map GotBattleMsg <| Battle.subscriptions model.battleModel
@@ -7456,7 +7452,7 @@ viewShopPrepPhase model =
                 , paragraph [ alignTop ]
                     [ text <|
                         ("The day tomorrow will last: "
-                            ++ (String.fromInt <| (getMillis model.timeOfDay.dayLengthInMs) // 1000)
+                            ++ (String.fromInt <| getMillis model.timeOfDay.dayLengthInMs // 1000)
                             ++ " seconds."
                         )
                     ]

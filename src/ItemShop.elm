@@ -1360,7 +1360,7 @@ progressUnlockToString progressUnlock =
             "Life Quests"
 
         UnlockedInventoryFilters ->
-            "Life Quests"
+            "Inventory Filters"
 
 
 encodeProgressUnlock : ProgressUnlock -> Decode.Value

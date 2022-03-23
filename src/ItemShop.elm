@@ -7671,8 +7671,48 @@ viewShopSummary colorTheme postPhaseData quests =
         ]
 
 
-viewGemUnlocksInPostPhase : UI.ColorTheme -> ProgressUnlocks -> PostPhaseData -> Quantity -> PlayerQuests -> Element Msg
-viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData heldGems quests =
+viewHoveredProgressUnlock : Maybe ProgressUnlock -> Element Msg
+viewHoveredProgressUnlock maybeHoveredProgressUnlock =
+    maybeHoveredProgressUnlock
+        |> Maybe.map
+            (\hoveredProgressUnlock ->
+                let
+                    description =
+                        case hoveredProgressUnlock of
+                            UnlockedCharts ->
+                                "Unlocks a helpful chart for better gauging relative price changes"
+
+                            UnlockedCodex ->
+                                "Unlocks the Codex, displaying all of the unlocked items, and some stats to help you make better decisions."
+
+                            UnlockedBattles ->
+                                "Unlocks Battles, an entirely new mechanic."
+
+                            UnlockedDarkMode ->
+                                "Unlocks a darker UI theme"
+
+                            UnlockedUpgrades ->
+                                "Unlocks the ability to upgrade yourself and your shop"
+
+                            UnlockedShopTrends ->
+                                "Unlocks the ability to tell what people are thinking about certain items. Very useful if you want to buy discounted items to sell later"
+
+                            UnlockedSpecialActions ->
+                                "Unlocks special actions you can take to change how the business day is going."
+
+                            UnlockedLifeQuests ->
+                                "Unlocks long-term quests, which have greater rewards"
+
+                            UnlockedInventoryFilters ->
+                                "Unlocks a little quality of life inventory filter. Let's you see only Weapons, Armors etc."
+                in
+                el [ Font.center, width fill, padding 10 ] <| text description
+            )
+        |> Maybe.withDefault Element.none
+
+
+viewGemUnlocksInPostPhase : UI.ColorTheme -> ( ProgressUnlocks, Maybe ProgressUnlock ) -> PostPhaseData -> Quantity -> PlayerQuests -> Element Msg
+viewGemUnlocksInPostPhase colorTheme ( progressUnlocks, hoveredProgressUnlock ) postPhaseData heldGems quests =
     let
         columnStyle =
             [ centerX, width (fill |> Element.maximum 200), alignBottom ]
@@ -7712,7 +7752,7 @@ viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData heldGems ques
             if not alreadyHasUnlock then
                 el
                     [ Events.onMouseEnter <| GotUiOptionsMsg <| HoveredProgressUnlock <| Just progressUnlock
-                    , Events.onMouseEnter <| GotUiOptionsMsg <| HoveredProgressUnlock Nothing
+                    , Events.onMouseLeave <| GotUiOptionsMsg <| HoveredProgressUnlock Nothing
                     ]
                 <|
                     UI.button <|
@@ -7746,7 +7786,7 @@ viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData heldGems ques
             [ el [ Font.italic ] <| text "You've earned some gems. These will help the next day go a little smoother."
             , paragraph [] [ text "Each unlock is permanent. It might be cosmetic, it might be useless, it might be a whole new mechanic. Only one way to find out." ]
             ]
-        , column [ paddingXY 0 10, spacing 10, width fill ]
+        , column [ paddingXY 0 10, spacing 20, width fill ]
             [ text "These are the things you can unlock:"
             , column [ width fill, spacing 5 ] <|
                 (allProgressUnlocks
@@ -7758,7 +7798,7 @@ viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData heldGems ques
                         )
                 )
             , column [ width fill ]
-                [ text "this is what you're hovering"
+                [ viewHoveredProgressUnlock hoveredProgressUnlock
                 ]
             ]
         , column columnStyle
@@ -7776,8 +7816,8 @@ viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData heldGems ques
         ]
 
 
-viewShopPostPhase : ( UI.ColorTheme, Bool ) -> ProgressUnlocks -> PostPhaseData -> Characters -> PlayerQuests -> Element Msg
-viewShopPostPhase ( colorTheme, shouldViewGemUpgradesInPostPhase ) progressUnlocks postPhaseData characters quests =
+viewShopPostPhase : ( UI.ColorTheme, Bool ) -> ( ProgressUnlocks, Maybe ProgressUnlock ) -> PostPhaseData -> Characters -> PlayerQuests -> Element Msg
+viewShopPostPhase ( colorTheme, shouldViewGemUpgradesInPostPhase ) ( progressUnlocks, hoveredProgressUnlock ) postPhaseData characters quests =
     if not shouldViewGemUpgradesInPostPhase then
         viewShopSummary colorTheme postPhaseData quests
 
@@ -7786,7 +7826,7 @@ viewShopPostPhase ( colorTheme, shouldViewGemUpgradesInPostPhase ) progressUnloc
             (Player player) =
                 getPlayer characters
         in
-        viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData (setQuantity player.held_gems) quests
+        viewGemUnlocksInPostPhase colorTheme ( progressUnlocks, hoveredProgressUnlock ) postPhaseData (setQuantity player.held_gems) quests
 
 
 debugTimeOfDayControls : Model -> Element Msg
@@ -8444,7 +8484,7 @@ view model =
                             Lazy.lazy viewShopPrepPhase model
 
                         PostPhase postPhaseData ->
-                            Lazy.lazy5 viewShopPostPhase ( model.colorTheme, model.shouldViewGemUpgradesInPostPhase ) model.progressUnlocks postPhaseData model.characters model.quests
+                            Lazy.lazy5 viewShopPostPhase ( model.colorTheme, model.shouldViewGemUpgradesInPostPhase ) ( model.progressUnlocks, model.uiOptions.hoveredProgressUnlock ) postPhaseData model.characters model.quests
 
                 ItemsUnlockedTabType ->
                     Lazy.lazy2 view_items_unlocked_currentTabType model.colorTheme model.item_db

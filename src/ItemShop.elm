@@ -307,6 +307,7 @@ type UiOptionMsg
     | ToggleShowDebugInventories
     | MouseEntersButton
     | MouseLeavesButton
+    | HoveredProgressUnlock (Maybe ProgressUnlock)
 
 
 type SettingsFormMsg
@@ -1283,6 +1284,7 @@ type alias UiOptions =
     , hovered_item_in_character : Maybe ( CharacterId, Item )
     , show_debug_inventories : Bool
     , show_charts_in_hovered_item : Bool
+    , hoveredProgressUnlock : Maybe ProgressUnlock
     }
 
 
@@ -2413,6 +2415,7 @@ init timeNow device hash key =
             , hovered_item_in_character = Nothing
             , shop_trends_hovered = False
             , show_charts_in_hovered_item = False
+            , hoveredProgressUnlock = Nothing
             }
 
         initialQuests =
@@ -3175,8 +3178,8 @@ transferFromBattleModel model newBattleModel =
     setCharacters newModel newCharacters
 
 
-updateUiOption : (UiOptions -> UiOptions) -> Model -> Model
-updateUiOption updater m =
+setUiOption : (UiOptions -> UiOptions) -> Model -> Model
+setUiOption updater m =
     { m | uiOptions = updater m.uiOptions }
 
 
@@ -3188,19 +3191,19 @@ updateUiOptions uiOptMsg model =
     in
     case uiOptMsg of
         MouseEnterShopItem context item ->
-            ( updateUiOption (\uio -> { uio | hovered_item_in_character = Just item }) model
+            ( setUiOption (\uio -> { uio | hovered_item_in_character = Just item }) model
             , Cmd.none
             )
 
         MouseLeaveShopItem context item ->
-            ( updateUiOption (\uio -> { uio | hovered_item_in_character = Nothing }) model
+            ( setUiOption (\uio -> { uio | hovered_item_in_character = Nothing }) model
             , Cmd.none
             )
 
         GotTooltipMsg tooltipMsg ->
             case tooltipMsg of
                 UI.StartTooltipHover tooltip_id ->
-                    ( updateUiOption
+                    ( setUiOption
                         (\uio ->
                             { uio
                                 | hoveredTooltip =
@@ -3219,7 +3222,7 @@ updateUiOptions uiOptMsg model =
                     )
 
                 UI.EndTooltipHover tooltip_id ->
-                    ( updateUiOption (\uio -> { uio | hoveredTooltip = UI.NoHoveredTooltip }) model
+                    ( setUiOption (\uio -> { uio | hoveredTooltip = UI.NoHoveredTooltip }) model
                       -- since tooltips have their own onMouseEnter logic, we duplicate it here
                     , playMouseOverLeaveButtonSound model.settings.masterVol
                     )
@@ -3274,7 +3277,7 @@ updateUiOptions uiOptMsg model =
                                     , hoveredTooltipId = oldTooltipData.hoveredTooltipId
                                     }
                             in
-                            ( updateUiOption
+                            ( setUiOption
                                 (\uio ->
                                     { uio
                                         | cached_tooltip_offsets = Dict.insert oldTooltipData.hoveredTooltipId new_tooltip_data uio.cached_tooltip_offsets
@@ -3293,7 +3296,7 @@ updateUiOptions uiOptMsg model =
                                         , offsetY = offsetY
                                     }
                             in
-                            ( updateUiOption (\uio -> { uio | hoveredTooltip = UI.HoveredTooltipWithOffset new_tooltip_data }) model
+                            ( setUiOption (\uio -> { uio | hoveredTooltip = UI.HoveredTooltipWithOffset new_tooltip_data }) model
                             , Cmd.none
                             )
 
@@ -3301,22 +3304,22 @@ updateUiOptions uiOptMsg model =
                     noop
 
         StartTrendsHover ->
-            ( updateUiOption (\uio -> { uio | shop_trends_hovered = True }) model, Cmd.none )
+            ( setUiOption (\uio -> { uio | shop_trends_hovered = True }) model, Cmd.none )
 
         EndTrendsHover ->
-            ( updateUiOption (\uio -> { uio | shop_trends_hovered = False }) model, Cmd.none )
+            ( setUiOption (\uio -> { uio | shop_trends_hovered = False }) model, Cmd.none )
 
         ToggleShowMainChart ->
-            ( updateUiOption (\uio -> { uio | show_main_chart = not uio.show_main_chart }) model, Cmd.none )
+            ( setUiOption (\uio -> { uio | show_main_chart = not uio.show_main_chart }) model, Cmd.none )
 
         OnTrendChartHover hovered ->
-            ( updateUiOption (\uio -> { uio | hovered_trend_chart = hovered }) model, Cmd.none )
+            ( setUiOption (\uio -> { uio | hovered_trend_chart = hovered }) model, Cmd.none )
 
         ToggleShowDebugInventories ->
-            ( updateUiOption (\uio -> { uio | show_debug_inventories = not uio.show_debug_inventories }) model, Cmd.none )
+            ( setUiOption (\uio -> { uio | show_debug_inventories = not uio.show_debug_inventories }) model, Cmd.none )
 
         ChangeInventorySortType inventorySortType ->
-            ( updateUiOption (\uio -> { uio | inventorySortType = inventorySortType }) model, Cmd.none )
+            ( setUiOption (\uio -> { uio | inventorySortType = inventorySortType }) model, Cmd.none )
 
         ToggleHideNonZeroRows char_id ->
             let
@@ -3403,13 +3406,13 @@ updateUiOptions uiOptMsg model =
             ( model, Task.perform (GotUiOptionsMsg << GotViewport) Browser.Dom.getViewport )
 
         GotViewport viewport ->
-            ( updateUiOption (\uio -> { uio | globalViewport = Just viewport }) model
+            ( setUiOption (\uio -> { uio | globalViewport = Just viewport }) model
             , Task.attempt (GotUiOptionsMsg << GotShowDebugElement)
                 (Browser.Dom.getElement "show_debug_inventories")
             )
 
         GotShowDebugElement attemptedElement ->
-            ( updateUiOption
+            ( setUiOption
                 (\uio ->
                     let
                         ( modelElement, shouldDisplayShowDebugInventoriesOverlay ) =
@@ -3443,6 +3446,13 @@ updateUiOptions uiOptMsg model =
 
         MouseLeavesButton ->
             ( model, playMouseOverLeaveButtonSound model.settings.masterVol )
+
+        HoveredProgressUnlock maybeProgressUnlock ->
+            ( setUiOption
+                (\uio -> { uio | hoveredProgressUnlock = maybeProgressUnlock })
+                model
+            , Cmd.none
+            )
 
 
 onTickSecond : Model -> Time.Posix -> ( Model, Cmd Msg )
@@ -7700,27 +7710,32 @@ viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData heldGems ques
                         Noop
             in
             if not alreadyHasUnlock then
-                UI.button <|
-                    UI.CustomParams
-                        { buttonType = buttonType
-                        , colorTheme = colorTheme
-                        , customAttrs = defaultCustomAttrs ++ [ width (fill |> Element.minimum 200) ]
-                        , onPressMsg = onPressMsg
-                        , customLabel =
-                            paragraph []
-                                [ text <|
-                                    progressUnlockToString progressUnlock
-                                , text " ("
-                                , if not canAfford then
-                                    el [ Font.underline ] <|
-                                        UI.renderGem colorTheme <|
-                                            getPrice price
+                el
+                    [ Events.onMouseEnter <| GotUiOptionsMsg <| HoveredProgressUnlock <| Just progressUnlock
+                    , Events.onMouseEnter <| GotUiOptionsMsg <| HoveredProgressUnlock Nothing
+                    ]
+                <|
+                    UI.button <|
+                        UI.CustomParams
+                            { buttonType = buttonType
+                            , colorTheme = colorTheme
+                            , customAttrs = defaultCustomAttrs ++ [ width (fill |> Element.minimum 200) ]
+                            , onPressMsg = onPressMsg
+                            , customLabel =
+                                paragraph []
+                                    [ text <|
+                                        progressUnlockToString progressUnlock
+                                    , text " ("
+                                    , if not canAfford then
+                                        el [ Font.underline ] <|
+                                            UI.renderGem colorTheme <|
+                                                getPrice price
 
-                                  else
-                                    UI.renderGem colorTheme <| getPrice price
-                                , text ")"
-                                ]
-                        }
+                                      else
+                                        UI.renderGem colorTheme <| getPrice price
+                                    , text ")"
+                                    ]
+                            }
 
             else
                 Element.none
@@ -7731,7 +7746,7 @@ viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData heldGems ques
             [ el [ Font.italic ] <| text "You've earned some gems. These will help the next day go a little smoother."
             , paragraph [] [ text "Each unlock is permanent. It might be cosmetic, it might be useless, it might be a whole new mechanic. Only one way to find out." ]
             ]
-        , column [ paddingXY 0 10, spacing 5, width fill ]
+        , column [ paddingXY 0 10, spacing 10, width fill ]
             [ text "These are the things you can unlock:"
             , column [ width fill, spacing 5 ] <|
                 (allProgressUnlocks
@@ -7742,6 +7757,9 @@ viewGemUnlocksInPostPhase colorTheme progressUnlocks postPhaseData heldGems ques
                             << List.map progressUnlockButton
                         )
                 )
+            , column [ width fill ]
+                [ text "this is what you're hovering"
+                ]
             ]
         , column columnStyle
             [ el [ centerX, padding 10, alignBottom ] <|

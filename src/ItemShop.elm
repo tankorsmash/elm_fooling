@@ -308,6 +308,8 @@ type UiOptionMsg
     | MouseEntersButton
     | MouseLeavesButton
     | HoveredProgressUnlock (Maybe ProgressUnlock)
+    | TimeOfDayHovered Bool
+
 
 
 type SettingsFormMsg
@@ -343,7 +345,6 @@ type Msg
     | ClickedTitleTextLabel
     | ClickedTitlePlayLabel
     | GotSettingsFormMsg SettingsFormMsg
-    | TimeOfDayHovered Bool
     | PressJuicyButton String
     | ReleaseJuicyButton String
     | ClickedNotificationBar
@@ -1285,6 +1286,7 @@ type alias UiOptions =
     , show_debug_inventories : Bool
     , show_charts_in_hovered_item : Bool
     , hoveredProgressUnlock : Maybe ProgressUnlock
+    , timeOfDayHovered : Bool
     }
 
 
@@ -1624,7 +1626,6 @@ type alias Model =
     , hasHadAtLeastOneGem : Bool
     , settings : SettingsData
     , settingsForm : Maybe SettingsForm
-    , timeOfDayHovered : Bool -- TODO move this into a UiOptions-like record to track these temporary states easier
     , notificationModel : NotificationModel
     }
 
@@ -1688,7 +1689,7 @@ encodeModel model =
         , ( "ai_updates_paused", Encode.bool model.ai_updates_paused )
 
         -- , currentTabType : TabType //NOSERIALIZE
-        -- , battleModel : Battle.Model
+        -- , battleModel : Battle.Model //TODO
         -- , browserNavKey : Maybe Nav.Key //NOSERIALIZE
         -- , uiOptions : UiOptions //NOSERIALIZE
         , ( "communityFund", Encode.int model.communityFund )
@@ -1696,6 +1697,12 @@ encodeModel model =
         , ( "hasHadAtLeastOneGem", Encode.bool model.hasHadAtLeastOneGem )
         , ( "masterVol", Encode.float model.settings.masterVol )
         ]
+
+
+
+-- decodeModel : Decoder Model
+-- decodeModel =
+--     Decode.succeed  <|init testTimeNowFlag testDevice "" Nothing
 
 
 type AiActionChoice
@@ -2416,6 +2423,7 @@ init timeNow device hash key =
             , shop_trends_hovered = False
             , show_charts_in_hovered_item = False
             , hoveredProgressUnlock = Nothing
+            , timeOfDayHovered = False
             }
 
         initialQuests =
@@ -2502,7 +2510,6 @@ init timeNow device hash key =
             , hasHadAtLeastOneGem = False
             , settings = initSettings
             , settingsForm = Nothing
-            , timeOfDayHovered = False
             , notificationModel = initNotificationModel
             }
     in
@@ -3454,6 +3461,13 @@ updateUiOptions uiOptMsg model =
             , Cmd.none
             )
 
+        TimeOfDayHovered isHovered ->
+            ( setUiOption
+                (\uio -> { uio | timeOfDayHovered = isHovered })
+                model
+            , Cmd.none
+            )
+
 
 onTickSecond : Model -> Time.Posix -> ( Model, Cmd Msg )
 onTickSecond origModel time =
@@ -3940,9 +3954,6 @@ update msg model =
                         |> updateSettingsForm settingsMsg model
             in
             ( newModel, Cmd.none )
-
-        TimeOfDayHovered isHovered ->
-            ( { model | timeOfDayHovered = isHovered }, Cmd.none )
 
         PressJuicyButton buttonName ->
             ( { model
@@ -7357,7 +7368,7 @@ viewDayTimer colorTheme timeOfDay item_db isHovered ai_tick_time =
                             , textLabel = "End Early"
                             }
     in
-    column [ centerX, width fill, Events.onMouseEnter <| TimeOfDayHovered True, Events.onMouseLeave <| TimeOfDayHovered False ]
+    column [ centerX, width fill, Events.onMouseEnter <| (GotUiOptionsMsg <| TimeOfDayHovered True), Events.onMouseLeave <| (GotUiOptionsMsg <| TimeOfDayHovered False) ]
         [ row [ width fill, centerX, height fill ]
             [ el
                 [ Font.center
@@ -7913,7 +7924,7 @@ debugTimeOfDayControls { colorTheme, timeOfDay, ai_tick_time, characters, item_d
 viewShopActivePhase : Model -> Element Msg
 viewShopActivePhase model =
     let
-        { historical_player_actions, colorTheme, timeOfDay, ai_updates_paused, ai_tick_time, characters, item_db, progressUnlocks, playerUpgrades, quests, showMineGpGained, mineClickedTimelines, juicyButtonTimelines, uiOptions, historical_shop_trends, shop_trends, timeOfDayHovered } =
+        { historical_player_actions, colorTheme, timeOfDay, ai_updates_paused, ai_tick_time, characters, item_db, progressUnlocks, playerUpgrades, quests, showMineGpGained, mineClickedTimelines, juicyButtonTimelines, uiOptions, historical_shop_trends, shop_trends } =
             model
 
         player : Player
@@ -8022,7 +8033,7 @@ viewShopActivePhase model =
 
               else
                 Element.none
-            , row [ width fill ] [ Lazy.lazy5 viewDayTimer colorTheme timeOfDay item_db timeOfDayHovered ai_tick_time ]
+            , row [ width fill ] [ Lazy.lazy5 viewDayTimer colorTheme timeOfDay item_db uiOptions.timeOfDayHovered ai_tick_time ]
             , row [ width fill, height <| Element.px 10 ] []
             , row [ width fill, spacingXY 10 0 ]
                 [ el [ width <| fillPortion 3, alignTop ] <| Lazy.lazy2 player_action_log_display item_db historical_player_actions

@@ -311,7 +311,6 @@ type UiOptionMsg
     | TimeOfDayHovered Bool
 
 
-
 type SettingsFormMsg
     = ChangedMasterVol Float
     | SaveChanges
@@ -1672,6 +1671,21 @@ type alias JuicyButtonAnimationDict =
     Dict.Dict String (Animator.Timeline JuicyButtonAnimation)
 
 
+encodeNotification : Notification -> Decode.Value
+encodeNotification (TextNotification content) =
+    Encode.string content
+
+
+encodeNotificationModel : NotificationModel -> Encode.Value
+encodeNotificationModel notificationModel =
+    case notificationModel of
+        NoNotifications ->
+            Encode.string "NoNotifications"
+
+        HasNotifications notifications ->
+            Encode.list encodeNotification notifications
+
+
 encodeModel : Model -> Decode.Value
 encodeModel model =
     Encode.object
@@ -1696,6 +1710,7 @@ encodeModel model =
         , ( "hasHadAtLeastOneBlood", Encode.bool model.hasHadAtLeastOneBlood )
         , ( "hasHadAtLeastOneGem", Encode.bool model.hasHadAtLeastOneGem )
         , ( "masterVol", Encode.float model.settings.masterVol )
+        , ( "notificationModel", encodeNotificationModel model.notificationModel )
         ]
 
 

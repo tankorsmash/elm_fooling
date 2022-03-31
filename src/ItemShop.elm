@@ -58,7 +58,7 @@ import Html.Events
 import Interface as UI exposing (ColorTheme(..), defaultRounded)
 import Json.Decode as Decode exposing (Decoder, field)
 import Json.Decode.Extra as DecodeExtra
-import Json.Decode.Pipeline exposing (hardcoded, optional, required)
+import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
 import Json.Encode as Encode exposing (Value)
 import Json.Encode.Extra as EncodeExtra exposing (maybe)
 import List.Extra
@@ -274,6 +274,25 @@ encodeSpecialEvent specialEvent =
                 [ ( "type", Encode.string "EventLeastDesiredItemType" )
                 , ( "maybeItemType", maybe encodeItemType maybeItemType )
                 ]
+
+
+decodeSpecialEvent : Decoder SpecialEvent
+decodeSpecialEvent =
+    Decode.field "type" Decode.string
+        |> Decode.andThen
+            (\stringType ->
+                case stringType of
+                    "EventVeryDesiredItemType" ->
+                        Decode.map EventVeryDesiredItemType
+                            (Decode.field "maybeItemType" (Decode.nullable decodeItemType))
+
+                    "EventLeastDesiredItemType" ->
+                        Decode.map EventLeastDesiredItemType
+                            (Decode.field "maybeItemType" (Decode.nullable decodeItemType))
+
+                    _ ->
+                        Decode.fail <| "Unknown SpecialEvent stringType: " ++ stringType
+            )
 
 
 type SpecialAction
@@ -1234,14 +1253,31 @@ type PlayerActionLog
     | MonsterDeliveredItemToShop ItemId
 
 
+encodeSimpleType : String -> Encode.Value
+encodeSimpleType typeStr =
+    Encode.object
+        [ ( "type", Encode.string typeStr )
+        ]
+
+
+encodeUuid : UUID -> Encode.Value
+encodeUuid =
+    UUID.toValue
+
+
+decodeUuid : Decoder UUID.UUID
+decodeUuid =
+    UUID.jsonDecoder
+
+
 encodePlayerActionLog : PlayerActionLog -> Encode.Value
 encodePlayerActionLog playerActionLog =
     case playerActionLog of
         WelcomeMessageActionLog ->
-            Encode.string "WelcomeMessageActionLog"
+            encodeSimpleType "WelcomeMessageActionLog"
 
         TookSpecialActionInviteTrader ->
-            Encode.string "TookSpecialActionInviteTrader"
+            encodeSimpleType "TookSpecialActionInviteTrader"
 
         TookSpecialActionTriggerEvent specialEvent ->
             Encode.object
@@ -1250,13 +1286,63 @@ encodePlayerActionLog playerActionLog =
                 ]
 
         TookSpecialActionTogglePauseAi ->
-            Encode.string "TookSpecialActionTogglePauseAi"
+            encodeSimpleType "TookSpecialActionTogglePauseAi"
 
         TookSpecialActionUnlockItem itemId ->
-            Encode.string <| "TookSpecialActionUnlockItem__" ++ UUID.toString itemId
+            Encode.object
+                [ ( "type", Encode.string "TookSpecialActionUnlockItem" )
+                , ( "data", encodeUuid itemId )
+                ]
 
         MonsterDeliveredItemToShop itemId ->
-            Encode.string <| "TookSpecialActionUnlockItem__" ++ UUID.toString itemId
+            Encode.object
+                [ ( "type", Encode.string "MonsterDeliveredItemToShop" )
+                , ( "data", encodeUuid itemId )
+                ]
+
+
+decodeSimplePlayerActionLog : String -> Decoder PlayerActionLog
+decodeSimplePlayerActionLog stringType =
+    case stringType of
+        "WelcomeMessageActionLog" ->
+            Decode.succeed WelcomeMessageActionLog
+
+        "TookSpecialActionInviteTrader" ->
+            Decode.succeed TookSpecialActionInviteTrader
+
+        "TookSpecialActionTogglePauseAi" ->
+            Decode.succeed TookSpecialActionTogglePauseAi
+
+        _ ->
+            Decode.fail <| "Unknown string type for PlayerActionLog: " ++ stringType
+
+
+decodeComplexPlayerActionLog : Decoder PlayerActionLog
+decodeComplexPlayerActionLog =
+    Decode.field "type" Decode.string
+        |> Decode.andThen
+            (\stringType ->
+                case stringType of
+                    "TookSpecialActionTriggerEvent" ->
+                        Decode.map TookSpecialActionTriggerEvent (Decode.field "data" decodeSpecialEvent)
+
+                    "TookSpecialActionUnlockItem" ->
+                        Decode.map TookSpecialActionUnlockItem (Decode.field "data" decodeUuid)
+
+                    "MonsterDeliveredItemToShop" ->
+                        Decode.map MonsterDeliveredItemToShop (Decode.field "data" decodeUuid)
+
+                    _ ->
+                        Decode.fail <| "Could not decode complex PlayerActionLog for stringType: " ++ stringType
+            )
+
+
+decodePlayerActionLog : Decoder PlayerActionLog
+decodePlayerActionLog =
+    Decode.oneOf
+        [ Decode.string |> Decode.andThen decodeSimplePlayerActionLog
+        , decodeComplexPlayerActionLog
+        ]
 
 
 type InventorySortType
@@ -1715,9 +1801,26 @@ encodeModel model =
 
 
 
+-- decodeModel : Time.Posix -> UI.Device -> Decoder Model
+-- decodeModel time device =
 -- decodeModel : Decoder Model
--- decodeModel =
---     Decode.succeed  <|init testTimeNowFlag testDevice "" Nothing
+
+
+decodeModel =
+    --     -- Decode.succeed <| (init time device "" Nothing |> Tuple.first)
+    field "item_db" (decodeItemDb initial_item_db)
+        --         |> Decode.andThen decodeCharacter
+        |> Decode.andThen
+            (\itemDb ->
+                Decode.succeed Model
+                    |> required "colorTheme" UI.decodeColorTheme
+                    |> required "playerUpgrades" (Decode.list decodePlayerUpgrade)
+                    |> required "secondsWaitedSince" decodeSecondsWaitedSince
+                    |> required "characters" (decodeCharacters itemDb)
+                    |> required "shop_trends" decodeShopTrends
+                    |> required "historical_shop_trends" (Decode.list decodeShopTrends)
+                    |> required "historical_player_actions" (Decode.list decodePlayerActionLog)
+            )
 
 
 type AiActionChoice

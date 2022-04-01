@@ -333,6 +333,25 @@ encodeLocationType locationType =
             Encode.string "Plains"
 
 
+decodeLocationType : Decoder LocationType
+decodeLocationType =
+    decodeType
+        (\stringType ->
+            case stringType of
+                "Forest" ->
+                    Decode.succeed Forest
+
+                "Mountains" ->
+                    Decode.succeed Mountains
+
+                "Plains" ->
+                    Decode.succeed Plains
+
+                _ ->
+                    Decode.fail <| "Unknown LocationType: " ++ stringType
+        )
+
+
 type alias LocationId =
     Int
 
@@ -354,9 +373,15 @@ encodeLocation location =
         , ( "locationId", Encode.int location.locationId )
         ]
 
--- decodeLocation : Decoder Location
--- decodeLocation =
---     Decode.map4 Location
+
+decodeLocation : Decoder Location
+decodeLocation =
+    Decode.map4 Location
+        (Decode.field "locationType" decodeLocationType)
+        (Decode.field "name" Decode.string)
+        (Decode.field "monstersLeft" Decode.int)
+        (Decode.field "locationId" Decode.int)
+
 
 maxMonstersPerLocation : Int
 maxMonstersPerLocation =
@@ -506,9 +531,18 @@ encodeModel model =
 
         -- , "shouldShowLocationTypeMenu" : Bool --NOSERIALIZE
         , ( "currentLocationId", Encode.int model.currentLocationId )
+        , ( "locations", encodeLocations model.locations )
 
-        -- , "locations" : Locations
         -- , "uiOptions" : UiOptions
+        ]
+
+
+encodeLocations : Locations -> Encode.Value
+encodeLocations locations =
+    Encode.object
+        [ ( "forest", encodeLocation locations.forest )
+        , ( "mountains", encodeLocation locations.mountains )
+        , ( "plains", encodeLocation locations.plains )
         ]
 
 
@@ -623,6 +657,12 @@ encodeSimpleType typeStr =
     Encode.object
         [ ( "type", Encode.string typeStr )
         ]
+
+
+decodeType : (String -> Decoder a) -> Decoder a
+decodeType decoderFromStringType =
+    Decode.field "type" Decode.string
+        |> Decode.andThen decoderFromStringType
 
 
 

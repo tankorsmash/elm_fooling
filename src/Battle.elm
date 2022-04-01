@@ -442,6 +442,149 @@ type alias Model =
     }
 
 
+encodeModel : Model -> Encode.Value
+encodeModel model =
+    Encode.object
+        [ ( "golem", encodeDamagedMonster model.golem )
+        , ( "enemyMonster"
+          , model.enemyMonster
+                |> Maybe.map encodeDamagedMonster
+                |> Maybe.withDefault Encode.null
+          )
+
+        -- , "battleSeed" : Random.Seed --TODO
+        -- , "fightLogs" : List FightLog
+        -- , "showExpandedLogs" : Bool
+        -- , "player" : BattleCharacter --NOTE: this is hackily read from in ItemShop's updateBattleOutMsg and used to update ItemShop's player. FIXME hack on that for sure
+        -- , "spRefillAmount" : Int --NOTE: this is from ItemShop's update too
+        -- , "secondsWaitedSince" : SecondsWaitedSince
+        -- , "shouldShowLocationTypeMenu" : Bool
+        -- , "currentLocationId" : LocationId
+        -- , "locations" : Locations
+        -- , "uiOptions" : UiOptions
+        ]
+
+
+encodeIntStat : IntStat -> Encode.Value
+encodeIntStat intStat =
+    Encode.object
+        [ ( "curVal", Encode.int intStat.curVal )
+        , ( "initialVal", Encode.int intStat.initialVal )
+        , ( "maxVal", Encode.int intStat.maxVal )
+        ]
+
+
+encodeDefeatAction : DefeatAction -> Encode.Value
+encodeDefeatAction defeatAction =
+    case defeatAction of
+        NoDefeatAction ->
+            encodeSimpleType "NoDefeatAction"
+
+        DeliverItemToShop ->
+            encodeSimpleType "DeliverItemToShop"
+
+
+decodeDefeatAction : Decoder DefeatAction
+decodeDefeatAction =
+    Decode.field "type" Decode.string
+        |> Decode.andThen
+            (\stringType ->
+                case stringType of
+                    "NoDefeatAction" ->
+                        Decode.succeed NoDefeatAction
+
+                    "DeliverItemToShop" ->
+                        Decode.succeed DeliverItemToShop
+
+                    _ ->
+                        Decode.fail <| "unknown DefeatAction type: " ++ stringType
+            )
+
+
+encodeMonster : Monster -> Encode.Value
+encodeMonster monster =
+    Encode.object
+        [ ( "name", Encode.string monster.name )
+        , ( "statHP", encodeIntStat monster.statHP )
+        , ( "statStamina", encodeIntStat monster.statStamina )
+        , ( "statPower", encodeIntStat monster.statPower )
+        , ( "statProtection", encodeIntStat monster.statProtection )
+        , ( "level", Encode.int monster.level )
+        , ( "xp", Encode.int monster.xp )
+        , ( "onDefeat", encodeDefeatAction monster.onDefeat )
+        ]
+
+
+decodeIntStat : Decoder IntStat
+decodeIntStat =
+    Decode.map3 IntStat
+        (Decode.field "curVal" Decode.int)
+        (Decode.field "initialVal" Decode.int)
+        (Decode.field "maxVal" Decode.int)
+
+
+decodeMonster : Decoder Monster
+decodeMonster =
+    Decode.map8 Monster
+        (Decode.field "name" Decode.string)
+        (Decode.field "statHP" decodeIntStat)
+        (Decode.field "statStamina" decodeIntStat)
+        (Decode.field "statPower" decodeIntStat)
+        (Decode.field "statProtection" decodeIntStat)
+        (Decode.field "level" Decode.int)
+        (Decode.field "xp" Decode.int)
+        (Decode.field "onDefeat" decodeDefeatAction)
+
+
+encodeDamagedMonster : DamagedMonster -> Encode.Value
+encodeDamagedMonster damagedMonster =
+    case damagedMonster of
+        LivingMonster monsterData ->
+            Encode.object
+                [ ( "type", Encode.string "LivingMonster" )
+                , ( "data", encodeMonster monsterData )
+                ]
+
+        DeadMonster monsterData ->
+            Encode.object
+                [ ( "type", Encode.string "DeadMonster" )
+                , ( "data", encodeMonster monsterData )
+                ]
+
+
+decodeDamagedMonster : Decoder DamagedMonster
+decodeDamagedMonster =
+    Decode.field "type" Decode.string
+        |> Decode.andThen
+            (\typeString ->
+                case typeString of
+                    "LivingMonster" ->
+                        Decode.map LivingMonster
+                            (Decode.field "data" decodeMonster)
+
+                    "DeadMonster" ->
+                        Decode.map DeadMonster
+                            (Decode.field "data" decodeMonster)
+
+                    _ ->
+                        Decode.fail <| "unknown DamagedMonster type: " ++ typeString
+            )
+
+
+encodeSimpleType : String -> Encode.Value
+encodeSimpleType typeStr =
+    Encode.object
+        [ ( "type", Encode.string typeStr )
+        ]
+
+
+
+-- encodeDamagedMonster : DamagedMonster -> Encode.Value
+-- encodeDamagedMonster damagedMonster =
+--     Encode.object
+--         [
+
+
 createMonster : String -> Int -> Int -> Int -> Monster
 createMonster name hpMax pwrMax protMax =
     { name = name

@@ -1771,6 +1771,8 @@ encodeNotificationModel notificationModel =
         HasNotifications notifications ->
             Encode.list encodeNotification notifications
 
+-- decodeNotificationModel : 
+
 
 encodeModel : Model -> Decode.Value
 encodeModel model =
@@ -1807,6 +1809,24 @@ encodeModel model =
 
 
 decodeModel =
+    let
+        replaceMeDevice =
+            UI.classifyDevice { height = 1080, width = 1920 }
+
+        replaceMeTimeNow =
+            Time.millisToPosix 0
+
+        replaceMeGlobalSeed =
+            Random.initialSeed 1234
+
+        replaceMeCurrentTabType =
+            ShopTabType
+
+        replaceMeBattleModel =
+            Battle.init replaceMeDevice {  held_blood = 123, held_gold = 123 } 123
+
+        replaceMeBrowserNavKey = Nothing
+    in
     --     -- Decode.succeed <| (init time device "" Nothing |> Tuple.first)
     field "item_db" (decodeItemDb initial_item_db)
         --         |> Decode.andThen decodeCharacter
@@ -1821,6 +1841,17 @@ decodeModel =
                     |> required "historical_shop_trends" (Decode.list decodeShopTrends)
                     |> required "historical_player_actions" (Decode.list decodePlayerActionLog)
                     |> required "item_db" (Decode.succeed itemDb)
+                    |> hardcoded replaceMeTimeNow
+                    |> hardcoded replaceMeGlobalSeed
+                    |> required "ai_updates_paused" Decode.bool
+                    |> hardcoded replaceMeCurrentTabType
+                    |> hardcoded replaceMeBattleModel 
+                    |> hardcoded replaceMeBrowserNavKey
+                    |> hardcoded (initUiOptions replaceMeDevice)
+                    |> required "communityFund" Decode.int
+                    -- |> required "hasHadAtLeastOneBlood" Decode.bool
+                    -- |> required "hasHadAtLeastOneGem" Decode.bool
+                    -- |> required "notificationModel" encodeNotificationModel
             )
 
 
@@ -2465,6 +2496,27 @@ initNotificationModel =
 
 -- HasNotifications [ TextNotification "This is a notification" ]
 
+initUiOptions : UI.Device -> UiOptions
+initUiOptions device =
+    { device = device
+    , shiftIsPressed = False
+    , hovered_trend_chart = []
+    , show_main_chart = True
+    , hoveredTooltip = UI.NoHoveredTooltip
+    , cached_tooltip_offsets = Dict.empty
+    , globalViewport = Nothing
+    , showDebugInventoriesElement = Nothing
+    , shouldDisplayShowDebugInventoriesOverlay = False
+    , inventorySortType = SortByName
+    , inventorySortDir = Ascending
+    , show_debug_inventories = False
+    , hovered_item_in_character = Nothing
+    , shop_trends_hovered = False
+    , show_charts_in_hovered_item = False
+    , hoveredProgressUnlock = Nothing
+    , timeOfDayHovered = False
+    }
+
 
 init : Time.Posix -> UI.Device -> String -> Maybe Nav.Key -> ( Model, Cmd Msg )
 init timeNow device hash key =
@@ -2524,27 +2576,6 @@ init timeNow device hash key =
         battleModel =
             Battle.init device (getInnerPlayer player) spRefillUpgradeLvl
 
-        initUiOptions : UiOptions
-        initUiOptions =
-            { device = device
-            , shiftIsPressed = False
-            , hovered_trend_chart = []
-            , show_main_chart = True
-            , hoveredTooltip = UI.NoHoveredTooltip
-            , cached_tooltip_offsets = Dict.empty
-            , globalViewport = Nothing
-            , showDebugInventoriesElement = Nothing
-            , shouldDisplayShowDebugInventoriesOverlay = False
-            , inventorySortType = SortByName
-            , inventorySortDir = Ascending
-            , show_debug_inventories = False
-            , hovered_item_in_character = Nothing
-            , shop_trends_hovered = False
-            , show_charts_in_hovered_item = False
-            , hoveredProgressUnlock = Nothing
-            , timeOfDayHovered = False
-            }
-
         initialQuests =
             { dailyQuests =
                 -- []
@@ -2599,7 +2630,7 @@ init timeNow device hash key =
             , currentTabType = initialCurrentTabType
             , battleModel = battleModel
             , browserNavKey = key
-            , uiOptions = initUiOptions
+            , uiOptions = initUiOptions device
             , communityFund = 0
             , progressUnlocks = []
             , quests =

@@ -1820,6 +1820,7 @@ decodeModel =
                     |> required "shop_trends" decodeShopTrends
                     |> required "historical_shop_trends" (Decode.list decodeShopTrends)
                     |> required "historical_player_actions" (Decode.list decodePlayerActionLog)
+                    |> required "item_db" (Decode.succeed itemDb)
             )
 
 

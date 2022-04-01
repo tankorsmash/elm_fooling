@@ -320,6 +320,19 @@ type LocationType
     | Plains
 
 
+encodeLocationType : LocationType -> Encode.Value
+encodeLocationType locationType =
+    case locationType of
+        Forest ->
+            Encode.string "Forest"
+
+        Mountains ->
+            Encode.string "Mountains"
+
+        Plains ->
+            Encode.string "Plains"
+
+
 type alias LocationId =
     Int
 
@@ -331,6 +344,19 @@ type alias Location =
     , locationId : LocationId
     }
 
+
+encodeLocation : Location -> Encode.Value
+encodeLocation location =
+    Encode.object
+        [ ( "locationType", encodeLocationType location.locationType )
+        , ( "name", Encode.string location.name )
+        , ( "monstersLeft", Encode.int location.monstersLeft )
+        , ( "locationId", Encode.int location.locationId )
+        ]
+
+-- decodeLocation : Decoder Location
+-- decodeLocation =
+--     Decode.map4 Location
 
 maxMonstersPerLocation : Int
 maxMonstersPerLocation =
@@ -419,6 +445,19 @@ type alias SecondsWaitedSince =
     }
 
 
+encodeSecondsWaitedSince : SecondsWaitedSince -> Encode.Value
+encodeSecondsWaitedSince secondsWaitedSince =
+    Encode.object
+        [ ( "lastLocationMonsterRefill", Encode.int secondsWaitedSince.lastLocationMonsterRefill )
+        ]
+
+
+decodeSecondsWaitedSince : Decoder SecondsWaitedSince
+decodeSecondsWaitedSince =
+    Decode.map SecondsWaitedSince
+        (Decode.field "lastLocationMonsterRefill" Decode.int)
+
+
 type alias UiOptions =
     { device : UI.Device
     , hoveredTooltip : UI.HoveredTooltip
@@ -442,6 +481,12 @@ type alias Model =
     }
 
 
+
+-- encodeFightLog : FightLog -> Encode.Value
+-- encodeFightLog fightLog =
+--
+
+
 encodeModel : Model -> Encode.Value
 encodeModel model =
     Encode.object
@@ -453,13 +498,15 @@ encodeModel model =
           )
 
         -- , "battleSeed" : Random.Seed --TODO
-        -- , "fightLogs" : List FightLog
-        -- , "showExpandedLogs" : Bool
-        -- , "player" : BattleCharacter --NOTE: this is hackily read from in ItemShop's updateBattleOutMsg and used to update ItemShop's player. FIXME hack on that for sure
-        -- , "spRefillAmount" : Int --NOTE: this is from ItemShop's update too
-        -- , "secondsWaitedSince" : SecondsWaitedSince
-        -- , "shouldShowLocationTypeMenu" : Bool
-        -- , "currentLocationId" : LocationId
+        -- , "fightLogs" : List FightLog -- TODO use real data instead of skipping it
+        -- , "showExpandedLogs" : Bool -- NOSERIALIZE
+        -- , "player" : BattleCharacter -- NOSERIALIZE --NOTE: this is hackily read from in ItemShop's updateBattleOutMsg and used to update ItemShop's player. FIXME hack on that for sure
+        -- , "spRefillAmount" : Int -- NOSERIALIZE --NOTE: this is from ItemShop's update too
+        , ( "secondsWaitedSince", encodeSecondsWaitedSince model.secondsWaitedSince )
+
+        -- , "shouldShowLocationTypeMenu" : Bool --NOSERIALIZE
+        , ( "currentLocationId", Encode.int model.currentLocationId )
+
         -- , "locations" : Locations
         -- , "uiOptions" : UiOptions
         ]

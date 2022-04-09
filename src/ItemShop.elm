@@ -2704,6 +2704,14 @@ updateTimelinesWith updater ({ timelines } as model) newTimeline =
     updater newTimeline timelines |> setTimelines model
 
 
+{-| Similar to updateTimelinesWith, but the last args are swapped and specified to Timelines.
+If I could use updateTimelinesWith, I would
+-}
+updateTimelineState : (Animator.Timeline a -> Timelines -> Timelines) -> Animator.Timeline a -> Model -> Model
+updateTimelineState updater newState model =
+    updater newState model.timelines |> setTimelines model
+
+
 animator : Model -> Animator.Animator Model
 animator outerModel =
     let
@@ -2787,9 +2795,7 @@ animator outerModel =
     Animator.animator
         |> Animator.watchingWith
             (.timelines >> .titleScreenAnimationState)
-            (\newState ({ timelines } as model) ->
-                { timelines | titleScreenAnimationState = newState } |> setTimelines model
-            )
+            (updateTimelineState (\newState timelines -> { timelines | titleScreenAnimationState = newState }))
             (\state ->
                 case state of
                     HighTitle ->
@@ -2800,9 +2806,7 @@ animator outerModel =
             )
         |> Animator.watchingWith
             (.timelines >> .showMineGpGained)
-            (\newState ({ timelines } as model) ->
-                { timelines | showMineGpGained = newState } |> setTimelines model
-            )
+            (updateTimelineState (\newState timelines -> { timelines | showMineGpGained = newState }))
             (\state ->
                 case state of
                     ShowMineAnimation seed ->
@@ -2818,7 +2822,7 @@ animator outerModel =
         |> juicyButtonWatchers
         |> Animator.watchingWith
             (.timelines >> .goldGainedTimeline)
-            (\newState ({ timelines } as model) -> { timelines | goldGainedTimeline = newState } |> setTimelines model)
+            (updateTimelineState (\newState timelines -> { timelines | goldGainedTimeline = newState }))
             (\state ->
                 case state of
                     ShowGoldGainedAnimation seed _ ->
@@ -2832,7 +2836,7 @@ animator outerModel =
             )
         |> Animator.watchingWith
             (.timelines >> .screenshakeTimeline)
-            (\newState ({ timelines } as model) -> { timelines | screenshakeTimeline = newState } |> setTimelines model)
+            (updateTimelineState (\newState timelines -> { timelines | screenshakeTimeline = newState }))
             (\state ->
                 case state of
                     RandomScreenShake _ ->

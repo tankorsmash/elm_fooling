@@ -221,8 +221,8 @@ decodeTradeParty =
             )
 
 
-trade_party_to_str : Characters -> TradeParty -> String
-trade_party_to_str (Characters { player, shop, others }) party =
+tradePartyToStr : Characters -> TradeParty -> String
+tradePartyToStr (Characters { player, shop, others }) party =
     case party of
         ShopParty ->
             "Shop"
@@ -1951,8 +1951,8 @@ is_item_trade_log_from_shop item_trade_log =
     item_trade_log.from_party == ShopParty
 
 
-initial_shop_trends : ShopTrends
-initial_shop_trends =
+initialShopTrends : ShopTrends
+initialShopTrends =
     { item_type_sentiment =
         Dict.fromList <|
             List.map (\it -> ( item_type_to_id it, 1.0 ))
@@ -2651,7 +2651,7 @@ init timeNow device hash key =
             , playerUpgrades = initialPlayerUpgrades
             , secondsWaitedSince = { lastSpRefill = 0 }
             , characters = characters
-            , shop_trends = initial_shop_trends
+            , shop_trends = initialShopTrends
             , item_db = item_db
             , historical_shop_trends = []
             , historical_player_actions = [ WelcomeMessageActionLog ]
@@ -3148,8 +3148,8 @@ isElementOnScreen gvp { element } =
     y > (element.y + element.height)
 
 
-sell_items_from_party_to_other : TradeContext -> TradeOrder -> TradeRecord
-sell_items_from_party_to_other orig_trade_context { item, qty } =
+sellItemsFromPartyToOther : TradeContext -> TradeOrder -> TradeRecord
+sellItemsFromPartyToOther orig_trade_context { item, qty } =
     let
         { shop_trends, from_party, to_party } =
             orig_trade_context
@@ -3837,7 +3837,7 @@ update msg model =
                     let
                         -- ( new_shop_trends, new_shop, new_player ) =
                         trade_record =
-                            sell_items_from_party_to_other
+                            sellItemsFromPartyToOther
                                 { shop_trends = model.shop_trends
                                 , from_party = shop
                                 , to_party = player
@@ -3876,7 +3876,7 @@ update msg model =
 
                         trade_record : TradeRecord
                         trade_record =
-                            sell_items_from_party_to_other
+                            sellItemsFromPartyToOther
                                 orig_trade_context
                                 trade_order
 
@@ -5441,7 +5441,7 @@ ai_buy_item_from_shop ai_tick_time item_db { shop_trends, character, shop, commu
                         { shop_trends = shop_trends
                         , from_party = getShopCharacter shop
                         , to_party =
-                            append_to_character_action_log
+                            appendToCharacterActionLog
                                 character
                                 { time = ai_tick_time
                                 , log_type = WantedButCouldntTrade WantedToBuy
@@ -5449,7 +5449,7 @@ ai_buy_item_from_shop ai_tick_time item_db { shop_trends, character, shop, commu
                         }
 
                 Just item ->
-                    sell_items_from_party_to_other
+                    sellItemsFromPartyToOther
                         { shop_trends = shop_trends
                         , from_party = getShopCharacter shop
                         , to_party = character
@@ -5469,7 +5469,7 @@ ai_buy_item_from_shop ai_tick_time item_db { shop_trends, character, shop, commu
         CompletedTradeRecord trade_context_ log ->
             { shop_trends = trade_context_.shop_trends
             , character =
-                append_to_character_action_log
+                appendToCharacterActionLog
                     trade_context_.to_party
                     { log_type = Traded log, time = ai_tick_time }
             , shop = Shop trade_context_.from_party
@@ -5519,7 +5519,7 @@ ai_sell_item_to_shop ai_tick_time item_db { shop_trends, character, shop, commun
             , time = ai_tick_time
             }
 
-        shuffled_items_to_sell =
+        shuffledItemsToSell =
             (case untrendy_items of
                 [] ->
                     List.filter profitable_enough sellable_items
@@ -5535,19 +5535,19 @@ ai_sell_item_to_shop ai_tick_time item_db { shop_trends, character, shop, commun
 
         trade_record : TradeRecord
         trade_record =
-            case List.head shuffled_items_to_sell of
+            case List.head shuffledItemsToSell of
                 Nothing ->
                     IncompleteTradeRecord
                         { shop_trends = shop_trends
                         , from_party =
-                            append_to_character_action_log
+                            appendToCharacterActionLog
                                 character
                                 wanted_to_sell_but_couldnt
                         , to_party = getShopCharacter shop
                         }
 
                 Just { item } ->
-                    sell_items_from_party_to_other
+                    sellItemsFromPartyToOther
                         { shop_trends = shop_trends
                         , from_party = character
                         , to_party = getShopCharacter shop
@@ -5567,7 +5567,7 @@ ai_sell_item_to_shop ai_tick_time item_db { shop_trends, character, shop, commun
         CompletedTradeRecord trade_context_ log ->
             { shop_trends = trade_context_.shop_trends
             , character =
-                append_to_character_action_log
+                appendToCharacterActionLog
                     trade_context_.from_party
                     { log_type = Traded log, time = ai_tick_time }
             , shop = Shop trade_context_.to_party
@@ -5583,8 +5583,8 @@ ai_sell_item_to_shop ai_tick_time item_db { shop_trends, character, shop, commun
             }
 
 
-append_to_character_action_log : Character -> ActionLog -> Character
-append_to_character_action_log character new_log =
+appendToCharacterActionLog : Character -> ActionLog -> Character
+appendToCharacterActionLog character new_log =
     let
         new_action_log =
             (character.action_log ++ [ new_log ])
@@ -5656,8 +5656,8 @@ convertPreUpdateRecordToPostUpdate { shop_trends, character, shop, communityFund
     }
 
 
-ai_fetch_item : Time.Posix -> ItemDb -> AiPreUpdateRecord -> AiUpdateRecord
-ai_fetch_item ai_tick_time item_db ({ shop_trends, character, shop, communityFund, globalSeed } as preUpdateRecord) =
+aiFetchItem : Time.Posix -> ItemDb -> AiPreUpdateRecord -> AiUpdateRecord
+aiFetchItem ai_tick_time item_db ({ shop_trends, character, shop, communityFund, globalSeed } as preUpdateRecord) =
     let
         ( mbNewItem, newSeed ) =
             pick_random_unlocked_item_from_db item_db globalSeed
@@ -5670,7 +5670,7 @@ ai_fetch_item ai_tick_time item_db ({ shop_trends, character, shop, communityFun
                     character
                         |> addHeldItem newItem
                         |> (\c ->
-                                append_to_character_action_log c
+                                appendToCharacterActionLog c
                                     { log_type = FetchedItem newItem.id
                                     , time = ai_tick_time
                                     }
@@ -5687,7 +5687,7 @@ ai_fetch_item ai_tick_time item_db ({ shop_trends, character, shop, communityFun
                     |> (\ai_update_record ->
                             { ai_update_record
                                 | character =
-                                    append_to_character_action_log character
+                                    appendToCharacterActionLog character
                                         { log_type = FetchedItemButFundNotBigEnough newItem.id
                                         , time = ai_tick_time
                                         }
@@ -5754,7 +5754,7 @@ update_ai ai_tick_time char_id ({ shop_trends, historical_shop_trends, character
                                 preUpdateRecord
 
                         WantsToFetchItem ->
-                            ai_fetch_item
+                            aiFetchItem
                                 ai_tick_time
                                 item_db
                                 preUpdateRecord
@@ -5762,7 +5762,7 @@ update_ai ai_tick_time char_id ({ shop_trends, historical_shop_trends, character
                         NoActionChoice ->
                             { shop_trends = preUpdateRecord.shop_trends
                             , character =
-                                append_to_character_action_log preUpdateRecord.character
+                                appendToCharacterActionLog preUpdateRecord.character
                                     { log_type = DidNothing, time = ai_tick_time }
                             , shop = preUpdateRecord.shop
                             , traded_items = []
@@ -6112,7 +6112,7 @@ render_single_trade_log_entry colorTheme item_db ((Characters { player, shop, ot
             paragraph []
                 [ text <|
                     "Shop --> "
-                        ++ trade_party_to_str characters to_party
+                        ++ tradePartyToStr characters to_party
                         ++ " "
                         ++ item_name
                         ++ " ("
@@ -6126,7 +6126,7 @@ render_single_trade_log_entry colorTheme item_db ((Characters { player, shop, ot
             paragraph []
                 [ text <|
                     "Shop <-- "
-                        ++ trade_party_to_str characters from_party
+                        ++ tradePartyToStr characters from_party
                         ++ " "
                         ++ item_name
                         ++ " ("
@@ -6141,9 +6141,9 @@ render_single_trade_log_entry colorTheme item_db ((Characters { player, shop, ot
                 [ text <|
                     item_name
                         ++ " was traded from "
-                        ++ trade_party_to_str characters from_party
+                        ++ tradePartyToStr characters from_party
                         ++ " to "
-                        ++ trade_party_to_str characters to_party
+                        ++ tradePartyToStr characters to_party
                         ++ " ("
                         ++ qty_str
                         ++ ") "
@@ -9494,7 +9494,7 @@ suite =
                     let
                         encodedShopTrends : String
                         encodedShopTrends =
-                            Encode.encode 0 (encodeShopTrends initial_shop_trends)
+                            Encode.encode 0 (encodeShopTrends initialShopTrends)
                     in
                     Expect.ok
                         (Decode.decodeString decodeShopTrends encodedShopTrends)
@@ -9703,7 +9703,7 @@ suite =
 
                 test_shop_trends : ShopTrends
                 test_shop_trends =
-                    initial_shop_trends
+                    initialShopTrends
 
                 test_character : Character
                 test_character =
@@ -9957,7 +9957,7 @@ suite =
                 \ai_tick_time ->
                     let
                         preUpdateRecord =
-                            { shop_trends = initial_shop_trends
+                            { shop_trends = initialShopTrends
                             , character = test_character
                             , shop = Shop test_character --doesnt matter here
                             , communityFund = 0
@@ -9965,7 +9965,7 @@ suite =
                             }
 
                         postUpdateRecord =
-                            ai_fetch_item ai_tick_time test_item_db preUpdateRecord
+                            aiFetchItem ai_tick_time test_item_db preUpdateRecord
                     in
                     Expect.all
                         [ \pur -> Expect.equal preUpdateRecord.communityFund pur.communityFund
@@ -9976,7 +9976,7 @@ suite =
                 \ai_tick_time ->
                     let
                         preUpdateRecord =
-                            { shop_trends = initial_shop_trends
+                            { shop_trends = initialShopTrends
                             , character = test_character
                             , shop = Shop test_character --doesnt matter here
                             , communityFund = 100000
@@ -9984,7 +9984,7 @@ suite =
                             }
 
                         postUpdateRecord =
-                            ai_fetch_item ai_tick_time test_item_db preUpdateRecord
+                            aiFetchItem ai_tick_time test_item_db preUpdateRecord
                     in
                     Expect.all
                         [ \pur ->

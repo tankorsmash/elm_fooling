@@ -1678,6 +1678,27 @@ type Notification
     = TextNotification String
 
 
+type alias Timelines =
+    { titleScreenAnimationState : Animator.Timeline TitleScreenAnimationState
+    , showMineGpGained : Animator.Timeline MineAnimation
+    , mineClickedTimelines : MineClickedAnimationDict
+    , mineClickedParticleIdx : Int
+    , goldGainedTimeline : Animator.Timeline GoldGainedAnimation
+    , screenshakeTimeline : Animator.Timeline ScreenshakeAnimation
+    , juicyButtonTimelines : JuicyButtonAnimationDict
+    }
+
+
+setTimelines : Model -> Timelines -> Model
+setTimelines model timelines =
+    { model | timelines = timelines }
+
+
+setTimelinesTo : Timelines -> Model -> Model
+setTimelinesTo timelines model =
+    { model | timelines = timelines }
+
+
 type alias Model =
     { colorTheme : UI.ColorTheme
     , playerUpgrades : List PlayerUpgrade
@@ -1700,13 +1721,8 @@ type alias Model =
     , timeOfDay : TimeOfDay
     , numItemsToStartDayWith : Int
     , shouldViewGemUpgradesInPostPhase : Bool
-    , titleScreenAnimationState : Animator.Timeline TitleScreenAnimationState
-    , showMineGpGained : Animator.Timeline MineAnimation
-    , mineClickedTimelines : MineClickedAnimationDict
-    , mineClickedParticleIdx : Int
-    , goldGainedTimeline : Animator.Timeline GoldGainedAnimation
-    , screenshakeTimeline : Animator.Timeline ScreenshakeAnimation
-    , juicyButtonTimelines : JuicyButtonAnimationDict
+    , timelines :
+        Timelines
     , hasHadAtLeastOneBlood : Bool
     , hasHadAtLeastOneGem : Bool
     , settings : SettingsData
@@ -2612,6 +2628,23 @@ init timeNow device hash key =
             , persistentQuests = []
             }
 
+        initTimelines : Timelines
+        initTimelines =
+            { titleScreenAnimationState = Animator.init <| HighTitle
+            , showMineGpGained = Animator.init <| NoMineAnimation
+            , mineClickedTimelines =
+                List.range 0 (maxMineClickedParticles + 1)
+                    |> List.map (\num -> ( num, Animator.init NoMineClickedAnimation ))
+                    |> Dict.fromList
+            , mineClickedParticleIdx = 0
+            , goldGainedTimeline = Animator.init <| NoGoldAnimation
+            , screenshakeTimeline = Animator.init <| NoScreenshakeAnimation
+            , juicyButtonTimelines =
+                juicyButtonNames
+                    |> List.map (\name -> ( name, Animator.init NoJuicyButtonAnimation ))
+                    |> Dict.fromList
+            }
+
         initModel : Model
         initModel =
             { colorTheme = BrightTheme
@@ -2647,19 +2680,7 @@ init timeNow device hash key =
                 }
             , numItemsToStartDayWith = 5
             , shouldViewGemUpgradesInPostPhase = False
-            , titleScreenAnimationState = Animator.init <| HighTitle
-            , showMineGpGained = Animator.init <| NoMineAnimation
-            , mineClickedTimelines =
-                List.range 0 (maxMineClickedParticles + 1)
-                    |> List.map (\num -> ( num, Animator.init NoMineClickedAnimation ))
-                    |> Dict.fromList
-            , mineClickedParticleIdx = 0
-            , goldGainedTimeline = Animator.init <| NoGoldAnimation
-            , screenshakeTimeline = Animator.init <| NoScreenshakeAnimation
-            , juicyButtonTimelines =
-                juicyButtonNames
-                    |> List.map (\name -> ( name, Animator.init NoJuicyButtonAnimation ))
-                    |> Dict.fromList
+            , timelines = initTimelines
             , hasHadAtLeastOneBlood = False
             , hasHadAtLeastOneGem = False
             , settings = initSettings
@@ -2687,32 +2708,25 @@ animator outerModel =
                 isResting state =
                     False
 
-                -- state
-                --     |> Dict.values
-                --     -- timeline is resting if all the sub timelines are on NoMineClickedAnimation
-                --     |> List.all (\s -> s == NoMineClickedAnimation)
-                -- case state of
-                --     ShowMineClickedAnimation seed ->
-                --         False
-                --
-                --     HideMineClickedAnimation seed ->
-                --         False
-                --
-                --     NoMineClickedAnimation ->
-                --         True
                 timelineGetter : Int -> Model -> Animator.Timeline MineClickedAnimation
                 timelineGetter waveNum model =
-                    model.mineClickedTimelines
+                    model.timelines.mineClickedTimelines
                         |> Dict.get waveNum
                         |> Maybe.withDefault (Animator.init NoMineClickedAnimation)
 
                 timelineSetter : Int -> Animator.Timeline MineClickedAnimation -> Model -> Model
                 timelineSetter waveNum newTimeline model =
-                    model.mineClickedTimelines
+                    model.timelines.mineClickedTimelines
                         |> Dict.update
                             waveNum
                             (Maybe.map (\_ -> newTimeline))
-                        |> (\timelines -> { model | mineClickedTimelines = timelines })
+                        |> (\mineClickedTimelines ->
+                                let
+                                    timelines =
+                                        model.timelines
+                                in
+                                { timelines | mineClickedTimelines = mineClickedTimelines } |> setTimelines model
+                           )
             in
             List.foldl
                 (\waveNum anim_ ->
@@ -2728,7 +2742,7 @@ animator outerModel =
                 List.range 0 <|
                     List.length <|
                         --we use outerModel since it shouldn't change right?
-                        Dict.values outerModel.mineClickedTimelines
+                        Dict.values outerModel.timelines.mineClickedTimelines
 
         juicyButtonWatchers : Animator.Animator Model -> Animator.Animator Model
         juicyButtonWatchers animator_ =
@@ -2738,17 +2752,23 @@ animator outerModel =
 
                 timelineGetter : String -> Model -> Animator.Timeline JuicyButtonAnimation
                 timelineGetter buttonName model =
-                    model.juicyButtonTimelines
+                    model.timelines.juicyButtonTimelines
                         |> Dict.get buttonName
                         |> Maybe.withDefault (Animator.init NoJuicyButtonAnimation)
 
                 timelineSetter : String -> Animator.Timeline JuicyButtonAnimation -> Model -> Model
                 timelineSetter buttonName newTimeline model =
-                    model.juicyButtonTimelines
+                    model.timelines.juicyButtonTimelines
                         |> Dict.update
                             buttonName
                             (Maybe.map (\_ -> newTimeline))
-                        |> (\timelines -> { model | juicyButtonTimelines = timelines })
+                        |> (\buttonTimelines ->
+                                let
+                                    timelines =
+                                        model.timelines
+                                in
+                                { timelines | juicyButtonTimelines = buttonTimelines } |> setTimelines model
+                           )
             in
             List.foldl
                 (\buttonName anim_ ->
@@ -2761,12 +2781,12 @@ animator outerModel =
                 animator_
             <|
                 --we use outerModel since it shouldn't change right?
-                Dict.keys outerModel.juicyButtonTimelines
+                Dict.keys outerModel.timelines.juicyButtonTimelines
     in
     Animator.animator
         |> Animator.watchingWith
-            .titleScreenAnimationState
-            (\newState model -> { model | titleScreenAnimationState = newState })
+            (.timelines >> .titleScreenAnimationState)
+            (\newState ({ timelines } as model) -> { timelines | titleScreenAnimationState = newState } |> setTimelines model)
             (\state ->
                 case state of
                     HighTitle ->
@@ -2776,8 +2796,8 @@ animator outerModel =
                         True
             )
         |> Animator.watchingWith
-            .showMineGpGained
-            (\newState model -> { model | showMineGpGained = newState })
+            (.timelines >> .showMineGpGained)
+            (\newState ({ timelines } as model) -> { timelines | showMineGpGained = newState } |> setTimelines model)
             (\state ->
                 case state of
                     ShowMineAnimation seed ->
@@ -2792,8 +2812,8 @@ animator outerModel =
         |> mineClickedWatchers
         |> juicyButtonWatchers
         |> Animator.watchingWith
-            .goldGainedTimeline
-            (\newState model -> { model | goldGainedTimeline = newState })
+            (.timelines >> .goldGainedTimeline)
+            (\newState ({ timelines } as model) -> { timelines | goldGainedTimeline = newState } |> setTimelines model)
             (\state ->
                 case state of
                     ShowGoldGainedAnimation seed _ ->
@@ -2806,8 +2826,8 @@ animator outerModel =
                         True
             )
         |> Animator.watchingWith
-            .screenshakeTimeline
-            (\newState model -> { model | screenshakeTimeline = newState })
+            (.timelines >> .screenshakeTimeline)
+            (\newState ({ timelines } as model) -> { timelines | screenshakeTimeline = newState } |> setTimelines model)
             (\state ->
                 case state of
                     RandomScreenShake _ ->
@@ -3863,15 +3883,23 @@ update msg model =
                                 newQuests =
                                     updateQuestsOnPlayerSellItemsToShop model.quests item_trade_log earnedGold
                                         |> Tuple.first
+
+                                oldTimelines =
+                                    model.timelines
+
+                                newTimelines =
+                                    { oldTimelines
+                                        | goldGainedTimeline =
+                                            animateGoldGained oldTimelines.goldGainedTimeline model.globalSeed earnedGold
+                                    }
                             in
                             ( { model
                                 | shop_trends = new_trade_context.shop_trends
                                 , historical_shop_trends = List.append model.historical_shop_trends [ model.shop_trends ]
                                 , item_db = new_item_db
                                 , quests = newQuests
-                                , goldGainedTimeline =
-                                    animateGoldGained model.goldGainedTimeline model.globalSeed earnedGold
                               }
+                                |> setTimelinesTo newTimelines
                                 |> replaceCharacter new_trade_context.from_party
                                 |> replaceCharacter new_trade_context.to_party
                             , playPlayerSellItemSound model.settings.masterVol
@@ -4081,19 +4109,24 @@ update msg model =
             ( Animator.update newTime (animator model) model, Cmd.none )
 
         ClickedTitleTextLabel ->
-            ( { model
+            let
+                timelines =
+                    model.timelines
+            in
+            ( { timelines
                 | titleScreenAnimationState =
                     Animator.go
                         Animator.quickly
-                        (case Animator.current model.titleScreenAnimationState of
+                        (case Animator.current timelines.titleScreenAnimationState of
                             HighTitle ->
                                 LowTitle
 
                             LowTitle ->
                                 HighTitle
                         )
-                        model.titleScreenAnimationState
+                        timelines.titleScreenAnimationState
               }
+                |> setTimelines model
             , Cmd.none
             )
 
@@ -4110,10 +4143,15 @@ update msg model =
             ( newModel, Cmd.none )
 
         PressJuicyButton buttonName ->
-            ( { model
+            let
+                timelines =
+                    model.timelines
+            in
+            ( { timelines
                 | juicyButtonTimelines =
-                    animateJuicyButtonClicked model.juicyButtonTimelines buttonName
+                    animateJuicyButtonClicked timelines.juicyButtonTimelines buttonName
               }
+                |> setTimelines model
             , Cmd.none
             )
 
@@ -4951,10 +4989,13 @@ updateMine ({ globalSeed, settings } as model) =
                 playMineSuccessSound settings.masterVol
 
         waveNum =
-            remainderBy maxMineClickedParticles (model.mineClickedParticleIdx + 1)
+            remainderBy maxMineClickedParticles (model.timelines.mineClickedParticleIdx + 1)
+
+        { timelines } =
+            model
 
         animatedMineClick =
-            animateMineClicked model.mineClickedTimelines model.globalSeed waveNum
+            animateMineClicked timelines.mineClickedTimelines model.globalSeed waveNum
 
         ( newQuests, newNotifications ) =
             if shouldEarnGp then
@@ -4967,31 +5008,40 @@ updateMine ({ globalSeed, settings } as model) =
         |> (\m ->
                 let
                     animatedScreenshake =
-                        animateRandomScreenshake m.screenshakeTimeline m.globalSeed
+                        animateRandomScreenshake mTimelines.screenshakeTimeline m.globalSeed
+
+                    mTimelines : Timelines
+                    mTimelines =
+                        m.timelines
                 in
-                if shouldEarnGp then
-                    { m
+                (if shouldEarnGp then
+                    { mTimelines
                         | showMineGpGained =
-                            mineSuccessAnimation m.showMineGpGained m.globalSeed
+                            mineSuccessAnimation mTimelines.showMineGpGained m.globalSeed
                         , goldGainedTimeline =
-                            animateGoldGained m.goldGainedTimeline m.globalSeed gpEarned
+                            animateGoldGained mTimelines.goldGainedTimeline m.globalSeed gpEarned
                         , screenshakeTimeline = animatedScreenshake 3
                     }
 
-                else
-                    { m
+                 else
+                    { mTimelines
                         | screenshakeTimeline = animatedScreenshake 1
                     }
+                )
+                    |> setTimelines m
            )
         |> (\m ->
                 { m
-                    | mineClickedParticleIdx = waveNum
-                    , mineClickedTimelines = animatedMineClick
-                    , quests = newQuests
+                    | quests = newQuests
                     , notificationModel =
                         addNotifications newNotifications model.notificationModel
                 }
            )
+        |> setTimelinesTo
+            { timelines
+                | mineClickedTimelines = animatedMineClick
+                , mineClickedParticleIdx = waveNum
+            }
         |> setGlobalSeed newSeed
         |> withCharacters newCharacters
     , mineCmd
@@ -8078,8 +8128,11 @@ debugTimeOfDayControls { colorTheme, timeOfDay, ai_tick_time, characters, item_d
 viewShopActivePhase : Model -> Element Msg
 viewShopActivePhase model =
     let
-        { historical_player_actions, colorTheme, timeOfDay, ai_updates_paused, ai_tick_time, characters, item_db, progressUnlocks, playerUpgrades, quests, showMineGpGained, mineClickedTimelines, juicyButtonTimelines, uiOptions, historical_shop_trends, shop_trends } =
+        { historical_player_actions, colorTheme, timeOfDay, ai_updates_paused, ai_tick_time, characters, item_db, progressUnlocks, playerUpgrades, quests, timelines, uiOptions, historical_shop_trends, shop_trends } =
             model
+
+        { mineClickedTimelines, juicyButtonTimelines, showMineGpGained } =
+            timelines
 
         player : Player
         player =
@@ -8500,9 +8553,9 @@ viewOverlay model =
                 [ viewCurrenciesOverlay
                     model.colorTheme
                     (getPlayer model.characters)
-                    (getGoldGainedLabelMovementY model.goldGainedTimeline)
-                    (getGoldGainedAlpha model.goldGainedTimeline)
-                    (getGoldGainedQuantity model.goldGainedTimeline |> Maybe.withDefault 0)
+                    (getGoldGainedLabelMovementY model.timelines.goldGainedTimeline)
+                    (getGoldGainedAlpha model.timelines.goldGainedTimeline)
+                    (getGoldGainedQuantity model.timelines.goldGainedTimeline |> Maybe.withDefault 0)
                 ]
             ]
 
@@ -8631,7 +8684,7 @@ view model =
     <|
         el
             -- has to be its own element; otherwise scrollbars show up
-            [ Element.moveRight <| getScreenshakeMoveRight model.screenshakeTimeline
+            [ Element.moveRight <| getScreenshakeMoveRight model.timelines.screenshakeTimeline
             , width fill
             , height fill
             ]
@@ -8859,7 +8912,7 @@ viewTitleScreen : Model -> Element Msg
 viewTitleScreen model =
     let
         scaling =
-            Animator.linear model.titleScreenAnimationState <|
+            Animator.linear model.timelines.titleScreenAnimationState <|
                 \state ->
                     Animator.at <|
                         let
@@ -8889,7 +8942,7 @@ viewTitleScreen model =
                                     5
 
         continueBtnMoveDown =
-            Animator.linear model.titleScreenAnimationState <|
+            Animator.linear model.timelines.titleScreenAnimationState <|
                 \state ->
                     Animator.at <|
                         if state == HighTitle then

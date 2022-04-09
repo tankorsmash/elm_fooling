@@ -2699,6 +2699,11 @@ initSettings =
     }
 
 
+updateTimelinesWith : (a -> Timelines -> Timelines) -> Model -> a -> Model
+updateTimelinesWith updater ({ timelines } as model) newTimeline =
+    updater newTimeline timelines |> setTimelines model
+
+
 animator : Model -> Animator.Animator Model
 animator outerModel =
     let
@@ -2720,13 +2725,11 @@ animator outerModel =
                         |> Dict.update
                             waveNum
                             (Maybe.map (\_ -> newTimeline))
-                        |> (\mineClickedTimelines ->
-                                let
-                                    timelines =
-                                        model.timelines
-                                in
-                                { timelines | mineClickedTimelines = mineClickedTimelines } |> setTimelines model
-                           )
+                        |> updateTimelinesWith
+                            (\mineClickedTimelines timeline ->
+                                { timeline | mineClickedTimelines = mineClickedTimelines }
+                            )
+                            model
             in
             List.foldl
                 (\waveNum anim_ ->
@@ -2762,13 +2765,11 @@ animator outerModel =
                         |> Dict.update
                             buttonName
                             (Maybe.map (\_ -> newTimeline))
-                        |> (\buttonTimelines ->
-                                let
-                                    timelines =
-                                        model.timelines
-                                in
-                                { timelines | juicyButtonTimelines = buttonTimelines } |> setTimelines model
-                           )
+                        |> updateTimelinesWith
+                            (\juicyButtonTimelines timeline ->
+                                { timeline | juicyButtonTimelines = juicyButtonTimelines }
+                            )
+                            model
             in
             List.foldl
                 (\buttonName anim_ ->
@@ -2786,7 +2787,9 @@ animator outerModel =
     Animator.animator
         |> Animator.watchingWith
             (.timelines >> .titleScreenAnimationState)
-            (\newState ({ timelines } as model) -> { timelines | titleScreenAnimationState = newState } |> setTimelines model)
+            (\newState ({ timelines } as model) ->
+                { timelines | titleScreenAnimationState = newState } |> setTimelines model
+            )
             (\state ->
                 case state of
                     HighTitle ->
@@ -2797,7 +2800,9 @@ animator outerModel =
             )
         |> Animator.watchingWith
             (.timelines >> .showMineGpGained)
-            (\newState ({ timelines } as model) -> { timelines | showMineGpGained = newState } |> setTimelines model)
+            (\newState ({ timelines } as model) ->
+                { timelines | showMineGpGained = newState } |> setTimelines model
+            )
             (\state ->
                 case state of
                     ShowMineAnimation seed ->

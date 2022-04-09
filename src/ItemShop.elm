@@ -2732,7 +2732,7 @@ animator outerModel =
                     model.timelines.mineClickedTimelines
                         |> Dict.update
                             waveNum
-                            (Maybe.map (\_ -> newTimeline))
+                            (Maybe.map (always newTimeline))
                         |> updateTimelinesWith
                             (\mineClickedTimelines timeline ->
                                 { timeline | mineClickedTimelines = mineClickedTimelines }
@@ -8290,7 +8290,7 @@ viewShopActivePhase model =
             , Element.el [ paddingXY 0 10, width fill ] <|
                 render_inventory_grid
                     model
-                    "Items In Inventory"
+                    "Items In Immediate Inventory"
                     playerChar
                     shop_trends
                     uiOptions.hovered_item_in_character

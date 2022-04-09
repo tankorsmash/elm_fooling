@@ -536,6 +536,10 @@ encodeModel model =
         -- , "uiOptions" : UiOptions
         ]
 
+-- decodeModel : Decoder Model
+-- decodeModel =
+--     Decode.map
+
 
 encodeLocations : Locations -> Encode.Value
 encodeLocations locations =

@@ -1771,7 +1771,9 @@ encodeNotificationModel notificationModel =
         HasNotifications notifications ->
             Encode.list encodeNotification notifications
 
--- decodeNotificationModel : 
+
+
+-- decodeNotificationModel :
 
 
 encodeModel : Model -> Decode.Value
@@ -1823,9 +1825,10 @@ decodeModel =
             ShopTabType
 
         replaceMeBattleModel =
-            Battle.init replaceMeDevice {  held_blood = 123, held_gold = 123 } 123
+            Battle.init replaceMeDevice { held_blood = 123, held_gold = 123 } 123
 
-        replaceMeBrowserNavKey = Nothing
+        replaceMeBrowserNavKey =
+            Nothing
     in
     --     -- Decode.succeed <| (init time device "" Nothing |> Tuple.first)
     field "item_db" (decodeItemDb initial_item_db)
@@ -1845,13 +1848,13 @@ decodeModel =
                     |> hardcoded replaceMeGlobalSeed
                     |> required "ai_updates_paused" Decode.bool
                     |> hardcoded replaceMeCurrentTabType
-                    |> hardcoded replaceMeBattleModel 
+                    |> hardcoded replaceMeBattleModel
                     |> hardcoded replaceMeBrowserNavKey
                     |> hardcoded (initUiOptions replaceMeDevice)
                     |> required "communityFund" Decode.int
-                    -- |> required "hasHadAtLeastOneBlood" Decode.bool
-                    -- |> required "hasHadAtLeastOneGem" Decode.bool
-                    -- |> required "notificationModel" encodeNotificationModel
+             -- |> required "hasHadAtLeastOneBlood" Decode.bool
+             -- |> required "hasHadAtLeastOneGem" Decode.bool
+             -- |> required "notificationModel" encodeNotificationModel
             )
 
 
@@ -2495,6 +2498,7 @@ initNotificationModel =
 
 
 -- HasNotifications [ TextNotification "This is a notification" ]
+
 
 initUiOptions : UI.Device -> UiOptions
 initUiOptions device =

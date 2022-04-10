@@ -2940,7 +2940,7 @@ add_inventory_record_to_character : InventoryRecord -> Character -> Character
 add_inventory_record_to_character { item, quantity, avg_price } character =
     { character
         | held_items =
-            add_item_to_inventory_records
+            addItemToInventoryRecords
                 character.held_items
                 item
                 quantity
@@ -2948,8 +2948,8 @@ add_inventory_record_to_character { item, quantity, avg_price } character =
     }
 
 
-add_item_to_inventory_records : InventoryRecords -> Item -> Quantity -> Int -> InventoryRecords
-add_item_to_inventory_records records item qty total_cost =
+addItemToInventoryRecords : InventoryRecords -> Item -> Quantity -> Int -> InventoryRecords
+addItemToInventoryRecords records item qty total_cost =
     let
         single_cost =
             total_cost // getQuantity qty
@@ -2987,8 +2987,8 @@ add_item_to_inventory_records records item qty total_cost =
             remaining_records ++ updated_records
 
 
-remove_item_from_inventory_records : InventoryRecords -> Item -> Quantity -> Int -> InventoryRecords
-remove_item_from_inventory_records records item qty total_cost =
+removeItemFromInventoryRecords : InventoryRecords -> Item -> Quantity -> Int -> InventoryRecords
+removeItemFromInventoryRecords records item qty total_cost =
     List.map (reduce_if_matched item qty total_cost) records
 
 
@@ -3070,14 +3070,14 @@ trade_items_from_party_to_other shop_trends from_character to_character { item, 
             get_adjusted_item_cost shop_trends item qty
 
         new_to_items =
-            add_item_to_inventory_records
+            addItemToInventoryRecords
                 to_character.held_items
                 item
                 qty
                 total_cost
 
         new_from_items =
-            remove_item_from_inventory_records
+            removeItemFromInventoryRecords
                 from_character.held_items
                 item
                 qty
@@ -3988,7 +3988,7 @@ update msg model =
                                         (setQuantity 1)
 
                                 newItems =
-                                    remove_item_from_inventory_records
+                                    removeItemFromInventoryRecords
                                         player.held_items
                                         item
                                         (setQuantity 1)
@@ -5637,7 +5637,7 @@ addHeldItem : Item -> Character -> Character
 addHeldItem item ({ held_items } as character) =
     { character
         | held_items =
-            add_item_to_inventory_records
+            addItemToInventoryRecords
                 held_items
                 item
                 (setQuantity 1)
@@ -10081,7 +10081,7 @@ suite =
                             List.length test_character.held_items
                     in
                     List.length
-                        (add_item_to_inventory_records
+                        (addItemToInventoryRecords
                             test_character.held_items
                             new_item
                             (setQuantity 1)
@@ -10110,7 +10110,7 @@ suite =
                             List.length new_test_character.held_items
 
                         updated_records =
-                            add_item_to_inventory_records
+                            addItemToInventoryRecords
                                 new_test_character.held_items
                                 test_item
                                 (setQuantity 1)
@@ -10211,14 +10211,14 @@ suite =
                             totalCost
 
                         origItems =
-                            add_item_to_inventory_records
+                            addItemToInventoryRecords
                                 test_character.held_items
                                 item
                                 qty
                                 test_item.raw_gold_cost
 
                         newItems =
-                            remove_item_from_inventory_records
+                            removeItemFromInventoryRecords
                                 origItems
                                 item
                                 qty

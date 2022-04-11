@@ -502,6 +502,28 @@ type alias InventoryRecords =
     List InventoryRecord
 
 
+type alias HeldItems =
+    { immediateItems : List InventoryRecord
+    , overnightItems : List InventoryRecord
+    }
+
+
+setImmediateItems : HeldItems -> InventoryRecords -> HeldItems
+setImmediateItems inventoryRecords immediateItems =
+    { inventoryRecords | immediateItems = immediateItems }
+
+
+mapImmediateItems : HeldItems -> (List InventoryRecord -> List InventoryRecord) -> HeldItems
+mapImmediateItems inventoryRecords updater =
+    updater inventoryRecords.immediateItems
+        |> setImmediateItems inventoryRecords
+
+
+setHeldItems : Character -> HeldItems -> Character
+setHeldItems character held_items =
+    { character | held_items = held_items }
+
+
 type alias ItemTypeIdSentiment =
     ( ItemTypeId, Float )
 
@@ -692,7 +714,7 @@ type alias TrendTolerance =
 
 
 type alias Character =
-    { held_items : InventoryRecords
+    { held_items : HeldItems
     , held_gold : Int
     , char_id : CharacterId
     , name : String
@@ -1026,7 +1048,7 @@ decodeItemType =
 
 
 type alias CharacterPartialA =
-    { held_items : InventoryRecords
+    { held_items : HeldItems
     , held_gold : Int
     , char_id : CharacterId
     , name : String
@@ -1057,10 +1079,17 @@ type alias CharacterPartialB =
     }
 
 
+encodeHeldItems : HeldItems -> Value
+encodeHeldItems heldItems =
+    Encode.object
+        [("immediateItems", Encode.list encodeInventoryRecord heldItems.immediateItems)
+        ,("overnightItems", Encode.list encodeInventoryRecord heldItems.overnightItems)
+        ]
+
 encodeCharacter : Character -> Value
 encodeCharacter character =
     Encode.object
-        [ ( "held_items", Encode.list encodeInventoryRecord character.held_items )
+        [ ( "held_items", encodeHeldItems character.held_items )
         , ( "held_gold", Encode.int character.held_gold )
         , ( "char_id", Encode.string <| UUID.toString character.char_id )
         , ( "name", Encode.string character.name )
@@ -1078,7 +1107,12 @@ encodeCharacter character =
 decodeCharacterA : ItemDb -> Decoder CharacterPartialA
 decodeCharacterA item_db =
     Decode.map5 CharacterPartialA
-        (Decode.field "held_items" (Decode.list (decodeInventoryRecord item_db)))
+        (Decode.field "held_items"
+            (Decode.map2 HeldItems
+                (Decode.field "immediateItems" (Decode.list <| decodeInventoryRecord item_db))
+                (Decode.field "overnightItems" (Decode.list <| decodeInventoryRecord item_db))
+            )
+        )
         (Decode.field "held_gold" Decode.int)
         (Decode.field "char_id" UUID.jsonDecoder)
         (Decode.field "name" Decode.string)
@@ -2254,7 +2288,7 @@ initial_item_db =
         |> Dict.fromList
 
 
-initial_items_for_sale : ItemDb -> Random.Seed -> InventoryRecords
+initial_items_for_sale : ItemDb -> Random.Seed -> HeldItems
 initial_items_for_sale item_db seed =
     let
         item_configs : List ( String, Quantity )
@@ -2279,8 +2313,8 @@ initial_items_for_sale item_db seed =
                 item_configs
 
         -- create the items from the ItemDbRecords
-        just_items : InventoryRecords
-        just_items =
+        just_immediate_items : InventoryRecords
+        just_immediate_items =
             List.filterMap
                 (\( db_record, qty ) ->
                     if db_record.is_unlocked then
@@ -2303,7 +2337,7 @@ initial_items_for_sale item_db seed =
                 --TODO: handling this better, because this isn't elmy at all
                 Debug.todo "THERE WAS AN ERROR IN INITIAL ITEM SETUP!!!!" <| Err ""
     in
-    just_items
+    HeldItems just_immediate_items []
 
 
 reset_avg_price_to_default : InventoryRecord -> InventoryRecord
@@ -2311,7 +2345,7 @@ reset_avg_price_to_default ({ item } as inventory_record) =
     { inventory_record | avg_price = setPrice item.raw_gold_cost }
 
 
-initial_owned_items : ItemDb -> InventoryRecords
+initial_owned_items : ItemDb -> HeldItems
 initial_owned_items item_db =
     [ { item =
             lookup_item_id_str_default
@@ -2322,6 +2356,7 @@ initial_owned_items item_db =
       }
     ]
         |> List.map reset_avg_price_to_default
+        |> (\immediateItems -> HeldItems immediateItems [])
 
 
 initial_characters : ItemDb -> List Character
@@ -2343,6 +2378,7 @@ initial_characters item_db =
               }
             ]
                 |> List.map reset_avg_price_to_default
+                |> (\immediateItems -> HeldItems immediateItems [])
         , held_gold = 100
         , item_types_desired = Dict.fromList [ ( item_type_to_id Weapon, 0.0 ) ]
       }
@@ -2357,6 +2393,7 @@ initial_characters item_db =
               }
             ]
                 |> List.map reset_avg_price_to_default
+                |> (\immediateItems -> HeldItems immediateItems [])
         , held_gold = 200
         , item_types_desired = Dict.fromList [ ( item_type_to_id Spellbook, 0.0 ) ]
       }
@@ -2443,7 +2480,7 @@ empty_trend_tolerance =
 createCharacter : UUID -> String -> Character
 createCharacter char_id name =
     { -- inventory
-      held_items = []
+      held_items = HeldItems [] []
     , held_gold = 0
 
     -- name and party
@@ -2940,7 +2977,7 @@ add_inventory_record_to_character : InventoryRecord -> Character -> Character
 add_inventory_record_to_character { item, quantity, avg_price } character =
     { character
         | held_items =
-            addItemToInventoryRecords
+            addItemToImmediateInventoryRecords
                 character.held_items
                 item
                 quantity
@@ -2948,48 +2985,57 @@ add_inventory_record_to_character { item, quantity, avg_price } character =
     }
 
 
-addItemToInventoryRecords : InventoryRecords -> Item -> Quantity -> Int -> InventoryRecords
-addItemToInventoryRecords records item qty total_cost =
+addItemToImmediateInventoryRecords : HeldItems -> Item -> Quantity -> Int -> HeldItems
+addItemToImmediateInventoryRecords ({ immediateItems } as held_items) item qty total_cost =
     let
         single_cost =
             total_cost // getQuantity qty
+
+        newImmediateItems =
+            case List.filter (find_matching_records item) immediateItems of
+                [] ->
+                    immediateItems
+                        ++ [ { item = item
+                             , quantity = qty
+                             , avg_price = setPrice single_cost
+                             }
+                           ]
+
+                --FIXME this rounds down I think, so it'll cost lost money
+                matching_records ->
+                    let
+                        updated_records : InventoryRecords
+                        updated_records =
+                            List.map
+                                (\({ quantity, avg_price } as ir) ->
+                                    { item = ir.item
+                                    , quantity = addQuantity quantity qty
+                                    , avg_price =
+                                        .price <|
+                                            addAverage
+                                                { price = avg_price, count = quantity }
+                                                { price = setPrice single_cost, count = qty }
+                                    }
+                                )
+                                matching_records
+
+                        remaining_records =
+                            List.filter (not << find_matching_records item) immediateItems
+                    in
+                    remaining_records ++ updated_records
     in
-    case List.filter (find_matching_records item) records of
-        [] ->
-            records
-                ++ [ { item = item
-                     , quantity = qty
-                     , avg_price = setPrice single_cost
-                     }
-                   ]
-
-        --FIXME this rounds down I think, so it'll cost lost money
-        matching_records ->
-            let
-                updated_records : InventoryRecords
-                updated_records =
-                    List.map
-                        (\({ quantity, avg_price } as ir) ->
-                            { item = ir.item
-                            , quantity = addQuantity quantity qty
-                            , avg_price =
-                                .price <|
-                                    addAverage
-                                        { price = avg_price, count = quantity }
-                                        { price = setPrice single_cost, count = qty }
-                            }
-                        )
-                        matching_records
-
-                remaining_records =
-                    List.filter (not << find_matching_records item) records
-            in
-            remaining_records ++ updated_records
+    setImmediateItems held_items newImmediateItems
 
 
-removeItemFromInventoryRecords : InventoryRecords -> Item -> Quantity -> Int -> InventoryRecords
-removeItemFromInventoryRecords records item qty total_cost =
+removeItemFromRawInventoryRecords : InventoryRecords -> Item -> Quantity -> Int -> InventoryRecords
+removeItemFromRawInventoryRecords records item qty total_cost =
     List.map (reduce_if_matched item qty total_cost) records
+
+
+removeItemFromImmediateInventoryRecords : HeldItems -> Item -> Quantity -> Int -> HeldItems
+removeItemFromImmediateInventoryRecords held_items item qty total_cost =
+    removeItemFromRawInventoryRecords held_items.immediateItems item qty total_cost
+        |> setImmediateItems held_items
 
 
 update_item_type_sentiment : ItemSentiments -> ItemType -> Float -> ItemSentiments
@@ -3069,15 +3115,17 @@ trade_items_from_party_to_other shop_trends from_character to_character { item, 
         total_cost =
             get_adjusted_item_cost shop_trends item qty
 
+        new_to_items : HeldItems
         new_to_items =
-            addItemToInventoryRecords
+            addItemToImmediateInventoryRecords
                 to_character.held_items
                 item
                 qty
                 total_cost
 
+        new_from_items : HeldItems
         new_from_items =
-            removeItemFromInventoryRecords
+            removeItemFromImmediateInventoryRecords
                 from_character.held_items
                 item
                 qty
@@ -3118,8 +3166,8 @@ trade_items_from_party_to_other shop_trends from_character to_character { item, 
                 | item_type_sentiment = new_its
                 , item_trade_logs = takeLast 100 new_item_trade_logs
             }
-        , from_party = { from_character | held_items = new_from_items }
-        , to_party = { to_character | held_items = new_to_items }
+        , from_party = setHeldItems from_character new_from_items
+        , to_party = setHeldItems to_character new_to_items
         }
         log_entry
 
@@ -3155,7 +3203,7 @@ sellItemsFromPartyToOther orig_trade_context { item, qty } =
             orig_trade_context
 
         has_items =
-            has_items_to_sell from_party.held_items item qty
+            has_items_to_sell from_party.held_items.immediateItems item qty
 
         can_afford =
             can_afford_item shop_trends to_party.held_gold { item = item, qty = qty }
@@ -3987,8 +4035,9 @@ update msg model =
                                         item
                                         (setQuantity 1)
 
+                                newItems : HeldItems
                                 newItems =
-                                    removeItemFromInventoryRecords
+                                    removeItemFromImmediateInventoryRecords
                                         player.held_items
                                         item
                                         (setQuantity 1)
@@ -4329,7 +4378,7 @@ onPrepNewDay ({ timeOfDay, item_db, globalSeed, characters, ai_tick_time, quests
         newShop =
             List.foldl
                 (\item shop_ -> addHeldItem item shop_)
-                { shop | held_items = [] }
+                (setImmediateItems shop.held_items [] |> setHeldItems shop)
                 newShopItems
 
         ( globalSeedForUuid, newShopItems ) =
@@ -4629,8 +4678,8 @@ handleInviteTrader model =
             else
                 { item = ir.item, quantity = ir.quantity, avg_price = ir.avg_price }
 
-        held_items : InventoryRecords
-        held_items =
+        held_immediate_items : InventoryRecords
+        held_immediate_items =
             List.filterMap identity held_maybe_item_frames
                 |> List.foldl
                     (\{ item, quantity, avg_price } prev_items ->
@@ -4652,7 +4701,7 @@ handleInviteTrader model =
                 characters
                 { invited_character
                     | held_gold = 50
-                    , held_items = held_items
+                    , held_items = HeldItems held_immediate_items []
                 }
         , globalSeed = new_globalSeed
     }
@@ -5343,7 +5392,7 @@ get_wanted_items character shop shop_trends =
                 && check_can_afford_one character shop_trends inventory_record.item
                 && check_nonzero_desire character inventory_record.item
         )
-        (getShopCharacter shop).held_items
+        (getShopCharacter shop).held_items.immediateItems
 
 
 ai_buy_item_from_shop : Time.Posix -> ItemDb -> AiPreUpdateRecord -> AiUpdateRecord
@@ -5495,7 +5544,7 @@ ai_sell_item_to_shop ai_tick_time item_db { shop_trends, character, shop, commun
     let
         sellable_items : InventoryRecords
         sellable_items =
-            List.filter (\{ quantity } -> getQuantity quantity > 0) character.held_items
+            List.filter (\{ quantity } -> getQuantity quantity > 0) character.held_items.immediateItems
 
         -- AI needs to trend to be at least above 80% to sell
         sellable_trend =
@@ -5635,14 +5684,22 @@ increment_item_trade_count record_updater inventory_record item_db =
 -}
 addHeldItem : Item -> Character -> Character
 addHeldItem item ({ held_items } as character) =
-    { character
-        | held_items =
-            addItemToInventoryRecords
+    -- setImmediateItems character.held_items
+    -- { character
+    --     | held_items =
+    let
+        newHeldItems =
+            addItemToImmediateInventoryRecords
                 held_items
                 item
                 (setQuantity 1)
                 item.raw_gold_cost
-    }
+    in
+    setHeldItems character newHeldItems
+
+
+
+-- }
 
 
 convertPreUpdateRecordToPostUpdate : AiPreUpdateRecord -> AiUpdateRecord
@@ -6775,10 +6832,10 @@ inventoryGrid colorTheme uiOptions shop_trends character context progressUnlocks
             (if character.hide_zero_qty_inv_rows then
                 List.filter
                     (\{ quantity } -> getQuantity quantity > 0)
-                    character.held_items
+                    character.held_items.immediateItems
 
              else
-                character.held_items
+                character.held_items.immediateItems
             )
                 |> List.sortWith sortFunc
                 |> (\irs ->
@@ -9537,6 +9594,7 @@ suite =
                                               , avg_price = setPrice 20
                                               }
                                             ]
+                                                |> (\immediateItems -> HeldItems immediateItems [])
                                     }
                                )
 
@@ -9919,7 +9977,7 @@ suite =
                     Expect.all
                         [ Expect.notEqual shop.held_items
                         , \held_items ->
-                            Expect.greaterThan 0 <| List.length held_items
+                            Expect.greaterThan 0 <| List.length held_items.immediateItems
                         ]
                         result_shop.held_items
             , fuzz (Fuzz.map setQuantity <| Fuzz.intRange 1 Random.maxInt) "playerSoldItem does not mark the quest complete when you dont sell enough " <|
@@ -9993,8 +10051,8 @@ suite =
                                 pur.communityFund
                         , \pur ->
                             Expect.greaterThan
-                                (List.length preUpdateRecord.character.held_items)
-                                (List.length pur.character.held_items)
+                                (List.length preUpdateRecord.character.held_items.immediateItems)
+                                (List.length pur.character.held_items.immediateItems)
                         ]
                         postUpdateRecord
             , test "clipText test clips" <|
@@ -10078,15 +10136,15 @@ suite =
                             }
 
                         orig_len =
-                            List.length test_character.held_items
+                            List.length test_character.held_items.immediateItems
                     in
                     List.length
-                        (addItemToInventoryRecords
+                        (addItemToImmediateInventoryRecords
                             test_character.held_items
                             new_item
                             (setQuantity 1)
                             new_item.raw_gold_cost
-                        )
+                        ).immediateItems
                         |> Expect.notEqual orig_len
             , test "make sure a special actions cost is removed from the player" <|
                 \_ ->
@@ -10101,16 +10159,20 @@ suite =
             , test "test adding an existing item to inventory records updates the qty instead of appending a new item" <|
                 \_ ->
                     let
+                        newImmediateItems =
+                            [ { item = test_item, quantity = setQuantity 1, avg_price = setPrice 9999 } ]
+
                         new_test_character =
                             { test_character
-                                | held_items = { item = test_item, quantity = setQuantity 1, avg_price = setPrice 9999 } :: test_character.held_items
+                                | held_items = mapImmediateItems test_character.held_items (\acc -> newImmediateItems ++ acc)
                             }
 
                         orig_len =
-                            List.length new_test_character.held_items
+                            List.length new_test_character.held_items.immediateItems
 
+                        updated_records : HeldItems
                         updated_records =
-                            addItemToInventoryRecords
+                            addItemToImmediateInventoryRecords
                                 new_test_character.held_items
                                 test_item
                                 (setQuantity 1)
@@ -10123,9 +10185,9 @@ suite =
                                     >> .item_type
                                     >> (==) test_item.item_type
                                 )
-                                updated_records
+                                updated_records.immediateItems
                     in
-                    updated_records
+                    updated_records.immediateItems
                         |> Expect.all
                             [ Expect.equal orig_len << List.length
                             , Expect.true "exists exactly one record"
@@ -10211,14 +10273,14 @@ suite =
                             totalCost
 
                         origItems =
-                            addItemToInventoryRecords
+                            addItemToImmediateInventoryRecords
                                 test_character.held_items
                                 item
                                 qty
                                 test_item.raw_gold_cost
 
                         newItems =
-                            removeItemFromInventoryRecords
+                            removeItemFromImmediateInventoryRecords
                                 origItems
                                 item
                                 qty
@@ -10228,10 +10290,10 @@ suite =
                             find_matching_records item
 
                         origRecord =
-                            List.head <| List.filter item_finder origItems
+                            List.head <| List.filter item_finder origItems.immediateItems
 
                         newRecord =
-                            List.head <| List.filter item_finder newItems
+                            List.head <| List.filter item_finder newItems.immediateItems
                     in
                     -- Expect.equal origItems newItems
                     case

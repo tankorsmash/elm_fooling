@@ -513,10 +513,21 @@ setImmediateItems inventoryRecords immediateItems =
     { inventoryRecords | immediateItems = immediateItems }
 
 
+setOvernightItems : HeldItems -> InventoryRecords -> HeldItems
+setOvernightItems inventoryRecords overnightItems =
+    { inventoryRecords | overnightItems = overnightItems }
+
+
 mapImmediateItems : HeldItems -> (List InventoryRecord -> List InventoryRecord) -> HeldItems
 mapImmediateItems inventoryRecords updater =
     updater inventoryRecords.immediateItems
         |> setImmediateItems inventoryRecords
+
+
+mapOvernightItems : HeldItems -> (List InventoryRecord -> List InventoryRecord) -> HeldItems
+mapOvernightItems inventoryRecords updater =
+    updater inventoryRecords.overnightItems
+        |> setOvernightItems inventoryRecords
 
 
 setHeldItems : Character -> HeldItems -> Character
@@ -2982,16 +2993,16 @@ add_inventory_record_to_character { item, quantity, avg_price } character =
     }
 
 
-addItemToImmediateInventoryRecords : HeldItems -> Item -> Quantity -> Int -> HeldItems
-addItemToImmediateInventoryRecords ({ immediateItems } as held_items) item qty total_cost =
+addItemToInventoryRecords : InventoryRecords -> Item -> Quantity -> Int -> InventoryRecords
+addItemToInventoryRecords inventoryRecords item qty total_cost =
     let
         single_cost =
             total_cost // getQuantity qty
 
-        newImmediateItems =
-            case List.filter (find_matching_records item) immediateItems of
+        newInventoryRecords =
+            case List.filter (find_matching_records item) inventoryRecords of
                 [] ->
-                    immediateItems
+                    inventoryRecords
                         ++ [ { item = item
                              , quantity = qty
                              , avg_price = setPrice single_cost
@@ -3017,11 +3028,23 @@ addItemToImmediateInventoryRecords ({ immediateItems } as held_items) item qty t
                                 matching_records
 
                         remaining_records =
-                            List.filter (not << find_matching_records item) immediateItems
+                            List.filter (not << find_matching_records item) inventoryRecords
                     in
                     remaining_records ++ updated_records
     in
-    setImmediateItems held_items newImmediateItems
+    newInventoryRecords
+
+
+addItemToImmediateInventoryRecords : HeldItems -> Item -> Quantity -> Int -> HeldItems
+addItemToImmediateInventoryRecords ({ immediateItems } as held_items) item qty total_cost =
+    addItemToInventoryRecords immediateItems item qty total_cost
+        |> setImmediateItems held_items
+
+
+addItemToOvernightInventoryRecords : HeldItems -> Item -> Quantity -> Int -> HeldItems
+addItemToOvernightInventoryRecords ({ overnightItems } as held_items) item qty total_cost =
+    addItemToInventoryRecords overnightItems item qty total_cost
+        |> setOvernightItems held_items
 
 
 removeItemFromRawInventoryRecords : InventoryRecords -> Item -> Quantity -> Int -> InventoryRecords
@@ -3101,16 +3124,29 @@ takeLast count list =
     list |> List.reverse |> List.take count |> List.reverse
 
 
+type TradeItemDestination
+    = ImmediateItems
+    | OvernightItems
+
+
 {-| Gives items from character to other
 
 NOTE: assumes the can\_afford checks etc have been done
 
 -}
-trade_items_from_party_to_other : ShopTrends -> Character -> Character -> TradeOrder -> TradeRecord
-trade_items_from_party_to_other shop_trends from_character to_character { item, qty } =
+trade_items_from_party_to_other : ShopTrends -> Character -> Character -> TradeOrder -> TradeItemDestination -> TradeRecord
+trade_items_from_party_to_other shop_trends from_character to_character { item, qty } tradeItemDestination =
     let
         total_cost =
             get_adjusted_item_cost shop_trends item qty
+
+        adder =
+            case tradeItemDestination of
+                ImmediateItems ->
+                    addItemToImmediateInventoryRecords
+
+                OvernightItems ->
+                    addItemToOvernightInventoryRecords
 
         new_to_items : HeldItems
         new_to_items =
@@ -3214,6 +3250,7 @@ sellItemsFromPartyToOther orig_trade_context { item, qty } =
                     from_party
                     to_party
                     { item = item, qty = qty }
+                    ImmediateItems
 
             trade_context : TradeContext
             trade_context =
@@ -5681,9 +5718,6 @@ increment_item_trade_count record_updater inventory_record item_db =
 -}
 addHeldItem : Item -> Character -> Character
 addHeldItem item ({ held_items } as character) =
-    -- setImmediateItems character.held_items
-    -- { character
-    --     | held_items =
     let
         newHeldItems =
             addItemToImmediateInventoryRecords
@@ -5693,10 +5727,6 @@ addHeldItem item ({ held_items } as character) =
                 item.raw_gold_cost
     in
     setHeldItems character newHeldItems
-
-
-
--- }
 
 
 convertPreUpdateRecordToPostUpdate : AiPreUpdateRecord -> AiUpdateRecord

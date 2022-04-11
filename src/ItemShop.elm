@@ -3140,7 +3140,7 @@ trade_items_from_party_to_other shop_trends from_character to_character { item, 
         total_cost =
             get_adjusted_item_cost shop_trends item qty
 
-        adder =
+        adderFunc =
             case tradeItemDestination of
                 ImmediateItems ->
                     addItemToImmediateInventoryRecords
@@ -3150,7 +3150,7 @@ trade_items_from_party_to_other shop_trends from_character to_character { item, 
 
         new_to_items : HeldItems
         new_to_items =
-            addItemToImmediateInventoryRecords
+            adderFunc
                 to_character.held_items
                 item
                 qty

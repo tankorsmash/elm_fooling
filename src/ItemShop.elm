@@ -1082,9 +1082,10 @@ type alias CharacterPartialB =
 encodeHeldItems : HeldItems -> Value
 encodeHeldItems heldItems =
     Encode.object
-        [("immediateItems", Encode.list encodeInventoryRecord heldItems.immediateItems)
-        ,("overnightItems", Encode.list encodeInventoryRecord heldItems.overnightItems)
+        [ ( "immediateItems", Encode.list encodeInventoryRecord heldItems.immediateItems )
+        , ( "overnightItems", Encode.list encodeInventoryRecord heldItems.overnightItems )
         ]
+
 
 encodeCharacter : Character -> Value
 encodeCharacter character =
@@ -2303,12 +2304,8 @@ initial_items_for_sale item_db seed =
         item_records =
             List.filterMap
                 (\( item_id_str, qty ) ->
-                    case lookup_item_id_str item_db item_id_str of
-                        Just db_record ->
-                            Just ( db_record, qty )
-
-                        Nothing ->
-                            Nothing
+                    lookup_item_id_str item_db item_id_str
+                        |> Maybe.map (\db_record -> ( db_record, qty ))
                 )
                 item_configs
 

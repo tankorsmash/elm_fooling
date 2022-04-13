@@ -1631,6 +1631,35 @@ questIsComplete quest =
             True
 
 
+encodeQuestData : QuestData -> Encode.Value
+encodeQuestData questData =
+    Debug.todo "TODO encodeQuestData"
+
+encodeQuest : Quest -> Decode.Value
+encodeQuest quest =
+    case quest of
+        IncompleteQuest questData ->
+            Encode.object
+                [ ( "type", Encode.string "IncompleteQuest" )
+                , ( "data", encodeQuestData questData )
+                ]
+
+        CompleteQuest questData cashedInStatus ->
+            Encode.object
+                [ ( "type", Encode.string "CompleteQuest" )
+                , ( "quest_data", encodeQuestData questData )
+                , ( "cashed_in_status"
+                  , Encode.string <|
+                        case cashedInStatus of
+                            QuestCashedIn ->
+                                "QuestCashedIn"
+
+                            QuestNotCashedIn ->
+                                "QuestNotCashedIn"
+                  )
+                ]
+
+
 getCompleteQuests : List Quest -> List Quest
 getCompleteQuests =
     List.filter questIsComplete
@@ -1901,7 +1930,7 @@ encodeModel model =
         -- , browserNavKey : Maybe Nav.Key //NOSERIALIZE
         -- , uiOptions : UiOptions //NOSERIALIZE
         , ( "communityFund", Encode.int model.communityFund )
-        , ( "progressUnlocks", Encode.list encodeProgressUnlock model.progressUnlocks)
+        , ( "progressUnlocks", Encode.list encodeProgressUnlock model.progressUnlocks )
         , ( "hasHadAtLeastOneBlood", Encode.bool model.hasHadAtLeastOneBlood )
         , ( "hasHadAtLeastOneGem", Encode.bool model.hasHadAtLeastOneGem )
         , ( "masterVol", Encode.float model.settings.masterVol )
@@ -1958,19 +1987,19 @@ decodeModel =
                     |> hardcoded (initUiOptions replaceMeDevice)
                     |> required "communityFund" Decode.int
                     |> required "progressUnlocks" (Decode.list decodeProgressUnlock)
-                    -- , quests : PlayerQuests
-                    -- , timeOfDay : TimeOfDay
-                    -- , numItemsToStartDayWith : Int
-                    -- , shouldViewGemUpgradesInPostPhase : Bool
-                    -- , timelines : Timelines
-                    -- , hasHadAtLeastOneBlood : Bool
-                    -- , hasHadAtLeastOneGem : Bool
-                    -- |> required "hasHadAtLeastOneBlood" Decode.bool
-                    -- |> required "hasHadAtLeastOneGem" Decode.bool
-                    -- , settings : SettingsData
-                    -- |> required "masterVol" (Decode.andThen (Decode.map SettingsData (Decode.float)))
-                    -- |> hardcoded Nothing
-                    -- |> required "notificationModel" decodeNotificationModel
+             -- , quests : PlayerQuests
+             -- , timeOfDay : TimeOfDay
+             -- , numItemsToStartDayWith : Int
+             -- , shouldViewGemUpgradesInPostPhase : Bool
+             -- , timelines : Timelines
+             -- , hasHadAtLeastOneBlood : Bool
+             -- , hasHadAtLeastOneGem : Bool
+             -- |> required "hasHadAtLeastOneBlood" Decode.bool
+             -- |> required "hasHadAtLeastOneGem" Decode.bool
+             -- , settings : SettingsData
+             -- |> required "masterVol" (Decode.andThen (Decode.map SettingsData (Decode.float)))
+             -- |> hardcoded Nothing
+             -- |> required "notificationModel" decodeNotificationModel
             )
 
 

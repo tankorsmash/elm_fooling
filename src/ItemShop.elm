@@ -1767,8 +1767,7 @@ type alias Model =
     , timeOfDay : TimeOfDay
     , numItemsToStartDayWith : Int
     , shouldViewGemUpgradesInPostPhase : Bool
-    , timelines :
-        Timelines
+    , timelines : Timelines
     , hasHadAtLeastOneBlood : Bool
     , hasHadAtLeastOneGem : Bool
     , settings : SettingsData
@@ -1834,8 +1833,51 @@ encodeNotificationModel notificationModel =
             Encode.list encodeNotification notifications
 
 
+decodeNotification : Decoder Notification
+decodeNotification =
+    Decode.field "type" Decode.string
+        |> Decode.andThen
+            (\typeStr ->
+                case typeStr of
+                    "TextNotification" ->
+                        Decode.map TextNotification
+                            (Decode.field "data" Decode.string)
 
--- decodeNotificationModel :
+                    _ ->
+                        Decode.fail <| typeStr ++ ": is not a type of Notification"
+            )
+
+
+decodeHasNotifications : Decoder NotificationModel
+decodeHasNotifications =
+    Decode.field "type" Decode.string
+        |> Decode.andThen
+            (\typeStr ->
+                case typeStr of
+                    "HasNotifications" ->
+                        Decode.map HasNotifications
+                            (Decode.field "data" (Decode.list decodeNotification))
+
+                    _ ->
+                        Decode.fail <| typeStr ++ ": is not a type of NotificationModel"
+            )
+
+
+decodeNotificationModel : Decoder NotificationModel
+decodeNotificationModel =
+    Decode.oneOf
+        [ Decode.field "type" Decode.string
+            |> Decode.andThen
+                (\typeStr ->
+                    case typeStr of
+                        "NoNotifications" ->
+                            Decode.succeed NoNotifications
+
+                        _ ->
+                            Decode.fail <| typeStr ++ " is not a recognized NotificationModel"
+                )
+        , decodeHasNotifications
+        ]
 
 
 encodeModel : Model -> Decode.Value
@@ -1914,9 +1956,9 @@ decodeModel =
                     |> hardcoded replaceMeBrowserNavKey
                     |> hardcoded (initUiOptions replaceMeDevice)
                     |> required "communityFund" Decode.int
-             -- |> required "hasHadAtLeastOneBlood" Decode.bool
-             -- |> required "hasHadAtLeastOneGem" Decode.bool
-             -- |> required "notificationModel" encodeNotificationModel
+                    -- |> required "hasHadAtLeastOneBlood" Decode.bool
+                    -- |> required "hasHadAtLeastOneGem" Decode.bool
+                    |> required "notificationModel" decodeNotificationModel
             )
 
 

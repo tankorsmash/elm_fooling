@@ -1901,6 +1901,7 @@ encodeModel model =
         -- , browserNavKey : Maybe Nav.Key //NOSERIALIZE
         -- , uiOptions : UiOptions //NOSERIALIZE
         , ( "communityFund", Encode.int model.communityFund )
+        , ( "progressUnlocks", Encode.list encodeProgressUnlock model.progressUnlocks)
         , ( "hasHadAtLeastOneBlood", Encode.bool model.hasHadAtLeastOneBlood )
         , ( "hasHadAtLeastOneGem", Encode.bool model.hasHadAtLeastOneGem )
         , ( "masterVol", Encode.float model.settings.masterVol )
@@ -1956,9 +1957,20 @@ decodeModel =
                     |> hardcoded replaceMeBrowserNavKey
                     |> hardcoded (initUiOptions replaceMeDevice)
                     |> required "communityFund" Decode.int
+                    |> required "progressUnlocks" (Decode.list decodeProgressUnlock)
+                    -- , quests : PlayerQuests
+                    -- , timeOfDay : TimeOfDay
+                    -- , numItemsToStartDayWith : Int
+                    -- , shouldViewGemUpgradesInPostPhase : Bool
+                    -- , timelines : Timelines
+                    -- , hasHadAtLeastOneBlood : Bool
+                    -- , hasHadAtLeastOneGem : Bool
                     -- |> required "hasHadAtLeastOneBlood" Decode.bool
                     -- |> required "hasHadAtLeastOneGem" Decode.bool
-                    |> required "notificationModel" decodeNotificationModel
+                    -- , settings : SettingsData
+                    -- |> required "masterVol" (Decode.andThen (Decode.map SettingsData (Decode.float)))
+                    -- |> hardcoded Nothing
+                    -- |> required "notificationModel" decodeNotificationModel
             )
 
 

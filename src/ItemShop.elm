@@ -1631,9 +1631,43 @@ questIsComplete quest =
             True
 
 
+encodeQuestTracker : QuestTracker -> Encode.Value
+encodeQuestTracker questTracker =
+    Encode.object
+        [ ( "current", Encode.int (getQuantity questTracker.current) )
+        , ( "target", Encode.int (getQuantity questTracker.target) )
+        ]
+
+
+encodeQuestType : QuestType -> Encode.Value
+encodeQuestType questType =
+    case questType of
+        SellAnyItem questTracker ->
+            Encode.object
+                [ ( "type", Encode.string "SellAnyItem" )
+                , ( "questTracker", encodeQuestTracker questTracker )
+                ]
+
+        EarnGold questTracker ->
+            Encode.object
+                [ ( "type", Encode.string "EarnGold" )
+                , ( "questTracker", encodeQuestTracker questTracker )
+                ]
+
+        HoldGold questTracker ->
+            Encode.object
+                [ ( "type", Encode.string "HoldGold" )
+                , ( "questTracker", encodeQuestTracker questTracker )
+                ]
+
+
 encodeQuestData : QuestData -> Encode.Value
 encodeQuestData questData =
-    Debug.todo "TODO encodeQuestData"
+    Encode.object
+        [ ( "questType", encodeQuestType questData.questType )
+        , ( "questId", encodeUuid questData.questId )
+        ]
+
 
 encodeQuest : Quest -> Decode.Value
 encodeQuest quest =

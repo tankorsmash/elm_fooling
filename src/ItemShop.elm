@@ -3223,8 +3223,8 @@ reduce_if_matched item qty total_cost ({ avg_price } as inventory_record) =
         inventory_record
 
 
-has_items_to_sell : InventoryRecords -> Item -> Quantity -> Bool
-has_items_to_sell inventory_records item qty =
+countInventoryRecords : InventoryRecords -> Item -> Quantity -> Bool
+countInventoryRecords inventory_records item qty =
     List.length
         (List.filter
             (\ir ->
@@ -3348,14 +3348,27 @@ isElementOnScreen gvp { element } =
     y > (element.y + element.height)
 
 
+getInventoryRecords : HeldItems -> TradeItemDestination -> InventoryRecords
+getInventoryRecords heldItems destination =
+    case destination of
+        ImmediateItems ->
+            heldItems.immediateItems
+
+        OvernightItems ->
+            heldItems.overnightItems
+
+
 sellItemsFromPartyToOther : TradeContext -> TradeOrder -> TradeRecord
 sellItemsFromPartyToOther orig_trade_context { item, qty } =
     let
-        { shop_trends, from_party, to_party } =
+        { shop_trends, from_party, to_party, sell_destination } =
             orig_trade_context
 
         has_items =
-            has_items_to_sell from_party.held_items.immediateItems item qty
+            countInventoryRecords
+                (getInventoryRecords from_party.held_items sell_destination)
+                item
+                qty
 
         can_afford =
             can_afford_item shop_trends to_party.held_gold { item = item, qty = qty }

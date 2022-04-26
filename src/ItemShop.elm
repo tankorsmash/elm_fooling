@@ -9996,98 +9996,98 @@ suite =
                                     newCompletes
                         in
                         Expect.equal (List.length unseenCompletes) 1
-                ]
-            , fuzz (Fuzz.map setQuantity <| Fuzz.intRange 0 ((Random.maxInt // 2) - 1)) "playerSoldItem marks the quest complete when you sell enough, and it doesn't go over" <|
-                \targetQty ->
+                , fuzz (Fuzz.map setQuantity <| Fuzz.intRange 0 ((Random.maxInt // 2) - 1)) "playerSoldItem marks the quest complete when you sell enough, and it doesn't go over" <|
+                    \targetQty ->
+                        let
+                            questId =
+                                generateUuid "testquest123"
+
+                            quests =
+                                { dailyQuests =
+                                    [ IncompleteQuest
+                                        { questType = SellAnyItem { current = setQuantity 0, target = targetQty }
+                                        , questId = questId
+                                        }
+                                    ]
+                                , persistentQuests = []
+                                }
+
+                            updatedQuests =
+                                playerSoldItem (addQuantityInt targetQty 100000) quests
+                                    |> Tuple.first
+                        in
+                        Expect.equal
+                            { dailyQuests =
+                                [ CompleteQuest
+                                    { questType = SellAnyItem { current = targetQty, target = targetQty }
+                                    , questId = questId
+                                    }
+                                    QuestNotCashedIn
+                                ]
+                            , persistentQuests = []
+                            }
+                            updatedQuests
+                , describe "onCashInQuest cashes in as expect" <|
                     let
                         questId =
                             generateUuid "testquest123"
 
-                        quests =
-                            { dailyQuests =
-                                [ IncompleteQuest
-                                    { questType = SellAnyItem { current = setQuantity 0, target = targetQty }
+                        questData =
+                            { questType = SellAnyItem { current = setQuantity 30, target = setQuantity 30 }
+                            , questId = questId
+                            }
+                    in
+                    [ test "cashing in a completely tracked and completed quest cashes" <|
+                        \_ ->
+                            let
+                                quests =
+                                    { dailyQuests =
+                                        [ CompleteQuest questData QuestNotCashedIn ]
+                                    , persistentQuests = []
+                                    }
+
+                                resultModel : Model
+                                resultModel =
+                                    onCashInQuest { test_model | quests = quests } questData
+                            in
+                            Expect.equal [] <|
+                                List.filter (not << questIsCashedIn) resultModel.quests.dailyQuests
+                    , test "cashing in a completely tracked and but incomplete quest does not cash in" <|
+                        \_ ->
+                            let
+                                quests =
+                                    { dailyQuests =
+                                        [ IncompleteQuest questData ]
+                                    , persistentQuests = []
+                                    }
+
+                                resultModel : Model
+                                resultModel =
+                                    onCashInQuest { test_model | quests = quests } questData
+                            in
+                            Expect.equal [] <|
+                                List.filter questIsCashedIn resultModel.quests.dailyQuests
+                    , test "cashing in a incompletely tracked and complete quest does not" <|
+                        \_ ->
+                            let
+                                questData_ =
+                                    { questType = SellAnyItem { current = setQuantity 1, target = setQuantity 30 }
                                     , questId = questId
                                     }
-                                ]
-                            , persistentQuests = []
-                            }
 
-                        updatedQuests =
-                            playerSoldItem (addQuantityInt targetQty 100000) quests
-                                |> Tuple.first
-                    in
-                    Expect.equal
-                        { dailyQuests =
-                            [ CompleteQuest
-                                { questType = SellAnyItem { current = targetQty, target = targetQty }
-                                , questId = questId
-                                }
-                                QuestNotCashedIn
-                            ]
-                        , persistentQuests = []
-                        }
-                        updatedQuests
-            , describe "onCashInQuest cashes in as expect" <|
-                let
-                    questId =
-                        generateUuid "testquest123"
+                                quests =
+                                    { dailyQuests =
+                                        [ CompleteQuest questData_ QuestNotCashedIn ]
+                                    , persistentQuests = []
+                                    }
 
-                    questData =
-                        { questType = SellAnyItem { current = setQuantity 30, target = setQuantity 30 }
-                        , questId = questId
-                        }
-                in
-                [ test "cashing in a completely tracked and completed quest cashes" <|
-                    \_ ->
-                        let
-                            quests =
-                                { dailyQuests =
-                                    [ CompleteQuest questData QuestNotCashedIn ]
-                                , persistentQuests = []
-                                }
-
-                            resultModel : Model
-                            resultModel =
-                                onCashInQuest { test_model | quests = quests } questData
-                        in
-                        Expect.equal [] <|
-                            List.filter (not << questIsCashedIn) resultModel.quests.dailyQuests
-                , test "cashing in a completely tracked and but incomplete quest does not cash in" <|
-                    \_ ->
-                        let
-                            quests =
-                                { dailyQuests =
-                                    [ IncompleteQuest questData ]
-                                , persistentQuests = []
-                                }
-
-                            resultModel : Model
-                            resultModel =
-                                onCashInQuest { test_model | quests = quests } questData
-                        in
-                        Expect.equal [] <|
-                            List.filter questIsCashedIn resultModel.quests.dailyQuests
-                , test "cashing in a incompletely tracked and complete quest does not" <|
-                    \_ ->
-                        let
-                            questData_ =
-                                { questType = SellAnyItem { current = setQuantity 1, target = setQuantity 30 }
-                                , questId = questId
-                                }
-
-                            quests =
-                                { dailyQuests =
-                                    [ CompleteQuest questData_ QuestNotCashedIn ]
-                                , persistentQuests = []
-                                }
-
-                            resultModel : Model
-                            resultModel =
-                                onCashInQuest { test_model | quests = quests } questData
-                        in
-                        Expect.equal [] <|
-                            List.filter questIsCashedIn resultModel.quests.dailyQuests
+                                resultModel : Model
+                                resultModel =
+                                    onCashInQuest { test_model | quests = quests } questData
+                            in
+                            Expect.equal [] <|
+                                List.filter questIsCashedIn resultModel.quests.dailyQuests
+                    ]
                 ]
             , describe "ProgressUnlock "
                 [ fuzz natural1 "paying for a ProgressUnlock removes gems" <|

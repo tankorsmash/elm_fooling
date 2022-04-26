@@ -2086,6 +2086,7 @@ type alias TradeContext =
     { shop_trends : ShopTrends
     , from_party : Character
     , to_party : Character
+    , sell_destination : TradeItemDestination
     }
 
 
@@ -3318,6 +3319,7 @@ trade_items_from_party_to_other shop_trends from_character to_character { item, 
             }
         , from_party = setHeldItems from_character new_from_items
         , to_party = setHeldItems to_character new_to_items
+        , sell_destination = ImmediateItems
         }
         log_entry
 
@@ -3367,7 +3369,7 @@ sellItemsFromPartyToOther orig_trade_context { item, qty } =
                     from_party
                     to_party
                     { item = item, qty = qty }
-                    ImmediateItems
+                    orig_trade_context.sell_destination
 
             trade_context : TradeContext
             trade_context =
@@ -4040,6 +4042,7 @@ update msg model =
                                 { shop_trends = model.shop_trends
                                 , from_party = shop
                                 , to_party = player
+                                , sell_destination = ImmediateItems
                                 }
                                 { item = item, qty = qty }
 
@@ -4067,10 +4070,12 @@ update msg model =
                         trade_order =
                             { item = item, qty = qty }
 
+                        orig_trade_context : TradeContext
                         orig_trade_context =
                             { shop_trends = model.shop_trends
                             , from_party = player
                             , to_party = shop
+                            , sell_destination = ImmediateItems
                             }
 
                         trade_record : TradeRecord
@@ -5646,6 +5651,7 @@ ai_buy_item_from_shop ai_tick_time item_db { shop_trends, character, shop, commu
                                 { time = ai_tick_time
                                 , log_type = WantedButCouldntTrade WantedToBuy
                                 }
+                        , sell_destination = ImmediateItems
                         }
 
                 Just item ->
@@ -5653,6 +5659,7 @@ ai_buy_item_from_shop ai_tick_time item_db { shop_trends, character, shop, commu
                         { shop_trends = shop_trends
                         , from_party = getShopCharacter shop
                         , to_party = character
+                        , sell_destination = ImmediateItems
                         }
                         { item = item, qty = qty_to_buy }
     in
@@ -5744,6 +5751,7 @@ ai_sell_item_to_shop ai_tick_time item_db { shop_trends, character, shop, commun
                                 character
                                 wanted_to_sell_but_couldnt
                         , to_party = getShopCharacter shop
+                        , sell_destination = ImmediateItems
                         }
 
                 Just { item } ->
@@ -5751,6 +5759,7 @@ ai_sell_item_to_shop ai_tick_time item_db { shop_trends, character, shop, commun
                         { shop_trends = shop_trends
                         , from_party = character
                         , to_party = getShopCharacter shop
+                        , sell_destination = ImmediateItems
                         }
                         { item = item, qty = qty_to_sell }
     in

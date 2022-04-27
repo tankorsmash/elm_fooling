@@ -6853,6 +6853,94 @@ renderCharacterDetails colorTheme character item_db progressUnlocks is_shop_cont
         )
 
 
+{-| shown when hovered over item
+-}
+expanded_display shop_trends historical_shop_trends char_id hovered_item item ({ colorTheme } as uiOptions) =
+    let
+        { show_charts_in_hovered_item } =
+            uiOptions
+
+        is_hovered_item =
+            case hovered_item of
+                Just ( hovered_char_id, hovered_item_ ) ->
+                    char_id == hovered_char_id && item == hovered_item_
+
+                Nothing ->
+                    False
+
+        current_price =
+            get_single_adjusted_item_cost shop_trends item
+    in
+    if is_hovered_item then
+        Element.Keyed.el
+            [ width fill
+            , Background.color <| rgb 1 1 1
+            , Border.color <| rgb 0.35 0.35 0.35
+            , Border.rounded 3
+            , Border.width 2
+            , padding 10
+            , Element.moveDown 20
+            ]
+        <|
+            ( UUID.toString item.id
+              -- , text "POOPY"
+            , column [ spacing 5, width fill ]
+                [ row [ width fill ]
+                    [ paragraph []
+                        [ text item.name
+                        , text ": "
+                        , text item.description
+                        ]
+                    , if not show_charts_in_hovered_item then
+                        el
+                            [ Font.italic
+                            , alignRight
+                            , Font.color <|
+                                case colorTheme of
+                                    BrightTheme ->
+                                        UI.color_grey
+
+                                    DarkTheme ->
+                                        UI.convertColor Color.white
+                            , Font.size 12
+                            ]
+                        <|
+                            text "Hold Shift for more"
+
+                      else
+                        Element.none
+                    ]
+                , paragraph [] <|
+                    [ text "Current Price: "
+                    , UI.renderGp colorTheme current_price
+                    ]
+                        ++ (if
+                                is_item_trending
+                                    shop_trends.item_type_sentiment
+                                    item
+                                    && item.raw_gold_cost
+                                    /= current_price
+                            then
+                                [ text " (originally "
+                                , UI.renderGp colorTheme item.raw_gold_cost
+                                , text ")"
+                                ]
+
+                            else
+                                []
+                           )
+                , if show_charts_in_hovered_item then
+                    el [ paddingXY 20 20 ] <| viewSingleItemTypeCharts historical_shop_trends item.item_type
+
+                  else
+                    Element.none
+                ]
+            )
+
+    else
+        Element.none
+
+
 render_inventory_grid :
     Model
     -> String
@@ -6862,101 +6950,19 @@ render_inventory_grid :
     -> ListContext
     -> (InventoryRecord -> Element Msg)
     -> Element Msg
-render_inventory_grid { historical_shop_trends, item_db, colorTheme, uiOptions, progressUnlocks, communityFund } header character shop_trends hovered_item context controls_column =
+render_inventory_grid model header character shop_trends hovered_item context controls_column =
     let
         { char_id, held_items, held_gold } =
             character
+
+        { historical_shop_trends, item_db, colorTheme, uiOptions, progressUnlocks, communityFund } =
+            model
 
         is_shop_context =
             context == ShopItems
 
         is_player_context =
             context == InventoryItems
-
-        { show_charts_in_hovered_item } =
-            uiOptions
-
-        is_hovered_item item =
-            case hovered_item of
-                Just ( hovered_char_id, hovered_item_ ) ->
-                    char_id == hovered_char_id && item == hovered_item_
-
-                Nothing ->
-                    False
-
-        current_price item =
-            get_single_adjusted_item_cost shop_trends item
-
-        --shown when hovered over item
-        expanded_display item =
-            if is_hovered_item item then
-                Element.Keyed.el
-                    [ width fill
-                    , Background.color <| rgb 1 1 1
-                    , Border.color <| rgb 0.35 0.35 0.35
-                    , Border.rounded 3
-                    , Border.width 2
-                    , padding 10
-                    , Element.moveDown 20
-                    ]
-                <|
-                    ( UUID.toString item.id
-                      -- , text "POOPY"
-                    , column [ spacing 5, width fill ]
-                        [ row [ width fill ]
-                            [ paragraph []
-                                [ text item.name
-                                , text ": "
-                                , text item.description
-                                ]
-                            , if not show_charts_in_hovered_item then
-                                el
-                                    [ Font.italic
-                                    , alignRight
-                                    , Font.color <|
-                                        case colorTheme of
-                                            BrightTheme ->
-                                                UI.color_grey
-
-                                            DarkTheme ->
-                                                UI.convertColor Color.white
-                                    , Font.size 12
-                                    ]
-                                <|
-                                    text "Hold Shift for more"
-
-                              else
-                                Element.none
-                            ]
-                        , paragraph [] <|
-                            [ text "Current Price: "
-                            , UI.renderGp colorTheme (current_price item)
-                            ]
-                                ++ (if
-                                        is_item_trending
-                                            shop_trends.item_type_sentiment
-                                            item
-                                            && item.raw_gold_cost
-                                            /= current_price item
-                                    then
-                                        [ text " (originally "
-                                        , UI.renderGp colorTheme item.raw_gold_cost
-                                        , text ")"
-                                        ]
-
-                                    else
-                                        []
-                                   )
-                        , if show_charts_in_hovered_item then
-                            el [ paddingXY 20 20 ] <| viewSingleItemTypeCharts historical_shop_trends item.item_type
-
-                          else
-                            Element.none
-                        ]
-                    )
-
-            else
-                Element.none
     in
     Element.column [ width fill, spacingXY 0 5, height fill ] <|
         [ Element.row [ UI.font_scaled 2, width fill ]
@@ -6986,9 +6992,8 @@ render_inventory_grid { historical_shop_trends, item_db, colorTheme, uiOptions, 
               else
                 Element.none
             ]
+        , Lazy.lazy5 renderCharacterDetails colorTheme character item_db progressUnlocks is_shop_context
         ]
-            ++ [ Lazy.lazy5 renderCharacterDetails colorTheme character item_db progressUnlocks is_shop_context
-               ]
             ++ (if not is_shop_context && List.length character.action_log > 0 then
                     divider
 

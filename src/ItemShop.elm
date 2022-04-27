@@ -4090,15 +4090,13 @@ update msg model =
             case ( getShop model.characters, getPlayer model.characters ) of
                 ( Shop shop, Player player ) ->
                     let
-                        -- ( new_shop_trends, new_shop, new_player ) =
                         trade_record =
                             sellItemsFromPartyToOther
-                                { shop_trends = model.shop_trends
-                                , from_party = shop
-                                , to_party = player
-                                , sell_origin = ImmediateItems
-                                , sell_destination = ImmediateItems
-                                }
+                                (createOvernightTradeContext
+                                    model.shop_trends
+                                    shop
+                                    player
+                                )
                                 { item = item, qty = qty }
 
                         new_trade_context =
@@ -4127,12 +4125,10 @@ update msg model =
 
                         orig_trade_context : TradeContext
                         orig_trade_context =
-                            { shop_trends = model.shop_trends
-                            , from_party = player
-                            , to_party = shop
-                            , sell_origin = ImmediateItems
-                            , sell_destination = ImmediateItems
-                            }
+                            createImmediateTradeContext
+                                model.shop_trends
+                                player
+                                shop
 
                         trade_record : TradeRecord
                         trade_record =
@@ -8449,6 +8445,7 @@ viewShopActivePhase model =
             , Border.dashed
             ]
 
+        tickSecondButton : Element Msg
         tickSecondButton =
             UI.button <|
                 UI.TextParams
@@ -8458,6 +8455,25 @@ viewShopActivePhase model =
                     , onPressMsg = ForceTickSecond
                     , textLabel = "Force Tick"
                     }
+
+        debugButton : Element Msg
+        debugButton =
+            showHideDebugInventoriesButton
+                colorTheme
+                []
+                uiOptions.show_debug_inventories
+
+        viewPlayerInventory : Element Msg
+        viewPlayerInventory =
+            Element.el [ paddingXY 0 10, width fill ] <|
+                render_inventory_grid
+                    model
+                    "Items In Immediate Inventory"
+                    playerChar
+                    shop_trends
+                    uiOptions.hovered_item_in_character
+                    InventoryItems
+                    (playerInventoryControls colorTheme ( uiOptions.shiftIsPressed, shop_trends ))
     in
     Element.el
         ([ width fill, padding 10 ]
@@ -8557,22 +8573,10 @@ viewShopActivePhase model =
                     uiOptions.hovered_item_in_character
                     ShopItems
                     (\ir -> Lazy.lazy4 shopInventoryControls colorTheme player shop_trends ir)
-            , Element.el [ paddingXY 0 10, width fill ] <|
-                render_inventory_grid
-                    model
-                    "Items In Immediate Inventory"
-                    playerChar
-                    shop_trends
-                    uiOptions.hovered_item_in_character
-                    InventoryItems
-                    (playerInventoryControls colorTheme ( uiOptions.shiftIsPressed, shop_trends ))
+            , viewPlayerInventory
             , column [ width fill, spacingXY 0 20 ] <|
-                []
-                    ++ [ showHideDebugInventoriesButton
-                            colorTheme
-                            []
-                            uiOptions.show_debug_inventories
-                       ]
+                [ debugButton
+                ]
                     ++ (if uiOptions.show_debug_inventories then
                             [ tickSecondButton
                             , debugTimeOfDayControls model

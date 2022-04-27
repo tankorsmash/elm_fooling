@@ -431,6 +431,16 @@ setQuantity qty =
     Quantity qty
 
 
+oneQuantity : Quantity
+oneQuantity =
+    setQuantity 1
+
+
+zeroQuantity : Quantity
+zeroQuantity =
+    setQuantity 0
+
+
 maxMineClickedParticles =
     5
 
@@ -533,6 +543,11 @@ mapOvernightItems inventoryRecords updater =
 setHeldItems : Character -> HeldItems -> Character
 setHeldItems character held_items =
     { character | held_items = held_items }
+
+
+setHeldGold : Character -> Int -> Character
+setHeldGold character gold =
+    { character | held_gold = gold }
 
 
 type alias ItemTypeIdSentiment =
@@ -2086,6 +2101,7 @@ type alias TradeContext =
     { shop_trends : ShopTrends
     , from_party : Character
     , to_party : Character
+    , sell_origin : TradeItemDestination
     , sell_destination : TradeItemDestination
     }
 
@@ -3099,8 +3115,8 @@ sub_from_average old_avg old_count new_value new_count =
     (old_count * old_avg - new_value) // (old_count - new_count)
 
 
-add_inventory_record_to_character : InventoryRecord -> Character -> Character
-add_inventory_record_to_character { item, quantity, avg_price } character =
+add_inventory_record_to_character_immediate_items : InventoryRecord -> Character -> Character
+add_inventory_record_to_character_immediate_items { item, quantity, avg_price } character =
     { character
         | held_items =
             addItemToImmediateInventoryRecords
@@ -3223,8 +3239,8 @@ reduce_if_matched item qty total_cost ({ avg_price } as inventory_record) =
         inventory_record
 
 
-countInventoryRecords : InventoryRecords -> Item -> Quantity -> Bool
-countInventoryRecords inventory_records item qty =
+nonzeroInventoryRecords : InventoryRecords -> Item -> Quantity -> Bool
+nonzeroInventoryRecords inventory_records item qty =
     List.length
         (List.filter
             (\ir ->
@@ -3319,6 +3335,7 @@ trade_items_from_party_to_other shop_trends from_character to_character { item, 
             }
         , from_party = setHeldItems from_character new_from_items
         , to_party = setHeldItems to_character new_to_items
+        , sell_origin = ImmediateItems
         , sell_destination = ImmediateItems
         }
         log_entry
@@ -3361,12 +3378,12 @@ getInventoryRecords heldItems destination =
 sellItemsFromPartyToOther : TradeContext -> TradeOrder -> TradeRecord
 sellItemsFromPartyToOther orig_trade_context { item, qty } =
     let
-        { shop_trends, from_party, to_party, sell_destination } =
+        { shop_trends, from_party, to_party, sell_origin, sell_destination } =
             orig_trade_context
 
         has_items =
-            countInventoryRecords
-                (getInventoryRecords from_party.held_items sell_destination)
+            nonzeroInventoryRecords
+                (getInventoryRecords from_party.held_items sell_origin)
                 item
                 qty
 
@@ -3382,7 +3399,7 @@ sellItemsFromPartyToOther orig_trade_context { item, qty } =
                     from_party
                     to_party
                     { item = item, qty = qty }
-                    orig_trade_context.sell_destination
+                    sell_destination
 
             trade_context : TradeContext
             trade_context =
@@ -3462,7 +3479,7 @@ updateBattleOutMsg battleOutMsg model =
 
                         withNewItem (Shop shop) newItem =
                             replaceCharacter
-                                (add_inventory_record_to_character
+                                (add_inventory_record_to_character_immediate_items
                                     { item = newItem
                                     , quantity = setQuantity 1
                                     , avg_price = setPrice newItem.raw_gold_cost
@@ -4055,6 +4072,7 @@ update msg model =
                                 { shop_trends = model.shop_trends
                                 , from_party = shop
                                 , to_party = player
+                                , sell_origin = ImmediateItems
                                 , sell_destination = ImmediateItems
                                 }
                                 { item = item, qty = qty }
@@ -4088,6 +4106,7 @@ update msg model =
                             { shop_trends = model.shop_trends
                             , from_party = player
                             , to_party = shop
+                            , sell_origin = ImmediateItems
                             , sell_destination = ImmediateItems
                             }
 
@@ -5664,6 +5683,7 @@ ai_buy_item_from_shop ai_tick_time item_db { shop_trends, character, shop, commu
                                 { time = ai_tick_time
                                 , log_type = WantedButCouldntTrade WantedToBuy
                                 }
+                        , sell_origin = ImmediateItems
                         , sell_destination = ImmediateItems
                         }
 
@@ -5672,6 +5692,7 @@ ai_buy_item_from_shop ai_tick_time item_db { shop_trends, character, shop, commu
                         { shop_trends = shop_trends
                         , from_party = getShopCharacter shop
                         , to_party = character
+                        , sell_origin = ImmediateItems
                         , sell_destination = ImmediateItems
                         }
                         { item = item, qty = qty_to_buy }
@@ -5764,6 +5785,7 @@ ai_sell_item_to_shop ai_tick_time item_db { shop_trends, character, shop, commun
                                 character
                                 wanted_to_sell_but_couldnt
                         , to_party = getShopCharacter shop
+                        , sell_origin = ImmediateItems
                         , sell_destination = ImmediateItems
                         }
 
@@ -5772,6 +5794,7 @@ ai_sell_item_to_shop ai_tick_time item_db { shop_trends, character, shop, commun
                         { shop_trends = shop_trends
                         , from_party = character
                         , to_party = getShopCharacter shop
+                        , sell_origin = ImmediateItems
                         , sell_destination = ImmediateItems
                         }
                         { item = item, qty = qty_to_sell }
@@ -10519,6 +10542,94 @@ suite =
             , test "scaling IncreaseIncome upgrade with level 5" <|
                 \_ ->
                     Expect.equal (setPrice 270) <| scale_increase_income_cost 5
+            , describe "Trading items"
+                [ test "buying an item goes into immediateItems items" <|
+                    \_ ->
+                        let
+                            newHeldItemsWithItem : HeldItems
+                            newHeldItemsWithItem =
+                                addItemToImmediateInventoryRecords
+                                    test_character2.held_items
+                                    test_item
+                                    oneQuantity
+                                    test_item.raw_gold_cost
+
+                            tradeContext : TradeContext
+                            tradeContext =
+                                { shop_trends = test_model.shop_trends
+                                , from_party = setHeldItems test_character2 newHeldItemsWithItem
+                                , to_party = setHeldGold test_character 99999
+                                , sell_origin = ImmediateItems
+                                , sell_destination = ImmediateItems
+                                }
+
+                            trade_record : TradeRecord
+                            trade_record =
+                                sellItemsFromPartyToOther
+                                    tradeContext
+                                    { item = test_item, qty = oneQuantity }
+                        in
+                        Expect.all
+                            [ \tr ->
+                                case tr of
+                                    IncompleteTradeRecord tc ->
+                                        Expect.fail "trade should have worked, since test_character2 has the items, and buyer has 99999 gold"
+
+                                    CompletedTradeRecord _ _ ->
+                                        Expect.pass
+                            , \tr ->
+                                Expect.equal True
+                                    (nonzeroInventoryRecords
+                                        (getTradeContext tr).to_party.held_items.immediateItems
+                                        test_item
+                                        oneQuantity
+                                    )
+                            ]
+                            trade_record
+                , test "buying an item goes into overnightItems items" <|
+                    \_ ->
+                        let
+                            newHeldItemsWithItem : HeldItems
+                            newHeldItemsWithItem =
+                                addItemToImmediateInventoryRecords
+                                    test_character2.held_items
+                                    test_item
+                                    oneQuantity
+                                    test_item.raw_gold_cost
+
+                            tradeContext : TradeContext
+                            tradeContext =
+                                { shop_trends = test_model.shop_trends
+                                , from_party = setHeldItems test_character2 newHeldItemsWithItem
+                                , to_party = setHeldGold test_character 99999
+                                , sell_origin = ImmediateItems
+                                , sell_destination = OvernightItems
+                                }
+
+                            trade_record : TradeRecord
+                            trade_record =
+                                sellItemsFromPartyToOther
+                                    tradeContext
+                                    { item = test_item, qty = oneQuantity }
+                        in
+                        Expect.all
+                            [ \tr ->
+                                case tr of
+                                    IncompleteTradeRecord tc ->
+                                        Expect.fail "trade should have worked, since test_character2 has the items, and buyer has 99999 gold"
+
+                                    CompletedTradeRecord _ _ ->
+                                        Expect.pass
+                            , \tr ->
+                                Expect.equal True
+                                    (nonzeroInventoryRecords
+                                        (getTradeContext tr).to_party.held_items.overnightItems
+                                        test_item
+                                        oneQuantity
+                                    )
+                            ]
+                            trade_record
+                ]
             , describe "AutomaticBPtoSP takes bp and converts to bp on a timer, assuming there's enough BP" <|
                 let
                     newBattleModel =

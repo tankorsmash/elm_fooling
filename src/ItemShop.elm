@@ -739,6 +739,11 @@ type alias TrendTolerance =
     }
 
 
+type alias CharacterOptions =
+    { displayedItems : TradeItemDestination
+    }
+
+
 type alias Character =
     { held_items : HeldItems
     , held_gold : Int
@@ -752,6 +757,7 @@ type alias Character =
     , displayedItemType : Maybe ItemType
     , held_blood : Int
     , held_gems : Int
+    , characterOptions : CharacterOptions
     }
 
 
@@ -1212,6 +1218,12 @@ decodeCharacterB =
         (field "held_gems" Decode.int)
 
 
+initCharacterOptions : CharacterOptions
+initCharacterOptions =
+    { displayedItems = ImmediateItems
+    }
+
+
 combineCharacterPartials : CharacterPartialA -> CharacterPartialB -> Character
 combineCharacterPartials charPartA charPartB =
     { -- partial A
@@ -1229,6 +1241,7 @@ combineCharacterPartials charPartA charPartB =
     , displayedItemType = charPartB.displayedItemType
     , held_blood = charPartB.held_blood
     , held_gems = charPartB.held_gems
+    , characterOptions = initCharacterOptions
     }
 
 
@@ -2664,6 +2677,9 @@ createCharacter char_id name =
     , displayedItemType = Nothing
     , held_blood = 0
     , held_gems = 0
+    , characterOptions =
+        { displayedItems = ImmediateItems
+        }
     }
 
 
@@ -6952,7 +6968,7 @@ render_inventory_grid :
     -> Element Msg
 render_inventory_grid model header character shop_trends hovered_item context controls_column =
     let
-        { char_id, held_items, held_gold } =
+        { char_id, held_items, held_gold, characterOptions } =
             character
 
         { historical_shop_trends, item_db, colorTheme, uiOptions, progressUnlocks, communityFund } =
@@ -7043,14 +7059,18 @@ inventoryGrid colorTheme uiOptions shop_trends character context progressUnlocks
 
         items : InventoryRecords
         items =
-            (if character.hide_zero_qty_inv_rows then
-                List.filter
-                    (\{ quantity } -> getQuantity quantity > 0)
-                    character.held_items.immediateItems
+            getInventoryRecords
+                character.held_items
+                character.characterOptions.displayedItems
+                |> (\items_ ->
+                        if character.hide_zero_qty_inv_rows then
+                            List.filter
+                                (\{ quantity } -> getQuantity quantity > 0)
+                                items_
 
-             else
-                character.held_items.immediateItems
-            )
+                        else
+                            items_
+                   )
                 |> List.sortWith sortFunc
                 |> (\irs ->
                         case character.displayedItemType of
@@ -7069,7 +7089,7 @@ inventoryGrid colorTheme uiOptions shop_trends character context progressUnlocks
                     Lazy.lazy3 smallHeaderInGrid uiOptions "Name" SortByName
               , width = fillPortion 2
               , view =
-                    \{ item, quantity, avg_price } ->
+                    \{ item } ->
                         Element.el
                             (mouse_hover_attrs item
                                 ++ [ width (fillPortion 2 |> Element.maximum 150)
@@ -7098,17 +7118,16 @@ inventoryGrid colorTheme uiOptions shop_trends character context progressUnlocks
                             paragraph [] <|
                                 [ UI.renderGp colorTheme <|
                                     get_single_adjusted_item_cost shop_trends item
-                                ]
-                                    ++ [ if context /= ShopItems && priceDiff /= 0 && getQuantity quantity /= 0 then
-                                            let
-                                                diffColor =
-                                                    UI.colorFromInt priceDiff (UI.convertColor Color.green) UI.color_black UI.color_danger
-                                            in
-                                            el [ Font.size 12, Font.color diffColor ] <| text <| " (" ++ signedFromInt priceDiff ++ ")"
+                                , if context /= ShopItems && priceDiff /= 0 && getQuantity quantity /= 0 then
+                                    let
+                                        diffColor =
+                                            UI.colorFromInt priceDiff (UI.convertColor Color.green) UI.color_black UI.color_danger
+                                    in
+                                    el [ Font.size 12, Font.color diffColor ] <| text <| " (" ++ signedFromInt priceDiff ++ ")"
 
-                                         else
-                                            Element.none
-                                       ]
+                                  else
+                                    Element.none
+                                ]
               }
             , { header =
                     Lazy.lazy3 smallHeaderInGrid uiOptions "Avg Px" SortByAvgPrice

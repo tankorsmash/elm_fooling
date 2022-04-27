@@ -2106,6 +2106,30 @@ type alias TradeContext =
     }
 
 
+{-| creates a standard Trade context, from immediateItems to overnightItems
+-}
+createOvernightTradeContext : ShopTrends -> Character -> Character -> TradeContext
+createOvernightTradeContext shopTrends fromParty toParty =
+    { shop_trends = shopTrends
+    , from_party = fromParty
+    , to_party = toParty
+    , sell_origin = ImmediateItems
+    , sell_destination = OvernightItems
+    }
+
+
+{-| creates a standard Trade context, from immediateItems to immediateItems
+-}
+createImmediateTradeContext : ShopTrends -> Character -> Character -> TradeContext
+createImmediateTradeContext shopTrends fromParty toParty =
+    { shop_trends = shopTrends
+    , from_party = fromParty
+    , to_party = toParty
+    , sell_origin = ImmediateItems
+    , sell_destination = ImmediateItems
+    }
+
+
 type TradeRecord
     = IncompleteTradeRecord TradeContext
     | CompletedTradeRecord TradeContext ItemTradeLog
@@ -10556,12 +10580,10 @@ suite =
 
                             tradeContext : TradeContext
                             tradeContext =
-                                { shop_trends = test_model.shop_trends
-                                , from_party = setHeldItems test_character2 newHeldItemsWithItem
-                                , to_party = setHeldGold test_character 99999
-                                , sell_origin = ImmediateItems
-                                , sell_destination = ImmediateItems
-                                }
+                                createImmediateTradeContext
+                                    test_model.shop_trends
+                                    (setHeldItems test_character2 newHeldItemsWithItem)
+                                    (setHeldGold test_character 99999)
 
                             trade_record : TradeRecord
                             trade_record =
@@ -10599,12 +10621,10 @@ suite =
 
                             tradeContext : TradeContext
                             tradeContext =
-                                { shop_trends = test_model.shop_trends
-                                , from_party = setHeldItems test_character2 newHeldItemsWithItem
-                                , to_party = setHeldGold test_character 99999
-                                , sell_origin = ImmediateItems
-                                , sell_destination = OvernightItems
-                                }
+                                createOvernightTradeContext
+                                    test_model.shop_trends
+                                    (setHeldItems test_character2 newHeldItemsWithItem)
+                                    (setHeldGold test_character 99999)
 
                             trade_record : TradeRecord
                             trade_record =

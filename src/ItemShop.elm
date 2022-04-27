@@ -367,6 +367,7 @@ type Msg
     | ReleaseJuicyButton String
     | ClickedNotificationBar
     | AddNotification String
+    | ToggleDisplayedCharacterInventory CharacterId
 
 
 type TitleScreenAnimationState
@@ -744,6 +745,11 @@ type alias CharacterOptions =
     }
 
 
+setCharacterOptions : CharacterOptions -> Character -> Character
+setCharacterOptions characterOptions character =
+    { character | characterOptions = characterOptions }
+
+
 type alias Character =
     { held_items : HeldItems
     , held_gold : Int
@@ -806,6 +812,19 @@ decodeCharacters itemDb =
 charactersToList : Characters -> List Character
 charactersToList (Characters { player, shop, others }) =
     getInnerPlayer player :: getInnerShop shop :: others
+
+
+updateCharacters : (Character -> Character) -> CharacterId -> Characters -> Characters
+updateCharacters updateFunc charId characters =
+    mapCharacters
+        (\c ->
+            if c.char_id == charId then
+                updateFunc c
+
+            else
+                c
+        )
+        characters
 
 
 mapCharacters : (Character -> Character) -> Characters -> Characters
@@ -2677,9 +2696,7 @@ createCharacter char_id name =
     , displayedItemType = Nothing
     , held_blood = 0
     , held_gems = 0
-    , characterOptions =
-        { displayedItems = ImmediateItems
-        }
+    , characterOptions = initCharacterOptions
     }
 
 
@@ -4458,6 +4475,33 @@ update msg model =
 
         AddNotification notificationText ->
             ( addNotificationByString notificationText model.notificationModel |> setNotificationModel model, Cmd.none )
+
+        ToggleDisplayedCharacterInventory charId ->
+            let
+                newCharacters =
+                    updateCharacters
+                        (\character ->
+                            let
+                                { characterOptions } =
+                                    character
+
+                                newCharacterOptions =
+                                    { characterOptions
+                                        | displayedItems =
+                                            case characterOptions.displayedItems of
+                                                ImmediateItems ->
+                                                    OvernightItems
+
+                                                OvernightItems ->
+                                                    ImmediateItems
+                                    }
+                            in
+                            setCharacterOptions newCharacterOptions character
+                        )
+                        charId
+                        model.characters
+            in
+            ( setCharacters model newCharacters, Cmd.none )
 
 
 
@@ -7002,6 +7046,14 @@ render_inventory_grid model header character shop_trends hovered_item context co
                             [ text <| "Community Fund: "
                             , UI.renderGp colorTheme communityFund
                             ]
+                        , UI.button <|
+                            UI.TextParams
+                                { buttonType = UI.Danger
+                                , customAttrs = []
+                                , onPressMsg = ToggleDisplayedCharacterInventory character.char_id
+                                , textLabel = "Toggle"
+                                , colorTheme = colorTheme
+                                }
                         ]
                     ]
 
@@ -7213,10 +7265,22 @@ inventoryGrid colorTheme uiOptions shop_trends character context progressUnlocks
                         }
                     )
     in
-    Element.table [ spacing 5 ]
-        { data = items
-        , columns = table_columns
-        }
+    if not <| List.isEmpty items then
+        Element.table [ spacing 5 ]
+            { data = items
+            , columns = table_columns
+            }
+
+    else
+        el [ Font.size 20 ] <|
+            text <|
+                (++) "No items in " <|
+                    case character.characterOptions.displayedItems of
+                        ImmediateItems ->
+                            "Immediate Items"
+
+                        OvernightItems ->
+                            "Overnight Items"
 
 
 sort_by_bool_true_first : Bool -> Int
@@ -8492,7 +8556,13 @@ viewShopActivePhase model =
             Element.el [ paddingXY 0 10, width fill ] <|
                 render_inventory_grid
                     model
-                    "Items In Immediate Inventory"
+                    (case playerChar.characterOptions.displayedItems of
+                        ImmediateItems ->
+                            "Items In Immediate Inventory"
+
+                        OvernightItems ->
+                            "Items In Overnight Inventory"
+                    )
                     playerChar
                     shop_trends
                     uiOptions.hovered_item_in_character

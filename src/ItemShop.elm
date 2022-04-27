@@ -4689,13 +4689,43 @@ onPrepNewDay ({ timeOfDay, item_db, globalSeed, characters, ai_tick_time, quests
                         }
                     ]
             }
+
+        newCharacters : Characters
+        newCharacters =
+            model.characters
+                |> setShop (Shop newShop)
+                |> mapCharacters
+                    -- move all the overnight items into immediateItems and clear overnightItems
+                    (\char ->
+                        let
+                            newHeldItems : HeldItems
+                            newHeldItems =
+                                List.foldl
+                                    (\overnightRecord heldItems ->
+                                        addItemToImmediateInventoryRecords
+                                            heldItems
+                                            overnightRecord.item
+                                            overnightRecord.quantity
+                                            (getPrice <| getTotalCost overnightRecord)
+                                    )
+                                    char.held_items
+                                    char.held_items.overnightItems
+                        in
+                        setOvernightItems newHeldItems []
+                            |> setHeldItems char
+                    )
     in
     { model
-        | characters = setShop (Shop newShop) model.characters
+        | characters = newCharacters
         , globalSeed = newGlobalSeed
         , quests = newQuests
         , timeOfDay = { timeOfDay | currentPhase = PrepPhase }
     }
+
+
+getTotalCost : InventoryRecord -> Price
+getTotalCost inventoryRecord =
+    setPrice (getPrice inventoryRecord.avg_price * getQuantity inventoryRecord.quantity)
 
 
 {-| Helper we need to call when changing the current phase of the game. We

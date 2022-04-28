@@ -48,7 +48,7 @@ import Element.Border as Border
 import Element.Events as Events
 import Element.Font as Font
 import Element.Input as Input
-import Element.Keyed
+import Element.Keyed as Keyed
 import Element.Lazy as Lazy
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string, tuple)
@@ -4731,6 +4731,7 @@ getTotalCost inventoryRecord =
 {-| Helper we need to call when changing the current phase of the game. We
 do it awkwardly like this so the code has to get changed in all places (ending normally, and user pressing 'End Early')
 -}
+changeToPostPhaseAtEndOfDay : Int -> Int -> ItemDb -> ItemDb -> TimePhase
 changeToPostPhaseAtEndOfDay goldAtStartOfDay playerHeldGold itemDbAtStart itemDbAtEnd =
     PostPhase
         { goldAtStartOfDay = goldAtStartOfDay
@@ -4848,6 +4849,16 @@ playerSoldItem soldQty { dailyQuests, persistentQuests } =
     )
 
 
+isQuestComplete : Quest -> Bool
+isQuestComplete quest =
+    case quest of
+        CompleteQuest _ _ ->
+            True
+
+        IncompleteQuest _ ->
+            False
+
+
 playerEarnedGold : Quantity -> PlayerQuests -> ( PlayerQuests, List Notification )
 playerEarnedGold earnedGold ({ dailyQuests, persistentQuests } as playerQuests) =
     let
@@ -4859,7 +4870,17 @@ playerEarnedGold earnedGold ({ dailyQuests, persistentQuests } as playerQuests) 
                         IncompleteQuest { questType, questId } ->
                             case questType of
                                 EarnGold questTracker ->
-                                    ( onEarnGold questTracker questId earnedGold, Just <| TextNotification "Quest complete!" )
+                                    let
+                                        quest_ =
+                                            onEarnGold questTracker questId earnedGold
+                                    in
+                                    ( quest_
+                                    , if isQuestComplete quest_ then
+                                        Just <| TextNotification "Quest complete!"
+
+                                      else
+                                        Nothing
+                                    )
 
                                 _ ->
                                     -- we know we can return an IncompleteQuest because this is a function that only deals with IncompleteQuests
@@ -6962,7 +6983,7 @@ expanded_display shop_trends historical_shop_trends char_id hovered_item item ({
             get_single_adjusted_item_cost shop_trends item
     in
     if is_hovered_item then
-        Element.Keyed.el
+        Keyed.el
             [ width fill
             , Background.color <| rgb 1 1 1
             , Border.color <| rgb 0.35 0.35 0.35
@@ -7172,7 +7193,7 @@ inventoryGrid colorTheme uiOptions shop_trends character context progressUnlocks
               , width = fillPortion 2
               , view =
                     \{ item } ->
-                        Element.el
+                        el
                             (mouse_hover_attrs item
                                 ++ [ width (fillPortion 2 |> Element.maximum 150)
                                    , Font.size 16
@@ -8713,7 +8734,7 @@ viewShopActivePhase model =
                                         |> List.sortBy (.char_id >> UUID.toString)
                                         |> List.map
                                             (\character ->
-                                                Element.Keyed.el [ height fill, paddingXY 0 10, width fill ]
+                                                Keyed.el [ height fill, paddingXY 0 10, width fill ]
                                                     ( UUID.toString character.char_id
                                                     , render_inventory_grid
                                                         model
@@ -9708,7 +9729,7 @@ special_actions_display colorTheme progressUnlocks playerUpgrades hoveredTooltip
                                         |> Animator.withWobble 1
                 ]
             <|
-                Lazy.lazy specialButtonBuilder sacMine
+                build_special_action_button colorTheme hoveredTooltip player sacMine
 
         button_battle =
             if containsProgressUnlock UnlockedBattles progressUnlocks then

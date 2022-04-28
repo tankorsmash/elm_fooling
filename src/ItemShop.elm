@@ -4876,7 +4876,7 @@ playerEarnedGold earnedGold ({ dailyQuests, persistentQuests } as playerQuests) 
                                     in
                                     ( quest_
                                     , if isQuestComplete quest_ then
-                                        Just <| TextNotification "Quest complete!"
+                                        Just <| TextNotification <| "Quest complete! - " ++ getQuestTitle questType
 
                                       else
                                         Nothing

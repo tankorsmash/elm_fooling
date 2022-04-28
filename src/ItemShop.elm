@@ -519,6 +519,26 @@ type alias HeldItems =
     }
 
 
+countInventoryRecords : List InventoryRecord -> Int
+countInventoryRecords inventoryRecords =
+    List.foldl
+        (\ir total ->
+            getQuantity ir.quantity + total
+        )
+        0
+        inventoryRecords
+
+
+countImmediateItems : HeldItems -> Int
+countImmediateItems =
+    .immediateItems >> countInventoryRecords
+
+
+countOvernightItems : HeldItems -> Int
+countOvernightItems =
+    .overnightItems >> countInventoryRecords
+
+
 setImmediateItems : HeldItems -> InventoryRecords -> HeldItems
 setImmediateItems inventoryRecords immediateItems =
     { inventoryRecords | immediateItems = immediateItems }
@@ -864,6 +884,8 @@ mapCharacters mapFunc ((Characters { player, shop, others }) as characters) =
     Characters { player = newPlayer, shop = newShop, others = newOthers }
 
 
+{-| counts characters, 1 player, 1 shop, many others
+-}
 charactersLength : Characters -> Int
 charactersLength (Characters { player, shop, others }) =
     2 + List.length others

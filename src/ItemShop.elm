@@ -9913,9 +9913,13 @@ namesParser namesToFind =
         namesHelp : List Name -> Parser.Parser (Parser.Step (List Name) (List Name))
         namesHelp revNames =
             Parser.oneOf
-                -- find the statement
-                [ Parser.succeed (\stmt -> Parser.Loop (stmt :: revNames))
-                    |= Parser.backtrackable parseName
+                -- find and upper case word, and keep it if it matches
+                [ Parser.succeed
+                    (Maybe.map (\n -> n :: revNames)
+                        >> Maybe.withDefault revNames
+                        >> Parser.Loop
+                    )
+                    |= parseName
 
                 -- parse a single space
                 , Parser.succeed (Parser.Loop revNames)
@@ -9936,7 +9940,7 @@ namesParser namesToFind =
                     |. Parser.end
                 ]
 
-        parseName : Parser.Parser Name
+        parseName : Parser.Parser (Maybe Name)
         parseName =
             (Parser.getChompedString <|
                 Parser.succeed identity
@@ -9946,10 +9950,11 @@ namesParser namesToFind =
                 |> Parser.andThen
                     (\str ->
                         if List.member str namesToFind then
-                            Parser.succeed (Name str)
+                            Parser.succeed (Just <| Name str)
 
                         else
-                            Parser.problem ("Invalid name: " ++ str)
+                            -- Parser.problem ("Invalid name: " ++ str)
+                            Parser.succeed Nothing
                     )
     in
     names

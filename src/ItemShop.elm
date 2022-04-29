@@ -62,6 +62,7 @@ import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required,
 import Json.Encode as Encode exposing (Value)
 import Json.Encode.Extra as EncodeExtra exposing (maybe)
 import List.Extra
+import Parser exposing ((|.), (|=))
 import Process
 import Random
 import Random.List
@@ -9902,6 +9903,58 @@ incrementSeed count seed =
         incrementSeed (count - 1) s
 
 
+namesParser : List String -> Parser.Parser (List Name)
+namesParser namesToFind =
+    let
+        names : Parser.Parser (List Name)
+        names =
+            Parser.loop [] namesHelp
+
+        namesHelp : List Name -> Parser.Parser (Parser.Step (List Name) (List Name))
+        namesHelp revNames =
+            Parser.oneOf
+                -- find the statement
+                [ Parser.succeed (\stmt -> Parser.Loop (stmt :: revNames))
+                    |= Parser.backtrackable parseName
+
+                -- parse a single space
+                , Parser.succeed (Parser.Loop revNames)
+                    |. Parser.chompIf (\c -> c == ' ')
+
+                -- parse a non alpha character
+                , Parser.succeed (Parser.Loop revNames)
+                    |. Parser.chompIf (not << Char.isAlphaNum)
+
+                -- parse a single word
+                , Parser.succeed (Parser.Loop revNames)
+                    -- need to do an initial chompIf, because chompWhile succeeds even with 0 matches
+                    |. Parser.chompIf Char.isAlphaNum
+                    |. Parser.chompWhile Char.isLower
+
+                -- supposed to mark the end of the loop
+                , Parser.succeed (Parser.Done (List.reverse revNames))
+                    |. Parser.end
+                ]
+
+        parseName : Parser.Parser Name
+        parseName =
+            (Parser.getChompedString <|
+                Parser.succeed identity
+                    |. Parser.chompIf Char.isUpper
+                    |. Parser.chompWhile (\c -> Char.isAlphaNum c || c == '_')
+            )
+                |> Parser.andThen
+                    (\str ->
+                        if List.member str namesToFind then
+                            Parser.succeed (Name str)
+
+                        else
+                            Parser.problem ("Invalid name: " ++ str)
+                    )
+    in
+    names
+
+
 suite : Test
 suite =
     let
@@ -10955,4 +11008,21 @@ suite =
                             resultPlayer.held_blood
                 ]
             ]
+        , describe "namesParser fooling"
+            [ test "learning to parse" <|
+                \_ ->
+                    let
+                        input =
+                            "This is Arthur, and he lives with Jim"
+
+                        parseResult : Result (List Parser.DeadEnd) (List Name)
+                        parseResult =
+                            Parser.run (namesParser [ "Arthur", "Jim" ]) input
+                    in
+                    Expect.ok <| Debug.log "result" parseResult
+            ]
         ]
+
+
+type Name
+    = Name String

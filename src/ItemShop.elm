@@ -1709,6 +1709,36 @@ encodeQuestTracker questTracker =
         ]
 
 
+decodeQuestTracker : Decoder QuestTracker
+decodeQuestTracker =
+    Decode.map2 QuestTracker
+        (Decode.field "current" Decode.int |> Decode.andThen (Decode.succeed << setQuantity))
+        (Decode.field "target" Decode.int |> Decode.andThen (Decode.succeed << setQuantity))
+
+
+decodeQuestType : Decoder QuestType
+decodeQuestType =
+    Decode.field "type" Decode.string
+        |> Decode.andThen
+            (\strType ->
+                case strType of
+                    "SellAnyItem" ->
+                        Decode.map SellAnyItem
+                            (Decode.field "questTracker" decodeQuestTracker)
+
+                    "EarnGold" ->
+                        Decode.map EarnGold
+                            (Decode.field "questTracker" decodeQuestTracker)
+
+                    "HoldGold" ->
+                        Decode.map HoldGold
+                            (Decode.field "questTracker" decodeQuestTracker)
+
+                    _ ->
+                        Decode.fail <| strType ++ " is not a recognized quest type"
+            )
+
+
 encodeQuestType : QuestType -> Encode.Value
 encodeQuestType questType =
     case questType of
@@ -1739,13 +1769,48 @@ encodeQuestData questData =
         ]
 
 
+decodeQuestData : Decoder QuestData
+decodeQuestData =
+    Decode.map2 QuestData
+        (Decode.field "questType" decodeQuestType)
+        (Decode.field "questId" decodeUuid)
+
+
+decodeCashedInStatus : Decoder CashedInStatus
+decodeCashedInStatus =
+    Decode.string
+        |> Decode.andThen
+            (\strType ->
+                case strType of
+                    "QuestCashedIn" ->
+                        Decode.succeed QuestCashedIn
+
+                    "QuestNotCashedIn" ->
+                        Decode.succeed QuestNotCashedIn
+
+                    _ ->
+                        Decode.fail <| strType ++ " is not a recognized CashedInStatus"
+            )
+
+
+encodeCashedInStatus : CashedInStatus -> Decode.Value
+encodeCashedInStatus cashedInStatus =
+    Encode.string <|
+        case cashedInStatus of
+            QuestCashedIn ->
+                "QuestCashedIn"
+
+            QuestNotCashedIn ->
+                "QuestNotCashedIn"
+
+
 encodeQuest : Quest -> Decode.Value
 encodeQuest quest =
     case quest of
         IncompleteQuest questData ->
             Encode.object
                 [ ( "type", Encode.string "IncompleteQuest" )
-                , ( "data", encodeQuestData questData )
+                , ( "quest_data", encodeQuestData questData )
                 ]
 
         CompleteQuest questData cashedInStatus ->
@@ -1753,15 +1818,31 @@ encodeQuest quest =
                 [ ( "type", Encode.string "CompleteQuest" )
                 , ( "quest_data", encodeQuestData questData )
                 , ( "cashed_in_status"
-                  , Encode.string <|
-                        case cashedInStatus of
-                            QuestCashedIn ->
-                                "QuestCashedIn"
-
-                            QuestNotCashedIn ->
-                                "QuestNotCashedIn"
+                  , encodeCashedInStatus cashedInStatus
                   )
                 ]
+
+
+decodeQuest : Decoder Quest
+decodeQuest =
+    Decode.string
+        |> Decode.andThen
+            (\strType ->
+                case strType of
+                    "IncompleteQuest" ->
+                        Decode.map IncompleteQuest
+                            (Decode.field "quest_data" decodeQuestData)
+
+                    "CompleteQuest" ->
+                        Decode.map2 CompleteQuest
+                            (Decode.field "quest_data" decodeQuestData)
+                            (Decode.field "cashed_in_status" decodeCashedInStatus)
+
+                    _ ->
+                        Decode.fail <|
+                            strType
+                                ++ " is not a recognized Quest type"
+            )
 
 
 getCompleteQuests : List Quest -> List Quest
@@ -1771,6 +1852,20 @@ getCompleteQuests =
 
 type alias PlayerQuests =
     { dailyQuests : List Quest, persistentQuests : List Quest }
+
+
+encodePlayerQuests : PlayerQuests -> Decode.Value
+encodePlayerQuests playerQuests =
+    Encode.object
+        [ ( "dailyQuests", Encode.list encodeQuest playerQuests.dailyQuests )
+        , ( "persistentQuests", Encode.list encodeQuest playerQuests.persistentQuests )
+        ]
+
+decodePlayerQuests : Decoder PlayerQuests
+decodePlayerQuests =
+    Decode.map2 PlayerQuests
+        (Decode.field "dailyQuests" <| Decode.list decodeQuest)
+        (Decode.field "persistentQuests" <| Decode.list decodeQuest)
 
 
 type alias ActivePhaseData =
@@ -2039,6 +2134,7 @@ encodeModel model =
         , ( "hasHadAtLeastOneGem", Encode.bool model.hasHadAtLeastOneGem )
         , ( "masterVol", Encode.float model.settings.masterVol )
         , ( "notificationModel", encodeNotificationModel model.notificationModel )
+        , ("quests", encodePlayerQuests model.quests)
         ]
 
 
@@ -2091,7 +2187,7 @@ decodeModel =
                     |> hardcoded (initUiOptions replaceMeDevice)
                     |> required "communityFund" Decode.int
                     |> required "progressUnlocks" (Decode.list decodeProgressUnlock)
-             -- , quests : PlayerQuests
+                    |> required "quests" decodePlayerQuests
              -- , timeOfDay : TimeOfDay
              -- , numItemsToStartDayWith : Int
              -- , shouldViewGemUpgradesInPostPhase : Bool
@@ -11019,12 +11115,17 @@ suite =
                     let
                         input =
                             "This is Arthur, and he lives with Jim"
+                                |> List.repeat 10
+                                |> String.join ""
+
+                        names =
+                            [ "Arthur", "Jim" ]
 
                         parseResult : Result (List Parser.DeadEnd) (List Name)
                         parseResult =
-                            Parser.run (namesParser [ "Arthur", "Jim" ]) input
+                            Parser.run (namesParser names) input
                     in
-                    Expect.ok <| Debug.log "result" parseResult
+                    Expect.ok <| parseResult
             ]
         ]
 

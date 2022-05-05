@@ -1861,6 +1861,7 @@ encodePlayerQuests playerQuests =
         , ( "persistentQuests", Encode.list encodeQuest playerQuests.persistentQuests )
         ]
 
+
 decodePlayerQuests : Decoder PlayerQuests
 decodePlayerQuests =
     Decode.map2 PlayerQuests
@@ -1926,6 +1927,15 @@ type alias TimeOfDay =
       dayLengthInMs : Milliseconds
     , currentPhase : TimePhase
     }
+
+
+
+-- encodeTimeOfDay : TimeOfDay -> Decode.Value
+-- encodeTimeOfDay timeOfDay =
+--     Encode.object
+--         [("dayLengthInMs", getMillis timeOfDay.dayLengthInMs |> Encode.int)
+--         -- ,("currentPhase", case TimePhase
+--         ]
 
 
 type alias SettingsData =
@@ -2130,20 +2140,19 @@ encodeModel model =
         -- , uiOptions : UiOptions //NOSERIALIZE
         , ( "communityFund", Encode.int model.communityFund )
         , ( "progressUnlocks", Encode.list encodeProgressUnlock model.progressUnlocks )
+        , ( "quests", encodePlayerQuests model.quests )
+
+        -- , timeOfDay : TimeOfDay
+        , ( "numItemsToStartDayWith", Encode.int model.numItemsToStartDayWith )
+        , ( "shouldViewGemUpgradesInPostPhase", Encode.bool model.shouldViewGemUpgradesInPostPhase )
         , ( "hasHadAtLeastOneBlood", Encode.bool model.hasHadAtLeastOneBlood )
         , ( "hasHadAtLeastOneGem", Encode.bool model.hasHadAtLeastOneGem )
         , ( "masterVol", Encode.float model.settings.masterVol )
         , ( "notificationModel", encodeNotificationModel model.notificationModel )
-        , ("quests", encodePlayerQuests model.quests)
         ]
 
 
-
--- decodeModel : Time.Posix -> UI.Device -> Decoder Model
--- decodeModel time device =
--- decodeModel : Decoder Model
-
-
+decodeModel : Decoder Model
 decodeModel =
     let
         replaceMeDevice =
@@ -2163,6 +2172,27 @@ decodeModel =
 
         replaceMeBrowserNavKey =
             Nothing
+
+        replaceMeTimeOfDay : TimeOfDay
+        replaceMeTimeOfDay =
+            { dayLengthInMs = setMillis 0, currentPhase = PrepPhase }
+
+        replaceMeTimelines : Timelines
+        replaceMeTimelines =
+            { titleScreenAnimationState = Animator.init <| HighTitle
+            , showMineGpGained = Animator.init <| NoMineAnimation
+            , mineClickedTimelines =
+                List.range 0 (maxMineClickedParticles + 1)
+                    |> List.map (\num -> ( num, Animator.init NoMineClickedAnimation ))
+                    |> Dict.fromList
+            , mineClickedParticleIdx = 0
+            , goldGainedTimeline = Animator.init <| NoGoldAnimation
+            , screenshakeTimeline = Animator.init <| NoScreenshakeAnimation
+            , juicyButtonTimelines =
+                juicyButtonNames
+                    |> List.map (\name -> ( name, Animator.init NoJuicyButtonAnimation ))
+                    |> Dict.fromList
+            }
     in
     --     -- Decode.succeed <| (init time device "" Nothing |> Tuple.first)
     field "item_db" (decodeItemDb initial_item_db)
@@ -2188,18 +2218,17 @@ decodeModel =
                     |> required "communityFund" Decode.int
                     |> required "progressUnlocks" (Decode.list decodeProgressUnlock)
                     |> required "quests" decodePlayerQuests
-             -- , timeOfDay : TimeOfDay
-             -- , numItemsToStartDayWith : Int
-             -- , shouldViewGemUpgradesInPostPhase : Bool
-             -- , timelines : Timelines
-             -- , hasHadAtLeastOneBlood : Bool
-             -- , hasHadAtLeastOneGem : Bool
-             -- |> required "hasHadAtLeastOneBlood" Decode.bool
-             -- |> required "hasHadAtLeastOneGem" Decode.bool
-             -- , settings : SettingsData
-             -- |> required "masterVol" (Decode.andThen (Decode.map SettingsData (Decode.float)))
-             -- |> hardcoded Nothing
-             -- |> required "notificationModel" decodeNotificationModel
+                    |> hardcoded replaceMeTimeOfDay
+                    |> required "numItemsToStartDayWith" Decode.int
+                    |> required "shouldViewGemUpgradesInPostPhase" Decode.bool
+                    |> hardcoded replaceMeTimelines
+                    |> required "hasHadAtLeastOneBlood" Decode.bool
+                    |> required "hasHadAtLeastOneGem" Decode.bool
+                    -- |> required "masterVol" (Decode.float |> Decode.andThen (\vol -> Decode.succeed { masterVol = vol }))
+                    -- , settings : SettingsData
+                    |> required "masterVol" (Decode.map SettingsData Decode.float)
+                    |> hardcoded Nothing
+                    |> required "notificationModel" decodeNotificationModel
             )
 
 

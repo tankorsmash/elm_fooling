@@ -62,7 +62,7 @@ import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required,
 import Json.Encode as Encode exposing (Value)
 import Json.Encode.Extra as EncodeExtra exposing (maybe)
 import List.Extra
-import Parser exposing ((|.), (|=))
+import Parser exposing ((|.), (|=), chompIf, chompWhile, getChompedString)
 import Process
 import Random
 import Random.List
@@ -75,75 +75,59 @@ import UUID exposing (UUID)
 import Url
 
 
-type Name
-    = Name String
+type Expression
+    = -- someVar = my_value
+      VariableAssignment String String
 
 
-namesParser : List String -> Parser.Parser (List Name)
-namesParser namesToFind =
+expressionParser : List String -> Parser.Parser (List Expression)
+expressionParser namesToFind =
     let
-        names : Parser.Parser (List Name)
-        names =
-            Parser.loop [] namesHelp
+        expressions : Parser.Parser (List Expression)
+        expressions =
+            Parser.loop [] expressionsHelp
 
-        namesHelp : List Name -> Parser.Parser (Parser.Step (List Name) (List Name))
-        namesHelp revNames =
+        expressionsHelp : List Expression -> Parser.Parser (Parser.Step (List Expression) (List Expression))
+        expressionsHelp foundSoFar =
             Parser.oneOf
-                -- find and upper case word, and keep it if it matches
-                [ Parser.succeed
-                    (Maybe.map (\n -> n :: revNames)
-                        >> Maybe.withDefault revNames
-                        >> Parser.Loop
-                    )
-                    |= parseName
-
-                -- parse a single space
-                , Parser.succeed (Parser.Loop revNames)
-                    |. Parser.chompIf (\c -> c == ' ')
-
-                -- parse a non alpha character
-                , Parser.succeed (Parser.Loop revNames)
-                    |. Parser.chompIf (not << Char.isAlphaNum)
-
-                -- parse a single word
-                , Parser.succeed (Parser.Loop revNames)
-                    -- need to do an initial chompIf, because chompWhile succeeds even with 0 matches
-                    |. Parser.chompIf Char.isAlphaNum
-                    |. Parser.chompWhile Char.isLower
+                [ -- parse a single word
+                  Parser.succeed (\expr1 expr2 -> Parser.Loop (VariableAssignment expr1 expr2 :: foundSoFar))
+                    |= (getChompedString <|
+                            Parser.succeed ()
+                                -- need to do an initial chompIf, because chompWhile succeeds even with 0 matches
+                                |. Parser.chompIf Char.isAlphaNum
+                                |. Parser.chompWhile Char.isLower
+                       )
+                    |. Parser.spaces
+                    |. Parser.symbol "="
+                    |. Parser.spaces
+                    |= (getChompedString <|
+                            Parser.succeed ()
+                                -- need to do an initial chompIf, because chompWhile succeeds even with 0 matches
+                                |. Parser.chompIf Char.isAlphaNum
+                                |. Parser.chompWhile Char.isLower
+                       )
 
                 -- supposed to mark the end of the loop
-                , Parser.succeed (Parser.Done (List.reverse revNames))
+                , Parser.succeed (Parser.Done foundSoFar)
                     |. Parser.end
                 ]
-
-        parseName : Parser.Parser (Maybe Name)
-        parseName =
-            (Parser.getChompedString <|
-                Parser.succeed identity
-                    |. Parser.chompIf Char.isUpper
-                    |. Parser.chompWhile (\c -> Char.isAlphaNum c || c == '_')
-            )
-                |> Parser.andThen
-                    (\str ->
-                        if List.member str namesToFind then
-                            Parser.succeed (Just <| Name str)
-
-                        else
-                            -- Parser.problem ("Invalid name: " ++ str)
-                            Parser.succeed Nothing
-                    )
     in
-    names
+    expressions
 
 
 suite : Test
 suite =
-    let
-        _ =
-            123
-    in
-    describe "Parser tests"
-        [ test "fake test" <|
+    describe "Parser"
+        [ test "someVar = a_value" <|
             \_ ->
-                Expect.pass
+                let
+                    input =
+                        "username = Jackie"
+
+                    parseResult : Result (List Parser.DeadEnd) (List Expression)
+                    parseResult =
+                        Parser.run (expressionParser []) input
+                in
+                Expect.ok <| parseResult
         ]

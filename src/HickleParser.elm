@@ -221,8 +221,8 @@ expectParseSucceedsWithOne parseResult =
             Expect.fail "Failed to parse, Expected a parsed expression list of length 0"
 
 
-expectParseSucceedsWithOneWithCondition : Result (List Parser.DeadEnd) (List Expression) -> (Expression -> Expectation) -> Expectation
-expectParseSucceedsWithOneWithCondition parseResult exprTester =
+expectParseSucceedsWithOneWithCondition : (Expression -> Expectation) -> Result (List Parser.DeadEnd) (List Expression) -> Expectation
+expectParseSucceedsWithOneWithCondition exprTester parseResult =
     case parseResult of
         Ok [] ->
             Expect.fail "expected only one expression, found 0"
@@ -284,51 +284,49 @@ suite =
                         Parser.run (expressionParser []) input
                 in
                 expressionParseInput "username = Jackie"
-                    |> (\r ->
-                            expectParseSucceedsWithOneWithCondition r
-                                (\expr ->
-                                    expectVariableExpression "username" "Jackie" expr
-                                )
-                       )
+                    |> expectParseSucceedsWithOneWithCondition
+                        (\expr ->
+                            expectVariableExpression "username" "Jackie" expr
+                        )
         , test "`(someVar = a_value)` succeeds" <|
             \_ ->
-                expectParseSucceedsWithOneWithCondition
-                    (expressionParseInput "(username = Jackie)")
-                    (\expr ->
-                        expectVariableExpression "username" "Jackie" expr
-                    )
+                expressionParseInput "(username = Jackie)"
+                    |> expectParseSucceedsWithOneWithCondition
+                        (\expr ->
+                            expectVariableExpression "username" "Jackie" expr
+                        )
         , test "`someVar = a_value or someOtherVar = some_other_value` succeeds" <|
             \_ ->
-                expectParseSucceedsWithOneWithCondition
-                    (expressionParseInput "username = Jackie or country = canada")
-                    (\expr ->
-                        case expr of
-                            OrExpression left right ->
-                                Expect.all
-                                    [ Tuple.first >> expectVariableExpression "username" "Jackie"
-                                    , Tuple.second >> expectVariableExpression "country" "canada"
-                                    ]
-                                    ( left, right )
+                expressionParseInput "username = Jackie or country = canada"
+                    |> expectParseSucceedsWithOneWithCondition
+                        (\expr ->
+                            case expr of
+                                OrExpression left right ->
+                                    Expect.all
+                                        [ Tuple.first >> expectVariableExpression "username" "Jackie"
+                                        , Tuple.second >> expectVariableExpression "country" "canada"
+                                        ]
+                                        ( left, right )
 
-                            anythingElse ->
-                                Expect.fail <| "any other type of expression is a failure"
-                    )
+                                anythingElse ->
+                                    Expect.fail <| "any other type of expression is a failure"
+                        )
         , test "`someVar = a_value and someOtherVar = some_other_value` succeeds" <|
             \_ ->
-                expectParseSucceedsWithOneWithCondition
-                    (expressionParseInput "username = Jackie and country = canada")
-                    (\expr ->
-                        case expr of
-                            AndExpression left right ->
-                                Expect.all
-                                    [ Tuple.first >> expectVariableExpression "username" "Jackie"
-                                    , Tuple.second >> expectVariableExpression "country" "canada"
-                                    ]
-                                    ( left, right )
+                expressionParseInput "username = Jackie and country = canada"
+                    |> expectParseSucceedsWithOneWithCondition
+                        (\expr ->
+                            case expr of
+                                AndExpression left right ->
+                                    Expect.all
+                                        [ Tuple.first >> expectVariableExpression "username" "Jackie"
+                                        , Tuple.second >> expectVariableExpression "country" "canada"
+                                        ]
+                                        ( left, right )
 
-                            anythingElse ->
-                                Expect.fail <| "any other type of expression is a failure"
-                    )
+                                anythingElse ->
+                                    Expect.fail <| "any other type of expression is a failure"
+                        )
         , test "empty string parses as empty list of expressions" <|
             \_ ->
                 expressionParseInput ""

@@ -99,6 +99,7 @@ expressionParser namesToFind =
         expressions =
             Parser.loop [] expressionsHelp
 
+        -- finds VariableAssignment
         variableAssignmentParser =
             Parser.succeed (\expr1 expr2 -> VariableAssignment expr1 expr2)
                 |= getChompedAlphaNum
@@ -107,60 +108,45 @@ expressionParser namesToFind =
                 |. Parser.spaces
                 |= getChompedAlphaNum
 
+        -- finds either VariableAssignment, OrExpression or AndExpression
+        simpleExpressionParser =
+            variableAssignmentParser
+                |. Parser.spaces
+                |> Parser.andThen
+                    (\expr ->
+                        Parser.oneOf
+                            [ -- either OrExpression continues
+                              Parser.succeed
+                                (\expr2 -> OrExpression expr expr2)
+                                |. Parser.keyword "or"
+                                |. Parser.spaces
+                                |= variableAssignmentParser
+                            , -- or the AndExpression continues
+                              Parser.succeed
+                                (\expr2 -> AndExpression expr expr2)
+                                |. Parser.keyword "and"
+                                |. Parser.spaces
+                                |= variableAssignmentParser
+                            , -- or the VariableAssignment is over
+                              Parser.succeed
+                                expr
+                            ]
+                    )
+
         expressionsHelp : List Expression -> Parser.Parser (Parser.Step (List Expression) (List Expression))
         expressionsHelp foundSoFar =
             Parser.oneOf
                 [ -- parse OrExpression or VariableAssignment
-                  variableAssignmentParser
-                    |. Parser.spaces
-                    |> Parser.andThen
-                        (\expr ->
-                            Parser.oneOf
-                                [ -- either OrExpression continues
-                                  Parser.succeed
-                                    (\expr2 -> Parser.Loop (OrExpression expr expr2 :: foundSoFar))
-                                    |. Parser.keyword "or"
-                                    |. Parser.spaces
-                                    |= variableAssignmentParser
-                                , -- or the AndExpression continues
-                                  Parser.succeed
-                                    (\expr2 -> Parser.Loop (AndExpression expr expr2 :: foundSoFar))
-                                    |. Parser.keyword "and"
-                                    |. Parser.spaces
-                                    |= variableAssignmentParser
-                                , -- or the VariableAssignment is over
-                                  Parser.succeed
-                                    (Parser.Loop (expr :: foundSoFar))
-                                ]
-                        )
+                  Parser.succeed (\expr -> Parser.Loop <| expr :: foundSoFar)
+                    |= simpleExpressionParser
                 , (Parser.succeed ()
                     |. Parser.symbol "("
                   )
                     |> Parser.andThen
                         (\_ ->
                             Parser.oneOf
-                                [ variableAssignmentParser
-                                    |. Parser.spaces
-                                    |> Parser.andThen
-                                        (\expr ->
-                                            Parser.oneOf
-                                                [ -- either OrExpression continues
-                                                  Parser.succeed
-                                                    (\expr2 -> Parser.Loop (OrExpression expr expr2 :: foundSoFar))
-                                                    |. Parser.keyword "or"
-                                                    |. Parser.spaces
-                                                    |= variableAssignmentParser
-                                                , -- or the AndExpression continues
-                                                  Parser.succeed
-                                                    (\expr2 -> Parser.Loop (AndExpression expr expr2 :: foundSoFar))
-                                                    |. Parser.keyword "and"
-                                                    |. Parser.spaces
-                                                    |= variableAssignmentParser
-                                                , -- or the VariableAssignment is over
-                                                  Parser.succeed
-                                                    (Parser.Loop (expr :: foundSoFar))
-                                                ]
-                                        )
+                                [ Parser.succeed (\expr -> Parser.Loop <| expr :: foundSoFar)
+                                    |= simpleExpressionParser
                                 , Parser.succeed (Parser.Loop foundSoFar)
                                     |. Parser.symbol ")"
                                 ]

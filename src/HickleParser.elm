@@ -150,6 +150,20 @@ explainProblem { problem, row, col } input =
             "some unknown parsing error: '" ++ Debug.toString unknownErr ++ "'"
 
 
+expectVariableExpression : String -> String -> Expression -> Expect.Expectation
+expectVariableExpression expectedLeft expectedRight expression =
+    case expression of
+        VariableAssignment left right ->
+            Expect.all
+                [ Tuple.first >> Expect.equal expectedLeft
+                , Tuple.second >> Expect.equal expectedRight
+                ]
+                ( left, right )
+
+        _ ->
+            Expect.fail <| "expression is not a VariableAssignment: " ++ Debug.toString expression
+
+
 suite : Test
 suite =
     describe "Parser"
@@ -188,16 +202,7 @@ suite =
                         Expect.fail "expected exactly one expression, found none"
 
                     Ok (expr :: rest) ->
-                        case expr of
-                            VariableAssignment left right ->
-                                Expect.all
-                                    [ \( l, r ) -> Expect.equal l "username"
-                                    , \( l, r ) -> Expect.equal r "Jackie"
-                                    ]
-                                    ( left, right )
-
-                            anythingElse ->
-                                Expect.fail <| "any other type of expression is a failure"
+                        expectVariableExpression "username" "Jackie" expr
         , test "`someVar = a_value or someOtherVar = some_other_value` succeeds" <|
             \_ ->
                 let
@@ -224,22 +229,8 @@ suite =
                         case expr of
                             OrExpression left right ->
                                 Expect.all
-                                    [ \( l, r ) ->
-                                        Expect.true "left must be VariableAssignment" <|
-                                            case l of
-                                                VariableAssignment ll rr ->
-                                                    ll == "username" && rr == "Jackie"
-
-                                                _ ->
-                                                    False
-                                    , \( l, r ) ->
-                                        Expect.true "right  must be VariableAssignment" <|
-                                            case r of
-                                                VariableAssignment ll rr ->
-                                                    ll == "country" && rr == "canada"
-
-                                                _ ->
-                                                    False
+                                    [ Tuple.first >> expectVariableExpression "username" "Jackie"
+                                    , Tuple.second >> expectVariableExpression "country" "canada"
                                     ]
                                     ( left, right )
 

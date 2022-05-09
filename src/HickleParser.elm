@@ -1,61 +1,10 @@
 module HickleParser exposing (..)
 
-import Animator
 import Array
-import Battle
-import Browser.Dom
-import Browser.Events
-import Browser.Navigation as Nav
-import Chart as C
-import Chart.Attributes as CA
-import Chart.Events as CE
-import Chart.Item as CI
-import Color
-import Color.Convert as Convert
-import DOM exposing (offsetWidth, target)
 import DateFormat.Relative
 import Dict
-import Element
-    exposing
-        ( Color
-        , Element
-        , alignBottom
-        , alignLeft
-        , alignRight
-        , alignTop
-        , centerX
-        , centerY
-        , column
-        , el
-        , fill
-        , fillPortion
-        , height
-        , modular
-        , padding
-        , paddingXY
-        , paragraph
-        , rgb
-        , rgb255
-        , row
-        , scrollbars
-        , spacing
-        , spacingXY
-        , text
-        , width
-        )
-import Element.Background as Background
-import Element.Border as Border
-import Element.Events as Events
-import Element.Font as Font
-import Element.Input as Input
-import Element.Keyed as Keyed
-import Element.Lazy as Lazy
 import Expect exposing (Expectation)
 import Fuzz exposing (Fuzzer, int, list, string, tuple)
-import Html
-import Html.Attributes exposing (attribute, classList, href, property, src, style, value)
-import Html.Events
-import Interface as UI exposing (ColorTheme(..), defaultRounded)
 import Json.Decode as Decode exposing (Decoder, field)
 import Json.Decode.Extra as DecodeExtra
 import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required, requiredAt)
@@ -66,13 +15,10 @@ import Parser exposing ((|.), (|=), chompIf, chompWhile, getChompedString)
 import Process
 import Random
 import Random.List
-import Sfxr
 import Task
 import Test exposing (..)
 import Time
 import Tuple3
-import UUID exposing (UUID)
-import Url
 
 
 type Expression

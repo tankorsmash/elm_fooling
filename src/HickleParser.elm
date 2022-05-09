@@ -147,6 +147,8 @@ expressionParser namesToFind =
                 [ -- parse OrExpression or VariableAssignment
                   Parser.succeed (\expr -> Parser.Loop <| expr :: foundSoFar)
                     |= simpleExpressionParser
+
+                -- parse OrExpression or VariableAssignment but with parens around it
                 , Parser.succeed Parser.Loop
                     |. Parser.symbol "("
                     |= Parser.oneOf
@@ -164,6 +166,11 @@ expressionParser namesToFind =
                 -- supposed to mark the end of the loop
                 , Parser.succeed (Parser.Done foundSoFar)
                     |. Parser.end
+
+                -- spaces
+                , Parser.succeed (Parser.Loop foundSoFar)
+                    |. Parser.chompIf (\c -> c == ' ')
+                    |. Parser.spaces
                 ]
     in
     expressions
@@ -184,7 +191,24 @@ explainProblem { problem, row, col } input =
                 ++ "\""
 
         unknownErr ->
-            "some unknown parsing error: '" ++ Debug.toString unknownErr ++ "'"
+            "some unknown parsing error: '"
+                ++ Debug.toString unknownErr
+                ++ "' '"
+                ++ String.slice (col - 1) col input
+                ++ "' at "
+                ++ String.fromInt row
+                ++ "/"
+                ++ String.fromInt col
+                ++ " for: \""
+                ++ input
+                ++ "\""
+
+
+explainProblems : List Parser.DeadEnd -> String -> String
+explainProblems deadEnds input =
+    deadEnds
+        |> List.map (\p -> explainProblem p input)
+        |> String.join " -- "
 
 
 expectVariableExpression : String -> String -> Expression -> Expect.Expectation
@@ -208,7 +232,7 @@ expectParseSucceedsWithZero parseResult =
             Expect.equal 0 (List.length success)
 
         Err _ ->
-            Expect.fail "Failed to parse, Expected a parsed expression list of length 0"
+            Expect.fail "Failed to parse, instead of successfully parsing an expression list of length 0"
 
 
 expectParseSucceedsWithOne : Result (List Parser.DeadEnd) (List Expression) -> Expectation
@@ -218,7 +242,7 @@ expectParseSucceedsWithOne parseResult =
             Expect.equal 1 (List.length success)
 
         Err _ ->
-            Expect.fail "Failed to parse, Expected a parsed expression list of length 0"
+            Expect.fail "Failed to parse, instead of successfully parsing an expression list of length 1"
 
 
 expectParseSucceedsWithOneWithCondition : (Expression -> Expectation) -> Result (List Parser.DeadEnd) (List Expression) -> Expectation
@@ -233,8 +257,17 @@ expectParseSucceedsWithOneWithCondition exprTester parseResult =
         Ok any ->
             Expect.fail "expected only one expression, found many"
 
-        Err _ ->
-            Expect.fail "Failed to parse, Expected a parsed expression list of length 1"
+        Err problem ->
+            Expect.fail <|
+                "Failed to parse, instead of successfully parsing an expression list of length 1:"
+                    ++ (problem
+                            |> List.map
+                                (\p ->
+                                    explainProblem p "(username = Jackie) and (country = canada)"
+                                )
+                            |> String.join " -- "
+                       )
+
 
 expectParseSucceedsWithMany : (List Expression -> Expectation) -> Result (List Parser.DeadEnd) (List Expression) -> Expectation
 expectParseSucceedsWithMany exprTester parseResult =
@@ -249,7 +282,8 @@ expectParseSucceedsWithMany exprTester parseResult =
             Expect.pass
 
         Err _ ->
-            Expect.fail "Failed to parse, Expected a parsed expression list of length 1"
+            Expect.fail "Failed to parse, instead of successfully parsing an expression list of many"
+
 
 expectParseSucceedsWithManyWithCondition : (List Expression -> Expectation) -> Result (List Parser.DeadEnd) (List Expression) -> Expectation
 expectParseSucceedsWithManyWithCondition exprTester parseResult =
@@ -336,6 +370,22 @@ suite =
         , test "`someVar = a_value and someOtherVar = some_other_value` succeeds" <|
             \_ ->
                 expressionParseInput "username = Jackie and country = canada"
+                    |> expectParseSucceedsWithOneWithCondition
+                        (\expr ->
+                            case expr of
+                                AndExpression left right ->
+                                    Expect.all
+                                        [ Tuple.first >> expectVariableExpression "username" "Jackie"
+                                        , Tuple.second >> expectVariableExpression "country" "canada"
+                                        ]
+                                        ( left, right )
+
+                                anythingElse ->
+                                    Expect.fail <| "any other type of expression is a failure"
+                        )
+        , test "`(someVar = a_value) and (someOtherVar = some_other_value)` succeeds" <|
+            \_ ->
+                expressionParseInput "(username = Jackie) and (country = canada)"
                     |> expectParseSucceedsWithOneWithCondition
                         (\expr ->
                             case expr of

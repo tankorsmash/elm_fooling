@@ -74,7 +74,7 @@ type Problem
 
 
 expressionParser : List String -> ExpressionParser (List Expression)
-expressionParser namesToFind =
+expressionParser _ =
     let
         expressions : ExpressionParser (List Expression)
         expressions =
@@ -339,19 +339,19 @@ suite =
         , test "0=0 fails" <|
             \_ ->
                 expectFailToParse <| expressionParseInput "0=0"
-        , test "`someVar = a_value` succeeds" <|
+        , test "plain assignment" <|
             \_ ->
                 expectParseSucceedsWithOneWithCondition "username = Jackie"
                     (\expr ->
                         expectVariableExpression "username" "Jackie" expr
                     )
-        , test "`(someVar = a_value)` succeeds" <|
+        , test "assignment in parens" <|
             \_ ->
                 expectParseSucceedsWithOneWithCondition "(username = Jackie)"
                     (\expr ->
                         expectVariableExpression "username" "Jackie" expr
                     )
-        , test "`someVar = a_value or someOtherVar = some_other_value` succeeds" <|
+        , test "plain or expression" <|
             \_ ->
                 expectParseSucceedsWithOneWithCondition "username = Jackie or country = canada"
                     (\expr ->
@@ -381,7 +381,7 @@ suite =
                             anythingElse ->
                                 Expect.fail <| "any other type of expression is a failure"
                     )
-        , test "`(someVar = a_value) and (someOtherVar = some_other_value)` succeeds" <|
+        , test "Two assignments in parens around an AND" <|
             \_ ->
                 expectParseSucceedsWithOneWithCondition "(username = Jackie) and (country = canada)"
                     (\expr ->

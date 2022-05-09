@@ -80,6 +80,8 @@ type Expression
       VariableAssignment String String
     | -- OR expression
       OrExpression Expression Expression
+    | -- And expression
+      AndExpression Expression Expression
 
 
 getChompedAlphaNum =
@@ -118,6 +120,12 @@ expressionParser namesToFind =
                                   Parser.succeed
                                     (\expr2 -> Parser.Loop (OrExpression expr expr2 :: foundSoFar))
                                     |. Parser.keyword "or"
+                                    |. Parser.spaces
+                                    |= variableAssignmentParser
+                                , -- or the AndExpression continues
+                                  Parser.succeed
+                                    (\expr2 -> Parser.Loop (AndExpression expr expr2 :: foundSoFar))
+                                    |. Parser.keyword "and"
                                     |. Parser.spaces
                                     |= variableAssignmentParser
                                 , -- or the VariableAssignment is over
@@ -230,6 +238,39 @@ suite =
                     Ok (expr :: rest) ->
                         case expr of
                             OrExpression left right ->
+                                Expect.all
+                                    [ Tuple.first >> expectVariableExpression "username" "Jackie"
+                                    , Tuple.second >> expectVariableExpression "country" "canada"
+                                    ]
+                                    ( left, right )
+
+                            anythingElse ->
+                                Expect.fail <| "any other type of expression is a failure"
+        , test "`someVar = a_value and someOtherVar = some_other_value` succeeds" <|
+            \_ ->
+                let
+                    input =
+                        "username = Jackie and country = canada"
+
+                    parseResult : Result (List Parser.DeadEnd) (List Expression)
+                    parseResult =
+                        Parser.run (expressionParser []) input
+                in
+                case parseResult of
+                    Err err ->
+                        Expect.fail <|
+                            "expected parse success, but got: "
+                                ++ (err
+                                        |> List.map (\e -> explainProblem e input)
+                                        |> String.join " -- "
+                                   )
+
+                    Ok [] ->
+                        Expect.fail "expected exactly one expression, found none"
+
+                    Ok (expr :: rest) ->
+                        case expr of
+                            AndExpression left right ->
                                 Expect.all
                                     [ Tuple.first >> expectVariableExpression "username" "Jackie"
                                     , Tuple.second >> expectVariableExpression "country" "canada"

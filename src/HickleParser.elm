@@ -133,6 +133,15 @@ suite =
                     Err err ->
                         Expect.fail "expected success"
 
-                    Ok okExpressions ->
-                        Expect.equal 1 (List.length okExpressions)
+                    Ok [] ->
+                        Expect.fail "expected exactly one expression, found none"
+
+                    Ok (expr :: rest) ->
+                        case expr of
+                            VariableAssignment left right ->
+                                Expect.all
+                                    [ \( l, r ) -> Expect.equal l "username"
+                                    , \( l, r ) -> Expect.equal r "Jackie"
+                                    ]
+                                    ( left, right )
         ]

@@ -77,7 +77,8 @@ expressionParser namesToFind =
     let
         expressions : ExpressionParser (List Expression)
         expressions =
-            Parser.loop [] expressionsHelp
+            Parser.inContext (GenericContext "start") <|
+                Parser.loop [] expressionsHelp
 
         -- finds VariableAssignment
         variableAssignmentParser =
@@ -91,30 +92,32 @@ expressionParser namesToFind =
 
         -- finds either VariableAssignment, OrExpression or AndExpression
         simpleExpressionParser =
-            variableAssignmentParser
-                |. Parser.spaces
-                |> Parser.andThen
-                    (\expr ->
-                        Parser.oneOf
-                            [ -- either OrExpression continues
-                              Parser.inContext (GenericContext "trying to parse Or") <|
-                                Parser.succeed
-                                    (\expr2 -> OrExpression expr expr2)
-                                    |. Parser.keyword (Parser.Token "or" ExpectedOr)
-                                    |. Parser.spaces
-                                    |= variableAssignmentParser
-                            , -- or the AndExpression continues
-                              Parser.inContext (GenericContext "trying to parse And") <|
-                                Parser.succeed
-                                    (\expr2 -> AndExpression expr expr2)
-                                    |. Parser.keyword (Parser.Token "and" ExpectedAnd)
-                                    |. Parser.spaces
-                                    |= variableAssignmentParser
-                            , -- or the VariableAssignment is over
-                              Parser.succeed
-                                expr
-                            ]
-                    )
+            Parser.inContext (GenericContext "simple expression") <|
+                (variableAssignmentParser
+                    |. Parser.spaces
+                    |> Parser.andThen
+                        (\expr ->
+                            Parser.oneOf
+                                [ -- either OrExpression continues
+                                  Parser.inContext (GenericContext "trying to parse Or") <|
+                                    Parser.succeed
+                                        (\expr2 -> OrExpression expr expr2)
+                                        |. Parser.keyword (Parser.Token "or" ExpectedOr)
+                                        |. Parser.spaces
+                                        |= variableAssignmentParser
+                                , -- or the AndExpression continues
+                                  Parser.inContext (GenericContext "trying to parse And") <|
+                                    Parser.succeed
+                                        (\expr2 -> AndExpression expr expr2)
+                                        |. Parser.keyword (Parser.Token "and" ExpectedAnd)
+                                        |. Parser.spaces
+                                        |= variableAssignmentParser
+                                , -- or the VariableAssignment is over
+                                  Parser.succeed
+                                    expr
+                                ]
+                        )
+                )
 
         expressionsHelp : List Expression -> ExpressionParser (Parser.Step (List Expression) (List Expression))
         expressionsHelp foundSoFar =
@@ -156,7 +159,13 @@ explainProblem : Parser.DeadEnd context problem -> String -> String
 explainProblem ({ problem, row, col } as deadEnd) input =
     let
         _ =
-            Debug.log "dead end" deadEnd
+            Debug.log "dead end row" row
+
+        _ =
+            Debug.log "dead end col" col
+
+        _ =
+            List.map (Debug.log "context" << Debug.toString) deadEnd.contextStack |> String.join ""
     in
     "see debug"
 

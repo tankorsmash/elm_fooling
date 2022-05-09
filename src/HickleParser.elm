@@ -279,4 +279,19 @@ suite =
 
                             anythingElse ->
                                 Expect.fail <| "any other type of expression is a failure"
+        , test "empty string parses as empty list of expressions" <|
+            \_ ->
+                let
+                    input =
+                        ""
+
+                    parseResult : Result (List Parser.DeadEnd) (List Expression)
+                    parseResult =
+                        Parser.run (expressionParser []) input
+                in
+                parseResult
+                    |> Result.map
+                        (\ok -> Expect.true "No parsed expressions" <| List.isEmpty ok)
+                    |> Result.withDefault
+                        (Expect.fail "blank string failed to parse")
         ]

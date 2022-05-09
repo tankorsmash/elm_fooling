@@ -119,7 +119,7 @@ expressionParser namesToFind =
 suite : Test
 suite =
     describe "Parser"
-        [ test "someVar = a_value" <|
+        [ test "`someVar = a_value` succeeds" <|
             \_ ->
                 let
                     input =
@@ -129,5 +129,10 @@ suite =
                     parseResult =
                         Parser.run (expressionParser []) input
                 in
-                Expect.ok <| parseResult
+                case parseResult of
+                    Err err ->
+                        Expect.fail "expected success"
+
+                    Ok okExpressions ->
+                        Expect.equal 1 (List.length okExpressions)
         ]

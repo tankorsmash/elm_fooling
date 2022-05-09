@@ -78,6 +78,16 @@ import Url
 type Expression
     = -- someVar = my_value
       VariableAssignment String String
+    | -- OR expression
+      OrExpression Expression Expression
+
+
+getChompedAlphaNum =
+    getChompedString <|
+        Parser.succeed ()
+            -- need to do an initial chompIf, because chompWhile succeeds even with 0 matches
+            |. Parser.chompIf Char.isAlphaNum
+            |. Parser.chompWhile Char.isLower
 
 
 expressionParser : List String -> Parser.Parser (List Expression)
@@ -87,26 +97,32 @@ expressionParser namesToFind =
         expressions =
             Parser.loop [] expressionsHelp
 
+        variableAssignmentParser =
+            Parser.succeed (\expr1 expr2 -> VariableAssignment expr1 expr2)
+                |= getChompedAlphaNum
+                |. Parser.spaces
+                |. Parser.symbol "="
+                |. Parser.spaces
+                |= getChompedAlphaNum
+
         expressionsHelp : List Expression -> Parser.Parser (Parser.Step (List Expression) (List Expression))
         expressionsHelp foundSoFar =
             Parser.oneOf
-                [ -- parse a single word
-                  Parser.succeed (\expr1 expr2 -> Parser.Loop (VariableAssignment expr1 expr2 :: foundSoFar))
-                    |= (getChompedString <|
-                            Parser.succeed ()
-                                -- need to do an initial chompIf, because chompWhile succeeds even with 0 matches
-                                |. Parser.chompIf Char.isAlphaNum
-                                |. Parser.chompWhile Char.isLower
-                       )
+                [ -- parse OrExpression
+                  variableAssignmentParser
                     |. Parser.spaces
-                    |. Parser.symbol "="
-                    |. Parser.spaces
-                    |= (getChompedString <|
-                            Parser.succeed ()
-                                -- need to do an initial chompIf, because chompWhile succeeds even with 0 matches
-                                |. Parser.chompIf Char.isAlphaNum
-                                |. Parser.chompWhile Char.isLower
-                       )
+                    |> Parser.andThen
+                        (\expr ->
+                            Parser.oneOf
+                                [ Parser.succeed
+                                    (\expr2 -> Parser.Loop (OrExpression expr expr2 :: foundSoFar))
+                                    |. Parser.keyword "or"
+                                    |. Parser.spaces
+                                    |= variableAssignmentParser
+                                , Parser.succeed
+                                    (Parser.Loop (expr :: foundSoFar))
+                                ]
+                        )
 
                 -- supposed to mark the end of the loop
                 , Parser.succeed (Parser.Done foundSoFar)
@@ -114,6 +130,24 @@ expressionParser namesToFind =
                 ]
     in
     expressions
+
+
+explainProblem : Parser.DeadEnd -> String -> String
+explainProblem { problem, row, col } input =
+    case problem of
+        Parser.UnexpectedChar ->
+            "UnexpectedChar '"
+                ++ String.slice (col - 1) col input
+                ++ "' at "
+                ++ String.fromInt row
+                ++ "/"
+                ++ String.fromInt col
+                ++ " for: \""
+                ++ input
+                ++ "\""
+
+        unknownErr ->
+            "some unknown parsing error: '" ++ Debug.toString unknownErr ++ "'"
 
 
 suite : Test
@@ -143,7 +177,12 @@ suite =
                 in
                 case parseResult of
                     Err err ->
-                        Expect.fail "expected success"
+                        Expect.fail <|
+                            "expected parse success, but got: "
+                                ++ (err
+                                        |> List.map (\e -> explainProblem e input)
+                                        |> String.join " -- "
+                                   )
 
                     Ok [] ->
                         Expect.fail "expected exactly one expression, found none"
@@ -156,4 +195,54 @@ suite =
                                     , \( l, r ) -> Expect.equal r "Jackie"
                                     ]
                                     ( left, right )
+
+                            anythingElse ->
+                                Expect.fail <| "any other type of expression is a failure"
+        , test "`someVar = a_value or someOtherVar = some_other_value` succeeds" <|
+            \_ ->
+                let
+                    input =
+                        "username = Jackie or country = canada"
+
+                    parseResult : Result (List Parser.DeadEnd) (List Expression)
+                    parseResult =
+                        Parser.run (expressionParser []) input
+                in
+                case parseResult of
+                    Err err ->
+                        Expect.fail <|
+                            "expected parse success, but got: "
+                                ++ (err
+                                        |> List.map (\e -> explainProblem e input)
+                                        |> String.join " -- "
+                                   )
+
+                    Ok [] ->
+                        Expect.fail "expected exactly one expression, found none"
+
+                    Ok (expr :: rest) ->
+                        case expr of
+                            OrExpression left right ->
+                                Expect.all
+                                    [ \( l, r ) ->
+                                        Expect.true "left must be VariableAssignment" <|
+                                            case l of
+                                                VariableAssignment ll rr ->
+                                                    ll == "username" && rr == "Jackie"
+
+                                                _ ->
+                                                    False
+                                    , \( l, r ) ->
+                                        Expect.true "right  must be VariableAssignment" <|
+                                            case r of
+                                                VariableAssignment ll rr ->
+                                                    ll == "country" && rr == "canada"
+
+                                                _ ->
+                                                    False
+                                    ]
+                                    ( left, right )
+
+                            anythingElse ->
+                                Expect.fail <| "any other type of expression is a failure"
         ]

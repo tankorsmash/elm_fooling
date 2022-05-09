@@ -234,7 +234,37 @@ expectParseSucceedsWithOneWithCondition exprTester parseResult =
             Expect.fail "expected only one expression, found many"
 
         Err _ ->
-            Expect.fail "Failed to parse, Expected a parsed expression list of length 0"
+            Expect.fail "Failed to parse, Expected a parsed expression list of length 1"
+
+expectParseSucceedsWithMany : (List Expression -> Expectation) -> Result (List Parser.DeadEnd) (List Expression) -> Expectation
+expectParseSucceedsWithMany exprTester parseResult =
+    case parseResult of
+        Ok [] ->
+            Expect.fail "expected only one expression, found 0"
+
+        Ok (expr :: []) ->
+            Expect.fail "expected many expressions, found 1"
+
+        Ok manyExprs ->
+            Expect.pass
+
+        Err _ ->
+            Expect.fail "Failed to parse, Expected a parsed expression list of length 1"
+
+expectParseSucceedsWithManyWithCondition : (List Expression -> Expectation) -> Result (List Parser.DeadEnd) (List Expression) -> Expectation
+expectParseSucceedsWithManyWithCondition exprTester parseResult =
+    case parseResult of
+        Ok [] ->
+            Expect.fail "expected only one expression, found 0"
+
+        Ok (expr :: []) ->
+            Expect.fail "expected many expressions, found 1"
+
+        Ok manyExprs ->
+            exprTester manyExprs
+
+        Err _ ->
+            Expect.fail "Failed to parse, Expected a parsed expression list of length 1"
 
 
 expectFailToParse : Result (List Parser.DeadEnd) (List Expression) -> Expectation
@@ -275,14 +305,6 @@ suite =
                 expectFailToParse <| expressionParseInput "0=0"
         , test "`someVar = a_value` succeeds" <|
             \_ ->
-                let
-                    input =
-                        "username = Jackie"
-
-                    parseResult : Result (List Parser.DeadEnd) (List Expression)
-                    parseResult =
-                        Parser.run (expressionParser []) input
-                in
                 expressionParseInput "username = Jackie"
                     |> expectParseSucceedsWithOneWithCondition
                         (\expr ->

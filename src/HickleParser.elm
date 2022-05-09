@@ -212,8 +212,8 @@ explainProblem input ({ problem, row, col } as deadEnd) =
 --             ++ "\""
 
 
-explainProblems : List (Parser.DeadEnd Context problem) -> String -> String
-explainProblems deadEnds input =
+explainProblems : String -> List (Parser.DeadEnd Context problem) -> String
+explainProblems input deadEnds =
     deadEnds
         |> List.map (explainProblem input)
         |> String.join " -- "
@@ -268,10 +268,7 @@ expectParseSucceedsWithOneWithCondition input exprTester =
         Err problems ->
             Expect.fail <|
                 "Failed to parse, instead of successfully parsing an expression list of length 1:"
-                    ++ (problems
-                            |> List.map (explainProblem input)
-                            |> String.join " -- "
-                       )
+                    ++ explainProblems input problems
 
 
 expectParseSucceedsWithMany : (List Expression -> Expectation) -> Result (List (Parser.DeadEnd context problem)) (List Expression) -> Expectation

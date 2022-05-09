@@ -92,6 +92,14 @@ getChompedAlphaNum =
             |. Parser.chompWhile Char.isLower
 
 
+getChompedAlpha =
+    getChompedString <|
+        Parser.succeed ()
+            -- need to do an initial chompIf, because chompWhile succeeds even with 0 matches
+            |. Parser.chompIf Char.isAlpha
+            |. Parser.chompWhile Char.isLower
+
+
 expressionParser : List String -> Parser.Parser (List Expression)
 expressionParser namesToFind =
     let
@@ -102,11 +110,11 @@ expressionParser namesToFind =
         -- finds VariableAssignment
         variableAssignmentParser =
             Parser.succeed (\expr1 expr2 -> VariableAssignment expr1 expr2)
-                |= getChompedAlphaNum
+                |= getChompedAlpha
                 |. Parser.spaces
                 |. Parser.symbol "="
                 |. Parser.spaces
-                |= getChompedAlphaNum
+                |= getChompedAlpha
 
         -- finds either VariableAssignment, OrExpression or AndExpression
         simpleExpressionParser =
@@ -139,18 +147,14 @@ expressionParser namesToFind =
                 [ -- parse OrExpression or VariableAssignment
                   Parser.succeed (\expr -> Parser.Loop <| expr :: foundSoFar)
                     |= simpleExpressionParser
-                , (Parser.succeed ()
+                , Parser.succeed Parser.Loop
                     |. Parser.symbol "("
-                  )
-                    |> Parser.andThen
-                        (\_ ->
-                            Parser.oneOf
-                                [ Parser.succeed (\expr -> Parser.Loop <| expr :: foundSoFar)
-                                    |= simpleExpressionParser
-                                , Parser.succeed (Parser.Loop foundSoFar)
-                                    |. Parser.symbol ")"
-                                ]
-                        )
+                    |= Parser.oneOf
+                        [ Parser.succeed (\expr -> expr :: foundSoFar)
+                            |= simpleExpressionParser
+                        , Parser.succeed foundSoFar
+                            |. Parser.symbol ")"
+                        ]
 
                 -- supposed to mark the end of the loop
                 , Parser.succeed (Parser.Done foundSoFar)
@@ -195,18 +199,50 @@ expectVariableExpression expectedLeft expectedRight expression =
 suite : Test
 suite =
     describe "Parser"
-        [ fuzz Fuzz.string "bogus fails" <|
-            \input ->
-                (\result ->
-                    case result of
-                        Ok success ->
-                            Expect.equal 0 (List.length success)
+        -- [ fuzz Fuzz.string "bogus fails" <|
+        --     \input ->
+        --         (\result ->
+        --             case result of
+        --                 Ok success ->
+        --                     Expect.equal 0 (List.length success)
+        --
+        --                 Err _ ->
+        --                     Expect.pass
+        --         )
+        --         <|
+        --             Parser.run (expressionParser []) input
+        [ test "A=A passes" <|
+            \_ ->
+                let
+                    input =
+                        "A=A"
 
-                        Err _ ->
-                            Expect.pass
-                )
-                <|
-                    Parser.run (expressionParser []) input
+                    parseResult : Result (List Parser.DeadEnd) (List Expression)
+                    parseResult =
+                        Parser.run (expressionParser []) input
+                in
+                case parseResult of
+                    Ok success ->
+                        Expect.equal 1 (List.length success)
+
+                    Err _ ->
+                        Expect.pass
+        , test "0=0 fails" <|
+            \_ ->
+                let
+                    input =
+                        "0=0"
+
+                    parseResult : Result (List Parser.DeadEnd) (List Expression)
+                    parseResult =
+                        Parser.run (expressionParser []) input
+                in
+                case parseResult of
+                    Ok success ->
+                        Expect.equal 0 (List.length success)
+
+                    Err _ ->
+                        Expect.pass
         , test "`someVar = a_value` succeeds" <|
             \_ ->
                 let

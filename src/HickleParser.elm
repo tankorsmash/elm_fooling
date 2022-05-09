@@ -119,7 +119,19 @@ expressionParser namesToFind =
 suite : Test
 suite =
     describe "Parser"
-        [ test "`someVar = a_value` succeeds" <|
+        [ fuzz Fuzz.string "bogus fails" <|
+            \input ->
+                (\result ->
+                    case result of
+                        Ok success ->
+                            Expect.equal 0 (List.length success)
+
+                        Err _ ->
+                            Expect.pass
+                )
+                <|
+                    Parser.run (expressionParser []) input
+        , test "`someVar = a_value` succeeds" <|
             \_ ->
                 let
                     input =

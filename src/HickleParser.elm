@@ -267,6 +267,30 @@ suite =
 
                     Ok (expr :: rest) ->
                         expectVariableExpression "username" "Jackie" expr
+        , test "`(someVar = a_value)` succeeds" <|
+            \_ ->
+                let
+                    input =
+                        "username = Jackie"
+
+                    parseResult : Result (List Parser.DeadEnd) (List Expression)
+                    parseResult =
+                        Parser.run (expressionParser []) input
+                in
+                case parseResult of
+                    Err err ->
+                        Expect.fail <|
+                            "expected parse success, but got: "
+                                ++ (err
+                                        |> List.map (\e -> explainProblem e input)
+                                        |> String.join " -- "
+                                   )
+
+                    Ok [] ->
+                        Expect.fail "expected exactly one expression, found none"
+
+                    Ok (expr :: rest) ->
+                        expectVariableExpression "username" "Jackie" expr
         , test "`someVar = a_value or someOtherVar = some_other_value` succeeds" <|
             \_ ->
                 let

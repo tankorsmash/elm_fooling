@@ -108,18 +108,20 @@ expressionParser namesToFind =
         expressionsHelp : List Expression -> Parser.Parser (Parser.Step (List Expression) (List Expression))
         expressionsHelp foundSoFar =
             Parser.oneOf
-                [ -- parse OrExpression
+                [ -- parse OrExpression or VariableAssignment
                   variableAssignmentParser
                     |. Parser.spaces
                     |> Parser.andThen
                         (\expr ->
                             Parser.oneOf
-                                [ Parser.succeed
+                                [ -- either OrExpression continues
+                                  Parser.succeed
                                     (\expr2 -> Parser.Loop (OrExpression expr expr2 :: foundSoFar))
                                     |. Parser.keyword "or"
                                     |. Parser.spaces
                                     |= variableAssignmentParser
-                                , Parser.succeed
+                                , -- or the VariableAssignment is over
+                                  Parser.succeed
                                     (Parser.Loop (expr :: foundSoFar))
                                 ]
                         )

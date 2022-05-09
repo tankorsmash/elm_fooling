@@ -152,6 +152,11 @@ expressionParser namesToFind =
                     |= Parser.oneOf
                         [ Parser.succeed (\expr -> expr :: foundSoFar)
                             |= simpleExpressionParser
+                            |> Parser.andThen
+                                (\expr ->
+                                    Parser.succeed expr
+                                        |. Parser.symbol ")"
+                                )
                         , Parser.succeed foundSoFar
                             |. Parser.symbol ")"
                         ]
@@ -196,8 +201,43 @@ expectVariableExpression expectedLeft expectedRight expression =
             Expect.fail <| "expression is not a VariableAssignment: " ++ Debug.toString expression
 
 
+expectParseSucceedsWithZero : Result (List Parser.DeadEnd) (List Expression) -> Expectation
+expectParseSucceedsWithZero parseResult =
+    case parseResult of
+        Ok success ->
+            Expect.equal 0 (List.length success)
+
+        Err _ ->
+            Expect.fail "Failed to parse, Expected a parsed expression list of length 0"
+
+
+expectParseSucceedsWithOne : Result (List Parser.DeadEnd) (List Expression) -> Expectation
+expectParseSucceedsWithOne parseResult =
+    case parseResult of
+        Ok success ->
+            Expect.equal 1 (List.length success)
+
+        Err _ ->
+            Expect.fail "Failed to parse, Expected a parsed expression list of length 0"
+
+
+expectFailToParse : Result (List Parser.DeadEnd) (List Expression) -> Expectation
+expectFailToParse parseResult =
+    case parseResult of
+        Ok _ ->
+            Expect.fail "Successfully parsed, didn't expect that"
+
+        Err _ ->
+            Expect.pass
+
+
 suite : Test
 suite =
+    let
+        expressionParseInput : String -> Result (List Parser.DeadEnd) (List Expression)
+        expressionParseInput input =
+            Parser.run (expressionParser []) input
+    in
     describe "Parser"
         -- [ fuzz Fuzz.string "bogus fails" <|
         --     \input ->
@@ -213,36 +253,10 @@ suite =
         --             Parser.run (expressionParser []) input
         [ test "A=A passes" <|
             \_ ->
-                let
-                    input =
-                        "A=A"
-
-                    parseResult : Result (List Parser.DeadEnd) (List Expression)
-                    parseResult =
-                        Parser.run (expressionParser []) input
-                in
-                case parseResult of
-                    Ok success ->
-                        Expect.equal 1 (List.length success)
-
-                    Err _ ->
-                        Expect.pass
+                expectParseSucceedsWithOne <| expressionParseInput "A=A"
         , test "0=0 fails" <|
             \_ ->
-                let
-                    input =
-                        "0=0"
-
-                    parseResult : Result (List Parser.DeadEnd) (List Expression)
-                    parseResult =
-                        Parser.run (expressionParser []) input
-                in
-                case parseResult of
-                    Ok success ->
-                        Expect.equal 0 (List.length success)
-
-                    Err _ ->
-                        Expect.pass
+                expectFailToParse <| expressionParseInput "0=0"
         , test "`someVar = a_value` succeeds" <|
             \_ ->
                 let
@@ -271,7 +285,7 @@ suite =
             \_ ->
                 let
                     input =
-                        "username = Jackie"
+                        "(username = Jackie)"
 
                     parseResult : Result (List Parser.DeadEnd) (List Expression)
                     parseResult =

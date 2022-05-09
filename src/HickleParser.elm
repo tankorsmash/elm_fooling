@@ -133,6 +133,38 @@ expressionParser namesToFind =
                                     (Parser.Loop (expr :: foundSoFar))
                                 ]
                         )
+                , (Parser.succeed ()
+                    |. Parser.symbol "("
+                  )
+                    |> Parser.andThen
+                        (\_ ->
+                            Parser.oneOf
+                                [ variableAssignmentParser
+                                    |. Parser.spaces
+                                    |> Parser.andThen
+                                        (\expr ->
+                                            Parser.oneOf
+                                                [ -- either OrExpression continues
+                                                  Parser.succeed
+                                                    (\expr2 -> Parser.Loop (OrExpression expr expr2 :: foundSoFar))
+                                                    |. Parser.keyword "or"
+                                                    |. Parser.spaces
+                                                    |= variableAssignmentParser
+                                                , -- or the AndExpression continues
+                                                  Parser.succeed
+                                                    (\expr2 -> Parser.Loop (AndExpression expr expr2 :: foundSoFar))
+                                                    |. Parser.keyword "and"
+                                                    |. Parser.spaces
+                                                    |= variableAssignmentParser
+                                                , -- or the VariableAssignment is over
+                                                  Parser.succeed
+                                                    (Parser.Loop (expr :: foundSoFar))
+                                                ]
+                                        )
+                                , Parser.succeed (Parser.Loop foundSoFar)
+                                    |. Parser.symbol ")"
+                                ]
+                        )
 
                 -- supposed to mark the end of the loop
                 , Parser.succeed (Parser.Done foundSoFar)
@@ -294,4 +326,19 @@ suite =
                         (\ok -> Expect.true "No parsed expressions" <| List.isEmpty ok)
                     |> Result.withDefault
                         (Expect.fail "blank string failed to parse")
+        , test "\"()\" string parses as empty list of expressions" <|
+            \_ ->
+                let
+                    input =
+                        "()"
+
+                    parseResult : Result (List Parser.DeadEnd) (List Expression)
+                    parseResult =
+                        Parser.run (expressionParser []) input
+                in
+                parseResult
+                    |> Result.map
+                        (\ok -> Expect.true "No parsed expressions" <| List.isEmpty ok)
+                    |> Result.withDefault
+                        (Expect.fail "pair of parens failed to parse")
         ]

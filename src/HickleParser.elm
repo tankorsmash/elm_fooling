@@ -221,6 +221,22 @@ expectParseSucceedsWithOne parseResult =
             Expect.fail "Failed to parse, Expected a parsed expression list of length 0"
 
 
+expectParseSucceedsWithOneWithCondition : Result (List Parser.DeadEnd) (List Expression) -> (Expression -> Expectation) -> Expectation
+expectParseSucceedsWithOneWithCondition parseResult exprTester =
+    case parseResult of
+        Ok [] ->
+            Expect.fail "expected only one expression, found 0"
+
+        Ok (expr :: []) ->
+            exprTester expr
+
+        Ok any ->
+            Expect.fail "expected only one expression, found many"
+
+        Err _ ->
+            Expect.fail "Failed to parse, Expected a parsed expression list of length 0"
+
+
 expectFailToParse : Result (List Parser.DeadEnd) (List Expression) -> Expectation
 expectFailToParse parseResult =
     case parseResult of
@@ -267,67 +283,25 @@ suite =
                     parseResult =
                         Parser.run (expressionParser []) input
                 in
-                case parseResult of
-                    Err err ->
-                        Expect.fail <|
-                            "expected parse success, but got: "
-                                ++ (err
-                                        |> List.map (\e -> explainProblem e input)
-                                        |> String.join " -- "
-                                   )
-
-                    Ok [] ->
-                        Expect.fail "expected exactly one expression, found none"
-
-                    Ok (expr :: rest) ->
-                        expectVariableExpression "username" "Jackie" expr
+                expressionParseInput "username = Jackie"
+                    |> (\r ->
+                            expectParseSucceedsWithOneWithCondition r
+                                (\expr ->
+                                    expectVariableExpression "username" "Jackie" expr
+                                )
+                       )
         , test "`(someVar = a_value)` succeeds" <|
             \_ ->
-                let
-                    input =
-                        "(username = Jackie)"
-
-                    parseResult : Result (List Parser.DeadEnd) (List Expression)
-                    parseResult =
-                        Parser.run (expressionParser []) input
-                in
-                case parseResult of
-                    Err err ->
-                        Expect.fail <|
-                            "expected parse success, but got: "
-                                ++ (err
-                                        |> List.map (\e -> explainProblem e input)
-                                        |> String.join " -- "
-                                   )
-
-                    Ok [] ->
-                        Expect.fail "expected exactly one expression, found none"
-
-                    Ok (expr :: rest) ->
+                expectParseSucceedsWithOneWithCondition
+                    (expressionParseInput "(username = Jackie)")
+                    (\expr ->
                         expectVariableExpression "username" "Jackie" expr
+                    )
         , test "`someVar = a_value or someOtherVar = some_other_value` succeeds" <|
             \_ ->
-                let
-                    input =
-                        "username = Jackie or country = canada"
-
-                    parseResult : Result (List Parser.DeadEnd) (List Expression)
-                    parseResult =
-                        Parser.run (expressionParser []) input
-                in
-                case parseResult of
-                    Err err ->
-                        Expect.fail <|
-                            "expected parse success, but got: "
-                                ++ (err
-                                        |> List.map (\e -> explainProblem e input)
-                                        |> String.join " -- "
-                                   )
-
-                    Ok [] ->
-                        Expect.fail "expected exactly one expression, found none"
-
-                    Ok (expr :: rest) ->
+                expectParseSucceedsWithOneWithCondition
+                    (expressionParseInput "username = Jackie or country = canada")
+                    (\expr ->
                         case expr of
                             OrExpression left right ->
                                 Expect.all
@@ -338,29 +312,12 @@ suite =
 
                             anythingElse ->
                                 Expect.fail <| "any other type of expression is a failure"
+                    )
         , test "`someVar = a_value and someOtherVar = some_other_value` succeeds" <|
             \_ ->
-                let
-                    input =
-                        "username = Jackie and country = canada"
-
-                    parseResult : Result (List Parser.DeadEnd) (List Expression)
-                    parseResult =
-                        Parser.run (expressionParser []) input
-                in
-                case parseResult of
-                    Err err ->
-                        Expect.fail <|
-                            "expected parse success, but got: "
-                                ++ (err
-                                        |> List.map (\e -> explainProblem e input)
-                                        |> String.join " -- "
-                                   )
-
-                    Ok [] ->
-                        Expect.fail "expected exactly one expression, found none"
-
-                    Ok (expr :: rest) ->
+                expectParseSucceedsWithOneWithCondition
+                    (expressionParseInput "username = Jackie and country = canada")
+                    (\expr ->
                         case expr of
                             AndExpression left right ->
                                 Expect.all
@@ -371,34 +328,13 @@ suite =
 
                             anythingElse ->
                                 Expect.fail <| "any other type of expression is a failure"
+                    )
         , test "empty string parses as empty list of expressions" <|
             \_ ->
-                let
-                    input =
-                        ""
-
-                    parseResult : Result (List Parser.DeadEnd) (List Expression)
-                    parseResult =
-                        Parser.run (expressionParser []) input
-                in
-                parseResult
-                    |> Result.map
-                        (\ok -> Expect.true "No parsed expressions" <| List.isEmpty ok)
-                    |> Result.withDefault
-                        (Expect.fail "blank string failed to parse")
+                expressionParseInput ""
+                    |> expectParseSucceedsWithZero
         , test "\"()\" string parses as empty list of expressions" <|
             \_ ->
-                let
-                    input =
-                        "()"
-
-                    parseResult : Result (List Parser.DeadEnd) (List Expression)
-                    parseResult =
-                        Parser.run (expressionParser []) input
-                in
-                parseResult
-                    |> Result.map
-                        (\ok -> Expect.true "No parsed expressions" <| List.isEmpty ok)
-                    |> Result.withDefault
-                        (Expect.fail "pair of parens failed to parse")
+                expressionParseInput "()"
+                    |> expectParseSucceedsWithZero
         ]

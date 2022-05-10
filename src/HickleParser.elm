@@ -22,13 +22,21 @@ import Time
 import Tuple3
 
 
-type Expression
+type LogicType
+    = OrLogic
+    | AndLogic
+
+
+
+--
+
+
+type Node
     = -- someVar = my_value
-      VariableAssignment String String
-    | -- OR expression
-      OrExpression Expression Expression
-    | -- And expression
-      AndExpression Expression Expression
+      ExpressionNode String String
+    | -- OR, And
+      LogicNode LogicType Node Node
+    | StatementNode (List Node)
 
 
 getChompedAlphaNum =
@@ -47,11 +55,11 @@ getChompedAlpha =
             |. Parser.chompWhile Char.isLower
 
 
-type alias ExpressionParser a =
+type alias NodeParser a =
     Parser.Parser Context Problem a
 
 
-type alias ExpressionDeadEnd context problem =
+type alias NodeDeadEnd context problem =
     Parser.DeadEnd context problem
 
 
@@ -74,7 +82,10 @@ type Problem
 
 
 leftParen =
-    Parser.symbol (Parser.Token "(" ExpectedOpenParen)
+    Parser.symbol
+        (Parser.Token "("
+            ExpectedOpenParen
+        )
 
 
 rightParen =
@@ -97,20 +108,20 @@ inGenericContext str =
     Parser.inContext (GenericContext str)
 
 
-expressionParser : List String -> ExpressionParser (List Expression)
+expressionParser : List String -> NodeParser (List Node)
 expressionParser _ =
     let
-        expressions : ExpressionParser (List Expression)
+        expressions : NodeParser (List Node)
         expressions =
             inGenericContext "start" <|
                 Parser.loop [] expressionsHelp
 
-        -- finds VariableAssignment
+        -- finds ExpressionNode
         assignmentParser =
             inGenericContext "variableAssignment" <|
                 Parser.succeed identity
                     |= Parser.oneOf
-                        [ Parser.succeed VariableAssignment
+                        [ Parser.succeed ExpressionNode
                             |= getChompedAlpha
                             |. Parser.spaces
                             |. equalSign
@@ -118,93 +129,32 @@ expressionParser _ =
                             |= getChompedAlpha
                         ]
 
-        -- finds either VariableAssignment, OrExpression or AndExpression
-        simpleExpressionParser =
+        -- finds either ExpressionNode, OrNode or AndNode
+        simpleNodeParser =
             inGenericContext "simple expression" <|
                 (Parser.succeed identity
                     |= assignmentParser
                     |. Parser.spaces
-                    |> Parser.andThen
-                        (\expr ->
-                            Parser.oneOf
-                                [ -- either OrExpression continues
-                                  inGenericContext "trying to parse Or" <|
-                                    Parser.succeed (\expr2 -> OrExpression expr expr2)
-                                        |. orOperator
-                                        |. Parser.spaces
-                                        |= assignmentParser
-                                , -- or the AndExpression continues
-                                  inGenericContext "trying to parse And" <|
-                                    Parser.succeed (\expr2 -> AndExpression expr expr2)
-                                        |. andOperator
-                                        |. Parser.spaces
-                                        |= assignmentParser
-                                , -- or the VariableAssignment is over
-                                  Parser.succeed
-                                    expr
-                                ]
-                        )
                 )
 
-        expressionsHelp : List Expression -> ExpressionParser (Parser.Step (List Expression) (List Expression))
+        expressionsHelp : List Node -> NodeParser (Parser.Step (List Node) (List Node))
         expressionsHelp foundSoFar =
             Parser.oneOf
-                [ inGenericContext "open paren" <|
-                    Parser.succeed (\expr -> expr)
-                        |. leftParen
-                        |= Parser.oneOf
-                            [ -- either OrExpression continues
-                              inGenericContext "trying to parse Or" <|
-                                Parser.succeed
-                                    (\expr expr2 -> Parser.Loop <| OrExpression expr expr2 :: foundSoFar)
-                                    |= assignmentParser
-                                    |. orOperator
-                                    |. Parser.spaces
-                                    |= assignmentParser
-                                    |. Parser.oneOf [ rightParen, Parser.succeed () ]
-                            , -- or the AndExpression continues
-                              inGenericContext "trying to parse And" <|
-                                Parser.succeed
-                                    (\expr expr2 -> Parser.Loop <| AndExpression expr expr2 :: foundSoFar)
-                                    |= assignmentParser
-                                    |. orOperator
-                                    |. Parser.spaces
-                                    |= assignmentParser
-                                    |. Parser.oneOf [ rightParen, Parser.succeed () ]
-                            , Parser.succeed (Parser.Loop foundSoFar)
-                                |. Parser.oneOf [ rightParen, Parser.succeed () ]
-                            ]
-                , inGenericContext "no paren" <|
-                    Parser.succeed (\expr -> expr)
-                        |= Parser.oneOf
-                            [ -- either OrExpression continues
-                              inGenericContext "trying to parse Or" <|
-                                Parser.succeed
-                                    (\expr expr2 -> Parser.Loop <| OrExpression expr expr2 :: foundSoFar)
-                                    |= (inGenericContext "left Or" <|
-                                            assignmentParser
-                                       )
-                                    |. orOperator
-                                    |. Parser.spaces
-                                    |= (inGenericContext "right Or" <|
-                                            assignmentParser
-                                       )
-                            , -- or the AndExpression continues
-                              inGenericContext "trying to parse And" <|
-                                Parser.succeed
-                                    (\expr expr2 -> Parser.Loop <| AndExpression expr expr2 :: foundSoFar)
-                                    |= (inGenericContext "left And" <|
-                                            assignmentParser
-                                       )
-                                    |. andOperator
-                                    |. Parser.spaces
-                                    |= (inGenericContext "right And" <|
-                                            assignmentParser
-                                       )
-                            ]
+                [ Parser.succeed (\expr -> Parser.Loop <| expr :: foundSoFar)
+                    |. leftParen
+                    |= simpleNodeParser
+                    |. rightParen
 
-                -- supposed to mark the end of the loop
-                , inGenericContext "done" <|
+                -- , Parser.succeed (\expr -> Parser.Loop <| expr :: foundSoFar)
+                --     |= simpleNodeParser
+                , Parser.succeed (\expr expr2 -> Parser.Loop <| LogicNode OrLogic expr expr2 :: foundSoFar)
+                    |= simpleNodeParser
+                    |. spaces
+                    |. orOperator
+                    |. spaces
+                    |= simpleNodeParser
+                , -- supposed to mark the end of the loop
+                  inGenericContext "done" <|
                     Parser.succeed (Parser.Done foundSoFar)
                         |. Parser.end ExpectedEnd
 
@@ -281,10 +231,10 @@ explainProblems input deadEnds =
         |> String.join " -- "
 
 
-expectVariableExpression : String -> String -> Expression -> Expect.Expectation
-expectVariableExpression expectedLeft expectedRight expression =
+expectVariableNode : String -> String -> Node -> Expect.Expectation
+expectVariableNode expectedLeft expectedRight expression =
     case expression of
-        VariableAssignment left right ->
+        ExpressionNode left right ->
             Expect.all
                 [ Tuple.first >> Expect.equal expectedLeft
                 , Tuple.second >> Expect.equal expectedRight
@@ -292,7 +242,7 @@ expectVariableExpression expectedLeft expectedRight expression =
                 ( left, right )
 
         _ ->
-            Expect.fail <| "expression is not a VariableAssignment: " ++ Debug.toString expression
+            Expect.fail <| "expression is not a ExpressionNode: " ++ Debug.toString expression
 
 
 expectParseSucceedsWithZero : String -> Expectation
@@ -319,7 +269,7 @@ expectParseSucceedsWithOne input =
                     ++ explainProblems input problems
 
 
-expectParseSucceedsWithOneWithCondition : String -> (Expression -> Expectation) -> Expectation
+expectParseSucceedsWithOneWithCondition : String -> (Node -> Expectation) -> Expectation
 expectParseSucceedsWithOneWithCondition input exprTester =
     case Parser.run (expressionParser []) input of
         Ok [] ->
@@ -337,7 +287,7 @@ expectParseSucceedsWithOneWithCondition input exprTester =
                     ++ explainProblems input problems
 
 
-expectParseSucceedsWithMany : (List Expression -> Expectation) -> Result (List (Parser.DeadEnd context problem)) (List Expression) -> Expectation
+expectParseSucceedsWithMany : (List Node -> Expectation) -> Result (List (Parser.DeadEnd context problem)) (List Node) -> Expectation
 expectParseSucceedsWithMany exprTester parseResult =
     case parseResult of
         Ok [] ->
@@ -353,7 +303,7 @@ expectParseSucceedsWithMany exprTester parseResult =
             Expect.fail "Failed to parse, instead of successfully parsing an expression list of many"
 
 
-expectParseSucceedsWithManyWithCondition : (List Expression -> Expectation) -> Result (List (Parser.DeadEnd context problem)) (List Expression) -> Expectation
+expectParseSucceedsWithManyWithCondition : (List Node -> Expectation) -> Result (List (Parser.DeadEnd context problem)) (List Node) -> Expectation
 expectParseSucceedsWithManyWithCondition exprTester parseResult =
     case parseResult of
         Ok [] ->
@@ -369,7 +319,7 @@ expectParseSucceedsWithManyWithCondition exprTester parseResult =
             Expect.fail "Failed to parse, Expected a parsed expression list of length 1"
 
 
-expectFailToParse : Result (List (Parser.DeadEnd context problem)) (List Expression) -> Expectation
+expectFailToParse : Result (List (Parser.DeadEnd context problem)) (List Node) -> Expectation
 expectFailToParse parseResult =
     case parseResult of
         Ok _ ->
@@ -382,7 +332,7 @@ expectFailToParse parseResult =
 suite : Test
 suite =
     let
-        expressionParseInput : String -> Result (List (Parser.DeadEnd Context Problem)) (List Expression)
+        expressionParseInput : String -> Result (List (Parser.DeadEnd Context Problem)) (List Node)
         expressionParseInput input =
             Parser.run (expressionParser []) input
     in
@@ -405,30 +355,37 @@ suite =
         , test "0=0 fails" <|
             \_ ->
                 expectFailToParse <| expressionParseInput "0=0"
-        , test "plain assignment" <|
-            \_ ->
-                expectParseSucceedsWithOneWithCondition "username = Jackie"
-                    (\expr ->
-                        expectVariableExpression "username" "Jackie" expr
-                    )
-        , test "assignment in parens" <|
-            \_ ->
-                expectParseSucceedsWithOneWithCondition "(username = Jackie)"
-                    (\expr ->
-                        expectVariableExpression "username" "Jackie" expr
-                    )
+        , Test.only <|
+            test "plain assignment" <|
+                \_ ->
+                    expectParseSucceedsWithOneWithCondition "username = Jackie"
+                        (\expr ->
+                            expectVariableNode "username" "Jackie" expr
+                        )
+        , Test.only <|
+            test "assignment in parens" <|
+                \_ ->
+                    expectParseSucceedsWithOneWithCondition "(username = Jackie)"
+                        (\expr ->
+                            expectVariableNode "username" "Jackie" expr
+                        )
         , Test.only <|
             test "plain or expression" <|
                 \_ ->
                     expectParseSucceedsWithOneWithCondition "username = Jackie or country = canada"
                         (\expr ->
                             case expr of
-                                OrExpression left right ->
-                                    Expect.all
-                                        [ Tuple.first >> expectVariableExpression "username" "Jackie"
-                                        , Tuple.second >> expectVariableExpression "country" "canada"
-                                        ]
-                                        ( left, right )
+                                LogicNode logicType left right ->
+                                    case logicType of
+                                        OrLogic ->
+                                            Expect.all
+                                                [ Tuple.first >> expectVariableNode "username" "Jackie"
+                                                , Tuple.second >> expectVariableNode "country" "canada"
+                                                ]
+                                                ( left, right )
+
+                                        _ ->
+                                            Expect.fail "needs to be an or"
 
                                 anythingElse ->
                                     Expect.fail <| "any other type of expression is a failure"
@@ -438,12 +395,17 @@ suite =
                 expectParseSucceedsWithOneWithCondition "username = Jackie and country = canada"
                     (\expr ->
                         case expr of
-                            AndExpression left right ->
-                                Expect.all
-                                    [ Tuple.first >> expectVariableExpression "username" "Jackie"
-                                    , Tuple.second >> expectVariableExpression "country" "canada"
-                                    ]
-                                    ( left, right )
+                            LogicNode logicType left right ->
+                                case logicType of
+                                    AndLogic ->
+                                        Expect.all
+                                            [ Tuple.first >> expectVariableNode "username" "Jackie"
+                                            , Tuple.second >> expectVariableNode "country" "canada"
+                                            ]
+                                            ( left, right )
+
+                                    _ ->
+                                        Expect.fail "need and"
 
                             anythingElse ->
                                 Expect.fail <| "any other type of expression is a failure"
@@ -453,12 +415,17 @@ suite =
                 expectParseSucceedsWithOneWithCondition "(username = Jackie) and (country = canada)"
                     (\expr ->
                         case expr of
-                            AndExpression left right ->
-                                Expect.all
-                                    [ Tuple.first >> expectVariableExpression "username" "Jackie"
-                                    , Tuple.second >> expectVariableExpression "country" "canada"
-                                    ]
-                                    ( left, right )
+                            LogicNode logicType left right ->
+                                case logicType of
+                                    AndLogic ->
+                                        Expect.all
+                                            [ Tuple.first >> expectVariableNode "username" "Jackie"
+                                            , Tuple.second >> expectVariableNode "country" "canada"
+                                            ]
+                                            ( left, right )
+
+                                    _ ->
+                                        Expect.fail "ASDSAD"
 
                             anythingElse ->
                                 Expect.fail <| "any other type of expression is a failure"

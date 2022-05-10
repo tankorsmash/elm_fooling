@@ -33,6 +33,7 @@ type Node
     | -- OR, And
       LogicNode LogicType Node Node
     | StatementNode Node Node
+    | NoopNode
 
 
 getChompedAlphaNum =
@@ -201,7 +202,7 @@ hickleStatementParser =
             [ Parser.succeed identity
                 |. leftParen
                 |. spaces
-                |= Parser.lazy (\_ -> statementParser)
+                |= statementParser
                 |. spaces
                 |. rightParen
                 |. spaces
@@ -452,27 +453,26 @@ suite =
                     (\expr ->
                         expectVariableNode "username" "Jackie" expr
                     )
-        , Test.only <|
-            test "plain or expression" <|
-                \_ ->
-                    expectParseSucceedsWithOneWithCondition "username = Jackie or country = canada"
-                        (\expr ->
-                            case expr of
-                                LogicNode logicType left right ->
-                                    case logicType of
-                                        OrLogic ->
-                                            Expect.all
-                                                [ Tuple.first >> expectVariableNode "username" "Jackie"
-                                                , Tuple.second >> expectVariableNode "country" "canada"
-                                                ]
-                                                ( left, right )
+        , test "plain or expression" <|
+            \_ ->
+                expectParseSucceedsWithOneWithCondition "username = Jackie or country = canada"
+                    (\expr ->
+                        case expr of
+                            LogicNode logicType left right ->
+                                case logicType of
+                                    OrLogic ->
+                                        Expect.all
+                                            [ Tuple.first >> expectVariableNode "username" "Jackie"
+                                            , Tuple.second >> expectVariableNode "country" "canada"
+                                            ]
+                                            ( left, right )
 
-                                        _ ->
-                                            Expect.fail "needs to be an or"
+                                    _ ->
+                                        Expect.fail "needs to be an or"
 
-                                anythingElse ->
-                                    Expect.fail <| "any other type of expression is a failure"
-                        )
+                            anythingElse ->
+                                Expect.fail <| "any other type of expression is a failure"
+                    )
         , test "`someVar = a_value and someOtherVar = some_other_value` succeeds" <|
             \_ ->
                 expectParseSucceedsWithOneWithCondition "username = Jackie and country = canada"
@@ -519,84 +519,81 @@ suite =
         , test "\"()\" string parses as empty list of expressions" <|
             \_ ->
                 expectParseSucceedsWithZero "()"
-        , Test.only <|
-            test "multiple ors and ands in successions" <|
-                \_ ->
-                    let
-                        input =
-                            "halo = best and halofour = worst and dota = prettygood"
+        , test "multiple ors and ands in successions" <|
+            \_ ->
+                let
+                    input =
+                        "halo = best and halofour = worst and dota = prettygood"
 
-                        parserResult =
-                            Parser.run (expressionParser []) input
-                    in
-                    case parserResult of
-                        Ok _ ->
-                            Expect.pass
+                    parserResult =
+                        Parser.run (expressionParser []) input
+                in
+                case parserResult of
+                    Ok _ ->
+                        Expect.pass
 
-                        Err problems ->
-                            let
-                                _ =
-                                    explainProblems input problems
-                            in
-                            Expect.fail "couldnt parse"
-        , Test.only <|
-            test "multiple ors and ands with parens first" <|
-                \_ ->
-                    let
-                        input =
-                            "(halo = best and halofour = worst) and dota = prettygood"
+                    Err problems ->
+                        let
+                            _ =
+                                explainProblems input problems
+                        in
+                        Expect.fail "couldnt parse"
+        , test "multiple ors and ands with parens first" <|
+            \_ ->
+                let
+                    input =
+                        "(halo = best and halofour = worst) and dota = prettygood"
 
-                        parserResult =
-                            Parser.run (expressionParser []) input
-                    in
-                    case parserResult of
-                        Ok _ ->
-                            Expect.pass
+                    parserResult =
+                        Parser.run (expressionParser []) input
+                in
+                case parserResult of
+                    Ok _ ->
+                        Expect.pass
 
-                        Err problems ->
-                            let
-                                _ =
-                                    explainProblems input problems
-                            in
-                            Expect.fail "couldnt parse"
-        , Test.only <|
-            test "multiple ors and ands with parens last" <|
-                \_ ->
-                    let
-                        input =
-                            "dota = prettygood and (halo = best and halofour = worst)"
+                    Err problems ->
+                        let
+                            _ =
+                                explainProblems input problems
+                        in
+                        Expect.fail "couldnt parse"
+        , test "multiple ors and ands with parens last" <|
+            \_ ->
+                let
+                    input =
+                        "dota = prettygood and (halo = best and halofour = worst)"
 
-                        parserResult =
-                            Parser.run (expressionParser []) input
-                    in
-                    case parserResult of
-                        Ok _ ->
-                            Expect.pass
+                    parserResult =
+                        Parser.run (expressionParser []) input
+                in
+                case parserResult of
+                    Ok _ ->
+                        Expect.pass
 
-                        Err problems ->
-                            let
-                                _ =
-                                    explainProblems input problems
-                            in
-                            Expect.fail "couldnt parse"
-        , Test.only <|
-            test "multiple nested parens" <|
-                \_ ->
-                    let
-                        input =
-                            "archie = godlikegenius and (height = taller and (wallet = smaller))"
-                    in
-                    case Parser.run (expressionParser []) input of
-                        Ok result ->
-                            let
-                                _ = Debug.log "result" result
-                            in
-                            Expect.pass
+                    Err problems ->
+                        let
+                            _ =
+                                explainProblems input problems
+                        in
+                        Expect.fail "couldnt parse"
+        , test "multiple nested parens" <|
+            \_ ->
+                let
+                    input =
+                        "archie = godlikegenius and (height = taller and (wallet = smaller))"
+                in
+                case Parser.run (expressionParser []) input of
+                    Ok result ->
+                        let
+                            _ =
+                                Debug.log "result" result
+                        in
+                        Expect.pass
 
-                        Err problems ->
-                            let
-                                _ =
-                                    explainProblems input problems
-                            in
-                            Expect.fail "couldnt parse"
+                    Err problems ->
+                        let
+                            _ =
+                                explainProblems input problems
+                        in
+                        Expect.fail "couldnt parse"
         ]

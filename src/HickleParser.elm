@@ -93,17 +93,21 @@ andOperator =
     Parser.keyword (Parser.Token "and" ExpectedAnd)
 
 
+inGenericContext str =
+    Parser.inContext (GenericContext str)
+
+
 expressionParser : List String -> ExpressionParser (List Expression)
 expressionParser _ =
     let
         expressions : ExpressionParser (List Expression)
         expressions =
-            Parser.inContext (GenericContext "start") <|
+            inGenericContext "start" <|
                 Parser.loop [] expressionsHelp
 
         -- finds VariableAssignment
         assignmentParser =
-            Parser.inContext (GenericContext "variableAssignment") <|
+            inGenericContext "variableAssignment" <|
                 Parser.succeed identity
                     |= Parser.oneOf
                         [ Parser.succeed VariableAssignment
@@ -116,7 +120,7 @@ expressionParser _ =
 
         -- finds either VariableAssignment, OrExpression or AndExpression
         simpleExpressionParser =
-            Parser.inContext (GenericContext "simple expression") <|
+            inGenericContext "simple expression" <|
                 (Parser.succeed identity
                     |= assignmentParser
                     |. Parser.spaces
@@ -124,13 +128,13 @@ expressionParser _ =
                         (\expr ->
                             Parser.oneOf
                                 [ -- either OrExpression continues
-                                  Parser.inContext (GenericContext "trying to parse Or") <|
+                                  inGenericContext "trying to parse Or" <|
                                     Parser.succeed (\expr2 -> OrExpression expr expr2)
                                         |. orOperator
                                         |. Parser.spaces
                                         |= assignmentParser
                                 , -- or the AndExpression continues
-                                  Parser.inContext (GenericContext "trying to parse And") <|
+                                  inGenericContext "trying to parse And" <|
                                     Parser.succeed (\expr2 -> AndExpression expr expr2)
                                         |. andOperator
                                         |. Parser.spaces
@@ -145,12 +149,12 @@ expressionParser _ =
         expressionsHelp : List Expression -> ExpressionParser (Parser.Step (List Expression) (List Expression))
         expressionsHelp foundSoFar =
             Parser.oneOf
-                [ Parser.inContext (GenericContext "open paren") <|
+                [ inGenericContext "open paren" <|
                     Parser.succeed (\expr -> expr)
                         |. leftParen
                         |= Parser.oneOf
                             [ -- either OrExpression continues
-                              Parser.inContext (GenericContext "trying to parse Or") <|
+                              inGenericContext "trying to parse Or" <|
                                 Parser.succeed
                                     (\expr expr2 -> Parser.Loop <| OrExpression expr expr2 :: foundSoFar)
                                     |= assignmentParser
@@ -159,7 +163,7 @@ expressionParser _ =
                                     |= assignmentParser
                                     |. Parser.oneOf [ rightParen, Parser.succeed () ]
                             , -- or the AndExpression continues
-                              Parser.inContext (GenericContext "trying to parse And") <|
+                              inGenericContext "trying to parse And" <|
                                 Parser.succeed
                                     (\expr expr2 -> Parser.Loop <| AndExpression expr expr2 :: foundSoFar)
                                     |= assignmentParser
@@ -170,42 +174,42 @@ expressionParser _ =
                             , Parser.succeed (Parser.Loop foundSoFar)
                                 |. Parser.oneOf [ rightParen, Parser.succeed () ]
                             ]
-                , Parser.inContext (GenericContext "no paren") <|
+                , inGenericContext "no paren" <|
                     Parser.succeed (\expr -> expr)
                         |= Parser.oneOf
                             [ -- either OrExpression continues
-                              Parser.inContext (GenericContext "trying to parse Or") <|
+                              inGenericContext "trying to parse Or" <|
                                 Parser.succeed
                                     (\expr expr2 -> Parser.Loop <| OrExpression expr expr2 :: foundSoFar)
-                                    |= (Parser.inContext (GenericContext "left Or") <|
+                                    |= (inGenericContext "left Or" <|
                                             assignmentParser
                                        )
                                     |. orOperator
                                     |. Parser.spaces
-                                    |= (Parser.inContext (GenericContext "right Or") <|
+                                    |= (inGenericContext "right Or" <|
                                             assignmentParser
                                        )
                             , -- or the AndExpression continues
-                              Parser.inContext (GenericContext "trying to parse And") <|
+                              inGenericContext "trying to parse And" <|
                                 Parser.succeed
                                     (\expr expr2 -> Parser.Loop <| AndExpression expr expr2 :: foundSoFar)
-                                    |= (Parser.inContext (GenericContext "left And") <|
+                                    |= (inGenericContext "left And" <|
                                             assignmentParser
                                        )
                                     |. andOperator
                                     |. Parser.spaces
-                                    |= (Parser.inContext (GenericContext "right And") <|
+                                    |= (inGenericContext "right And" <|
                                             assignmentParser
                                        )
                             ]
 
                 -- supposed to mark the end of the loop
-                , Parser.inContext (GenericContext "done") <|
+                , inGenericContext "done" <|
                     Parser.succeed (Parser.Done foundSoFar)
                         |. Parser.end ExpectedEnd
 
                 -- spaces
-                , Parser.inContext (GenericContext "spaces") <|
+                , inGenericContext "spaces" <|
                     Parser.succeed (Parser.Loop foundSoFar)
                         |. Parser.chompIf (\c -> c == ' ') ExpectedSpace
                         |. Parser.spaces

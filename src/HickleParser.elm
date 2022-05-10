@@ -1,4 +1,4 @@
-module HickleParser exposing (..)
+module HickleParser exposing (Context(..), LogicType(..), Node(..), NodeDeadEnd, NodeParser, Problem(..), andOperator, assignmentParser, equalSign, expectFailToParse, expectParseSucceedsWithMany, expectParseSucceedsWithManyWithCondition, expectParseSucceedsWithOne, expectParseSucceedsWithOneWithCondition, expectParseSucceedsWithZero, expectVariableNode, explainDeadEnd, explainDeadEnds, expressionParser, getChompedAlpha, getChompedAlphaNum, hickleStatementParser, inGenericContext, leftParen, logicNodeParser, orOperator, parseAndOperator, parseLeftParen, parseLogicOperator, parseOrOperator, parseRightParen, prettyPrintContext, rightParen, statementParser, suite)
 
 import Array
 import Console
@@ -76,6 +76,7 @@ type Problem
     | ExpectedOpenParen
     | ExpectedClosedParen
     | ExpectedEnd
+    | EmptyParensNotAllowed
 
 
 leftParen =
@@ -195,6 +196,7 @@ hickleStatementParser =
                         |. spaces
                     , Parser.succeed NoopNode
                         |. rightParen
+                        |. Parser.problem EmptyParensNotAllowed
                     ]
             , statementParser
             ]
@@ -254,8 +256,8 @@ prettyPrintContext input { row, col, context } =
     ""
 
 
-explainProblem : String -> Parser.DeadEnd Context problem -> String
-explainProblem input ({ problem, row, col } as deadEnd) =
+explainDeadEnd : String -> Parser.DeadEnd Context problem -> String
+explainDeadEnd input ({ problem, row, col } as deadEnd) =
     let
         _ =
             Debug.log "-- prob,row,col" ( Debug.toString problem |> Console.red, row, col )
@@ -293,13 +295,13 @@ explainProblem input ({ problem, row, col } as deadEnd) =
 --             ++ "\""
 
 
-explainProblems : String -> List (Parser.DeadEnd Context problem) -> String
-explainProblems input deadEnds =
+explainDeadEnds : String -> List (Parser.DeadEnd Context problem) -> String
+explainDeadEnds input deadEnds =
     deadEnds
         |> Debug.log "num dead ends"
         << List.length
         |> always deadEnds
-        |> List.map (explainProblem input)
+        |> List.map (explainDeadEnd input)
         |> String.join " -- "
 
 
@@ -326,7 +328,7 @@ expectParseSucceedsWithZero input =
         Err deadEnds ->
             Expect.fail <|
                 "Failed to parse, instead of successfully parsing an expression list of length 0"
-                    ++ explainProblems input deadEnds
+                    ++ explainDeadEnds input deadEnds
 
 
 expectParseSucceedsWithOne : String -> Expectation
@@ -338,7 +340,33 @@ expectParseSucceedsWithOne input =
         Err problems ->
             Expect.fail <|
                 "Failed to parse, instead of successfully parsing an expression list of length 1"
-                    ++ explainProblems input problems
+                    ++ explainDeadEnds input problems
+
+
+expectParseFails : String -> Problem -> Expectation
+expectParseFails input expectedProblem =
+    case Parser.run (expressionParser []) input of
+        Ok success ->
+            Expect.fail <|
+                "Parsed successfully, instead of failing to parsing with a problem"
+
+        Err (deadEnd :: []) ->
+            if deadEnd.problem == expectedProblem then
+                Expect.pass
+
+            else
+                Expect.fail <|
+                    "Failed to parse, instead of successfully parsing an expression list of length 1"
+                        ++ explainDeadEnds input [ deadEnd ]
+
+        Err (_ :: many) ->
+            Expect.fail <|
+                "Failed to parse with one problem, but found many"
+
+        Err [] ->
+            Expect.fail <|
+                "Failed to parse with one problem, and found 0 problems but expected instead: "
+                    ++ Debug.toString expectedProblem
 
 
 expectParseSucceedsWithOneWithCondition : String -> (Node -> Expectation) -> Expectation
@@ -356,7 +384,7 @@ expectParseSucceedsWithOneWithCondition input exprTester =
         Err problems ->
             Expect.fail <|
                 "Failed to parse, instead of successfully parsing an expression list of length 1:"
-                    ++ explainProblems input problems
+                    ++ explainDeadEnds input problems
 
 
 expectParseSucceedsWithMany : (List Node -> Expectation) -> Result (List (Parser.DeadEnd context problem)) (List Node) -> Expectation
@@ -508,7 +536,7 @@ suite =
                 expectParseSucceedsWithZero ""
         , test "\"()\" string parses as empty list of expressions" <|
             \_ ->
-                expectParseSucceedsWithOne "()"
+                expectParseFails "()" EmptyParensNotAllowed
         , test "multiple ors and ands in successions" <|
             \_ ->
                 let
@@ -525,7 +553,7 @@ suite =
                     Err problems ->
                         let
                             _ =
-                                explainProblems input problems
+                                explainDeadEnds input problems
                         in
                         Expect.fail "couldnt parse"
         , test "multiple ors and ands with parens first" <|
@@ -544,7 +572,7 @@ suite =
                     Err problems ->
                         let
                             _ =
-                                explainProblems input problems
+                                explainDeadEnds input problems
                         in
                         Expect.fail "couldnt parse"
         , test "multiple ors and ands with parens last" <|
@@ -563,7 +591,7 @@ suite =
                     Err problems ->
                         let
                             _ =
-                                explainProblems input problems
+                                explainDeadEnds input problems
                         in
                         Expect.fail "couldnt parse"
         , test "multiple nested parens" <|
@@ -579,7 +607,7 @@ suite =
                     Err problems ->
                         let
                             _ =
-                                explainProblems input problems
+                                explainDeadEnds input problems
                         in
                         Expect.fail "couldnt parse"
         ]

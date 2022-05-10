@@ -125,6 +125,7 @@ parseLogicOperator =
         ]
 
 
+andOperator : Parser.Parser Context Problem ()
 andOperator =
     Parser.keyword (Parser.Token "and" ExpectedAnd)
 
@@ -133,11 +134,7 @@ inGenericContext str =
     Parser.inContext (GenericContext str)
 
 
-
--- finds ExpressionNode
--- assignmentParser : Parser.Parser Context Problem Node
-
-
+assignmentParser : Parser.Parser Context Problem Node
 assignmentParser =
     inGenericContext "variableAssignment" <|
         Parser.succeed identity
@@ -149,18 +146,6 @@ assignmentParser =
                     |. Parser.spaces
                     |= getChompedAlpha
                 ]
-
-
-
--- finds either ExpressionNode, OrNode or AndNode
-
-
-simpleNodeParser =
-    inGenericContext "simple expression" <|
-        (Parser.succeed identity
-            |= assignmentParser
-            |. Parser.spaces
-        )
 
 
 logicNodeParser : Parser.Parser Context Problem Node
@@ -202,10 +187,15 @@ hickleStatementParser =
             [ Parser.succeed identity
                 |. leftParen
                 |. spaces
-                |= statementParser
-                |. spaces
-                |. rightParen
-                |. spaces
+                |= Parser.oneOf
+                    [ Parser.succeed identity
+                        |= statementParser
+                        |. spaces
+                        |. rightParen
+                        |. spaces
+                    , Parser.succeed NoopNode
+                        |. rightParen
+                    ]
             , statementParser
             ]
             |> Parser.andThen
@@ -518,7 +508,7 @@ suite =
                 expectParseSucceedsWithZero ""
         , test "\"()\" string parses as empty list of expressions" <|
             \_ ->
-                expectParseSucceedsWithZero "()"
+                expectParseSucceedsWithOne "()"
         , test "multiple ors and ands in successions" <|
             \_ ->
                 let
@@ -584,10 +574,6 @@ suite =
                 in
                 case Parser.run (expressionParser []) input of
                     Ok result ->
-                        let
-                            _ =
-                                Debug.log "result" result
-                        in
                         Expect.pass
 
                     Err problems ->

@@ -29,6 +29,10 @@ type LogicType
 
 
 --
+-- type Matt
+--     = MattSingle Node
+--     | MattPlural (List Node)
+--
 
 
 type Node
@@ -36,7 +40,7 @@ type Node
       ExpressionNode String String
     | -- OR, And
       LogicNode LogicType Node Node
-    | StatementNode (List Node)
+    | StatementNode Node Node
 
 
 getChompedAlphaNum =
@@ -100,12 +104,79 @@ orOperator =
     Parser.keyword (Parser.Token "or" ExpectedOr)
 
 
+parseOrOperator =
+    Parser.succeed OrLogic
+        |. orOperator
+
+
+parseAndOperator =
+    Parser.succeed AndLogic
+        |. andOperator
+
+
 andOperator =
     Parser.keyword (Parser.Token "and" ExpectedAnd)
 
 
 inGenericContext str =
     Parser.inContext (GenericContext str)
+
+
+
+-- finds ExpressionNode
+-- assignmentParser : Parser.Parser Context Problem Node
+
+
+assignmentParser =
+    inGenericContext "variableAssignment" <|
+        Parser.succeed identity
+            |= Parser.oneOf
+                [ Parser.succeed ExpressionNode
+                    |= getChompedAlpha
+                    |. Parser.spaces
+                    |. equalSign
+                    |. Parser.spaces
+                    |= getChompedAlpha
+                ]
+
+
+
+-- finds either ExpressionNode, OrNode or AndNode
+
+
+simpleNodeParser =
+    inGenericContext "simple expression" <|
+        (Parser.succeed identity
+            |= assignmentParser
+            |. Parser.spaces
+        )
+
+
+
+-- logicNodeParser : Par
+
+
+logicNodeParser =
+    Parser.succeed (\expr1 logicType expr2 -> LogicNode logicType expr1 expr2)
+        |= assignmentParser
+        |. spaces
+        |= Parser.oneOf
+            [ parseOrOperator
+            , parseAndOperator
+            ]
+        |. spaces
+        |= assignmentParser
+
+
+statementParser : Parser.Parser Context Problem Node
+statementParser =
+    inGenericContext "statementParser" <|
+        Parser.oneOf
+            [ Parser.succeed identity
+                |= logicNodeParser
+            , Parser.succeed identity
+                |= assignmentParser
+            ]
 
 
 expressionParser : List String -> NodeParser (List Node)
@@ -116,43 +187,11 @@ expressionParser _ =
             inGenericContext "start" <|
                 Parser.loop [] expressionsHelp
 
-        -- finds ExpressionNode
-        assignmentParser =
-            inGenericContext "variableAssignment" <|
-                Parser.succeed identity
-                    |= Parser.oneOf
-                        [ Parser.succeed ExpressionNode
-                            |= getChompedAlpha
-                            |. Parser.spaces
-                            |. equalSign
-                            |. Parser.spaces
-                            |= getChompedAlpha
-                        ]
-
-        -- finds either ExpressionNode, OrNode or AndNode
-        simpleNodeParser =
-            inGenericContext "simple expression" <|
-                (Parser.succeed identity
-                    |= assignmentParser
-                    |. Parser.spaces
-                )
-
         expressionsHelp : List Node -> NodeParser (Parser.Step (List Node) (List Node))
         expressionsHelp foundSoFar =
             Parser.oneOf
                 [ Parser.succeed (\expr -> Parser.Loop <| expr :: foundSoFar)
-                    |. leftParen
-                    |= simpleNodeParser
-                    |. rightParen
-
-                -- , Parser.succeed (\expr -> Parser.Loop <| expr :: foundSoFar)
-                --     |= simpleNodeParser
-                , Parser.succeed (\expr expr2 -> Parser.Loop <| LogicNode OrLogic expr expr2 :: foundSoFar)
-                    |= simpleNodeParser
-                    |. spaces
-                    |. orOperator
-                    |. spaces
-                    |= simpleNodeParser
+                    |= statementParser
                 , -- supposed to mark the end of the loop
                   inGenericContext "done" <|
                     Parser.succeed (Parser.Done foundSoFar)
@@ -355,20 +394,22 @@ suite =
         , test "0=0 fails" <|
             \_ ->
                 expectFailToParse <| expressionParseInput "0=0"
-        , Test.only <|
-            test "plain assignment" <|
-                \_ ->
-                    expectParseSucceedsWithOneWithCondition "username = Jackie"
-                        (\expr ->
-                            expectVariableNode "username" "Jackie" expr
-                        )
-        , Test.only <|
-            test "assignment in parens" <|
-                \_ ->
-                    expectParseSucceedsWithOneWithCondition "(username = Jackie)"
-                        (\expr ->
-                            expectVariableNode "username" "Jackie" expr
-                        )
+        , test "plain assignment" <|
+            \_ ->
+                expectParseSucceedsWithOneWithCondition "username = Jackie"
+                    (\expr ->
+                        expectVariableNode "username" "Jackie" expr
+                    )
+
+        --
+        -- , test "simple statementParser test" <|
+        --     \_ ->
+        , test "assignment in parens" <|
+            \_ ->
+                expectParseSucceedsWithOneWithCondition "(username = Jackie)"
+                    (\expr ->
+                        expectVariableNode "username" "Jackie" expr
+                    )
         , Test.only <|
             test "plain or expression" <|
                 \_ ->

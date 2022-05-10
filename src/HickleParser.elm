@@ -114,6 +114,14 @@ parseAndOperator =
         |. andOperator
 
 
+parseLogicOperator : Parser.Parser Context Problem LogicType
+parseLogicOperator =
+    Parser.oneOf
+        [ parseOrOperator
+        , parseAndOperator
+        ]
+
+
 andOperator =
     Parser.keyword (Parser.Token "and" ExpectedAnd)
 
@@ -152,10 +160,7 @@ simpleNodeParser =
         )
 
 
-
--- logicNodeParser : Par
-
-
+logicNodeParser : Parser.Parser Context Problem Node
 logicNodeParser =
     Parser.succeed (\expr1 logicType expr2 -> LogicNode logicType expr1 expr2)
         |= assignmentParser
@@ -171,12 +176,21 @@ logicNodeParser =
 statementParser : Parser.Parser Context Problem Node
 statementParser =
     inGenericContext "statementParser" <|
-        Parser.oneOf
-            [ Parser.succeed identity
-                |= logicNodeParser
-            , Parser.succeed identity
-                |= assignmentParser
-            ]
+        Parser.succeed identity
+            |= (assignmentParser
+                    |> Parser.andThen
+                        (\expr ->
+                            inGenericContext "followup" <|
+                                Parser.oneOf
+                                    [ Parser.succeed (\logicType stmt -> LogicNode logicType expr stmt)
+                                        |. spaces
+                                        |= parseLogicOperator
+                                        |. spaces
+                                        |= statementParser
+                                    , Parser.succeed expr
+                                    ]
+                        )
+               )
 
 
 expressionParser : List String -> NodeParser (List Node)
@@ -225,7 +239,7 @@ explainProblem : String -> Parser.DeadEnd Context problem -> String
 explainProblem input ({ problem, row, col } as deadEnd) =
     let
         _ =
-            Debug.log "-- prob,row,col" ( problem, row, col )
+            Debug.log "-- prob,row,col" ( Debug.toString problem |> Console.red, row, col )
 
         _ =
             List.map (prettyPrintContext input) deadEnd.contextStack
@@ -477,4 +491,24 @@ suite =
         , test "\"()\" string parses as empty list of expressions" <|
             \_ ->
                 expectParseSucceedsWithZero "()"
+        , Test.only <|
+            test "multiple ors and ands in successions" <|
+                \_ ->
+                    let
+                        input =
+                            "halo = best and halofour = worst and dota = prettygood"
+
+                        parserResult =
+                            Parser.run (expressionParser []) input
+                    in
+                    case parserResult of
+                        Ok _ ->
+                            Expect.pass
+
+                        Err problems ->
+                            let
+                                _ =
+                                    explainProblems input problems
+                            in
+                            Expect.fail "couldnt parse"
         ]

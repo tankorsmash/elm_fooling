@@ -12,7 +12,7 @@ import Json.Decode.Pipeline exposing (hardcoded, optional, optionalAt, required,
 import Json.Encode as Encode exposing (Value)
 import Json.Encode.Extra as EncodeExtra exposing (maybe)
 import List.Extra
-import Parser.Advanced as Parser exposing ((|.), (|=), chompIf, chompWhile, getChompedString)
+import Parser.Advanced as Parser exposing ((|.), (|=), chompIf, chompWhile, getChompedString, spaces)
 import Process
 import Random
 import Random.List
@@ -73,6 +73,26 @@ type Problem
     | ExpectedEnd
 
 
+leftParen =
+    Parser.symbol (Parser.Token "(" ExpectedOpenParen)
+
+
+rightParen =
+    Parser.symbol (Parser.Token ")" ExpectedClosedParen)
+
+
+equalSign =
+    Parser.symbol (Parser.Token "=" ExpectedEquals)
+
+
+orOperator =
+    Parser.keyword (Parser.Token "or" ExpectedOr)
+
+
+andOperator =
+    Parser.keyword (Parser.Token "and" ExpectedAnd)
+
+
 expressionParser : List String -> ExpressionParser (List Expression)
 expressionParser _ =
     let
@@ -82,37 +102,39 @@ expressionParser _ =
                 Parser.loop [] expressionsHelp
 
         -- finds VariableAssignment
-        variableAssignmentParser =
+        assignmentParser =
             Parser.inContext (GenericContext "variableAssignment") <|
-                Parser.succeed (\expr1 expr2 -> VariableAssignment expr1 expr2)
-                    |= getChompedAlpha
-                    |. Parser.spaces
-                    |. Parser.symbol (Parser.Token "=" ExpectedEquals)
-                    |. Parser.spaces
-                    |= getChompedAlpha
+                Parser.succeed identity
+                    |= Parser.oneOf
+                        [ Parser.succeed VariableAssignment
+                            |= getChompedAlpha
+                            |. Parser.spaces
+                            |. equalSign
+                            |. Parser.spaces
+                            |= getChompedAlpha
+                        ]
 
         -- finds either VariableAssignment, OrExpression or AndExpression
         simpleExpressionParser =
             Parser.inContext (GenericContext "simple expression") <|
-                (variableAssignmentParser
+                (Parser.succeed identity
+                    |= assignmentParser
                     |. Parser.spaces
                     |> Parser.andThen
                         (\expr ->
                             Parser.oneOf
                                 [ -- either OrExpression continues
                                   Parser.inContext (GenericContext "trying to parse Or") <|
-                                    Parser.succeed
-                                        (\expr2 -> OrExpression expr expr2)
-                                        |. Parser.keyword (Parser.Token "or" ExpectedOr)
+                                    Parser.succeed (\expr2 -> OrExpression expr expr2)
+                                        |. orOperator
                                         |. Parser.spaces
-                                        |= variableAssignmentParser
+                                        |= assignmentParser
                                 , -- or the AndExpression continues
                                   Parser.inContext (GenericContext "trying to parse And") <|
-                                    Parser.succeed
-                                        (\expr2 -> AndExpression expr expr2)
-                                        |. Parser.keyword (Parser.Token "and" ExpectedAnd)
+                                    Parser.succeed (\expr2 -> AndExpression expr expr2)
+                                        |. andOperator
                                         |. Parser.spaces
-                                        |= variableAssignmentParser
+                                        |= assignmentParser
                                 , -- or the VariableAssignment is over
                                   Parser.succeed
                                     expr
@@ -123,34 +145,70 @@ expressionParser _ =
         expressionsHelp : List Expression -> ExpressionParser (Parser.Step (List Expression) (List Expression))
         expressionsHelp foundSoFar =
             Parser.oneOf
-                [ -- parse OrExpression or VariableAssignment
-                  Parser.inContext (GenericContext "trying to no parens") <|
-                    Parser.succeed (\expr -> Parser.Loop <| expr :: foundSoFar)
-                        |= simpleExpressionParser
-                , -- parse OrExpression or VariableAssignment but with parens around it
-                  Parser.inContext (GenericContext "trying to parse parens") <|
-                    Parser.succeed Parser.Loop
-                        |. Parser.symbol (Parser.Token "(" ExpectedOpenParen)
+                [ Parser.inContext (GenericContext "open paren") <|
+                    Parser.succeed (\expr -> expr)
+                        |. leftParen
                         |= Parser.oneOf
-                            [ Parser.succeed (\expr -> expr :: foundSoFar)
-                                |= simpleExpressionParser
-                                |> Parser.andThen
-                                    (\expr ->
-                                        Parser.succeed expr
-                                            |. Parser.symbol (Parser.Token ")" ExpectedClosedParen)
-                                    )
-                            , Parser.succeed foundSoFar
-                                |. Parser.symbol (Parser.Token ")" ExpectedClosedParen)
+                            [ -- either OrExpression continues
+                              Parser.inContext (GenericContext "trying to parse Or") <|
+                                Parser.succeed
+                                    (\expr expr2 -> Parser.Loop <| OrExpression expr expr2 :: foundSoFar)
+                                    |= assignmentParser
+                                    |. orOperator
+                                    |. Parser.spaces
+                                    |= assignmentParser
+                                    |. Parser.oneOf [ rightParen, Parser.succeed () ]
+                            , -- or the AndExpression continues
+                              Parser.inContext (GenericContext "trying to parse And") <|
+                                Parser.succeed
+                                    (\expr expr2 -> Parser.Loop <| AndExpression expr expr2 :: foundSoFar)
+                                    |= assignmentParser
+                                    |. orOperator
+                                    |. Parser.spaces
+                                    |= assignmentParser
+                                    |. Parser.oneOf [ rightParen, Parser.succeed () ]
+                            , Parser.succeed (Parser.Loop foundSoFar)
+                                |. Parser.oneOf [ rightParen, Parser.succeed () ]
+                            ]
+                , Parser.inContext (GenericContext "no paren") <|
+                    Parser.succeed (\expr -> expr)
+                        |= Parser.oneOf
+                            [ -- either OrExpression continues
+                              Parser.inContext (GenericContext "trying to parse Or") <|
+                                Parser.succeed
+                                    (\expr expr2 -> Parser.Loop <| OrExpression expr expr2 :: foundSoFar)
+                                    |= (Parser.inContext (GenericContext "left Or") <|
+                                            assignmentParser
+                                       )
+                                    |. orOperator
+                                    |. Parser.spaces
+                                    |= (Parser.inContext (GenericContext "right Or") <|
+                                            assignmentParser
+                                       )
+                            , -- or the AndExpression continues
+                              Parser.inContext (GenericContext "trying to parse And") <|
+                                Parser.succeed
+                                    (\expr expr2 -> Parser.Loop <| AndExpression expr expr2 :: foundSoFar)
+                                    |= (Parser.inContext (GenericContext "left And") <|
+                                            assignmentParser
+                                       )
+                                    |. andOperator
+                                    |. Parser.spaces
+                                    |= (Parser.inContext (GenericContext "right And") <|
+                                            assignmentParser
+                                       )
                             ]
 
                 -- supposed to mark the end of the loop
-                , Parser.succeed (Parser.Done foundSoFar)
-                    |. Parser.end ExpectedEnd
+                , Parser.inContext (GenericContext "done") <|
+                    Parser.succeed (Parser.Done foundSoFar)
+                        |. Parser.end ExpectedEnd
 
                 -- spaces
-                , Parser.succeed (Parser.Loop foundSoFar)
-                    |. Parser.chompIf (\c -> c == ' ') ExpectedSpace
-                    |. Parser.spaces
+                , Parser.inContext (GenericContext "spaces") <|
+                    Parser.succeed (Parser.Loop foundSoFar)
+                        |. Parser.chompIf (\c -> c == ' ') ExpectedSpace
+                        |. Parser.spaces
                 ]
     in
     expressions
@@ -160,7 +218,7 @@ prettyPrintContext : String -> { row : Int, col : Int, context : Context } -> St
 prettyPrintContext input { row, col, context } =
     let
         _ =
-            Debug.log "context" context
+            Debug.log "context" ( context, col )
 
         _ =
             Debug.log "input" <|
@@ -174,10 +232,7 @@ explainProblem : String -> Parser.DeadEnd Context problem -> String
 explainProblem input ({ problem, row, col } as deadEnd) =
     let
         _ =
-            Debug.log "dead end row" row
-
-        _ =
-            Debug.log "dead end col" col
+            Debug.log "-- prob,row,col" ( problem, row, col )
 
         _ =
             List.map (prettyPrintContext input) deadEnd.contextStack
@@ -215,6 +270,9 @@ explainProblem input ({ problem, row, col } as deadEnd) =
 explainProblems : String -> List (Parser.DeadEnd Context problem) -> String
 explainProblems input deadEnds =
     deadEnds
+        |> Debug.log "num dead ends"
+        << List.length
+        |> always deadEnds
         |> List.map (explainProblem input)
         |> String.join " -- "
 
@@ -233,24 +291,28 @@ expectVariableExpression expectedLeft expectedRight expression =
             Expect.fail <| "expression is not a VariableAssignment: " ++ Debug.toString expression
 
 
-expectParseSucceedsWithZero : Result (List (Parser.DeadEnd context problem)) (List Expression) -> Expectation
-expectParseSucceedsWithZero parseResult =
-    case parseResult of
+expectParseSucceedsWithZero : String -> Expectation
+expectParseSucceedsWithZero input =
+    case Parser.run (expressionParser []) input of
         Ok success ->
             Expect.equal 0 (List.length success)
 
-        Err _ ->
-            Expect.fail "Failed to parse, instead of successfully parsing an expression list of length 0"
+        Err deadEnds ->
+            Expect.fail <|
+                "Failed to parse, instead of successfully parsing an expression list of length 0"
+                    ++ explainProblems input deadEnds
 
 
-expectParseSucceedsWithOne : Result (List (Parser.DeadEnd context problem)) (List Expression) -> Expectation
-expectParseSucceedsWithOne parseResult =
-    case parseResult of
+expectParseSucceedsWithOne : String -> Expectation
+expectParseSucceedsWithOne input =
+    case Parser.run (expressionParser []) input of
         Ok success ->
             Expect.equal 1 (List.length success)
 
-        Err _ ->
-            Expect.fail "Failed to parse, instead of successfully parsing an expression list of length 1"
+        Err problems ->
+            Expect.fail <|
+                "Failed to parse, instead of successfully parsing an expression list of length 1"
+                    ++ explainProblems input problems
 
 
 expectParseSucceedsWithOneWithCondition : String -> (Expression -> Expectation) -> Expectation
@@ -335,7 +397,7 @@ suite =
         --             Parser.run (expressionParser []) input
         [ test "A=A passes" <|
             \_ ->
-                expectParseSucceedsWithOne <| expressionParseInput "A=A"
+                expectParseSucceedsWithOne "A=A"
         , test "0=0 fails" <|
             \_ ->
                 expectFailToParse <| expressionParseInput "0=0"
@@ -351,21 +413,22 @@ suite =
                     (\expr ->
                         expectVariableExpression "username" "Jackie" expr
                     )
-        , test "plain or expression" <|
-            \_ ->
-                expectParseSucceedsWithOneWithCondition "username = Jackie or country = canada"
-                    (\expr ->
-                        case expr of
-                            OrExpression left right ->
-                                Expect.all
-                                    [ Tuple.first >> expectVariableExpression "username" "Jackie"
-                                    , Tuple.second >> expectVariableExpression "country" "canada"
-                                    ]
-                                    ( left, right )
+        , Test.only <|
+            test "plain or expression" <|
+                \_ ->
+                    expectParseSucceedsWithOneWithCondition "username = Jackie or country = canada"
+                        (\expr ->
+                            case expr of
+                                OrExpression left right ->
+                                    Expect.all
+                                        [ Tuple.first >> expectVariableExpression "username" "Jackie"
+                                        , Tuple.second >> expectVariableExpression "country" "canada"
+                                        ]
+                                        ( left, right )
 
-                            anythingElse ->
-                                Expect.fail <| "any other type of expression is a failure"
-                    )
+                                anythingElse ->
+                                    Expect.fail <| "any other type of expression is a failure"
+                        )
         , test "`someVar = a_value and someOtherVar = some_other_value` succeeds" <|
             \_ ->
                 expectParseSucceedsWithOneWithCondition "username = Jackie and country = canada"
@@ -398,10 +461,8 @@ suite =
                     )
         , test "empty string parses as empty list of expressions" <|
             \_ ->
-                expressionParseInput ""
-                    |> expectParseSucceedsWithZero
+                expectParseSucceedsWithZero ""
         , test "\"()\" string parses as empty list of expressions" <|
             \_ ->
-                expressionParseInput "()"
-                    |> expectParseSucceedsWithZero
+                expectParseSucceedsWithZero "()"
         ]

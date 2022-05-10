@@ -27,14 +27,6 @@ type LogicType
     | AndLogic
 
 
-
---
--- type Matt
---     = MattSingle Node
---     | MattPlural (List Node)
---
-
-
 type Node
     = -- someVar = my_value
       ExpressionNode String String
@@ -90,6 +82,16 @@ leftParen =
         (Parser.Token "("
             ExpectedOpenParen
         )
+
+
+parseLeftParen =
+    Parser.succeed ()
+        |. leftParen
+
+
+parseRightParen =
+    Parser.succeed ()
+        |. rightParen
 
 
 rightParen =
@@ -175,22 +177,48 @@ logicNodeParser =
 
 statementParser : Parser.Parser Context Problem Node
 statementParser =
+    let
+        followup expr =
+            inGenericContext "followup" <|
+                Parser.oneOf
+                    [ Parser.succeed (\logicType stmt -> LogicNode logicType expr stmt)
+                        |. spaces
+                        |= parseLogicOperator
+                        |. spaces
+                        |= hickleStatementParser
+                    , Parser.succeed expr
+                    ]
+    in
     inGenericContext "statementParser" <|
         Parser.succeed identity
-            |= (assignmentParser
-                    |> Parser.andThen
-                        (\expr ->
-                            inGenericContext "followup" <|
-                                Parser.oneOf
-                                    [ Parser.succeed (\logicType stmt -> LogicNode logicType expr stmt)
-                                        |. spaces
-                                        |= parseLogicOperator
-                                        |. spaces
-                                        |= statementParser
-                                    , Parser.succeed expr
-                                    ]
-                        )
-               )
+            |= (assignmentParser |> Parser.andThen followup)
+
+
+hickleStatementParser : Parser.Parser Context Problem Node
+hickleStatementParser =
+    inGenericContext "hickleStatementParser" <|
+        (Parser.oneOf
+            [ Parser.succeed identity
+                |. leftParen
+                |. spaces
+                |= Parser.lazy (\_ -> statementParser)
+                |. spaces
+                |. rightParen
+                |. spaces
+            , statementParser
+            ]
+            |> Parser.andThen
+                (\hickle ->
+                    Parser.oneOf
+                        [ Parser.succeed (\logicType hickle2 -> LogicNode logicType hickle hickle2)
+                            |. spaces
+                            |= parseLogicOperator
+                            |. spaces
+                            |= hickleStatementParser
+                        , Parser.succeed hickle
+                        ]
+                )
+        )
 
 
 expressionParser : List String -> NodeParser (List Node)
@@ -205,7 +233,7 @@ expressionParser _ =
         expressionsHelp foundSoFar =
             Parser.oneOf
                 [ Parser.succeed (\expr -> Parser.Loop <| expr :: foundSoFar)
-                    |= statementParser
+                    |= hickleStatementParser
                 , -- supposed to mark the end of the loop
                   inGenericContext "done" <|
                     Parser.succeed (Parser.Done foundSoFar)
@@ -503,6 +531,66 @@ suite =
                     in
                     case parserResult of
                         Ok _ ->
+                            Expect.pass
+
+                        Err problems ->
+                            let
+                                _ =
+                                    explainProblems input problems
+                            in
+                            Expect.fail "couldnt parse"
+        , Test.only <|
+            test "multiple ors and ands with parens first" <|
+                \_ ->
+                    let
+                        input =
+                            "(halo = best and halofour = worst) and dota = prettygood"
+
+                        parserResult =
+                            Parser.run (expressionParser []) input
+                    in
+                    case parserResult of
+                        Ok _ ->
+                            Expect.pass
+
+                        Err problems ->
+                            let
+                                _ =
+                                    explainProblems input problems
+                            in
+                            Expect.fail "couldnt parse"
+        , Test.only <|
+            test "multiple ors and ands with parens last" <|
+                \_ ->
+                    let
+                        input =
+                            "dota = prettygood and (halo = best and halofour = worst)"
+
+                        parserResult =
+                            Parser.run (expressionParser []) input
+                    in
+                    case parserResult of
+                        Ok _ ->
+                            Expect.pass
+
+                        Err problems ->
+                            let
+                                _ =
+                                    explainProblems input problems
+                            in
+                            Expect.fail "couldnt parse"
+        , Test.only <|
+            test "multiple nested parens" <|
+                \_ ->
+                    let
+                        input =
+                            "archie = godlikegenius and (height = taller and (wallet = smaller))"
+                    in
+                    case Parser.run (expressionParser []) input of
+                        Ok result ->
+                            let
+                                _ = Debug.log "result" result
+                            in
                             Expect.pass
 
                         Err problems ->
